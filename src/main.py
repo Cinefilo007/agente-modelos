@@ -16,12 +16,12 @@ def run_api():
     logger.info(f"Starting API on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
-async def main():
+def main():
     # Option 1: Run API in a separate thread (Uvicorn blocking) and Bot in main thread (or async mix)
     # Since ptb bot.run_polling() is blocking, we should ideally use the async interface of PTB
     # But for simplicity in this script, we can run Uvicorn in a thread.
     
-    t = threading.Thread(target=run_api)
+    t = threading.Thread(target=run_api, daemon=True) # daemon=True allows thread to exit when main exits
     t.start()
     
     # Run Bot
@@ -32,4 +32,4 @@ async def main():
     start_bot_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
