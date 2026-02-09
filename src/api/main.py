@@ -24,7 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.get("/api/health")
 async def health_check():
     return {"status": "ok", "service": "Agency Bot API"}
 
@@ -46,15 +46,15 @@ if os.path.exists("web/dist"):
     @app.get("/{full_path:path}")
     async def serve_react_app(full_path: str):
         # API routes are already handled above. 
-        # If path starts with /api, it returns 404 if not matched (handled by FastAPI default)
         if full_path.startswith("api/"):
             return {"error": "Not Found"}
             
-        # For any other route, serve index.html (SPA)
+        # Serve specific file if exists (css, js, images in assets)
         file_path = f"web/dist/{full_path}"
-        if os.path.exists(file_path) and os.path.isfile(file_path):
+        if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
             
+        # For root "/" or any SPA route, serve index.html
         return FileResponse("web/dist/index.html")
 else:
     print("Warning: web/dist directory not found. Frontend will not be served.")
