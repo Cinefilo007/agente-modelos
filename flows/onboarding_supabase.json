@@ -1,0 +1,196 @@
+{
+    "name": "Model Onboarding (Supabase) - AutoDeployed",
+    "settings": {},
+    "nodes": [
+        {
+            "parameters": {},
+            "name": "When clicking 'Execute Workflow'",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1,
+            "position": [
+                440,
+                300
+            ],
+            "webhookId": "telegram-onboarding",
+            "credentials": {
+                "telegramApi": {
+                    "id": "telegram-creds-placeholder",
+                    "name": "Telegram Creds"
+                }
+            },
+            "notes": "REQUIRES TELEGRAM CREDENTIALS IN n8n"
+        },
+        {
+            "parameters": {
+                "url": "SUPABASE_URL_PLACEHOLDER/rest/v1/models?telegram_id=eq.{{$json[\"message\"][\"from\"][\"id\"]}}&select=*",
+                "method": "GET",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "SUPABASE_KEY_PLACEHOLDER"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer SUPABASE_KEY_PLACEHOLDER"
+                        }
+                    ]
+                }
+            },
+            "name": "Check Model",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "position": [
+                640,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{$items(\"Check Model\").length}}",
+                            "value2": "0"
+                        }
+                    ]
+                }
+            },
+            "name": "Is New?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                840,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://openrouter.ai/api/v1/chat/completions",
+                "method": "POST",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer OPENROUTER_KEY_PLACEHOLDER"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "model",
+                            "value": "meta-llama/llama-3.3-70b-instruct"
+                        },
+                        {
+                            "name": "messages",
+                            "value": "=[{\"role\": \"system\", \"content\": \"Eres un reclutador...\"}, {\"role\": \"user\", \"content\": \"{{$node[\"Telegram Trigger\"].json[\"message\"][\"text\"]}}\"}]"
+                        }
+                    ]
+                }
+            },
+            "name": "AI Agent (Hunter)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "position": [
+                1040,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"]}}",
+                "text": "={{$json[\"choices\"][0][\"message\"][\"content\"]}}",
+                "additionalFields": {}
+            },
+            "name": "Reply to Model",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                1240,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "telegram-creds-placeholder",
+                    "name": "Telegram Creds"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "When clicking 'Execute Workflow'": {
+            "main": [
+                [
+                    {
+                        "node": "Telegram Trigger",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Check Model",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Model": {
+            "main": [
+                [
+                    {
+                        "node": "Is New?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is New?": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent (Hunter)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "AI Agent (Hunter)": {
+            "main": [
+                [
+                    {
+                        "node": "Reply to Model",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

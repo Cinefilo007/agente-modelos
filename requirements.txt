@@ -1,0 +1,9 @@
+python-telegram-bot[job-queue,rate-limiter]>=20.0
+supabase>=2.0.0
+openai>=1.0.0
+python-dotenv>=1.0.0
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+requests>=2.31.0

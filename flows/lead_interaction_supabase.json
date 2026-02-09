@@ -1,0 +1,252 @@
+{
+    "name": "Lead Interaction (Supabase) - AutoDeployed",
+    "settings": {},
+    "nodes": [
+        {
+            "parameters": {},
+            "name": "When clicking 'Execute Workflow'",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "updates": [
+                    "business_message"
+                ]
+            },
+            "name": "Telegram Business",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1,
+            "position": [
+                400,
+                300
+            ],
+            "webhookId": "telegram-business",
+            "credentials": {
+                "telegramApi": {
+                    "id": "telegram-creds-placeholder",
+                    "name": "Telegram Creds"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "SUPABASE_URL_PLACEHOLDER/rest/v1/models?telegram_id=eq.{{$json[\"business_message\"][\"business_connection_id\"]}}&select=*",
+                "method": "GET",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "SUPABASE_KEY_PLACEHOLDER"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer SUPABASE_KEY_PLACEHOLDER"
+                        }
+                    ]
+                }
+            },
+            "name": "Get Model & Credits",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "position": [
+                600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{$json[\"credits_balance\"]}}",
+                            "value2": 0,
+                            "operator": "larger"
+                        }
+                    ]
+                }
+            },
+            "name": "Has Credits?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                800,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://openrouter.ai/api/v1/chat/completions",
+                "method": "POST",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer OPENROUTER_KEY_PLACEHOLDER"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "model",
+                            "value": "sao10k/l3-euryale-70b"
+                        },
+                        {
+                            "name": "messages",
+                            "value": "=[{\"role\": \"system\", \"content\": \"Eres {{$node[\"Get Model & Credits\"].json[\"config_persona\"]}}...\"}, {\"role\": \"user\", \"content\": \"{{$node[\"Telegram Business\"].json[\"business_message\"][\"text\"]}}\"}]"
+                        }
+                    ]
+                }
+            },
+            "name": "AI Agent (Manager)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{$node[\"Telegram Business\"].json[\"business_message\"][\"chat\"][\"id\"]}}",
+                "text": "={{$json[\"choices\"][0][\"message\"][\"content\"]}}",
+                "additionalFields": {
+                    "business_connection_id": "={{$node[\"Telegram Business\"].json[\"business_message\"][\"business_connection_id\"]}}"
+                }
+            },
+            "name": "Reply as Business",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "telegram-creds-placeholder",
+                    "name": "Telegram Creds"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "SUPABASE_URL_PLACEHOLDER/rest/v1/models?id=eq.{{$node[\"Get Model & Credits\"].json[\"id\"]}}",
+                "method": "PATCH",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "SUPABASE_KEY_PLACEHOLDER"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer SUPABASE_KEY_PLACEHOLDER"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=minimal"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "credits_balance",
+                            "value": "={{$node[\"Get Model & Credits\"].json[\"credits_balance\"] - 1}}"
+                        }
+                    ]
+                }
+            },
+            "name": "Deduct Credit",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "position": [
+                1400,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "When clicking 'Execute Workflow'": {
+            "main": [
+                [
+                    {
+                        "node": "Telegram Business",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Telegram Business": {
+            "main": [
+                [
+                    {
+                        "node": "Get Model & Credits",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Model & Credits": {
+            "main": [
+                [
+                    {
+                        "node": "Has Credits?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Credits?": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent (Manager)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "AI Agent (Manager)": {
+            "main": [
+                [
+                    {
+                        "node": "Reply as Business",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Reply as Business": {
+            "main": [
+                [
+                    {
+                        "node": "Deduct Credit",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
