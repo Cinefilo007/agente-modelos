@@ -6,7 +6,7 @@ export function ModelGrid({ models }) {
     const { themeColor } = useTheme();
 
     return (
-        <div className="grid grid-cols-3 gap-3 p-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-3">
             {models.map((model) => (
                 <div key={model.id} className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg group">
                     <img
