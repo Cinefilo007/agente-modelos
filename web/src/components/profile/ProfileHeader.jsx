@@ -59,19 +59,19 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         {/* Compact Metrics Row */}
                         <div className="flex items-center justify-center gap-6 mb-5 w-full">
                             <div className="flex flex-col items-center">
-                                <span className="font-bold text-lg text-foreground leading-none">{user.followers_count || user.stats?.followers || 0}</span>
+                                <span className="font-bold text-lg text-foreground leading-none">{user.followers_count || 0}</span>
                                 <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Seguidores</span>
                             </div>
                             <div className="w-px h-6 bg-white/10"></div>
                             <div className="flex flex-col items-center">
                                 <span className="font-bold text-lg text-foreground leading-none flex items-center gap-1">
-                                    {user.reputation_score || user.stats?.score || 0} <Star size={12} className="fill-amber-400 text-amber-400" />
+                                    {user.reputation_score || 0} <Star size={12} className="fill-amber-400 text-amber-400" />
                                 </span>
                                 <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Puntos</span>
                             </div>
                             <div className="w-px h-6 bg-white/10"></div>
                             <div className="flex flex-col items-center">
-                                <span className="font-bold text-lg text-foreground leading-none">{user.total_likes || user.stats?.likes || 0}</span>
+                                <span className="font-bold text-lg text-foreground leading-none">{user.total_likes || 0}</span>
                                 <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Likes</span>
                             </div>
                         </div>
