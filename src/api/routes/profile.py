@@ -1,22 +1,15 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
 
 router = APIRouter()
 
-class SocialLinks(BaseModel):
-    instagram: Optional[str] = None
-    twitter: Optional[str] = None
-    facebook: Optional[str] = None
-    tiktok: Optional[str] = None
-    onlyfans: Optional[str] = None
-
-class ProfileUpdate(BaseModel):
+class StartProfileUpdate(BaseModel):
     bio_short: Optional[str] = None
-    social_links: Optional[SocialLinks] = None
+    social_links: Optional[List[Dict[str, str]]] = None # List of {network, url, icon}
     cover_url: Optional[str] = None
     avatar_url: Optional[str] = None
 
@@ -46,7 +39,7 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
     return user_data
 
 @router.put("/me")
-async def update_my_profile(update_data: ProfileUpdate, user: TelegramUser = Depends(get_current_user)):
+async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser = Depends(get_current_user)):
     """Update profile details."""
     model = db.client.table("models").select("id").eq("telegram_id", user.id).single().execute()
     

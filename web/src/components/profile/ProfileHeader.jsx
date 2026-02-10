@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader } from 'lucide-react';
+import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Link } from 'react-router-dom';
@@ -46,14 +46,61 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
     // Dynamic Social Links
     const socialLinks = [];
-    if (user && user.social_links && typeof user.social_links === 'object') {
-        const links = user.social_links;
-        if (links.instagram) socialLinks.push({ id: 'ig', icon: <Instagram size={18} />, label: 'Instagram', url: links.instagram, color: '#E1306C' });
-        if (links.twitter) socialLinks.push({ id: 'tw', icon: <Twitter size={18} />, label: 'Twitter', url: links.twitter, color: '#1DA1F2' });
-        if (links.onlyfans) socialLinks.push({ id: 'of', icon: <Lock size={18} />, label: 'OnlyFans', url: links.onlyfans, color: '#00AFF0' });
-        if (links.fansly) socialLinks.push({ id: 'fansly', icon: <Heart size={18} />, label: 'Fansly', url: links.fansly, color: '#dca54e' });
 
-        // Add checking for other generic links if stored as generic keys or array
+    // Icon Mapping (Should match SocialLinkEditor)
+    const getSocialIcon = (network, size = 18) => {
+        switch (network) {
+            case 'instagram': return <Instagram size={size} />;
+            case 'twitter': return <Twitter size={size} />;
+            case 'facebook': return <Facebook size={size} />;
+            case 'youtube': return <Youtube size={size} />;
+            case 'tiktok': return <Music2 size={size} />;
+            case 'twitch': return <Twitch size={size} />;
+            case 'linkedin': return <Linkedin size={size} />;
+            case 'github': return <Github size={size} />;
+            case 'onlyfans': return <Star size={size} />;
+            case 'website': return <Globe size={size} />;
+            default: return <LinkIcon size={size} />; // LinkIcon needs import check
+        }
+    };
+
+    const getSocialColor = (network) => {
+        switch (network) {
+            case 'instagram': return '#E1306C';
+            case 'twitter': return '#1DA1F2';
+            case 'facebook': return '#1877F2';
+            case 'youtube': return '#FF0000';
+            case 'tiktok': return '#000000';
+            case 'twitch': return '#9146FF';
+            case 'linkedin': return '#0A66C2';
+            case 'github': return '#333333';
+            case 'onlyfans': return '#00AFF0';
+            default: return '#10B981'; // Website green
+        }
+    };
+
+    if (user && user.social_links) {
+        let links = user.social_links;
+
+        // Handle legacy object format if strictly needed, but we prefer array now
+        if (!Array.isArray(links) && typeof links === 'object') {
+            // Convert old object to array for display
+            links = Object.keys(links).map(key => ({ network: key, url: links[key] }));
+        }
+
+        if (Array.isArray(links)) {
+            links.forEach(link => {
+                if (link.url) {
+                    socialLinks.push({
+                        id: link.network + link.url,
+                        icon: getSocialIcon(link.network),
+                        label: link.network,
+                        url: link.url,
+                        color: getSocialColor(link.network)
+                    });
+                }
+            });
+        }
     }
 
     /* console.log("ProfileHeader user:", user); */ // Uncomment for debugging if needed
