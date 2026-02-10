@@ -28,11 +28,27 @@ function EditProfile() {
         const fetchProfile = async () => {
             try {
                 const { data } = await api.get('/profile/me');
+
+                let links = data.social_links;
+                // Ensure links is an array
+                if (!Array.isArray(links)) {
+                    if (links && typeof links === 'object') {
+                        // Convert legacy object { network: url } to array
+                        links = Object.keys(links).map(key => ({
+                            network: key,
+                            url: links[key],
+                            icon: key // default icon key
+                        }));
+                    } else {
+                        links = [];
+                    }
+                }
+
                 setFormData({
                     full_name: data.full_name || '',
                     username: data.username || '',
                     bio_short: data.bio_short || '',
-                    social_links: data.social_links || [],
+                    social_links: links,
                     cover_url: data.cover_url || '',
                     avatar_url: data.avatar_url || ''
                 });
