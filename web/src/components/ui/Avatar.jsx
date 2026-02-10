@@ -13,7 +13,7 @@ export function Avatar({ src, alt, size = 'md', isOnline, className }) {
     return (
         <div className="relative inline-block">
             <img
-                src={src}
+                src={src ? src : `https://api.dicebear.com/7.x/avataaars/svg?seed=${alt || 'User'}`}
                 alt={alt}
                 className={twMerge(
                     'rounded-full object-cover border-2 border-white/10',
