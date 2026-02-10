@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FeedPostCard } from '../components/feed/FeedPostCard';
 import { FeedFilter } from '../components/feed/FeedFilter';
 import { StoryCarousel } from '../components/profile/StoryCarousel';
-import { StoryViewer } from '../components/profile/StoryViewer';
+import StoryViewer from '../components/profile/StoryViewer';
 import api from '../api/axios';
 import { Loader } from 'lucide-react';
 
