@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Heart, Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { timeAgo } from '../../utils/date';
 
 const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
     const [currentIndex, setCurrentIndex] = useState(initialStoryIndex);
@@ -9,8 +10,10 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
 
     const currentStory = stories[currentIndex] || stories[0];
 
-    // Helper for avatar (Female Silhouette fallback)
-    const avatarUrl = user?.avatar_url || user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix';
+    // Extract user info from current story (API returns 'models' object) or fallback to user prop
+    const storyUser = currentStory?.models || user || {};
+    const username = storyUser.username || storyUser.name || 'Unknown';
+    const avatarUrl = storyUser.avatar_url || storyUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
 
     // Auto-advance logic
     useEffect(() => {
@@ -140,7 +143,7 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
                             {username}
                         </span>
                         <span className="text-white/60 text-xs shadow-black">
-                            {new Date(currentStory.created_at).getHours()}h
+                            {timeAgo(currentStory.created_at)}
                         </span>
                     </div>
                 </div>
