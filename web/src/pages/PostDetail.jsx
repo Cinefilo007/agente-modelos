@@ -4,6 +4,7 @@ import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Vol
 import { useTheme } from '../context/ThemeContext';
 import { Avatar } from '../components/ui/Avatar';
 import { POSTS } from '../data/dummy';
+import api from '../api/axios';
 
 export default function PostDetail() {
     const { id } = useParams();
@@ -12,22 +13,86 @@ export default function PostDetail() {
     const [post, setPost] = useState(null);
     const [isLiked, setIsLiked] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState("");
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        const fetchPost = async () => {
+        const fetchPostData = async () => {
             try {
-                const { data } = await api.get(`/content/post/${id}`);
-                setPost(data);
+                // Fetch Post
+                const { data: postData } = await api.get(`/content/post/${id}`);
+                setPost(postData);
+
+                // Fetch Comments
+                const { data: commentsData } = await api.get(`/interactions/comments/${id}`);
+                setComments(commentsData || []);
+
+                // Check Like Status (Optional: add endpoint or assume false for now)
+                // const { data: likeStatus } = await api.get(`/interactions/likes/status/${id}`);
+                // setIsLiked(likeStatus.liked);
+
             } catch (err) {
-                console.error("Error fetching post:", err);
+                console.error("Error fetching data:", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchPost();
+        fetchPostData();
     }, [id]);
+
+    const handleLike = async () => {
+        // Optimistic UI
+        const oldLiked = isLiked;
+        const oldLikes = post.likes_count;
+
+        setIsLiked(!isLiked);
+        setPost(prev => ({ ...prev, likes_count: prev.likes_count + (isLiked ? -1 : 1) })); // Adjust count
+
+        try {
+            await api.post('/interactions/interact', {
+                target_id: id,
+                target_type: 'post',
+                action: 'like'
+            });
+        } catch (err) {
+            console.error("Error liking:", err);
+            // Revert
+            setIsLiked(oldLiked);
+            setPost(prev => ({ ...prev, likes_count: oldLikes }));
+        }
+    };
+
+    const handleComment = async () => {
+        if (!newComment.trim()) return;
+        setSubmitting(true);
+        try {
+            const { data: comment } = await api.post('/interactions/interact', {
+                target_id: id,
+                target_type: 'post',
+                action: 'comment',
+                content: newComment
+            });
+
+            // Add to list (need format compatible with fetched comments)
+            // We need current user info to append optimistically or just re-fetch
+            // For now re-fetch simple or optimistic append if we had user context
+
+            // Re-fetch comments to match format
+            const { data: commentsData } = await api.get(`/interactions/comments/${id}`);
+            setComments(commentsData || []);
+            setNewComment("");
+
+            // Increment count locally
+            setPost(prev => ({ ...prev, comments_count: (prev.comments_count || 0) + 1 }));
+
+        } catch (err) {
+            console.error("Error commenting:", err);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     if (loading) return (
         <div className="h-full flex items-center justify-center">
@@ -128,13 +193,13 @@ export default function PostDetail() {
 
                     {/* Stats Bar */}
                     <div className="flex items-center gap-6 py-3 border-y border-[var(--glass-border)]">
-                        <button onClick={() => setIsLiked(!isLiked)} className="flex items-center gap-2 group">
+                        <button onClick={handleLike} className="flex items-center gap-2 group">
                             <Heart size={22} className={`transition-all ${isLiked ? 'fill-pink-500 text-pink-500 scale-110' : 'text-[var(--text-primary)] group-active:scale-95'}`} />
-                            <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{post.likes}</span>
+                            <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{post.likes_count || 0}</span>
                         </button>
                         <div className="flex items-center gap-2">
                             <MessageCircle size={22} className="text-[var(--text-primary)]" />
-                            <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">15</span>
+                            <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{post.comments_count || 0}</span>
                         </div>
                         <div className="flex-1"></div>
                         <Share2 size={22} className="text-[var(--text-primary)] opacity-80" />
@@ -143,22 +208,32 @@ export default function PostDetail() {
                     {/* Comments List */}
                     <div className="mt-6 space-y-4">
                         <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-4">Comentarios Recientes</h4>
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <div key={i} className="flex gap-3">
-                                <div className="w-8 h-8 rounded-full bg-[var(--card-bg)] flex-shrink-0 overflow-hidden">
-                                    <img src={`https://i.pravatar.cc/150?u=${i + 50}`} alt="U" className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                    <div className="flex items-baseline justify-between">
-                                        <span className="text-sm font-semibold text-[var(--text-primary)]">fan_user_{i}</span>
-                                        <span className="text-[10px] text-[var(--text-secondary)]">2h</span>
+                        {comments.length === 0 ? (
+                            <p className="text-sm text-[var(--text-secondary)] text-center py-4">Sé el primero en comentar.</p>
+                        ) : (
+                            comments.map((comment, i) => (
+                                <div key={comment.id || i} className="flex gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-[var(--card-bg)] flex-shrink-0 overflow-hidden">
+                                        <img
+                                            src={comment.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.username}`}
+                                            alt={comment.username}
+                                            className="w-full h-full object-cover"
+                                        />
                                     </div>
-                                    <p className="text-sm text-[var(--text-primary)] opacity-70 font-light">
-                                        Increíble contenido! 😍 Me encanta la estética.
-                                    </p>
+                                    <div className="flex-1 space-y-1">
+                                        <div className="flex items-baseline justify-between">
+                                            <span className="text-sm font-semibold text-[var(--text-primary)]">{comment.username}</span>
+                                            <span className="text-[10px] text-[var(--text-secondary)]">
+                                                {formatDate(comment.created_at)}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-[var(--text-primary)] opacity-70 font-light">
+                                            {comment.content}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
@@ -166,9 +241,11 @@ export default function PostDetail() {
             {/* FIXED INPUT AREA */}
             <div className="absolute bottom-0 left-0 right-0 p-3 bg-[var(--card-bg)]/80 backdrop-blur-xl border-t border-[var(--glass-border)] z-20">
                 <div className="flex items-center gap-3">
+                    {/* User Avatar (Current User - if context available, or generic) */}
                     <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[1px]">
                         <div className="w-full h-full rounded-full bg-[var(--card-bg)] overflow-hidden">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150" className="w-full h-full object-cover opacity-80" />
+                            {/* Ideally fetch current user avatar from context */}
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Me" className="w-full h-full object-cover opacity-80" />
                         </div>
                     </div>
                     <div className="flex-1 relative">
@@ -177,9 +254,14 @@ export default function PostDetail() {
                             placeholder="Agrega un comentario..."
                             className="w-full bg-[var(--glass-border)] border border-[var(--glass-border)] rounded-full h-10 pl-4 pr-10 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-[var(--text-secondary)] transition-colors"
                             style={{ caretColor: themeColor }}
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleComment()}
                         />
                         <button
-                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-[var(--glass-border)] text-[var(--text-primary)] transition-colors"
+                            onClick={handleComment}
+                            disabled={submitting || !newComment.trim()}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-[var(--glass-border)] text-[var(--text-primary)] transition-colors disabled:opacity-50"
                             style={{ color: themeColor }}
                         >
                             <Send size={18} />

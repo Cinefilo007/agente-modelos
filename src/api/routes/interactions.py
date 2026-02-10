@@ -10,7 +10,8 @@ router = APIRouter()
 class InteractionCreate(BaseModel):
     target_id: str
     target_type: Literal['post', 'story', 'comment']
-    action: Literal['like', 'view']
+    action: Literal['like', 'view', 'comment']
+    content: str = None
 
 class CommentCreate(BaseModel):
     post_id: str
@@ -49,14 +50,48 @@ async def create_interaction(
         "action": interaction.action
     }
     
+    # Check for duplicates if it's a 'like'
+    if interaction.action == 'like':
+        existing = db.client.table("interactions") \
+            .select("id") \
+            .eq("actor_id", actor_id) \
+            .eq("target_id", interaction.target_id) \
+            .eq("action", "like") \
+            .execute()
+        if existing.data:
+            # Already liked, maybe unlike? For now just return existing
+             return existing.data[0]
+
+    data = {
+        "actor_id": actor_id,
+        "actor_type": actor_type,
+        "target_id": interaction.target_id,
+        "target_type": interaction.target_type or 'post',
+        "action": interaction.action,
+        "content": getattr(interaction, 'content', None) # For comments
+    }
+    
     # Insert interaction
     res = db.client.table("interactions").insert(data).execute()
     
-    # If like, increment counter (Optimistic or Trigger based on DB)
-    if interaction.action == 'like' and interaction.target_type == 'post':
-        # RPC call or direct update
-        # db.client.rpc('increment_likes', {'post_id': interaction.target_id})
-        pass
+    # Increment counters on Posts
+    if interaction.target_type == 'post':
+        if interaction.action == 'like':
+            # RPC increment would be better, but explicit update for MVP
+             try:
+                 post = db.client.table("posts").select("likes_count").eq("id", interaction.target_id).single().execute()
+                 new_count = (post.data.get('likes_count') or 0) + 1
+                 db.client.table("posts").update({"likes_count": new_count}).eq("id", interaction.target_id).execute()
+             except Exception as e:
+                 print(f"Error incrementing likes: {e}")
+
+        elif interaction.action == 'comment':
+             try:
+                 post = db.client.table("posts").select("comments_count").eq("id", interaction.target_id).single().execute()
+                 new_count = (post.data.get('comments_count') or 0) + 1
+                 db.client.table("posts").update({"comments_count": new_count}).eq("id", interaction.target_id).execute()
+             except Exception as e:
+                 print(f"Error incrementing comments: {e}")
         
     return res.data[0]
 
@@ -157,3 +192,51 @@ async def check_follow_status(
         .execute()
         
     return {"is_following": count.count > 0}
+
+@router.get("/comments/{post_id}")
+async def get_post_comments(post_id: str):
+    """Get comments for a post, enriched with user details."""
+    try:
+        # 1. Fetch comments
+        comments = db.client.table("interactions") \
+            .select("*") \
+            .eq("target_id", post_id) \
+            .eq("target_type", "post") \
+            .eq("action", "comment") \
+            .order("created_at", desc=True) \
+            .execute()
+            
+        data = comments.data
+        if not data:
+            return []
+
+        # 2. Collect actor IDs
+        actor_ids = list(set([c['actor_id'] for c in data]))
+        
+        # 3. Fetch details from Models and Clients
+        # Supabase 'in' query for multiple IDs
+        models = db.client.table("models").select("id, username, avatar_url").in_("id", actor_ids).execute()
+        clients = db.client.table("clients").select("id, username").in_("id", actor_ids).execute()
+        
+        # 4. Create lookup map
+        user_map = {}
+        for m in models.data:
+            user_map[m['id']] = { "username": m['username'], "avatar_url": m['avatar_url'], "type": "model" }
+        for c in clients.data:
+            user_map[c['id']] = { "username": c['username'], "avatar_url": None, "type": "client" }
+            
+        # 5. Attach user info
+        enriched_comments = []
+        for c in data:
+            actor = user_map.get(c['actor_id'], {"username": "Unknown", "avatar_url": None})
+            enriched_comments.append({
+                **c,
+                "username": actor['username'],
+                "avatar_url": actor['avatar_url']
+            })
+            
+        return enriched_comments
+
+    except Exception as e:
+        print(f"Error fetching comments: {e}")
+        return []
