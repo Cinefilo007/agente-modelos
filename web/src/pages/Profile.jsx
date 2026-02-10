@@ -64,8 +64,7 @@ function Profile() {
                 setProfileUser(userData);
 
                 // Fetch Content (Posts & Stories)
-                // We need the numeric/UUID ID for content fetching
-                const targetId = isMe ? currentUser.user_id : userData.id;
+                const targetId = userData.id; // Always use the fetched user's ID
 
                 const [postsRes, storiesRes] = await Promise.all([
                     api.get(`/content/posts/${targetId}`),

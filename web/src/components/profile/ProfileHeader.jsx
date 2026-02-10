@@ -21,7 +21,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             {/* Cover Image with Smooth Fade */}
             <div className="h-64 w-full overflow-hidden relative">
                 <img
-                    src={user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab'}
+                    src={user.cover_url || user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab'}
                     alt="Cover"
                     className="w-full h-full object-cover"
                     style={{
@@ -39,8 +39,8 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     <div className="-mt-14 mb-3 relative group">
                         <div className="absolute inset-0 rounded-full blur-md opacity-50 transform group-hover:scale-105 transition-transform duration-500" style={{ backgroundColor: themeColor }}></div>
                         <Avatar
-                            src={user.avatar}
-                            alt={user.name}
+                            src={user.avatar_url || user.avatar}
+                            alt={user.full_name || user.name}
                             size="xl"
                             isOnline={user.isOnline}
                             className="w-28 h-28 relative z-10"
@@ -51,7 +51,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     {/* User Info & Metrics Consolidated */}
                     <div className="text-center w-full mb-4 flex flex-col items-center">
                         <h1 className="text-2xl font-bold text-foreground drop-shadow-lg flex justify-center items-center gap-2 mb-0.5">
-                            {user.name}
+                            {user.full_name || user.name}
                             {user.isVerified && <span className="bg-blue-500 text-white rounded-full p-0.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>}
                         </h1>
                         <p className="text-muted-foreground text-sm font-medium tracking-wide mb-4">@{user.username}</p>
@@ -59,19 +59,19 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         {/* Compact Metrics Row */}
                         <div className="flex items-center justify-center gap-6 mb-5 w-full">
                             <div className="flex flex-col items-center">
-                                <span className="font-bold text-lg text-foreground leading-none">{user.stats.followers}</span>
-                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Fans</span>
+                                <span className="font-bold text-lg text-foreground leading-none">{user.followers_count || user.stats?.followers || 0}</span>
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Seguidores</span>
                             </div>
                             <div className="w-px h-6 bg-white/10"></div>
                             <div className="flex flex-col items-center">
                                 <span className="font-bold text-lg text-foreground leading-none flex items-center gap-1">
-                                    {user.stats.score} <Star size={12} className="fill-amber-400 text-amber-400" />
+                                    {user.reputation_score || user.stats?.score || 0} <Star size={12} className="fill-amber-400 text-amber-400" />
                                 </span>
-                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Score</span>
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Puntos</span>
                             </div>
                             <div className="w-px h-6 bg-white/10"></div>
                             <div className="flex flex-col items-center">
-                                <span className="font-bold text-lg text-foreground leading-none">{user.stats.likes}</span>
+                                <span className="font-bold text-lg text-foreground leading-none">{user.total_likes || user.stats?.likes || 0}</span>
                                 <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Likes</span>
                             </div>
                         </div>
@@ -96,7 +96,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         {/* Bio - At the bottom */}
                         <div className="w-full px-2">
                             <p className="text-center text-foreground/90 text-sm leading-relaxed max-w-md mx-auto">
-                                {user.bio || "Digital Soul | Creating magic in the metaverse 💜"}
+                                {user.bio_short || user.bio || "Digital Soul | Creating magic in the metaverse 💜"}
                             </p>
                         </div>
                     </div>
