@@ -28,6 +28,23 @@ class Database:
             logger.info("Supabase Client Initialized")
         return self._client
 
+    @property
+    def service_client(self) -> Client:
+        """
+        Retorna un cliente con Service Role (Admin) si está disponible.
+        Útil para operaciones de storage o administrativas que saltan RLS.
+        """
+        if getattr(self, '_service_client', None) is None:
+            url = os.getenv("SUPABASE_URL")
+            key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            if url and key:
+                self._service_client = create_client(url, key)
+                logger.info("Supabase Service Client Initialized")
+            else:
+                logger.warning("SUPABASE_SERVICE_ROLE_KEY not found. Fallback to regular client (RLS checks apply).")
+                self._service_client = self.client
+        return self._service_client
+
     def get_model(self, telegram_id: int):
         """Busca una modelo por su Telegram ID."""
         try:
