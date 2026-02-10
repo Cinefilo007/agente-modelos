@@ -12,6 +12,7 @@ import Reviews from './pages/Reviews';
 import Notifications from './pages/Notifications';
 import Explore from './pages/Explore';
 import CreatePost from './pages/CreatePost';
+import CreateStory from './pages/CreateStory';
 import EditProfile from './pages/EditProfile';
 import PostDetail from './pages/PostDetail';
 import AdminPanel from './pages/AdminPanel';
@@ -71,6 +72,7 @@ function App() {
               <Route path="notifications" element={<Notifications />} />
               <Route path="edit-profile" element={<EditProfile />} />
               <Route path="create-post" element={<CreatePost />} />
+              <Route path="create-story" element={<CreateStory />} />
               <Route path="post/:id" element={<PostDetail />} />
               <Route path="admin-panel" element={<AdminPanel />} />
               <Route path="super-admin" element={<SuperAdminDashboard />} />

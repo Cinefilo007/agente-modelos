@@ -1,72 +1,83 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, X } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { ArrowLeft, ImagePlus, X, Link as LinkIcon } from 'lucide-react';
+import api from '../api/axios';
 
 function CreatePost() {
     const navigate = useNavigate();
-    const [image, setImage] = useState(null);
+    const [mediaUrl, setMediaUrl] = useState('');
     const [description, setDescription] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [inputType, setInputType] = useState('url'); // 'file' or 'url'
 
-    // Simulate file selection
-    const handleImageClick = () => {
-        // In real app, trigger native file input
-        // For demo, we just set a fake preview
-        setImage('https://images.unsplash.com/photo-1542206395-9feb3edaa68d?q=80&w=1000&auto=format&fit=crop');
-    };
-
-    const handleSubmit = () => {
-        console.log("Creating post...", { image, description });
-        navigate('/');
+    const handleSubmit = async () => {
+        if (!mediaUrl) return;
+        setLoading(true);
+        try {
+            await api.post('/content/posts', {
+                media_url: mediaUrl,
+                media_type: mediaUrl.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image', // Basic detection
+                caption: description
+            });
+            navigate('/');
+        } catch (error) {
+            console.error("Error creating post:", error);
+            alert("Error al crear la publicación. Intenta de nuevo.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="h-full flex flex-col bg-transparent">
+        <div className="h-full flex flex-col bg-background">
             {/* Header */}
-            <div className="px-4 py-3 flex items-center justify-between border-b border-[var(--glass-border)] bg-[var(--card-bg)]/40 backdrop-blur-sm">
+            <div className="px-4 py-3 flex items-center justify-between border-b border-white/10 bg-card/40 backdrop-blur-sm">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="text-[var(--text-primary)] hover:bg-[var(--glass-border)] p-1 rounded-full transition-colors"><X size={24} /></button>
-                    <h1 className="text-sm font-bold uppercase tracking-wider text-[var(--text-primary)]">Nueva Publicación</h1>
+                    <button onClick={() => navigate(-1)} className="hover:bg-white/10 p-1 rounded-full transition-colors"><X size={24} /></button>
+                    <h1 className="text-sm font-bold uppercase tracking-wider">Nueva Publicación</h1>
                 </div>
                 <button
                     onClick={handleSubmit}
-                    disabled={!image}
-                    className="text-white font-bold text-sm px-4 py-1.5 rounded-full bg-blue-600 disabled:opacity-50 disabled:bg-gray-500 transition-all font-sans"
+                    disabled={!mediaUrl || loading}
+                    className="text-white font-bold text-sm px-4 py-1.5 rounded-full bg-blue-600 disabled:opacity-50 disabled:bg-gray-700 transition-all font-sans"
                 >
-                    Compartir
+                    {loading ? 'Publicando...' : 'Compartir'}
                 </button>
             </div>
 
-            <div className="flex-1 flex flex-col p-4 overflow-hidden">
-                {/* Image Area - Compact & Centered */}
+            <div className="flex-1 flex flex-col p-4 overflow-hidden max-w-md mx-auto w-full">
+                {/* Image Area */}
                 <div className="flex-1 flex flex-col justify-center min-h-0 mb-4">
-                    <div
-                        onClick={handleImageClick}
-                        className={`
-                            w-full h-full max-h-[50vh] rounded-xl border border-dashed border-[var(--glass-border)] 
-                            flex flex-col items-center justify-center cursor-pointer 
-                            hover:bg-[var(--glass-border)] transition-all duration-300 relative overflow-hidden group
-                            ${image ? 'border-none p-0 bg-black' : ''}
-                        `}
-                    >
-                        {image ? (
+                    <div className="w-full h-full max-h-[50vh] rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center relative overflow-hidden bg-black/50">
+                        {mediaUrl ? (
                             <>
-                                <img src={image} alt="Preview" className="w-full h-full object-contain" />
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <p className="text-white font-medium text-sm flex items-center gap-2">
-                                        <ImagePlus size={18} /> Cambiar archivo
-                                    </p>
+                                {mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
+                                    <video src={mediaUrl} className="w-full h-full object-contain" controls />
+                                ) : (
+                                    <img src={mediaUrl} alt="Preview" className="w-full h-full object-contain" />
+                                )}
+                                <div className="absolute top-2 right-2">
+                                    <button onClick={() => setMediaUrl('')} className="bg-black/50 p-1 rounded-full text-white"><X size={16} /></button>
                                 </div>
                             </>
                         ) : (
-                            <div className="flex flex-col items-center text-center p-6 animate-in fade-in zoom-in duration-300">
-                                <div className="w-16 h-16 rounded-full bg-[var(--glass-border)] flex items-center justify-center mb-4 border border-[var(--glass-border)]">
-                                    <ImagePlus size={32} className="text-[var(--text-secondary)]" />
-
+                            <div className="flex flex-col items-center text-center p-6 w-full">
+                                <div className="mb-4">
+                                    <ImagePlus size={48} className="text-gray-500 mb-2" />
                                 </div>
-                                <span className="font-bold text-[var(--text-primary)] mb-1">Toca para añadir foto o video</span>
-                                <p className="text-[10px] text-[var(--text-secondary)] max-w-[200px] leading-tight">
-                                    Soporta imágenes (JPG, PNG) y videos (MP4) de alta calidad.
+                                <p className="text-sm text-gray-400 mb-4">Ingresa la URL de tu imagen o video</p>
+                                <div className="flex items-center gap-2 w-full max-w-xs bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                                    <LinkIcon size={16} className="text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="https://..."
+                                        className="bg-transparent border-none text-sm w-full focus:outline-none text-white placeholder-gray-600"
+                                        value={mediaUrl}
+                                        onChange={(e) => setMediaUrl(e.target.value)}
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-600 mt-2">
+                                    Tip: Usa enlaces directos de imágenes (Unsplash, Imgur, etc.)
                                 </p>
                             </div>
                         )}
@@ -74,20 +85,13 @@ function CreatePost() {
                 </div>
 
                 {/* Caption Area */}
-                <div className="flex-none bg-[var(--card-bg)]/50 rounded-xl p-3 border border-[var(--glass-border)] focus-within:border-[var(--text-secondary)] transition-colors">
+                <div className="flex-none bg-card/20 rounded-xl p-3 border border-white/10 focus-within:border-white/30 transition-colors">
                     <textarea
                         placeholder="Escribe un pie de foto..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="w-full bg-transparent border-none text-[var(--text-primary)] text-sm placeholder:text-[var(--text-secondary)] focus:ring-0 resize-none min-h-[80px]"
+                        className="w-full bg-transparent border-none text-white text-sm placeholder:text-gray-500 focus:outline-none focus:ring-0 resize-none min-h-[80px]"
                     />
-                </div>
-
-                {/* Legal / Info Text */}
-                <div className="flex-none mt-3 px-1">
-                    <p className="text-[10px] text-[var(--text-secondary)] text-center leading-relaxed">
-                        Max 30MB • Video max 30s • El contenido debe cumplir con nuestras normas de comunidad.
-                    </p>
                 </div>
             </div>
         </div>

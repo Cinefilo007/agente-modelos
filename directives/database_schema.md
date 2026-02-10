@@ -164,9 +164,9 @@ CREATE TABLE messages (
 ### `posts`
 Contenido del feed (Permanente).
 ```sql
-CREATE TABLE posts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    model_id UUID REFERENCES models(id),
+CREATE TABLE IF NOT EXISTS posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    model_id UUID REFERENCES models(id) ON DELETE CASCADE,
     media_url TEXT NOT NULL,
     media_type TEXT CHECK (media_type IN ('image', 'video')),
     caption TEXT,
@@ -179,9 +179,9 @@ CREATE TABLE posts (
 ### `stories`
 Contenido efímero (24h).
 ```sql
-CREATE TABLE stories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    model_id UUID REFERENCES models(id),
+CREATE TABLE IF NOT EXISTS stories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    model_id UUID REFERENCES models(id) ON DELETE CASCADE,
     media_url TEXT NOT NULL,
     media_type TEXT CHECK (media_type IN ('image', 'video')), -- Video max 30s
     expires_at TIMESTAMPTZ NOT NULL,
@@ -189,24 +189,11 @@ CREATE TABLE stories (
 );
 ```
 
-### `reviews`
-Sistema de calificación y reputación.
-```sql
-CREATE TABLE reviews (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    model_id UUID REFERENCES models(id),
-    client_id UUID REFERENCES clients(id),
-    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-    comment TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
 ### `interactions`
 Likes, comentarios y visualizaciones.
 ```sql
-CREATE TABLE interactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+CREATE TABLE IF NOT EXISTS interactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     actor_id UUID NOT NULL, -- Client ID or Model ID
     actor_type TEXT CHECK (actor_type IN ('client', 'model')),
     target_id UUID NOT NULL, -- Post ID, Story ID, etc.

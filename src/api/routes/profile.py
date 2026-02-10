@@ -53,13 +53,24 @@ async def update_my_profile(update_data: ProfileUpdate, user: TelegramUser = Dep
 @router.get("/{model_id}")
 async def get_public_profile(model_id: str):
     """Get a public profile by ID."""
-    response = db.client.table("models") \
+    # Fetch model data
+    model = db.client.table("models") \
         .select("id, full_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links") \
         .eq("id", model_id) \
         .single() \
         .execute()
         
-    if not response.data:
+    if not model.data:
         raise HTTPException(status_code=404, detail="Profile not found")
-        
-    return response.data
+
+    user_data = model.data
+
+    # Fetch posts count
+    posts_count = db.client.table("posts").select("id", count="exact").eq("model_id", model_id).execute()
+    user_data['posts_count'] = posts_count.count if posts_count.count else 0
+    
+    # Fetch latest posts (limit 9 for grid)
+    posts = db.client.table("posts").select("id, media_url, media_type, likes_count").eq("model_id", model_id).order("created_at", desc=True).limit(9).execute()
+    user_data['posts'] = posts.data if posts.data else []
+
+    return user_data

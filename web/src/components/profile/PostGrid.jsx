@@ -11,18 +11,22 @@ export function PostGrid({ posts }) {
                     to={`/post/${post.id}`}
                     className="relative aspect-square overflow-hidden bg-gray-900 group block"
                 >
-                    <img
-                        src={post.image}
-                        alt="Post"
-                        className="w-full h-full object-cover"
-                    />
+                    {post.media_type === 'video' ? (
+                        <video src={post.media_url} className="w-full h-full object-cover" />
+                    ) : (
+                        <img
+                            src={post.media_url}
+                            alt="Post"
+                            className="w-full h-full object-cover"
+                        />
+                    )}
                     {/* Overlay on Hover */}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white font-bold">
                         <span className="flex items-center gap-1">
-                            <Heart size={16} fill="white" /> {post.likes}
+                            <Heart size={16} fill="white" /> {post.likes_count || 0}
                         </span>
                         <span className="flex items-center gap-1">
-                            <MessageCircle size={16} fill="white" /> {post.comments}
+                            <MessageCircle size={16} fill="white" /> {post.comments_count || 0}
                         </span>
                     </div>
                 </Link>
