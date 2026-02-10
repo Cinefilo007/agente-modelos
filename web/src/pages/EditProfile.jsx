@@ -102,11 +102,9 @@ function EditProfile() {
             const { data } = await api.put('/profile/me', {
                 bio_short: formData.bio_short,
                 social_links: formData.social_links,
-                // cover_url and avatar_url would be updated via separate upload handlers usually, 
-                // but if we support URL input, we pass them. For now, assuming they are just read/kept.
-                // If we want to support text updates for them:
-                // cover_url: formData.cover_url,
-                // avatar_url: formData.avatar_url
+                artistic_name: formData.artistic_name,
+                avatar_url: formData.avatar_url,
+                cover_url: formData.cover_url
             });
             console.log("Profile updated:", data);
             navigate(`/profile/${formData.username || user.username}`);
