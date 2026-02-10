@@ -86,4 +86,16 @@ async def get_feed(user: TelegramUser = Depends(get_current_user)):
         .order("created_at", desc=True) \
         .limit(50) \
         .execute()
+@router.get("/post/{post_id}")
+async def get_post_detail(post_id: str):
+    """Get a single post by ID."""
+    response = db.client.table("posts") \
+        .select("*, models(username, full_name, avatar_url, is_verified)") \
+        .eq("id", post_id) \
+        .single() \
+        .execute()
+    
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Post not found")
+        
     return response.data

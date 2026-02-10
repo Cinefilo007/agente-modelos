@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Heart, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const StoryViewer = ({ stories, initialStoryIndex = 0, onClose }) => {
+const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
     const [currentIndex, setCurrentIndex] = useState(initialStoryIndex);
     const [progress, setProgress] = useState(0);
     const videoRef = useRef(null);
     const STORY_DURATION = 5000; // 5 seconds for images
 
-    const currentStory = stories[currentIndex];
+    const currentStory = stories[currentIndex] || stories[0];
+
+    // Helper for avatar (Female Silhouette fallback)
+    const avatarUrl = user?.avatar_url || user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix';
 
     // Auto-advance logic
     useEffect(() => {
+        if (!currentStory) return;
+
         let animationFrame;
         let startTime;
 
@@ -70,6 +75,8 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose }) => {
         handleNext();
     };
 
+    if (!currentStory) return null;
+
     return (
         <div className="fixed inset-0 z-[60] bg-black flex items-center justify-center">
             {/* Close Button */}
@@ -108,7 +115,7 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose }) => {
                         src={currentStory.media_url}
                         className="w-full h-full object-contain"
                         autoPlay
-                        muted={false} // Maybe start muted or ask user? usually stories sound on
+                        muted={false}
                         playsInline
                         onTimeUpdate={handleVideoTimeUpdate}
                         onEnded={handleVideoEnded}
@@ -124,16 +131,18 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose }) => {
                 {/* User Info Overlay */}
                 <div className="absolute top-8 left-4 z-30 flex items-center gap-2">
                     <img
-                        src={currentStory.user_avatar || 'https://via.placeholder.com/40'}
-                        alt={currentStory.username}
+                        src={avatarUrl}
+                        alt={user?.username || 'User'}
                         className="w-8 h-8 rounded-full border border-white/50 object-cover"
                     />
-                    <span className="text-white font-semibold text-sm drop-shadow-md">
-                        {currentStory.username || 'User'}
-                    </span>
-                    <span className="text-white/60 text-xs shadow-black">
-                        {new Date(currentStory.created_at).getHours()}h
-                    </span>
+                    <div className="flex flex-col">
+                        <span className="text-white font-semibold text-sm drop-shadow-md">
+                            {user?.username || 'User'}
+                        </span>
+                        <span className="text-white/60 text-xs shadow-black">
+                            {new Date(currentStory.created_at).getHours()}h
+                        </span>
+                    </div>
                 </div>
 
                 {/* Footer / Reply */}
@@ -143,7 +152,8 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose }) => {
                             type="text"
                             placeholder="Enviar mensaje..."
                             className="flex-1 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-white placeholder-white/50 text-sm focus:outline-none backdrop-blur-md"
-                            onClick={(e) => e.stopPropagation()} // Prevent nav
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ zIndex: 60 }}
                         />
                         <button className="text-white hover:text-pink-500 transition-colors z-50">
                             <Heart size={28} />

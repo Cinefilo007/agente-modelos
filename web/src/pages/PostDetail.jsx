@@ -13,12 +13,36 @@ export default function PostDetail() {
     const [isLiked, setIsLiked] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        const foundPost = POSTS.find(p => p.id === parseInt(id)) || POSTS[0];
-        setPost(foundPost);
+        const fetchPost = async () => {
+            try {
+                const { data } = await api.get(`/content/post/${id}`);
+                setPost(data);
+            } catch (err) {
+                console.error("Error fetching post:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPost();
     }, [id]);
 
-    if (!post) return <div className="text-white text-center mt-20">Cargando...</div>;
+    if (loading) return (
+        <div className="h-full flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+    );
+
+    if (!post) return <div className="text-white text-center mt-20">Publicación no encontrada</div>;
+
+    // Helper to format date
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
+    const user = post.models || {}; // Joined model data
 
     const toggleFullscreen = (e) => {
         e?.stopPropagation();
@@ -62,13 +86,22 @@ export default function PostDetail() {
             <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth pb-[80px]"> {/* Padding needed for fixed input */}
 
                 {/* Media Container */}
-                <div className="w-full aspect-[4/5] bg-black/5 relative group mb-4">
-                    <img
-                        src={post.image}
-                        onClick={() => setIsFullscreen(true)}
-                        className="w-full h-full object-contain cursor-pointer"
-                        alt="Post Content"
-                    />
+                <div className="w-full aspect-[4/5] bg-black/5 relative group mb-4 flex items-center justify-center bg-black">
+                    {post.media_type === 'video' ? (
+                        <video
+                            src={post.media_url}
+                            controls
+                            className="w-full h-full object-contain"
+                            poster={post.thumbnail_url}
+                        />
+                    ) : (
+                        <img
+                            src={post.media_url}
+                            onClick={() => setIsFullscreen(true)}
+                            className="w-full h-full object-contain cursor-pointer"
+                            alt="Post Content"
+                        />
+                    )}
                     <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                         <div className="bg-black/60 backdrop-blur-md p-1.5 rounded-lg">
                             <Maximize2 size={16} className="text-white/80" />
@@ -79,18 +112,18 @@ export default function PostDetail() {
                 {/* Post Info */}
                 <div className="px-4 pb-4">
                     <div className="flex items-center gap-3 mb-3">
-                        <Avatar src={post.user.avatar} size="md" isOnline={post.user.isOnline} />
+                        <Avatar src={user.avatar_url} size="md" isOnline={false} />
                         <div className="flex-1">
-                            <h3 className="text-[var(--text-primary)] font-bold text-base">{post.user.name}</h3>
-                            <p className="text-[var(--text-secondary)] text-xs">{post.timestamp}</p>
+                            <h3 className="text-[var(--text-primary)] font-bold text-base">{user.full_name || user.username}</h3>
+                            <p className="text-[var(--text-secondary)] text-xs">{formatDate(post.created_at)}</p>
                         </div>
                         <button className="px-4 py-1 rounded-full bg-[var(--card-bg)] border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:opacity-80 transition-colors">
-                            Seguir
+                            Ver Perfil
                         </button>
                     </div>
 
                     <p className="text-[var(--text-primary)] opacity-90 text-sm leading-relaxed mb-4 font-light">
-                        {post.description}
+                        {post.caption}
                     </p>
 
                     {/* Stats Bar */}

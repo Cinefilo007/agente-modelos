@@ -88,11 +88,19 @@ function Profile() {
         }
     }, [username, currentUser, isMe]);
 
-    if (loading) return (
-        <div className="flex h-screen items-center justify-center">
-            <Loader className="animate-spin text-purple-500" size={40} />
+    // Loading state is handled by smooth transition of opacity
+    // if (loading) return ... (removed)
+
+    if (error) return (
+        <div className="p-10 text-center text-red-400">
+            {error || "Perfil no encontrado"}
         </div>
     );
+
+    // If still loading and no user data, show nothing or minimal skeleton
+    if (!profileUser && loading) return null;
+
+    if (!profileUser) return null;
 
     if (error || !profileUser) return (
         <div className="p-10 text-center text-red-400">
@@ -133,7 +141,7 @@ function Profile() {
     ) : null;
 
     return (
-        <div className="pb-20">
+        <div className={`pb-20 transition-opacity duration-700 ease-in-out ${loading ? 'opacity-0' : 'opacity-100'}`}>
             {/* Profile Header */}
             <ProfileHeader
                 user={profileUser}
@@ -180,6 +188,7 @@ function Profile() {
                     stories={stories}
                     initialStoryIndex={selectedStory}
                     onClose={() => setSelectedStory(null)}
+                    user={profileUser}
                 />
             )}
         </div>
