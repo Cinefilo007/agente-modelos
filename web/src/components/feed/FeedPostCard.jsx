@@ -80,6 +80,8 @@ export function FeedPostCard({ post }) {
                                 muted={isMuted} // Controlled by state
                                 playsInline
                                 poster={post.thumbnail_url}
+                                controlsList="nodownload"
+                                onContextMenu={(e) => e.preventDefault()}
                             />
                             {/* Sound Toggle */}
                             <button
@@ -105,9 +107,10 @@ export function FeedPostCard({ post }) {
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsLiked(!isLiked)}
-                            className={`transition-all hover:scale-110 ${isLiked ? 'text-pink-500' : 'text-foreground hover:text-pink-400'}`}
+                            className={`transition-all hover:scale-110 flex items-center gap-1 ${isLiked ? 'text-pink-500' : 'text-foreground hover:text-pink-400'}`}
                         >
                             <Heart size={26} className={isLiked ? 'fill-pink-500' : ''} />
+                            <span className="text-sm font-bold ml-1">{post.likes.toLocaleString()}</span>
                         </button>
                         <Link to={`/post/${post.id}`} className="text-foreground hover:text-blue-400 transition-colors hover:scale-110 flex items-center gap-1 group">
                             <MessageCircle size={26} />
@@ -118,7 +121,7 @@ export function FeedPostCard({ post }) {
                     {/* Media Type Badge removed */}
                 </div>
 
-                <div className="font-bold text-sm text-foreground mb-2">{post.likes.toLocaleString()} Me gusta</div>
+                {/* Likes text removed */}
 
                 <div className="text-sm text-muted-foreground mb-3">
                     <span className="font-bold text-foreground mr-2">{post.user.artistic_name || post.user.name}</span>

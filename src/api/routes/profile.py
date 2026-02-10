@@ -124,3 +124,16 @@ async def get_public_profile(identifier: str):
     user_data['posts'] = posts.data if posts.data else []
 
     return user_data
+
+@router.get("/models/explore")
+async def get_models_for_explore():
+    """Get list of models for the explore page."""
+    try:
+        response = db.client.table("models") \
+            .select("id, artistic_name, username, avatar_url, is_online") \
+            .eq("status", "active") \
+            .execute()
+        return response.data if response.data else []
+    except Exception as e:
+        print(f"Error fetching models: {e}")
+        return []

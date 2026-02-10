@@ -188,6 +188,8 @@ export default function PostDetail() {
                             autoPlay
                             className="w-full h-full object-contain"
                             poster={post.thumbnail_url}
+                            controlsList="nodownload"
+                            onContextMenu={(e) => e.preventDefault()}
                         />
                     ) : (
                         <img

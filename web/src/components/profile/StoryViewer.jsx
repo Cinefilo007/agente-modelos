@@ -116,18 +116,20 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
                     <video
                         ref={videoRef}
                         src={currentStory.media_url}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-cover"
                         autoPlay
                         muted={false}
                         playsInline
                         onTimeUpdate={handleVideoTimeUpdate}
                         onEnded={handleVideoEnded}
+                        controlsList="nodownload"
+                        onContextMenu={(e) => e.preventDefault()}
                     />
                 ) : (
                     <img
                         src={currentStory.media_url}
                         alt="Story"
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-cover transform scale-125"
                     />
                 )}
 

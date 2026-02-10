@@ -121,7 +121,8 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                 new_client = {
                     "telegram_id": telegram_id,
                     "username": username,
-                    "avatar_url": photo_url
+                    "avatar_url": photo_url,
+                    "terms_accepted": False
                 }
                 try:
                     res = db.client.table("clients").insert(new_client).execute()

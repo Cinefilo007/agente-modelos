@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, MapPin } from 'lucide-react';
 import { ModelGrid } from '../components/explore/ModelGrid';
-import { CURRENT_USER } from '../data/dummy'; // We'll reuse user as a model template
 import { useTheme } from '../context/ThemeContext';
+import api from '../api/axios';
 
 function Explore() {
     const { themeColor } = useTheme();
+    const [models, setModels] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Dummy data generator for grid
-    const models = Array(10).fill(CURRENT_USER).map((u, i) => ({
-        ...u,
-        id: `model_${i}`,
-        name: i % 2 === 0 ? 'Valentina Rose' : 'Sofia Star',
-        isOnline: i % 3 !== 0 // Some offline
-    }));
+    useEffect(() => {
+        const fetchModels = async () => {
+            try {
+                const { data } = await api.get('/profile/models/explore');
+                setModels(data || []);
+            } catch (err) {
+                console.error("Error fetching models:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchModels();
+    }, []);
 
     return (
         <div className="pb-24 pt- safe-top">

@@ -7,7 +7,7 @@ import StoryViewer from '../components/profile/StoryViewer';
 import ClientProfile from './ClientProfile'; // Import Client View
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Heart, X, ShieldCheck, Loader } from 'lucide-react';
+import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 function Profile() {
@@ -111,24 +111,67 @@ function Profile() {
     const isOwnProfile = currentUser?.id === profileUser.id || isMe;
     const isModel = profileUser.role === 'model' || true; // profileUser table is 'models', so always true if found via generic route?
 
-    const handleTelegramChat = () => {
-        // Use provided username or fallback
-        if (profileUser.username) {
-            window.open(`https://t.me/${profileUser.username.replace('@', '')}`, '_blank');
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [loadingFollow, setLoadingFollow] = useState(false);
+
+    useEffect(() => {
+        if (!isMe && profileUser?.id) {
+            const checkFollow = async () => {
+                try {
+                    const { data } = await api.get(`/interactions/followers/status/${profileUser.id}`);
+                    setIsFollowing(data.is_following);
+                } catch (err) {
+                    console.error("Error checking follow status:", err);
+                }
+            };
+            checkFollow();
+        }
+    }, [isMe, profileUser?.id]);
+
+    const handleSubscribe = async () => {
+        if (!profileUser?.id) return;
+        setLoadingFollow(true);
+        try {
+            if (isFollowing) {
+                await api.delete(`/interactions/followers/${profileUser.id}`);
+                setIsFollowing(false);
+            } else {
+                await api.post('/interactions/followers', { model_id: profileUser.id });
+                setIsFollowing(true);
+            }
+        } catch (err) {
+            console.error("Error toggling follow:", err);
+        } finally {
+            setLoadingFollow(false);
         }
     };
 
-    const handleOpenStory = (index) => {
-        setSelectedStory(index);
+    const handleTelegramChat = () => {
+        if (profileUser.username) {
+            const username = profileUser.username.startsWith('@')
+                ? profileUser.username.substring(1)
+                : profileUser.username;
+            window.open(`https://t.me/${username}`, '_blank');
+        }
     };
 
     const CustomActions = !isOwnProfile ? (
         <>
             <button
-                className="w-full h-full bg-card/60 border border-white/10 text-foreground hover:bg-white/10 gap-2 rounded-2xl py-4 shadow-lg backdrop-blur-md transition-all hover:border-white/20 flex items-center justify-center group"
+                onClick={handleSubscribe}
+                disabled={loadingFollow}
+                className={`w-full h-full gap-2 rounded-2xl py-4 shadow-lg backdrop-blur-md transition-all flex items-center justify-center group border ${isFollowing
+                        ? 'bg-white/10 border-white/20 text-white'
+                        : 'bg-primary text-primary-foreground border-transparent'
+                    }`}
+                style={!isFollowing ? { backgroundColor: themeColor } : {}}
             >
-                <ShieldCheck size={18} className="text-pink-500 group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">Contratar</span>
+                {loadingFollow ? <Loader size={18} className="animate-spin" /> : (
+                    <>
+                        {isFollowing ? <UserCheck size={18} /> : <UserPlus size={18} />}
+                        <span className="text-sm font-semibold">{isFollowing ? 'Siguiendo' : 'Seguir'}</span>
+                    </>
+                )}
             </button>
             <button
                 onClick={handleTelegramChat}
