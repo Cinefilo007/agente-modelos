@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Play } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useTheme } from '../../context/ThemeContext';
 import { Link } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { timeAgo } from '../../utils/date';
 export function FeedPostCard({ post }) {
     const { themeColor } = useTheme();
     const [isLiked, setIsLiked] = useState(false);
+    const videoRef = useRef(null);
 
     // Dummy comment count generator if not present
     const commentCount = post.comments || Math.floor(Math.random() * 50) + 5;
@@ -31,15 +32,44 @@ export function FeedPostCard({ post }) {
             </div>
 
             {/* Image (Click to Detail) */}
+            {/* Media (Click to Detail) */}
             <Link to={`/post/${post.id}`}>
-                <div className="relative aspect-[4/5] bg-muted/20 group cursor-pointer">
-                    <img
-                        src={post.image}
-                        alt="Post Content"
-                        className="w-full h-full object-cover"
-                    />
-                    {/* Video Indicator (Fake) if it were a video */}
-                    {/* <div className="absolute top-2 right-2 bg-black/50 p-1 rounded-md"><Play size={12} className="text-white" /></div> */}
+                <div
+                    className="relative aspect-[4/5] bg-black group cursor-pointer"
+                    onMouseEnter={() => {
+                        if (post.media_type === 'video' && videoRef.current) {
+                            videoRef.current.play().catch(e => console.log("Auto-play prevented", e));
+                        }
+                    }}
+                    onMouseLeave={() => {
+                        if (post.media_type === 'video' && videoRef.current) {
+                            videoRef.current.pause();
+                            videoRef.current.currentTime = 0; // Optional: reset to start
+                        }
+                    }}
+                >
+                    {post.media_type === 'video' ? (
+                        <>
+                            <video
+                                ref={videoRef}
+                                src={post.media_url}
+                                className="w-full h-full object-cover"
+                                loop
+                                muted
+                                playsInline
+                                poster={post.thumbnail_url} // Optional if available
+                            />
+                            <div className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full backdrop-blur-md">
+                                <Play size={12} className="text-white fill-white" />
+                            </div>
+                        </>
+                    ) : (
+                        <img
+                            src={post.media_url || post.image}
+                            alt="Post Content"
+                            className="w-full h-full object-cover"
+                        />
+                    )}
                 </div>
             </Link>
 

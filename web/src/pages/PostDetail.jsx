@@ -4,6 +4,7 @@ import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Vol
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/ui/Avatar';
+import { timeAgo } from '../utils/date';
 import api from '../api/axios';
 
 export default function PostDetail() {

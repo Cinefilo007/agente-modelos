@@ -47,7 +47,10 @@ function Feed() {
                 // Map API data to FeedPostCard format
                 const mappedPosts = data.map(p => ({
                     id: p.id,
-                    image: p.media_url,
+                    media_url: p.media_url, // Direct mapping for video support
+                    image: p.media_url, // For legacy/fallback
+                    media_type: p.media_type, // Crucial for video detection
+                    thumbnail_url: p.thumbnail_url, // Optional if available in future
                     description: p.caption,
                     likes: p.likes_count || 0,
                     comments: p.comments_count || 0,
@@ -55,8 +58,9 @@ function Feed() {
                     timestamp: p.created_at, // Pass raw ISO string for timeAgo
                     created_at: p.created_at,
                     user: {
-                        id: p.models?.username || p.model_id, // Use username for link if possible
+                        id: p.models?.id || p.model_id, // Use ID for link
                         name: p.models?.full_name || p.models?.username || 'Unknown',
+                        artistic_name: p.models?.artistic_name, // Support artistic name
                         avatar: p.models?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.models?.username || 'User'}`,
                         isOnline: false
                     }
