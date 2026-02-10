@@ -14,7 +14,7 @@ export function ReviewList({ modelId }) {
             try {
                 // Fetch reviews from our new endpoint
                 const { data } = await api.get(`/interactions/reviews/${modelId}`);
-                setReviews(data || []);
+                setReviews(Array.isArray(data) ? data : []);
             } catch (err) {
                 console.error("Error fetching reviews:", err);
                 setError("No se pudieron cargar las opiniones.");

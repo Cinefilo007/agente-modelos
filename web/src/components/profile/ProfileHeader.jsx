@@ -46,7 +46,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
     // Dynamic Social Links
     const socialLinks = [];
-    if (user?.social_links) {
+    if (user && user.social_links && typeof user.social_links === 'object') {
         const links = user.social_links;
         if (links.instagram) socialLinks.push({ id: 'ig', icon: <Instagram size={18} />, label: 'Instagram', url: links.instagram, color: '#E1306C' });
         if (links.twitter) socialLinks.push({ id: 'tw', icon: <Twitter size={18} />, label: 'Twitter', url: links.twitter, color: '#1DA1F2' });
@@ -56,7 +56,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
         // Add checking for other generic links if stored as generic keys or array
     }
 
-    // console.log("ProfileHeader rendering for user:", user); // Debug log
+    /* console.log("ProfileHeader user:", user); */ // Uncomment for debugging if needed
 
     if (!user) return null; // Safety check
 

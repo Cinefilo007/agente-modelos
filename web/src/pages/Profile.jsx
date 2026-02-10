@@ -71,8 +71,8 @@ function Profile() {
                     api.get(`/content/stories/${targetId}`)
                 ]);
 
-                setPosts(postsRes.data);
-                setStories(storiesRes.data);
+                setPosts(Array.isArray(postsRes.data) ? postsRes.data : []);
+                setStories(Array.isArray(storiesRes.data) ? storiesRes.data : []);
 
             } catch (err) {
                 console.error("Error fetching profile:", err);
