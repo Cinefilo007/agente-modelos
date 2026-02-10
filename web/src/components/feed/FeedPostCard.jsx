@@ -1,4 +1,3 @@
-```javascript
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Play } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
@@ -48,7 +47,7 @@ export function FeedPostCard({ post }) {
             {/* Header */}
             <div className="flex items-center justify-between p-4 bg-secondary/30">
                 <div className="flex items-center gap-3">
-                    <Link to={`/ profile / ${ post.user.id } `} className="relative">
+                    <Link to={`/profile/${post.user.id}`} className="relative">
                         <Avatar src={post.user.avatar} size="sm" isOnline={post.user.isOnline} />
                     </Link>
                     <div>
@@ -62,7 +61,7 @@ export function FeedPostCard({ post }) {
             </div>
 
             {/* Media (Click to Detail, Auto-play on View) */}
-            <Link to={`/ post / ${ post.id } `}>
+            <Link to={`/post/${post.id}`}>
                 <div
                     className="relative aspect-[4/5] bg-black group cursor-pointer"
                 >
@@ -101,11 +100,11 @@ export function FeedPostCard({ post }) {
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsLiked(!isLiked)}
-                            className={`transition - all hover: scale - 110 ${ isLiked ? 'text-pink-500' : 'text-foreground hover:text-pink-400' } `}
+                            className={`transition-all hover:scale-110 ${isLiked ? 'text-pink-500' : 'text-foreground hover:text-pink-400'}`}
                         >
                             <Heart size={26} className={isLiked ? 'fill-pink-500' : ''} />
                         </button>
-                        <Link to={`/ post / ${ post.id } `} className="text-foreground hover:text-blue-400 transition-colors hover:scale-110 flex items-center gap-1 group">
+                        <Link to={`/post/${post.id}`} className="text-foreground hover:text-blue-400 transition-colors hover:scale-110 flex items-center gap-1 group">
                             <MessageCircle size={26} />
                             <span className="text-xs font-bold text-muted-foreground group-hover:text-blue-400 transition-colors">{commentCount}</span>
                         </Link>
@@ -127,7 +126,7 @@ export function FeedPostCard({ post }) {
                 </div>
 
                 {/* Comment Input Preview */}
-                <Link to={`/ post / ${ post.id } `}>
+                <Link to={`/post/${post.id}`}>
                     <div className="flex gap-2 items-center mt-2 border-t border-border pt-3 opacity-80 hover:opacity-100 transition-opacity cursor-text">
                         <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150" className="w-6 h-6 rounded-full" alt="User" />
                         <div className="flex-1 text-muted-foreground text-sm">Agrega un comentario...</div>
@@ -137,4 +136,3 @@ export function FeedPostCard({ post }) {
         </div>
     );
 }
-```
