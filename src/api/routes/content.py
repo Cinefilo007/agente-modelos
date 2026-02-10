@@ -66,18 +66,6 @@ async def create_story(
     response = db.client.table("stories").insert(data).execute()
     return response.data[0]
 
-@router.get("/stories/{user_id}")
-async def get_user_stories(user_id: str):
-    """Get active stories for a user."""
-    now = datetime.utcnow().isoformat()
-    response = db.client.table("stories") \
-        .select("*") \
-        .eq("model_id", user_id) \
-        .gt("expires_at", now) \
-        .order("created_at", desc=False) \
-        .execute()
-    return response.data
-
 @router.get("/stories/feed")
 async def get_stories_feed(user: TelegramUser = Depends(get_current_user)):
     """Get active stories for the feed (global for now)."""
@@ -96,6 +84,18 @@ async def get_stories_feed(user: TelegramUser = Depends(get_current_user)):
         print(f"Error fetching stories feed: {e}")
         # Return empty list instead of crashing, or re-raise with more info
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/stories/{user_id}")
+async def get_user_stories(user_id: str):
+    """Get active stories for a user."""
+    now = datetime.utcnow().isoformat()
+    response = db.client.table("stories") \
+        .select("*") \
+        .eq("model_id", user_id) \
+        .gt("expires_at", now) \
+        .order("created_at", desc=False) \
+        .execute()
+    return response.data
 
 @router.get("/feed")
 async def get_feed(
