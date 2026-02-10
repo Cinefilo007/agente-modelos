@@ -1,4 +1,7 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { Star, MapPin } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 export function ModelGrid({ models }) {
     const { themeColor } = useTheme();

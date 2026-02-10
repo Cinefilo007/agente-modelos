@@ -6,6 +6,7 @@ import { timeAgo } from '../../utils/date';
 import { useAuth } from '../../context/AuthContext';
 
 export function StoryCarousel({ stories, onOpenStory }) {
+    const { themeColor } = useTheme();
     const { user } = useAuth();
     const isModel = user?.role === 'model';
 
