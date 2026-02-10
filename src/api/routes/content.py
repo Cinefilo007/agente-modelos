@@ -1,32 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from typing import List, Optional
-from pydantic import BaseModel
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
+from src.services.storage import upload_file
 from datetime import datetime, timedelta
 
 router = APIRouter()
 
-class PostCreate(BaseModel):
-    media_url: str
-    media_type: str = "image"
-    caption: Optional[str] = None
-
-class StoryCreate(BaseModel):
-    media_url: str
-    media_type: str = "image"
-
 @router.post("/posts")
-async def create_post(post: PostCreate, user: TelegramUser = Depends(get_current_user)):
-    """Create a new post."""
+async def create_post(
+    file: UploadFile = File(...),
+    caption: Optional[str] = Form(None),
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Create a new post with file upload."""
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Only models can create posts")
 
+    # Upload file to 'posts' bucket
+    public_url = await upload_file(file, bucket_name="posts")
+    
+    # Determine media type (basic check)
+    media_type = "video" if file.content_type.startswith("video") else "image"
+
     data = {
-        "model_id": user.user_id, # user.user_id comes from JWT
-        "media_url": post.media_url,
-        "media_type": post.media_type,
-        "caption": post.caption
+        "model_id": user.user_id,
+        "media_url": public_url,
+        "media_type": media_type,
+        "caption": caption
     }
     
     response = db.client.table("posts").insert(data).execute()
@@ -39,17 +40,26 @@ async def get_user_posts(user_id: str):
     return response.data
 
 @router.post("/stories")
-async def create_story(story: StoryCreate, user: TelegramUser = Depends(get_current_user)):
+async def create_story(
+    file: UploadFile = File(...),
+    user: TelegramUser = Depends(get_current_user)
+):
     """Create a new story (expires in 24h)."""
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Only models can create stories")
+
+    # Upload file to 'stories' bucket
+    public_url = await upload_file(file, bucket_name="stories")
+    
+    # Determine media type
+    media_type = "video" if file.content_type.startswith("video") else "image"
 
     expires_at = (datetime.utcnow() + timedelta(hours=24)).isoformat()
     
     data = {
         "model_id": user.user_id,
-        "media_url": story.media_url,
-        "media_type": story.media_type,
+        "media_url": public_url,
+        "media_type": media_type,
         "expires_at": expires_at
     }
     
@@ -70,9 +80,7 @@ async def get_user_stories(user_id: str):
 
 @router.get("/feed")
 async def get_feed(user: TelegramUser = Depends(get_current_user)):
-    """Get global feed (for now) or personalized."""
-    # Logic to fetch posts from models followed by user? 
-    # For now, just return latest posts from all models
+    """Get global feed."""
     response = db.client.table("posts") \
         .select("*, models(username, full_name, avatar_url)") \
         .order("created_at", desc=True) \

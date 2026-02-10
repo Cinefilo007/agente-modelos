@@ -1,23 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, X, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, ImagePlus, X, Loader } from 'lucide-react';
 import api from '../api/axios';
 
 function CreatePost() {
     const navigate = useNavigate();
-    const [mediaUrl, setMediaUrl] = useState('');
+    const [file, setFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
-    const [inputType, setInputType] = useState('url'); // 'file' or 'url'
+    const fileInputRef = useRef(null);
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+            setPreviewUrl(URL.createObjectURL(selectedFile));
+        }
+    };
 
     const handleSubmit = async () => {
-        if (!mediaUrl) return;
+        if (!file) return;
         setLoading(true);
+
+        const formData = new FormData();
+        formData.append('file', file);
+        if (description) {
+            formData.append('caption', description);
+        }
+
         try {
-            await api.post('/content/posts', {
-                media_url: mediaUrl,
-                media_type: mediaUrl.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image', // Basic detection
-                caption: description
+            await api.post('/content/posts', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
             navigate('/');
         } catch (error) {
@@ -38,49 +54,58 @@ function CreatePost() {
                 </div>
                 <button
                     onClick={handleSubmit}
-                    disabled={!mediaUrl || loading}
-                    className="text-white font-bold text-sm px-4 py-1.5 rounded-full bg-blue-600 disabled:opacity-50 disabled:bg-gray-700 transition-all font-sans"
+                    disabled={!file || loading}
+                    className="text-white font-bold text-sm px-4 py-1.5 rounded-full bg-blue-600 disabled:opacity-50 disabled:bg-gray-700 transition-all font-sans flex items-center gap-2"
                 >
-                    {loading ? 'Publicando...' : 'Compartir'}
+                    {loading && <Loader size={12} className="animate-spin" />}
+                    {loading ? 'Subiendo...' : 'Compartir'}
                 </button>
             </div>
 
             <div className="flex-1 flex flex-col p-4 overflow-hidden max-w-md mx-auto w-full">
                 {/* Image Area */}
                 <div className="flex-1 flex flex-col justify-center min-h-0 mb-4">
-                    <div className="w-full h-full max-h-[50vh] rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center relative overflow-hidden bg-black/50">
-                        {mediaUrl ? (
+                    <div
+                        className={`w-full h-full max-h-[50vh] rounded-xl border-2 border-dashed ${file ? 'border-transparent' : 'border-white/20'} flex flex-col items-center justify-center relative overflow-hidden bg-black/50 transition-all`}
+                        onClick={() => !file && fileInputRef.current?.click()}
+                    >
+                        {file ? (
                             <>
-                                {mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
-                                    <video src={mediaUrl} className="w-full h-full object-contain" controls />
+                                {file.type.startsWith('video/') ? (
+                                    <video src={previewUrl} className="w-full h-full object-contain" controls />
                                 ) : (
-                                    <img src={mediaUrl} alt="Preview" className="w-full h-full object-contain" />
+                                    <img src={previewUrl} alt="Preview" className="w-full h-full object-contain" />
                                 )}
                                 <div className="absolute top-2 right-2">
-                                    <button onClick={() => setMediaUrl('')} className="bg-black/50 p-1 rounded-full text-white"><X size={16} /></button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setFile(null);
+                                            setPreviewUrl(null);
+                                            if (fileInputRef.current) fileInputRef.current.value = "";
+                                        }}
+                                        className="bg-black/50 p-1 rounded-full text-white hover:bg-black/70"
+                                    >
+                                        <X size={16} />
+                                    </button>
                                 </div>
                             </>
                         ) : (
-                            <div className="flex flex-col items-center text-center p-6 w-full">
-                                <div className="mb-4">
-                                    <ImagePlus size={48} className="text-gray-500 mb-2" />
+                            <div className="flex flex-col items-center text-center p-6 w-full cursor-pointer hover:bg-white/5 transition-colors h-full justify-center">
+                                <div className="mb-4 p-4 bg-white/10 rounded-full">
+                                    <ImagePlus size={32} className="text-white/70" />
                                 </div>
-                                <p className="text-sm text-gray-400 mb-4">Ingresa la URL de tu imagen o video</p>
-                                <div className="flex items-center gap-2 w-full max-w-xs bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                                    <LinkIcon size={16} className="text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="https://..."
-                                        className="bg-transparent border-none text-sm w-full focus:outline-none text-white placeholder-gray-600"
-                                        value={mediaUrl}
-                                        onChange={(e) => setMediaUrl(e.target.value)}
-                                    />
-                                </div>
-                                <p className="text-[10px] text-gray-600 mt-2">
-                                    Tip: Usa enlaces directos de imágenes (Unsplash, Imgur, etc.)
-                                </p>
+                                <p className="text-sm text-gray-300 font-medium">Toca para seleccionar foto o video</p>
+                                <p className="text-xs text-gray-500 mt-2">Soporta JPG, PNG, MP4</p>
                             </div>
                         )}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            className="hidden"
+                            accept="image/*,video/*"
+                        />
                     </div>
                 </div>
 
