@@ -23,6 +23,7 @@ CREATE TABLE models (
     total_likes INTEGER DEFAULT 0, -- [NEW]
     reputation_score DECIMAL(3, 2) DEFAULT 0.00, -- [NEW] (Calculado basado en reviews)
     social_links JSONB DEFAULT '{}', -- [NEW] (instagram, twitter, facebook, etc.)
+    birth_date DATE, -- [NEW] For age verification
     config_prices JSONB DEFAULT '{}',
     config_persona TEXT,
     config_physique TEXT,
@@ -41,6 +42,7 @@ CREATE TABLE clients (
     country_code TEXT,
     avatar_url TEXT, -- [NEW]
     wallet_balance DECIMAL(10, 2) DEFAULT 0.00, -- [NEW]
+    birth_date DATE, -- [NEW] For age verification
     global_reputation INTEGER DEFAULT 100,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );

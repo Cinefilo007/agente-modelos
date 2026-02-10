@@ -7,3 +7,4 @@ uvicorn[standard]
 pydantic
 python-multipart
 requests>=2.31.0
+python-jose[cryptography]
