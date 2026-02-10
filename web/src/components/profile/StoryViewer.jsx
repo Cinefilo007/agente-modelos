@@ -132,12 +132,12 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
                 <div className="absolute top-8 left-4 z-30 flex items-center gap-2">
                     <img
                         src={avatarUrl}
-                        alt={user?.username || 'User'}
+                        alt={username}
                         className="w-8 h-8 rounded-full border border-white/50 object-cover"
                     />
                     <div className="flex flex-col">
                         <span className="text-white font-semibold text-sm drop-shadow-md">
-                            {user?.username || 'User'}
+                            {username}
                         </span>
                         <span className="text-white/60 text-xs shadow-black">
                             {new Date(currentStory.created_at).getHours()}h

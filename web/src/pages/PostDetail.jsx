@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Volume2, VolumeX, Send, X, Maximize2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/ui/Avatar';
-import { POSTS } from '../data/dummy';
 import api from '../api/axios';
 
 export default function PostDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { themeColor } = useTheme();
+    const { user: currentUser } = useAuth();
+
     const [post, setPost] = useState(null);
     const [isLiked, setIsLiked] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -48,7 +50,7 @@ export default function PostDetail() {
         const oldLikes = post.likes_count;
 
         setIsLiked(!isLiked);
-        setPost(prev => ({ ...prev, likes_count: prev.likes_count + (isLiked ? -1 : 1) })); // Adjust count
+        setPost(prev => ({ ...prev, likes_count: (prev.likes_count || 0) + (isLiked ? -1 : 1) }));
 
         try {
             await api.post('/interactions/interact', {
@@ -68,16 +70,12 @@ export default function PostDetail() {
         if (!newComment.trim()) return;
         setSubmitting(true);
         try {
-            const { data: comment } = await api.post('/interactions/interact', {
+            await api.post('/interactions/interact', {
                 target_id: id,
                 target_type: 'post',
                 action: 'comment',
                 content: newComment
             });
-
-            // Add to list (need format compatible with fetched comments)
-            // We need current user info to append optimistically or just re-fetch
-            // For now re-fetch simple or optimistic append if we had user context
 
             // Re-fetch comments to match format
             const { data: commentsData } = await api.get(`/interactions/comments/${id}`);
@@ -91,6 +89,17 @@ export default function PostDetail() {
             console.error("Error commenting:", err);
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm("¿Estás seguro de que quieres eliminar esta publicación?")) return;
+        try {
+            await api.delete(`/content/posts/${id}`);
+            navigate(-1);
+        } catch (err) {
+            console.error("Error deleting post:", err);
+            alert("Error al eliminar la publicación");
         }
     };
 
@@ -108,6 +117,7 @@ export default function PostDetail() {
     };
 
     const user = post.models || {}; // Joined model data
+    const isOwner = currentUser?.user_id === post.model_id;
 
     const toggleFullscreen = (e) => {
         e?.stopPropagation();
@@ -126,7 +136,7 @@ export default function PostDetail() {
                         <X size={28} />
                     </button>
                     <img
-                        src={post.image}
+                        src={post.media_url}
                         className="w-full h-full object-contain pointer-events-none select-none"
                         alt="Full Content"
                     />
@@ -142,9 +152,27 @@ export default function PostDetail() {
                     <ArrowLeft size={24} />
                 </button>
                 <span className="text-[var(--text-primary)] font-bold text-xs tracking-[0.2em] uppercase opacity-80">Publicación</span>
-                <button className="p-2 rounded-full bg-transparent text-white opacity-0 pointer-events-none">
-                    <MoreVertical size={24} />
-                </button>
+
+                {/* Options Menu (Only if owner) */}
+                <div className="w-10 flex justify-end">
+                    {isOwner && (
+                        <div className="relative group">
+                            <button className="p-2 rounded-full bg-[var(--card-bg)]/50 backdrop-blur-md text-white hover:bg-white/20 transition-colors">
+                                <MoreVertical size={24} />
+                            </button>
+                            {/* Dropdown */}
+                            <div className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                <button
+                                    onClick={handleDelete}
+                                    className="w-full text-left px-4 py-3 text-red-500 hover:bg-white/5 text-sm font-medium flex items-center gap-2"
+                                >
+                                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                    Eliminar Publicación
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Scrollable Content */}
@@ -177,12 +205,19 @@ export default function PostDetail() {
                 {/* Post Info */}
                 <div className="px-4 pb-4">
                     <div className="flex items-center gap-3 mb-3">
-                        <Avatar src={user.avatar_url} size="md" isOnline={false} />
+                        <Avatar
+                            src={user.avatar_url || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username || 'User'}`}
+                            size="md"
+                            isOnline={false}
+                        />
                         <div className="flex-1">
                             <h3 className="text-[var(--text-primary)] font-bold text-base">{user.full_name || user.username}</h3>
                             <p className="text-[var(--text-secondary)] text-xs">{formatDate(post.created_at)}</p>
                         </div>
-                        <button className="px-4 py-1 rounded-full bg-[var(--card-bg)] border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:opacity-80 transition-colors">
+                        <button
+                            onClick={() => navigate(`/profile/${user.username}`)}
+                            className="px-4 py-1 rounded-full bg-[var(--card-bg)] border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:opacity-80 transition-colors"
+                        >
                             Ver Perfil
                         </button>
                     </div>
@@ -245,7 +280,7 @@ export default function PostDetail() {
                     <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[1px]">
                         <div className="w-full h-full rounded-full bg-[var(--card-bg)] overflow-hidden">
                             {/* Ideally fetch current user avatar from context */}
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Me" className="w-full h-full object-cover opacity-80" />
+                            <img src={currentUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username || 'Me'}`} className="w-full h-full object-cover opacity-80" />
                         </div>
                     </div>
                     <div className="flex-1 relative">

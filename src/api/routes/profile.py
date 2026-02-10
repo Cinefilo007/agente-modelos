@@ -65,20 +65,39 @@ async def update_my_profile(update_data: ProfileUpdate, user: TelegramUser = Dep
     response = db.client.table("models").update(updates).eq("telegram_id", user.id).execute()
     return response.data[0]
 
-@router.get("/{model_id}")
-async def get_public_profile(model_id: str):
-    """Get a public profile by ID."""
-    # Fetch model data
-    model = db.client.table("models") \
-        .select("id, full_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links") \
-        .eq("id", model_id) \
-        .single() \
-        .execute()
+import uuid
+
+@router.get("/{identifier}")
+async def get_public_profile(identifier: str):
+    """Get a public profile by ID or Username."""
+    
+    # Determine if identifier is UUID
+    is_uuid = False
+    try:
+        uuid.UUID(identifier)
+        is_uuid = True
+    except ValueError:
+        is_uuid = False
+        
+    query = db.client.table("models") \
+        .select("id, full_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links")
+        
+    if is_uuid:
+        query = query.eq("id", identifier)
+    else:
+        # Assume it's a username (add @ if missing? frontend usually sends clean, but let's be safe)
+        # DB usernames might store with or without @. Let's assume without or exact match.
+        # If DB has '@username', and we send 'username', we might need to adjust.
+        # Let's try exact match first.
+        query = query.eq("username", identifier)
+        
+    model = query.single().execute()
         
     if not model.data:
         raise HTTPException(status_code=404, detail="Profile not found")
 
     user_data = model.data
+    model_id = user_data['id'] # Ensure we have the ID for subsequent queries
 
     # Fetch posts count
     posts_count = db.client.table("posts").select("id", count="exact").eq("model_id", model_id).execute()
