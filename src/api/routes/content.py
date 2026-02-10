@@ -73,7 +73,7 @@ async def get_stories_feed(user: TelegramUser = Depends(get_current_user)):
         now = datetime.utcnow().isoformat()
         # Fetch active stories with model info
         response = db.client.table("stories") \
-            .select("*, models(username, full_name, avatar_url)") \
+            .select("*, models(username, full_name, artistic_name, avatar_url)") \
             .gt("expires_at", now) \
             .order("created_at", desc=False) \
             .limit(100) \
@@ -104,7 +104,7 @@ async def get_feed(
     user: TelegramUser = Depends(get_current_user)
 ):
     """Get global feed with filters."""
-    query = db.client.table("posts").select("*, models(username, full_name, avatar_url, is_verified)")
+    query = db.client.table("posts").select("*, models(username, full_name, artistic_name, avatar_url, is_verified)")
     
     # Filter by following (if strictly requested)
     if filter_type == "following":
@@ -132,7 +132,7 @@ async def get_feed(
 async def get_post_detail(post_id: str):
     """Get a single post by ID."""
     response = db.client.table("posts") \
-        .select("*, models(username, full_name, avatar_url, is_verified)") \
+        .select("*, models(username, full_name, artistic_name, avatar_url, is_verified)") \
         .eq("id", post_id) \
         .single() \
         .execute()

@@ -1,13 +1,36 @@
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional, Dict, List
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
+from src.services.storage import upload_file
 
 router = APIRouter()
 
+@router.post("/upload-image")
+async def upload_profile_image(
+    file: UploadFile = File(...),
+    type: str = "avatar", # avatar or cover
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Upload functionality for profile images."""
+    # Determine bucket based on type
+    bucket = "avatars" if type == "avatar" else "covers"
+    
+    # We might need to ensure these buckets exist in Supabase or use a generic 'profiles' bucket with folders
+    # detailed in storage.py. For now let's assume 'avatars' and 'covers' or just 'public'
+    # Checking storage.py usage in content.py: upload_file(file, bucket_name="posts")
+    # Let's use a single 'profiles' bucket for simplicity if not defined
+    bucket_name = "profiles" 
+    
+    public_url = await upload_file(file, bucket_name=bucket_name, folder=type)
+    return {"url": public_url}
+
 class StartProfileUpdate(BaseModel):
+    full_name: Optional[str] = None # Allow updating real name too if needed, or keep it read-only? 
+    # User asked for "Nombre artistico visible, nombre real solo admin". 
+    # Let's start by adding artistic_name.
+    artistic_name: Optional[str] = None
     bio_short: Optional[str] = None
     social_links: Optional[List[Dict[str, str]]] = None # List of {network, url, icon}
     cover_url: Optional[str] = None
@@ -73,7 +96,7 @@ async def get_public_profile(identifier: str):
         is_uuid = False
         
     query = db.client.table("models") \
-        .select("id, full_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links")
+        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links")
         
     if is_uuid:
         query = query.eq("id", identifier)

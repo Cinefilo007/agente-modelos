@@ -12,7 +12,7 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
 
     // Extract user info from current story (API returns 'models' object) or fallback to user prop
     const storyUser = currentStory?.models || user || {};
-    const username = storyUser.username || storyUser.name || 'Unknown';
+    const username = storyUser.artistic_name || storyUser.name || storyUser.username || 'Unknown';
     const avatarUrl = storyUser.avatar_url || storyUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
 
     // Auto-advance logic

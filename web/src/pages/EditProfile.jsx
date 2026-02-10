@@ -46,6 +46,7 @@ function EditProfile() {
 
                 setFormData({
                     full_name: data.full_name || '',
+                    artistic_name: data.artistic_name || '',
                     username: data.username || '',
                     bio_short: data.bio_short || '',
                     social_links: links,
@@ -60,6 +61,39 @@ function EditProfile() {
         };
         fetchProfile();
     }, []);
+
+    const handleImageUpload = async (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Optimistic preview
+        const previewUrl = URL.createObjectURL(file);
+        setFormData(prev => ({
+            ...prev,
+            [type === 'avatar' ? 'avatar_url' : 'cover_url']: previewUrl
+        }));
+
+        // Upload to serve
+        const uploadData = new FormData();
+        uploadData.append('file', file);
+        uploadData.append('type', type);
+
+        try {
+            const { data } = await api.post('/profile/upload-image', uploadData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            // Update with real URL
+            setFormData(prev => ({
+                ...prev,
+                [type === 'avatar' ? 'avatar_url' : 'cover_url']: data.url
+            }));
+        } catch (error) {
+            console.error(`Error uploading ${type}:`, error);
+            alert(`Error al subir imagen de ${type}`);
+            // Revert preview? or just keep it and let user try again? 
+            // For now, let's just alert.
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -102,26 +136,43 @@ function EditProfile() {
 
             <form onSubmit={handleSubmit} className="p-4 space-y-6">
 
-                {/* Images (Visual only for now, upload logic separate ideally) */}
+                {/* Images */}
                 <div className="space-y-4">
-                    <div className="relative h-32 w-full rounded-xl overflow-hidden bg-[var(--card-bg)] border-2 border-dashed border-[var(--glass-border)] flex items-center justify-center group cursor-pointer">
+                    <div className="relative h-32 w-full rounded-xl overflow-hidden bg-[var(--card-bg)] border-2 border-dashed border-[var(--glass-border)] flex items-center justify-center group cursor-pointer" onClick={() => document.getElementById('coverInput').click()}>
                         {formData.cover_url ? (
                             <img src={formData.cover_url} className="w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity" />
                         ) : null}
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="flex flex-col items-center text-[var(--text-secondary)]">
                                 <ImageIcon size={24} />
-                                <span className="text-xs mt-1 font-bold">Cambiar Portada (Próximamente)</span>
+                                <span className="text-xs mt-1 font-bold">Cambiar Portada</span>
                             </div>
                         </div>
+                        <input
+                            id="coverInput"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleImageUpload(e, 'cover')}
+                        />
                     </div>
 
                     <div className="flex justify-center -mt-12 relative z-10">
-                        <div className="relative">
-                            <Avatar src={formData.avatar_url} size="xl" className="ring-4 ring-[var(--card-bg)] transition-shadow" />
-                            <button type="button" className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full text-white border-2 border-[var(--card-bg)]">
+                        <div className="relative group cursor-pointer" onClick={() => document.getElementById('avatarInput').click()}>
+                            <Avatar src={formData.avatar_url} size="xl" className="ring-4 ring-[var(--card-bg)] transition-shadow group-hover:opacity-80" />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-full">
+                                <Camera size={20} className="text-white" />
+                            </div>
+                            <button type="button" className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full text-white border-2 border-[var(--card-bg)] z-20">
                                 <Camera size={16} />
                             </button>
+                            <input
+                                id="avatarInput"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleImageUpload(e, 'avatar')}
+                            />
                         </div>
                     </div>
                 </div>
@@ -130,12 +181,12 @@ function EditProfile() {
                 <div className="space-y-4">
                     {/* Read Only Fields (Identity) */}
                     <div>
-                        <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase">Nombre Completo (No editable)</label>
+                        <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase">Nombre Completo (Solo Admin)</label>
                         <input
                             type="text"
                             value={formData.full_name}
                             disabled
-                            className="w-full bg-[var(--card-bg)]/50 border border-[var(--glass-border)] rounded-xl p-3 text-[var(--text-secondary)] cursor-not-allowed"
+                            className="w-full bg-[var(--card-bg)]/50 border border-[var(--glass-border)] rounded-xl p-3 text-[var(--text-secondary)] cursor-not-allowed opacity-70"
                         />
                     </div>
 
@@ -145,11 +196,22 @@ function EditProfile() {
                             type="text"
                             value={formData.username}
                             disabled
-                            className="w-full bg-[var(--card-bg)]/50 border border-[var(--glass-border)] rounded-xl p-3 text-[var(--text-secondary)] cursor-not-allowed"
+                            className="w-full bg-[var(--card-bg)]/50 border border-[var(--glass-border)] rounded-xl p-3 text-[var(--text-secondary)] cursor-not-allowed opacity-70"
                         />
                     </div>
 
                     {/* Editable Fields */}
+                    <div>
+                        <label className="block text-xs font-bold text-pink-500 mb-1 uppercase">Nombre Artístico (Público)</label>
+                        <input
+                            type="text"
+                            value={formData.artistic_name}
+                            onChange={(e) => setFormData({ ...formData, artistic_name: e.target.value })}
+                            className="w-full bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-xl p-3 text-[var(--text-primary)] focus:border-pink-500/50 focus:outline-none transition-colors font-bold"
+                            placeholder="Tu nombre visible para los fans"
+                        />
+                    </div>
+
                     <div>
                         <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase">Biografía</label>
                         <textarea

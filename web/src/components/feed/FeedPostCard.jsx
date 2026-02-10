@@ -21,7 +21,7 @@ export function FeedPostCard({ post }) {
                         <Avatar src={post.user.avatar} size="sm" isOnline={post.user.isOnline} />
                     </Link>
                     <div>
-                        <h3 className="font-bold text-sm text-foreground leading-none">{post.user.name}</h3>
+                        <h3 className="font-bold text-sm text-foreground leading-none">{post.user.artistic_name || post.user.name}</h3>
                         <span className="text-xs text-muted-foreground">{timeAgo(post.created_at || post.timestamp)}</span>
                     </div>
                 </div>
@@ -70,7 +70,7 @@ export function FeedPostCard({ post }) {
                 <div className="font-bold text-sm text-foreground mb-2">{post.likes.toLocaleString()} Me gusta</div>
 
                 <div className="text-sm text-muted-foreground mb-3">
-                    <span className="font-bold text-foreground mr-2">{post.user.name}</span>
+                    <span className="font-bold text-foreground mr-2">{post.user.artistic_name || post.user.name}</span>
                     {post.description}
                 </div>
 

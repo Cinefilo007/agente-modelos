@@ -142,7 +142,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     {/* User Info & Metrics Consolidated */}
                     <div className="text-center w-full mb-4 flex flex-col items-center">
                         <h1 className="text-2xl font-bold text-foreground drop-shadow-lg flex justify-center items-center gap-2 mb-0.5">
-                            {user.full_name || user.name}
+                            {user.artistic_name || user.full_name || user.name}
                             {user.isVerified && <span className="bg-blue-500 text-white rounded-full p-0.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>}
                         </h1>
                         <p className="text-muted-foreground text-sm font-medium tracking-wide mb-4">@{user.username}</p>
