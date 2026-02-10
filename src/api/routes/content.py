@@ -81,20 +81,21 @@ async def get_user_stories(user_id: str):
 @router.get("/stories/feed")
 async def get_stories_feed(user: TelegramUser = Depends(get_current_user)):
     """Get active stories for the feed (global for now)."""
-    now = datetime.utcnow().isoformat()
-    # Fetch active stories with model info
-    response = db.client.table("stories") \
-        .select("*, models(username, full_name, avatar_url)") \
-        .gt("expires_at", now) \
-        .order("created_at", desc=False) \
-        .limit(100) \
-        .execute()
-    
-    # Group by user in frontend or backend? Frontend expects list of users with stories.
-    # But current frontend structure might expect flat list or grouped. 
-    # Let's return flat list and let frontend group, OR group here.
-    # Easier to return flat list of stories enriched with user data.
-    return response.data
+    try:
+        now = datetime.utcnow().isoformat()
+        # Fetch active stories with model info
+        response = db.client.table("stories") \
+            .select("*, models(username, full_name, avatar_url)") \
+            .gt("expires_at", now) \
+            .order("created_at", desc=False) \
+            .limit(100) \
+            .execute()
+        
+        return response.data
+    except Exception as e:
+        print(f"Error fetching stories feed: {e}")
+        # Return empty list instead of crashing, or re-raise with more info
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/feed")
 async def get_feed(

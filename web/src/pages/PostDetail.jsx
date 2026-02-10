@@ -212,7 +212,7 @@ export default function PostDetail() {
                         />
                         <div className="flex-1">
                             <h3 className="text-[var(--text-primary)] font-bold text-base">{user.full_name || user.username}</h3>
-                            <p className="text-[var(--text-secondary)] text-xs">{formatDate(post.created_at)}</p>
+                            <p className="text-[var(--text-secondary)] text-xs">{timeAgo(post.created_at)}</p>
                         </div>
                         <button
                             onClick={() => navigate(`/profile/${user.username}`)}
@@ -259,7 +259,7 @@ export default function PostDetail() {
                                         <div className="flex items-baseline justify-between">
                                             <span className="text-sm font-semibold text-[var(--text-primary)]">{comment.username}</span>
                                             <span className="text-[10px] text-[var(--text-secondary)]">
-                                                {formatDate(comment.created_at)}
+                                                {timeAgo(comment.created_at)}
                                             </span>
                                         </div>
                                         <p className="text-sm text-[var(--text-primary)] opacity-70 font-light">

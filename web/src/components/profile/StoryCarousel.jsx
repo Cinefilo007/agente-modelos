@@ -2,6 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 import { useTheme } from '../../context/ThemeContext';
 import { Link } from 'react-router-dom';
+import { timeAgo } from '../../utils/date';
 
 export function StoryCarousel({ stories, onOpenStory }) {
     const { themeColor } = useTheme();
@@ -40,7 +41,7 @@ export function StoryCarousel({ stories, onOpenStory }) {
                             </div>
                         </div>
                         <span className="text-xs text-gray-300 truncate w-full text-center">
-                            {new Date(story.created_at).getHours()}h
+                            {timeAgo(story.created_at)}
                         </span>
                     </button>
                 ))}

@@ -52,7 +52,8 @@ function Feed() {
                     likes: p.likes_count || 0,
                     comments: p.comments_count || 0,
                     type: p.media_type,
-                    timestamp: new Date(p.created_at).toLocaleDateString(),
+                    timestamp: p.created_at, // Pass raw ISO string for timeAgo
+                    created_at: p.created_at,
                     user: {
                         id: p.models?.username || p.model_id, // Use username for link if possible
                         name: p.models?.full_name || p.models?.username || 'Unknown',
