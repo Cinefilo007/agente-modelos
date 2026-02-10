@@ -27,11 +27,6 @@ function Profile() {
     // If username is "me" or undefined with no params, it's current user
     const isMe = !username || username === 'me' || (currentUser && username === currentUser.username);
 
-    // 2. Client Redirection Logic
-    if (isMe && currentUser?.role === 'client') {
-        return <ClientProfile />;
-    }
-
     useEffect(() => {
         const fetchProfileData = async () => {
             setLoading(true);
@@ -41,30 +36,16 @@ function Profile() {
                 if (isMe) {
                     userIdToFetch = 'me';
                 } else if (!userIdToFetch) {
-                    // If no username and not me (shouldn't happen with correct routing), fail
                     setError("User not found");
                     setLoading(false);
                     return;
                 }
 
-                // Fetch Profile
-                // If it's 'me', API handles it. If it's a username/ID (we need to support ID in API or username)
-                // For now assuming API supports ID or "me"
-                // To support username, we might need a lookup endpoint or 'me' logic in frontend to pass ID
-
-                // HACK: for now, if it's 'me', use 'me'. If it's another user, we assume 'username' is actually an ID for simplicity 
-                // OR we need an endpoint /api/profile/by-username/{username}
-                // Let's assume the route /api/profile/{id} works for ID. 
-                // If the URL is /profile/@username, we need to resolve it. 
-                // For this iteration, let's assume we pass ID in URL or 'me'. 
-                // If we really want username, we'd need a backend change.
-
                 const endpoint = isMe ? '/profile/me' : `/profile/${userIdToFetch}`;
                 const { data: userData } = await api.get(endpoint);
                 setProfileUser(userData);
 
-                // Fetch Content (Posts & Stories)
-                const targetId = userData.id; // Always use the fetched user's ID
+                const targetId = userData.id;
 
                 const [postsRes, storiesRes] = await Promise.all([
                     api.get(`/content/posts/${targetId}`),
@@ -77,7 +58,6 @@ function Profile() {
             } catch (err) {
                 console.error("Error fetching profile:", err);
                 setError("No se pudo cargar el perfil.");
-                // If 404 and isMe, maybe redirect to setup?
             } finally {
                 setLoading(false);
             }
@@ -88,29 +68,7 @@ function Profile() {
         }
     }, [username, currentUser, isMe]);
 
-    // Loading state is handled by smooth transition of opacity
-    // if (loading) return ... (removed)
-
-    if (error) return (
-        <div className="p-10 text-center text-red-400">
-            {error || "Perfil no encontrado"}
-        </div>
-    );
-
-    // If still loading and no user data, show nothing or minimal skeleton
-    if (!profileUser && loading) return null;
-
-    if (!profileUser) return null;
-
-    if (error || !profileUser) return (
-        <div className="p-10 text-center text-red-400">
-            {error || "Perfil no encontrado"}
-        </div>
-    );
-
-    const isOwnProfile = currentUser?.id === profileUser.id || isMe;
-    const isModel = profileUser.role === 'model' || true; // profileUser table is 'models', so always true if found via generic route?
-
+    // --- HOOKS MUST BE BEFORE ANY RETURNS ---
     const [isFollowing, setIsFollowing] = useState(false);
     const [loadingFollow, setLoadingFollow] = useState(false);
 
@@ -147,7 +105,7 @@ function Profile() {
     };
 
     const handleTelegramChat = () => {
-        if (profileUser.username) {
+        if (profileUser?.username) {
             const username = profileUser.username.startsWith('@')
                 ? profileUser.username.substring(1)
                 : profileUser.username;
@@ -155,14 +113,16 @@ function Profile() {
         }
     };
 
-    const CustomActions = !isOwnProfile ? (
+    const isOwnProfile = profileUser ? (currentUser?.id === profileUser.id || isMe) : false;
+
+    const CustomActions = (!isOwnProfile && profileUser) ? (
         <>
             <button
                 onClick={handleSubscribe}
                 disabled={loadingFollow}
                 className={`w-full h-full gap-2 rounded-2xl py-4 shadow-lg backdrop-blur-md transition-all flex items-center justify-center group border ${isFollowing
-                        ? 'bg-white/10 border-white/20 text-white'
-                        : 'bg-primary text-primary-foreground border-transparent'
+                    ? 'bg-white/10 border-white/20 text-white'
+                    : 'bg-primary text-primary-foreground border-transparent'
                     }`}
                 style={!isFollowing ? { backgroundColor: themeColor } : {}}
             >
@@ -182,6 +142,24 @@ function Profile() {
             </button>
         </>
     ) : null;
+
+    // --- FINAL CONDITIONAL RENDERS AFTER ALL HOOKS ---
+
+    // 2. Client Redirection Logic for "me"
+    if (isMe && currentUser?.role === 'client') {
+        return <ClientProfile />;
+    }
+
+    if (error) return (
+        <div className="p-10 text-center text-red-400">
+            {error || "Perfil no encontrado"}
+        </div>
+    );
+
+    // If still loading and no user data, show nothing or minimal skeleton
+    if (!profileUser && loading) return null;
+
+    if (!profileUser) return null;
 
     return (
         <div className={`pb-20 transition-opacity duration-700 ease-in-out ${loading ? 'opacity-0' : 'opacity-100'}`}>
