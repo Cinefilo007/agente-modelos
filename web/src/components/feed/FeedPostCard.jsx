@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+```javascript
+import React, { useState, useRef, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Play } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useTheme } from '../../context/ThemeContext';
@@ -9,16 +10,45 @@ export function FeedPostCard({ post }) {
     const { themeColor } = useTheme();
     const [isLiked, setIsLiked] = useState(false);
     const videoRef = useRef(null);
+    const containerRef = useRef(null);
 
     // Dummy comment count generator if not present
     const commentCount = post.comments || Math.floor(Math.random() * 50) + 5;
 
+    useEffect(() => {
+        if (post.media_type !== 'video' || !videoRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        videoRef.current.play().catch(e => {
+                            // Autoplay might be prevented by browser settings or battery saver
+                            console.log("Autoplay prevented:", e.message);
+                        });
+                    } else {
+                        videoRef.current.pause();
+                    }
+                });
+            },
+            { threshold: 0.6 } // Play when 60% visible
+        );
+
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
+        }
+
+        return () => {
+            if (containerRef.current) observer.unobserve(containerRef.current);
+        };
+    }, [post.media_type]);
+
     return (
-        <div className="mb-6 glass-panel rounded-3xl overflow-hidden border border-border shadow-2xl mx-1 transform transition-all hover:scale-[1.01]">
+        <div ref={containerRef} className="mb-6 glass-panel rounded-3xl overflow-hidden border border-border shadow-2xl mx-1 transform transition-all hover:scale-[1.01]">
             {/* Header */}
             <div className="flex items-center justify-between p-4 bg-secondary/30">
                 <div className="flex items-center gap-3">
-                    <Link to={`/profile/${post.user.id}`} className="relative">
+                    <Link to={`/ profile / ${ post.user.id } `} className="relative">
                         <Avatar src={post.user.avatar} size="sm" isOnline={post.user.isOnline} />
                     </Link>
                     <div>
@@ -31,22 +61,10 @@ export function FeedPostCard({ post }) {
                 </button>
             </div>
 
-            {/* Image (Click to Detail) */}
-            {/* Media (Click to Detail) */}
-            <Link to={`/post/${post.id}`}>
+            {/* Media (Click to Detail, Auto-play on View) */}
+            <Link to={`/ post / ${ post.id } `}>
                 <div
                     className="relative aspect-[4/5] bg-black group cursor-pointer"
-                    onMouseEnter={() => {
-                        if (post.media_type === 'video' && videoRef.current) {
-                            videoRef.current.play().catch(e => console.log("Auto-play prevented", e));
-                        }
-                    }}
-                    onMouseLeave={() => {
-                        if (post.media_type === 'video' && videoRef.current) {
-                            videoRef.current.pause();
-                            videoRef.current.currentTime = 0; // Optional: reset to start
-                        }
-                    }}
                 >
                     {post.media_type === 'video' ? (
                         <>
@@ -55,11 +73,15 @@ export function FeedPostCard({ post }) {
                                 src={post.media_url}
                                 className="w-full h-full object-cover"
                                 loop
-                                muted
-                                playsInline
+                                muted // Required for autoplay
+                                playsInline // Required for iOS
                                 poster={post.thumbnail_url} // Optional if available
                             />
-                            <div className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full backdrop-blur-md">
+                            {/* Unmute/Sound Indicator could go here, but for now just visual play icon overlay? 
+                                Actually, usually no icon if playing. If paused (not in view), maybe icon?
+                                Let's keep icon small in corner or rely on motion. 
+                            */}
+                            <div className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full backdrop-blur-md opacity-80">
                                 <Play size={12} className="text-white fill-white" />
                             </div>
                         </>
@@ -79,11 +101,11 @@ export function FeedPostCard({ post }) {
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsLiked(!isLiked)}
-                            className={`transition-all hover:scale-110 ${isLiked ? 'text-pink-500' : 'text-foreground hover:text-pink-400'}`}
+                            className={`transition - all hover: scale - 110 ${ isLiked ? 'text-pink-500' : 'text-foreground hover:text-pink-400' } `}
                         >
                             <Heart size={26} className={isLiked ? 'fill-pink-500' : ''} />
                         </button>
-                        <Link to={`/post/${post.id}`} className="text-foreground hover:text-blue-400 transition-colors hover:scale-110 flex items-center gap-1 group">
+                        <Link to={`/ post / ${ post.id } `} className="text-foreground hover:text-blue-400 transition-colors hover:scale-110 flex items-center gap-1 group">
                             <MessageCircle size={26} />
                             <span className="text-xs font-bold text-muted-foreground group-hover:text-blue-400 transition-colors">{commentCount}</span>
                         </Link>
@@ -105,7 +127,7 @@ export function FeedPostCard({ post }) {
                 </div>
 
                 {/* Comment Input Preview */}
-                <Link to={`/post/${post.id}`}>
+                <Link to={`/ post / ${ post.id } `}>
                     <div className="flex gap-2 items-center mt-2 border-t border-border pt-3 opacity-80 hover:opacity-100 transition-opacity cursor-text">
                         <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150" className="w-6 h-6 rounded-full" alt="User" />
                         <div className="flex-1 text-muted-foreground text-sm">Agrega un comentario...</div>
@@ -115,3 +137,4 @@ export function FeedPostCard({ post }) {
         </div>
     );
 }
+```

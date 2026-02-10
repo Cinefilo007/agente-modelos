@@ -32,12 +32,21 @@ export function StoryCarousel({ stories, onOpenStory }) {
                                     : `linear-gradient(45deg, #F59E0B, ${themeColor})`
                             }}
                         >
-                            <div className="p-[2px] bg-black rounded-full">
-                                <img
-                                    src={story.media_url}
-                                    alt="Story"
-                                    className="w-[64px] h-[64px] rounded-full object-cover transition-transform group-hover:scale-95"
-                                />
+                            <div className="p-[2px] bg-black rounded-full w-[64px] h-[64px] overflow-hidden">
+                                {story.media_type === 'video' || story.media_url.endsWith('.mp4') ? (
+                                    <video
+                                        src={story.media_url + "#t=0.1"} // Try to get 1st frame
+                                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        muted
+                                        playsInline
+                                    />
+                                ) : (
+                                    <img
+                                        src={story.media_url}
+                                        alt="Story"
+                                        className="w-full h-full object-cover transition-transform group-hover:scale-95"
+                                    />
+                                )}
                             </div>
                         </div>
                         <span className="text-xs text-gray-300 truncate w-full text-center">
