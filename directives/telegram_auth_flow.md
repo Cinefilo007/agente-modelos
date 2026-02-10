@@ -23,12 +23,21 @@ El sistema de autenticación debe ser **exclusivamente** a través de Telegram. 
     -   El frontend redirige al usuario al **Feed** (`/`).
 
 ### B. Acceso Interno (Telegram Mini App)
-1.  **Usuario abre la Mini App desde Telegram**:
+1.  **Usuario abre la Mini App desde Telegram** (usando Menú Button o Link Directo `t.me/bot/app`).
 2.  **Extracción de Datos**: La Mini App lee `window.Telegram.WebApp.initData`.
 3.  **Autenticación Silenciosa**:
-    -   El frontend envía `initData` al backend.
-    -   El backend valida y loguea al usuario automáticamente.
+    -   El frontend detecta `initData`.
+    -   Envía `POST /api/auth/webapp` con `{ init_data: "..." }`.
+    -   El backend valida la firma HMAC-SHA256 usando el `BOT_TOKEN`.
+    -   Devuelve el token de sesión.
 4.  **Acceso Directo**: El usuario entra directamente al **Feed** sin pasar por la Landing Page.
+
+### C. Configuración Requerida
+-   Para "Auto-Login", el usuario DEBE abrir la app como Mini App.
+-   Configurar en `@BotFather`:
+    -   `/newapp` o `/mybots` -> Bot Settings -> Menu Button -> Configure Menu Button -> Link to Web App (URL del dominio).
+    -   O usar Attachments Menu.
+
 
 ## 3. Reglas de Validación (Backend)
 

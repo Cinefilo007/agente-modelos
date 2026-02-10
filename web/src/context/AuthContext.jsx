@@ -11,6 +11,28 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const initAuth = async () => {
+            // 1. Check if we are inside Telegram WebApp
+            if (window.Telegram?.WebApp?.initData) {
+                try {
+                    console.log("Telegram WebApp detected, attempting auto-login...");
+                    const response = await api.post('/auth/webapp', {
+                        init_data: window.Telegram.WebApp.initData
+                    });
+                    const { access_token, user } = response.data;
+
+                    localStorage.setItem('token', access_token);
+                    localStorage.setItem('user', JSON.stringify(user));
+                    setUser(user);
+                    window.Telegram.WebApp.expand(); // Expand view
+                    setLoading(false);
+                    return; // Skip local storage check if WebApp login successful
+                } catch (error) {
+                    console.error("WebApp Auto-Login failed:", error);
+                    // Fallback to normal flow
+                }
+            }
+
+            // 2. Normal Local Storage Check
             const token = localStorage.getItem('token');
             const storedUser = localStorage.getItem('user');
 
