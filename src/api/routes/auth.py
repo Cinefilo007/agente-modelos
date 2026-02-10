@@ -1,8 +1,57 @@
+from fastapi import APIRouter, HTTPException, Depends, Body
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
+import os
+import hashlib
+import hmac
+import time
+from datetime import date, datetime
+from jose import jwt
+from src.services.database import db
 from urllib.parse import parse_qsl
 import json
 
+router = APIRouter()
+
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
+JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-me")
+ALGORITHM = "HS256"
+
+class TelegramAuthData(BaseModel):
+    id: int
+    first_name: str
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
+    auth_date: int
+    hash: str
+
 class WebAppAuthData(BaseModel):
     init_data: str
+
+def verify_telegram_data(data: TelegramAuthData):
+    if not BOT_TOKEN:
+        raise HTTPException(status_code=500, detail="Server configuration error: TELEGRAM_TOKEN not set")
+    
+    # Check auth_date for freshness (e.g. within 24 hours)
+    # Note: Telegram auth_date is unix timestamp
+    if time.time() - data.auth_date > 86400:
+        raise HTTPException(status_code=400, detail="Auth data is outdated")
+
+    data_check_arr = []
+    # Convert pydantic model to dict, exclude hash, sort keys
+    d = data.dict(exclude={'hash'}, exclude_none=True)
+    for k in sorted(d.keys()):
+        data_check_arr.append(f"{k}={d[k]}")
+    
+    data_check_string = "\n".join(data_check_arr)
+    
+    secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
+    hash_check = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+    
+    if hash_check != data.hash:
+        raise HTTPException(status_code=403, detail="Invalid Telegram hash")
+    return True
 
 def verify_webapp_data(init_data: str):
     if not BOT_TOKEN:
@@ -21,6 +70,7 @@ def verify_webapp_data(init_data: str):
     # Sort keys alphabetically
     data_check_arr = []
     for k in sorted(parsed_data.keys()):
+        # Values in init_data are strings, no encoding needed for value part in check string
         data_check_arr.append(f"{k}={parsed_data[k]}")
     
     data_check_string = "\n".join(data_check_arr)
@@ -39,21 +89,10 @@ def verify_webapp_data(init_data: str):
     
     return json.loads(parsed_data["user"])
 
-@router.post("/webapp")
-async def webapp_login(data: WebAppAuthData):
+async def process_login(telegram_id: int, username: str = None, photo_url: str = None):
     """
-    Verifica los datos de initData de la WebApp y hace login automático.
+    Shared logic for login processing
     """
-    user_info = verify_webapp_data(data.init_data)
-    
-    telegram_id = user_info['id']
-    username = user_info.get('username')
-    first_name = user_info.get('first_name')
-    photo_url = user_info.get('photo_url') # Note: user object in initData might not have photo_url depending on Telegram version
-    
-    # Reuse the same logic as widget login (find/create user, check age/blacklist)
-    # ... (Refactor common logic or copy-paste for now to keep it safe)
-    
     user_role = "unknown"
     user_data = None
     
@@ -76,7 +115,7 @@ async def webapp_login(data: WebAppAuthData):
                 user_role = "client"
                 user_data = client.data
                 if user_data.get('is_blacklisted'):
-                    raise HTTPException(status_code=403, detail="Acceso denegado.")
+                    raise HTTPException(status_code=403, detail="Acceso denegado por políticas de la comunidad.")
             else:
                 user_role = "client"
                 new_client = {
@@ -95,7 +134,7 @@ async def webapp_login(data: WebAppAuthData):
         except Exception as e:
              raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
 
-    # Age check (reuse)
+    # Age check
     birth_date_str = user_data.get('birth_date')
     if birth_date_str:
         try:
@@ -103,7 +142,7 @@ async def webapp_login(data: WebAppAuthData):
             today = date.today()
             age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
             if age < 18:
-                raise HTTPException(status_code=403, detail="Debes ser mayor de edad.")
+                raise HTTPException(status_code=403, detail="Debes ser mayor de edad para ingresar.")
         except:
             pass
 
@@ -129,3 +168,20 @@ async def webapp_login(data: WebAppAuthData):
         "user": user_data,
         "role": user_role
     }
+
+@router.post("/telegram")
+async def telegram_login(auth_data: TelegramAuthData):
+    """
+    Widget Login
+    """
+    verify_telegram_data(auth_data)
+    return await process_login(auth_data.id, auth_data.username, auth_data.photo_url)
+
+@router.post("/webapp")
+async def webapp_login(data: WebAppAuthData):
+    """
+    WebApp Auto-Login
+    """
+    user_info = verify_webapp_data(data.init_data)
+    # telegram_id is int in user_info
+    return await process_login(user_info['id'], user_info.get('username'), user_info.get('photo_url'))
