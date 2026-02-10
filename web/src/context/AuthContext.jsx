@@ -18,11 +18,12 @@ export const AuthProvider = ({ children }) => {
                     const response = await api.post('/auth/webapp', {
                         init_data: window.Telegram.WebApp.initData
                     });
-                    const { access_token, user } = response.data;
+                    const { access_token, user: userData, role } = response.data;
+                    const fullUser = { ...userData, role };
 
                     localStorage.setItem('token', access_token);
-                    localStorage.setItem('user', JSON.stringify(user));
-                    setUser(user);
+                    localStorage.setItem('user', JSON.stringify(fullUser));
+                    setUser(fullUser);
                     window.Telegram.WebApp.expand(); // Expand view
                     setLoading(false);
                     return; // Skip local storage check if WebApp login successful
@@ -54,12 +55,13 @@ export const AuthProvider = ({ children }) => {
     const loginWithTelegram = async (telegramData) => {
         try {
             const response = await api.post('/auth/telegram', telegramData);
-            const { access_token, user } = response.data;
+            const { access_token, user: userData, role } = response.data;
+            const fullUser = { ...userData, role };
 
             localStorage.setItem('token', access_token);
-            localStorage.setItem('user', JSON.stringify(user));
-            setUser(user);
-            return user;
+            localStorage.setItem('user', JSON.stringify(fullUser));
+            setUser(fullUser);
+            return fullUser;
         } catch (error) {
             console.error("Login failed:", error);
             throw error; // Re-throw to handle in UI
@@ -70,12 +72,17 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
-        // Optional: Redirect
-        window.location.href = '/';
+        window.location.href = '/landing';
+    };
+
+    const updateUser = (data) => {
+        const updatedUser = { ...user, ...data };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
     };
 
     return (
-        <AuthContext.Provider value={{ user, loginWithTelegram, logout, loading }}>
+        <AuthContext.Provider value={{ user, loginWithTelegram, logout, updateUser, loading }}>
             {!loading && children}
         </AuthContext.Provider>
     );

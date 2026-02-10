@@ -50,9 +50,16 @@ export default function Layout() {
         return () => document.removeEventListener('contextmenu', handleContextMenu);
     }, []);
 
-    const [showTerms, setShowTerms] = React.useState(
-        user?.role === 'client' && !user?.terms_accepted
-    );
+    // Use useEffect to handle terms modal visibility
+    const [showTerms, setShowTerms] = React.useState(false);
+
+    React.useEffect(() => {
+        if (user?.role === 'client' && !user?.terms_accepted) {
+            setShowTerms(true);
+        } else {
+            setShowTerms(false);
+        }
+    }, [user]);
 
     return (
         // Background is now handled by body with var(--bg-gradient) and var(--background)

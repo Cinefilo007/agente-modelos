@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { ShieldAlert, CheckCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 
 export function TermsModal({ onAccept }) {
     const { themeColor } = useTheme();
+    const { updateUser } = useAuth();
     const [accepted, setAccepted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
@@ -14,6 +16,7 @@ export function TermsModal({ onAccept }) {
         try {
             // Update on server if needed, or just locally
             await api.put('/profile/me', { terms_accepted: true });
+            updateUser({ terms_accepted: true });
             onAccept();
         } catch (err) {
             console.error("Error accepting terms:", err);

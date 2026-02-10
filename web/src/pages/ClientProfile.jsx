@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import { useTheme } from '../context/ThemeContext';
 import {
     Wallet, Star, Clock, ShieldCheck, ChevronRight,
     CreditCard, ArrowUpRight, History, Settings, LogOut, Edit3
 } from 'lucide-react';
 import { Avatar } from '../components/ui/Avatar';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ClientProfile() {
     const { themeColor } = useTheme();
-    const [balance, setBalance] = useState(145.50);
-    const [name, setName] = useState("Anon_User_99");
+    const { user, logout } = useAuth();
+    const [balance, setBalance] = useState(0.00);
+
+    if (!user) return null;
+
+    const name = user.artistic_name || user.full_name || user.username || "Usuario";
+    const avatarUrl = user.avatar_url || user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}`;
 
     // Mock Data
     const reviews = [
@@ -32,8 +38,8 @@ export default function ClientProfile() {
                 <div className="relative mb-3 group">
                     <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl transform group-hover:scale-110 transition-transform duration-500"></div>
                     <Avatar
-                        src="https://api.dicebear.com/7.x/bottts/svg?seed=Felix"
-                        alt="Client Avatar"
+                        src={avatarUrl}
+                        alt={name}
                         size="xl"
                         className="w-24 h-24 border-4 border-background relative z-10"
                     />
@@ -145,7 +151,10 @@ export default function ClientProfile() {
                     </div>
                     <ChevronRight size={16} className="text-muted-foreground" />
                 </button>
-                <button className="w-full flex items-center justify-between p-4 hover:bg-red-500/10 transition-colors text-red-400">
+                <button
+                    onClick={logout}
+                    className="w-full flex items-center justify-between p-4 hover:bg-red-500/10 transition-colors text-red-400"
+                >
                     <div className="flex items-center gap-3">
                         <LogOut size={18} />
                         <span className="text-sm font-medium">Cerrar Sesión</span>

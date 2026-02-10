@@ -35,6 +35,7 @@ class StartProfileUpdate(BaseModel):
     social_links: Optional[List[Dict[str, str]]] = None # List of {network, url, icon}
     cover_url: Optional[str] = None
     avatar_url: Optional[str] = None
+    terms_accepted: Optional[bool] = None
 
 @router.get("/me")
 async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
@@ -64,21 +65,24 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
 @router.put("/me")
 async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser = Depends(get_current_user)):
     """Update profile details."""
-    model = db.client.table("models").select("id").eq("telegram_id", user.id).single().execute()
+    table = "models" if user.role == "model" else "clients"
     
-    if not model.data:
-        raise HTTPException(status_code=404, detail="Model profile not found.")
+    # Check if exists
+    profile = db.client.table(table).select("id").eq("telegram_id", user.id).single().execute()
+    
+    if not profile.data:
+        raise HTTPException(status_code=404, detail=f"{user.role.capitalize()} profile not found.")
 
     updates = {k: v for k, v in update_data.model_dump().items() if v is not None}
     
-    if "social_links" in updates:
+    if "social_links" in updates and table == "models":
         # Convert Pydantic model to dict for JSONB
         updates["social_links"] = updates["social_links"]
     
     if not updates:
         return {"message": "No changes detected"}
 
-    response = db.client.table("models").update(updates).eq("telegram_id", user.id).execute()
+    response = db.client.table(table).update(updates).eq("telegram_id", user.id).execute()
     return response.data[0]
 
 import uuid

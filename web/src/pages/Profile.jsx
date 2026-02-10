@@ -24,10 +24,19 @@ function Profile() {
     const [error, setError] = useState(null);
 
     // 1. Determine if we are viewing "me" or another user
-    // If username is "me" or undefined with no params, it's current user
-    const isMe = !username || username === 'me' || (currentUser && username === currentUser.username);
+    const isMe = !username ||
+        username === 'me' ||
+        (currentUser && (username === currentUser.username || String(username) === String(currentUser.id)));
+
+    const isClient = currentUser?.role === 'client';
 
     useEffect(() => {
+        // Optimization: Clients viewing themselves don't need to fetch model profile data
+        if (isMe && isClient) {
+            setLoading(false);
+            return;
+        }
+
         const fetchProfileData = async () => {
             setLoading(true);
             try {
