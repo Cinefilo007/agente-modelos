@@ -185,6 +185,7 @@ export default function PostDetail() {
                         <video
                             src={post.media_url}
                             controls
+                            autoPlay
                             className="w-full h-full object-contain"
                             poster={post.thumbnail_url}
                         />
@@ -238,7 +239,7 @@ export default function PostDetail() {
                             <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{post.comments_count || 0}</span>
                         </div>
                         <div className="flex-1"></div>
-                        <Share2 size={22} className="text-[var(--text-primary)] opacity-80" />
+                        {/* Share button removed */}
                     </div>
 
                     {/* Comments List */}

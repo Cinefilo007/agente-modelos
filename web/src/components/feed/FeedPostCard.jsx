@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Play } from 'lucide-react';
+import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useTheme } from '../../context/ThemeContext';
 import { Link } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { timeAgo } from '../../utils/date';
 export function FeedPostCard({ post }) {
     const { themeColor } = useTheme();
     const [isLiked, setIsLiked] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
     const videoRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -21,8 +22,8 @@ export function FeedPostCard({ post }) {
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
+                        videoRef.current.muted = isMuted; // Apply current mute state
                         videoRef.current.play().catch(e => {
-                            // Autoplay might be prevented by browser settings or battery saver
                             console.log("Autoplay prevented:", e.message);
                         });
                     } else {
@@ -30,17 +31,23 @@ export function FeedPostCard({ post }) {
                     }
                 });
             },
-            { threshold: 0.6 } // Play when 60% visible
+            { threshold: 0.6 }
         );
 
-        if (containerRef.current) {
-            observer.observe(containerRef.current);
-        }
-
+        if (containerRef.current) observer.observe(containerRef.current);
         return () => {
             if (containerRef.current) observer.unobserve(containerRef.current);
         };
-    }, [post.media_type]);
+    }, [post.media_type, isMuted]); // Re-run if mute state changes to ensure consistency if needed, though mostly direct ref manipulation works
+
+    const toggleMute = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (videoRef.current) {
+            videoRef.current.muted = !isMuted;
+            setIsMuted(!isMuted);
+        }
+    };
 
     return (
         <div ref={containerRef} className="mb-6 glass-panel rounded-3xl overflow-hidden border border-border shadow-2xl mx-1 transform transition-all hover:scale-[1.01]">
@@ -60,11 +67,9 @@ export function FeedPostCard({ post }) {
                 </button>
             </div>
 
-            {/* Media (Click to Detail, Auto-play on View) */}
+            {/* Media */}
             <Link to={`/post/${post.id}`}>
-                <div
-                    className="relative aspect-[4/5] bg-black group cursor-pointer"
-                >
+                <div className="relative aspect-[4/5] bg-black group cursor-pointer">
                     {post.media_type === 'video' ? (
                         <>
                             <video
@@ -72,17 +77,17 @@ export function FeedPostCard({ post }) {
                                 src={post.media_url}
                                 className="w-full h-full object-cover"
                                 loop
-                                muted // Required for autoplay
-                                playsInline // Required for iOS
-                                poster={post.thumbnail_url} // Optional if available
+                                muted={isMuted} // Controlled by state
+                                playsInline
+                                poster={post.thumbnail_url}
                             />
-                            {/* Unmute/Sound Indicator could go here, but for now just visual play icon overlay? 
-                                Actually, usually no icon if playing. If paused (not in view), maybe icon?
-                                Let's keep icon small in corner or rely on motion. 
-                            */}
-                            <div className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full backdrop-blur-md opacity-80">
-                                <Play size={12} className="text-white fill-white" />
-                            </div>
+                            {/* Sound Toggle */}
+                            <button
+                                onClick={toggleMute}
+                                className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/70 transition-colors z-10"
+                            >
+                                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                            </button>
                         </>
                     ) : (
                         <img
@@ -108,14 +113,9 @@ export function FeedPostCard({ post }) {
                             <MessageCircle size={26} />
                             <span className="text-xs font-bold text-muted-foreground group-hover:text-blue-400 transition-colors">{commentCount}</span>
                         </Link>
-                        <button className="text-foreground hover:text-green-400 transition-colors hover:scale-110">
-                            <Share2 size={26} />
-                        </button>
+                        {/* Share removed */}
                     </div>
-                    {/* Tag or indicator */}
-                    <div className="px-3 py-1 bg-secondary rounded-full text-xs font-semibold text-muted-foreground border border-border">
-                        {post.type}
-                    </div>
+                    {/* Media Type Badge removed */}
                 </div>
 
                 <div className="font-bold text-sm text-foreground mb-2">{post.likes.toLocaleString()} Me gusta</div>

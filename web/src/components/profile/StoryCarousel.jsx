@@ -36,7 +36,7 @@ export function StoryCarousel({ stories, onOpenStory }) {
                                 {story.media_type === 'video' || story.media_url.endsWith('.mp4') ? (
                                     <video
                                         src={story.media_url + "#t=0.1"} // Try to get 1st frame
-                                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        className="w-full h-full object-cover transition-transform group-hover:scale-110 transform scale-125"
                                         muted
                                         playsInline
                                     />

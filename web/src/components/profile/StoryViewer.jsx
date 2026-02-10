@@ -148,23 +148,20 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
                     </div>
                 </div>
 
-                {/* Footer / Reply */}
-                <div className="absolute bottom-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent z-40">
-                    <div className="flex items-center gap-4">
-                        <input
-                            type="text"
-                            placeholder="Enviar mensaje..."
-                            className="flex-1 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-white placeholder-white/50 text-sm focus:outline-none backdrop-blur-md"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{ zIndex: 60 }}
-                        />
-                        <button className="text-white hover:text-pink-500 transition-colors z-50">
-                            <Heart size={28} />
-                        </button>
-                        <button className="text-white hover:text-blue-500 transition-colors z-50">
-                            <Send size={24} />
-                        </button>
-                    </div>
+                {/* Footer / Action */}
+                <div className="absolute bottom-0 w-full p-8 flex justify-center pb-12 z-40 bg-gradient-to-t from-black/90 to-transparent">
+                    <button
+                        onClick={() => {
+                            onClose();
+                            // Navigate logic would be here, but simpler to use an anchor/Link if possible or just window.location for now if hook not passed
+                            // Let's assume passed user object might help or parent handles.
+                            // Better: Just use a styled link if router context exists.
+                            window.location.href = `/profile/${storyUser.username || storyUser.id}`;
+                        }}
+                        className="px-6 py-2 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-white/90 text-sm font-medium hover:bg-white/20 transition-all"
+                    >
+                        Ver Perfil
+                    </button>
                 </div>
             </div>
         </div>
