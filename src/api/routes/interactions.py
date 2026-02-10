@@ -80,3 +80,80 @@ async def create_review(
     
     res = db.client.table("reviews").insert(data).execute()
     return res.data[0]
+
+class FollowCreate(BaseModel):
+    model_id: str
+
+@router.post("/followers")
+async def follow_model(
+    follow: FollowCreate,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Follow a model."""
+    # Verify user is a client
+    client_res = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
+    if not client_res.data:
+         raise HTTPException(status_code=403, detail="Only clients can follow models")
+
+    data = {
+        "client_id": client_res.data['id'],
+        "model_id": follow.model_id
+    }
+    
+    try:
+        res = db.client.table("followers").insert(data).execute()
+        return res.data[0]
+    except Exception as e:
+        # Check for unique violation if needed, usually Supabase returns error
+        raise HTTPException(status_code=400, detail="Already following or error")
+
+@router.delete("/followers/{model_id}")
+async def unfollow_model(
+    model_id: str,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Unfollow a model."""
+    client_res = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
+    if not client_res.data:
+         raise HTTPException(status_code=403, detail="Only clients can unfollow")
+
+    res = db.client.table("followers") \
+        .delete() \
+        .eq("client_id", client_res.data['id']) \
+        .eq("model_id", model_id) \
+        .execute()
+        
+    return {"message": "Unfollowed successfully"}
+
+@router.get("/reviews/{model_id}")
+async def get_model_reviews(model_id: str):
+    """Get reviews for a specific model."""
+    # Join with clients to get name and avatar? Supabase-py join syntax is specific.
+    # We can fetch reviews and then keys, or use select string with relation if foreign keys conform.
+    # Assuming standard relation "clients"
+    
+    response = db.client.table("reviews") \
+        .select("*, clients(username, avatar_url)") \
+        .eq("model_id", model_id) \
+        .order("created_at", desc=True) \
+        .execute()
+        
+    return response.data
+
+@router.get("/followers/status/{model_id}")
+async def check_follow_status(
+    model_id: str,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Check if current client follows the model."""
+    client_res = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
+    if not client_res.data:
+         return {"is_following": False}
+
+    count = db.client.table("followers") \
+        .select("id", count="exact") \
+        .eq("client_id", client_res.data['id']) \
+        .eq("model_id", model_id) \
+        .execute()
+        
+    return {"is_following": count.count > 0}

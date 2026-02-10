@@ -1,12 +1,48 @@
-import React from 'react';
-import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import api from '../../api/axios';
 
 export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const { themeColor } = useTheme();
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [loadingFollow, setLoadingFollow] = useState(false);
+
+    // Fetch follow status if not own profile
+    useEffect(() => {
+        if (!isOwnProfile && user?.id) {
+            const checkFollow = async () => {
+                try {
+                    const { data } = await api.get(`/interactions/followers/status/${user.id}`);
+                    setIsFollowing(data.is_following);
+                } catch (err) {
+                    console.error("Error checking follow status:", err);
+                }
+            };
+            checkFollow();
+        }
+    }, [isOwnProfile, user?.id]);
+
+    const handleSubscribe = async () => {
+        if (!user?.id) return;
+        setLoadingFollow(true);
+        try {
+            if (isFollowing) {
+                await api.delete(`/interactions/followers/${user.id}`);
+                setIsFollowing(false);
+            } else {
+                await api.post('/interactions/followers', { model_id: user.id });
+                setIsFollowing(true);
+            }
+        } catch (err) {
+            console.error("Error toggling follow:", err);
+        } finally {
+            setLoadingFollow(false);
+        }
+    };
 
     // Dummy social links data (in real app, this comes from user object)
     const socialLinks = [
@@ -110,8 +146,14 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         </div>
                     ) : !isOwnProfile ? (
                         <>
-                            <Button className="flex-1 rounded-2xl py-6 text-base font-semibold shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-shadow" variant="primary" style={{ backgroundColor: themeColor, color: '#fff' }}>
-                                Suscribirse
+                            <Button
+                                onClick={handleSubscribe}
+                                disabled={loadingFollow}
+                                className="flex-1 rounded-2xl py-6 text-base font-semibold shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-shadow"
+                                variant={isFollowing ? "outline" : "primary"}
+                                style={!isFollowing ? { backgroundColor: themeColor, color: '#fff' } : {}}
+                            >
+                                {loadingFollow ? <Loader size={18} className="animate-spin" /> : (isFollowing ? "Siguiendo" : "Suscribirse")}
                             </Button>
                             <Button className="w-14 h-14 rounded-2xl bg-card border border-white/10 text-foreground hover:bg-white/5 flex items-center justify-center shadow-lg" variant="ghost">
                                 <Mail size={22} />
