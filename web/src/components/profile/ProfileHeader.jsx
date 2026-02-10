@@ -121,28 +121,31 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         </div>
 
                         {/* Social Links Row */}
-                        <div className="flex justify-center gap-3 mb-5 flex-wrap">
-                            {socialLinks.map((link) => (
-                                <a
-                                    key={link.id}
-                                    href={link.url}
-                                    className="p-2.5 rounded-full bg-secondary/30 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-110 hover:-translate-y-1 border border-transparent hover:border-white/10 shadow-sm"
-                                    style={{ '--hover-color': link.color }}
-                                >
-                                    {link.icon}
-                                </a>
-                            ))}
-                            <button className="p-2.5 rounded-full bg-secondary/30 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all hover:scale-110 border border-transparent hover:border-white/10 shadow-sm">
-                                <Mail size={18} />
-                            </button>
-                        </div>
+                        {socialLinks.length > 0 && (
+                            <div className="flex justify-center gap-3 mb-5 flex-wrap">
+                                {socialLinks.map((link) => (
+                                    <a
+                                        key={link.id}
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-2.5 rounded-full bg-secondary/30 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-110 hover:-translate-y-1 border border-transparent hover:border-white/10 shadow-sm"
+                                        style={{ '--hover-color': link.color }}
+                                    >
+                                        {link.icon}
+                                    </a>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Bio - At the bottom */}
-                        <div className="w-full px-2">
-                            <p className="text-center text-foreground/90 text-sm leading-relaxed max-w-md mx-auto">
-                                {user.bio_short || user.bio || "Digital Soul | Creating magic in the metaverse 💜"}
-                            </p>
-                        </div>
+                        {(user.bio_short || user.bio) && (
+                            <div className="w-full px-2">
+                                <p className="text-center text-foreground/90 text-sm leading-relaxed max-w-md mx-auto">
+                                    {user.bio_short || user.bio}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

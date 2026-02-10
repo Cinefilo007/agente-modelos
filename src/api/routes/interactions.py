@@ -133,7 +133,7 @@ async def get_model_reviews(model_id: str):
     # Assuming standard relation "clients"
     
     response = db.client.table("reviews") \
-        .select("*, clients(username, avatar_url)") \
+        .select("*, clients(username)") \
         .eq("model_id", model_id) \
         .order("created_at", desc=True) \
         .execute()
