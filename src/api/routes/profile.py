@@ -23,12 +23,27 @@ class ProfileUpdate(BaseModel):
 @router.get("/me")
 async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
     """Get the current authenticated user's profile."""
+    if user.role == "client":
+        client = db.client.table("clients").select("*").eq("telegram_id", user.id).single().execute()
+        if not client.data:
+             raise HTTPException(status_code=404, detail="Client profile not found.")
+        return client.data
+
+    # Default to Model
     model = db.client.table("models").select("*").eq("telegram_id", user.id).single().execute()
     
     if not model.data:
         raise HTTPException(status_code=404, detail="Model profile not found. Please register via the bot first.")
-        
-    return model.data
+    
+    user_data = model.data
+    # Fetch stats for 'me'
+    try:
+        posts_count = db.client.table("posts").select("id", count="exact").eq("model_id", user_data['id']).execute()
+        user_data['posts_count'] = posts_count.count if posts_count.count else 0
+    except:
+        user_data['posts_count'] = 0
+
+    return user_data
 
 @router.put("/me")
 async def update_my_profile(update_data: ProfileUpdate, user: TelegramUser = Depends(get_current_user)):

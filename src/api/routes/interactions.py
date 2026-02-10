@@ -27,29 +27,16 @@ async def create_interaction(
     user: TelegramUser = Depends(get_current_user)
 ):
     """Record a like or view."""
-    # Determine actor_id. For now assuming user is the actor.
-    # In a full hybrid, we need to know if the telegram user is a 'client' or 'model'.
-    # We'll check 'models' table first.
+    """Record a like or view."""
     
-    actor_type = "client"
-    actor_id = None
+    actor_id = user.user_id
+    actor_type = user.role
     
-    # Check if model
-    model_res = db.client.table("models").select("id").eq("telegram_id", user.id).maybe_single().execute()
-    if model_res.data:
-        actor_type = "model"
-        actor_id = model_res.data['id']
-    else:
-        # Check if client (create if not exists logic might be needed here or handled in bot flow)
-        # For this prototype we assume client exists or we just use a placeholder if strict FK not enforced on actor_id for logic
-        # Ideally we fetch client_id from clients table by telegram_id
-        client_res = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
-        if client_res.data:
-            actor_id = client_res.data['id']
-        else:
-             # Auto-create client for interaction if strict FK
-             # Skipping for brevity, assuming registered client
-             pass
+    if actor_type not in ["client", "model"]:
+        # Fallback or error? For now allow, or maybe default to 'client' if role is 'user'
+        # But our JWT issues 'model' or 'client'.
+        # If 'user' role (from generic login), maybe assume client?
+        pass
 
     if not actor_id:
         raise HTTPException(status_code=400, detail="User not registered in system")
