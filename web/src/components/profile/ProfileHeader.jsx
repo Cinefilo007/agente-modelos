@@ -44,13 +44,21 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
         }
     };
 
-    // Dummy social links data (in real app, this comes from user object)
-    const socialLinks = [
-        { id: 'ig', icon: <Instagram size={18} />, label: 'Instagram', url: '#', color: '#E1306C' },
-        { id: 'tw', icon: <Twitter size={18} />, label: 'Twitter', url: '#', color: '#1DA1F2' },
-        { id: 'of', icon: <Lock size={18} />, label: 'OnlyFans', url: '#', color: '#00AFF0' }, // Simulated brand color
-        { id: 'fansly', icon: <Heart size={18} />, label: 'Fansly', url: '#', color: '#dca54e' },
-    ];
+    // Dynamic Social Links
+    const socialLinks = [];
+    if (user?.social_links) {
+        const links = user.social_links;
+        if (links.instagram) socialLinks.push({ id: 'ig', icon: <Instagram size={18} />, label: 'Instagram', url: links.instagram, color: '#E1306C' });
+        if (links.twitter) socialLinks.push({ id: 'tw', icon: <Twitter size={18} />, label: 'Twitter', url: links.twitter, color: '#1DA1F2' });
+        if (links.onlyfans) socialLinks.push({ id: 'of', icon: <Lock size={18} />, label: 'OnlyFans', url: links.onlyfans, color: '#00AFF0' });
+        if (links.fansly) socialLinks.push({ id: 'fansly', icon: <Heart size={18} />, label: 'Fansly', url: links.fansly, color: '#dca54e' });
+
+        // Add checking for other generic links if stored as generic keys or array
+    }
+
+    // console.log("ProfileHeader rendering for user:", user); // Debug log
+
+    if (!user) return null; // Safety check
 
     return (
         <div className="relative pb-4">
