@@ -1,20 +1,43 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX } from 'lucide-react';
+import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX, AlertTriangle, Send, X } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useTheme } from '../../context/ThemeContext';
 import { Link } from 'react-router-dom';
 import { timeAgo } from '../../utils/date';
+import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
+    const { user } = useAuth();
     const { themeColor } = useTheme();
-    const [isLiked, setIsLiked] = useState(false);
+
+    // State
+    const [isLiked, setIsLiked] = useState(post.is_liked || false);
+    const [likeCount, setLikeCount] = useState(post.likes_count || 0);
+    const [commentCount, setCommentCount] = useState(post.comments_count || 0);
     const [isMuted, setIsMuted] = useState(true);
+    const [showMenu, setShowMenu] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [commentText, setCommentText] = useState("");
+    const [showCommentInput, setShowCommentInput] = useState(false);
+
+    // Refs
     const videoRef = useRef(null);
     const containerRef = useRef(null);
+    const menuRef = useRef(null);
 
-    // Dummy comment count generator if not present
-    const commentCount = post.comments || Math.floor(Math.random() * 50) + 5;
+    // Close menu on click outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
+    // Autoplay Logic
     useEffect(() => {
         if (post.media_type !== 'video' || !videoRef.current) return;
 
@@ -22,10 +45,8 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
-                        videoRef.current.muted = isMuted; // Apply current mute state
-                        videoRef.current.play().catch(e => {
-                            console.log("Autoplay prevented:", e.message);
-                        });
+                        videoRef.current.muted = isMuted;
+                        videoRef.current.play().catch(e => console.log("Autoplay prevented:", e.message));
                     } else {
                         videoRef.current.pause();
                     }
@@ -38,7 +59,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
         return () => {
             if (containerRef.current) observer.unobserve(containerRef.current);
         };
-    }, [post.media_type, isMuted]); // Re-run if mute state changes to ensure consistency if needed, though mostly direct ref manipulation works
+    }, [post.media_type, isMuted]);
 
     const toggleMute = (e) => {
         e.preventDefault();
@@ -49,27 +70,185 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
         }
     };
 
-    return (
-        <div ref={containerRef} className="mb-6 glass-panel rounded-3xl overflow-hidden border border-border shadow-2xl mx-1 transform transition-all hover:scale-[1.01]">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 bg-secondary/30">
-                <div className="flex items-center gap-3">
-                    <Link to={`/profile/${post.user.id}`} className="relative">
-                        <Avatar src={post.user.avatar} size="sm" isOnline={post.user.isOnline} />
-                    </Link>
-                    <div>
-                        <h3 className="font-bold text-sm text-foreground leading-none">{post.user.artistic_name || post.user.name}</h3>
-                        <span className="text-xs text-muted-foreground">{timeAgo(post.created_at || post.timestamp)}</span>
+    // Interactions
+    const handleLike = async () => {
+        if (isAdmin) return;
+
+        // Optimistic Update
+        const newStatus = !isLiked;
+        setIsLiked(newStatus);
+        setLikeCount(prev => newStatus ? prev + 1 : prev - 1);
+
+        try {
+            await api.post('/interactions/interact', {
+                target_id: post.id,
+                target_type: 'post',
+                action: 'like'
+            });
+        } catch (error) {
+            console.error("Like failed", error);
+            // Revert
+            setIsLiked(!newStatus);
+            setLikeCount(prev => !newStatus ? prev + 1 : prev - 1);
+        }
+    };
+
+    const handleComment = async () => {
+        if (!commentText.trim()) return;
+
+        try {
+            await api.post('/interactions/interact', {
+                target_id: post.id,
+                target_type: 'post',
+                action: 'comment',
+                content: commentText
+            });
+            setCommentCount(prev => prev + 1);
+            setCommentText("");
+            setShowCommentInput(false); // Close or keep open?
+        } catch (error) {
+            console.error("Comment failed", error);
+        }
+    };
+
+    // Report Logic
+    const ReportModal = () => {
+        const [reason, setReason] = useState("");
+        const [desc, setDesc] = useState("");
+        const [submitting, setSubmitting] = useState(false);
+
+        const reasons = [
+            "Contenido Inapropiado",
+            "Spam / Estafa",
+            "Suplantación de Identidad",
+            "Lenguaje de Odio",
+            "Otro"
+        ];
+
+        const submitReport = async () => {
+            if (!reason) return alert("Selecciona un motivo");
+            setSubmitting(true);
+            try {
+                await api.post('/content/report', {
+                    post_id: post.id,
+                    reason,
+                    description: desc
+                });
+                setShowReportModal(false);
+                setShowMenu(false);
+                alert("Reporte enviado. Gracias por ayudar a mantener segura la comunidad.");
+            } catch (err) {
+                alert("Error al enviar reporte");
+            } finally {
+                setSubmitting(false);
+            }
+        };
+
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
+                    <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                        <h3 className="font-bold text-white flex items-center gap-2">
+                            <AlertTriangle size={18} className="text-yellow-500" /> Reportar Publicación
+                        </h3>
+                        <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-white">
+                            <X size={20} />
+                        </button>
+                    </div>
+                    <div className="p-4 space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Motivo</label>
+                            {reasons.map(r => (
+                                <button
+                                    key={r}
+                                    onClick={() => setReason(r)}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${reason === r ? 'bg-pink-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}
+                                >
+                                    {r}
+                                </button>
+                            ))}
+                        </div>
+                        {reason === 'Otro' && (
+                            <textarea
+                                className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                                placeholder="Describe el problema..."
+                                rows={3}
+                                value={desc}
+                                onChange={e => setDesc(e.target.value)}
+                            />
+                        )}
+                        <button
+                            onClick={submitReport}
+                            disabled={submitting}
+                            className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+                        >
+                            {submitting ? "Enviando..." : "Enviar Reporte"}
+                        </button>
                     </div>
                 </div>
-                <button className="text-muted-foreground hover:text-foreground">
-                    <MoreHorizontal size={20} />
-                </button>
             </div>
+        );
+    };
 
-            {/* Media */}
-            <Link to={`/post/${post.id}`}>
-                <div className="relative aspect-[4/5] bg-black group cursor-pointer">
+    return (
+        <>
+            <div ref={containerRef} className="mb-6 glass-panel rounded-3xl overflow-hidden border border-white/5 shadow-2xl mx-1 relative group">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 bg-black/40 backdrop-blur-md absolute top-0 w-full z-20 border-b border-white/5">
+                    <div className="flex items-center gap-3">
+                        <Link to={`/profile/${post.user.id}`} className="relative">
+                            <div className="relative">
+                                <Avatar src={post.user.avatar} size="sm" />
+                                {post.is_online && (
+                                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-black rounded-full shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse"></span>
+                                )}
+                            </div>
+                        </Link>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-sm text-white leading-none shadow-black drop-shadow-md">
+                                    {post.user.artistic_name || post.user.name}
+                                </h3>
+                                {post.user.is_verified && <span className="text-blue-400 text-[10px]">Verify</span>}
+                            </div>
+                            <span className="text-[10px] text-gray-300 font-medium bg-black/50 px-1.5 rounded text-shadow">{timeAgo(post.created_at || post.timestamp)}</span>
+                        </div>
+                    </div>
+
+                    {/* Menu Trigger */}
+                    <div className="relative" ref={menuRef}>
+                        <button
+                            onClick={() => setShowMenu(!showMenu)}
+                            className="text-white bg-black/20 p-2 rounded-full hover:bg-black/60 transition-colors backdrop-blur-sm"
+                        >
+                            <MoreHorizontal size={20} />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {showMenu && (
+                            <div className="absolute right-0 mt-2 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-fade-in origin-top-right">
+                                {isAdmin ? (
+                                    <button
+                                        onClick={onDelete}
+                                        className="w-full text-left px-4 py-3 text-red-500 hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
+                                    >
+                                        <X size={16} /> Eliminar Post
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => { setShowReportModal(true); setShowMenu(false); }}
+                                        className="w-full text-left px-4 py-3 text-yellow-500 hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
+                                    >
+                                        <AlertTriangle size={16} /> Reportar
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Media */}
+                <div className="relative aspect-[4/5] bg-black cursor-pointer" onDoubleClick={handleLike}>
                     {post.media_type === 'video' ? (
                         <>
                             <video
@@ -77,18 +256,17 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                                 src={post.media_url}
                                 className="w-full h-full object-cover"
                                 loop
-                                muted={isMuted} // Controlled by state
+                                muted={isMuted}
                                 playsInline
                                 poster={post.thumbnail_url}
                                 controlsList="nodownload"
                                 onContextMenu={(e) => e.preventDefault()}
                             />
-                            {/* Sound Toggle */}
                             <button
                                 onClick={toggleMute}
-                                className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/70 transition-colors z-10"
+                                className="absolute bottom-4 right-4 p-2 rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/70 transition-colors z-10"
                             >
-                                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                                {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                             </button>
                         </>
                     ) : (
@@ -98,58 +276,77 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             className="w-full h-full object-cover"
                         />
                     )}
-                </div>
-            </Link>
 
-            {/* Actions */}
-            <div className="p-4 pt-3">
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-4">
-                        {isAdmin ? (
-                            <button
-                                onClick={onDelete}
-                                className="flex items-center gap-2 text-red-500 hover:text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
-                                <span className="text-sm font-bold">Eliminar</span>
-                            </button>
-                        ) : (
-                            <>
-                                <button
-                                    onClick={() => setIsLiked(!isLiked)}
-                                    className={`transition-all hover:scale-110 flex items-center gap-1 ${isLiked ? 'text-pink-500' : 'text-foreground hover:text-pink-400'}`}
-                                >
-                                    <Heart size={26} className={isLiked ? 'fill-pink-500' : ''} />
-                                    <span className="text-sm font-bold ml-1">{post.likes.toLocaleString()}</span>
-                                </button>
-                                <Link to={`/post/${post.id}`} className="text-foreground hover:text-blue-400 transition-colors hover:scale-110 flex items-center gap-1 group">
-                                    <MessageCircle size={26} />
-                                    <span className="text-xs font-bold text-muted-foreground group-hover:text-blue-400 transition-colors">{commentCount}</span>
-                                </Link>
-                            </>
-                        )}
-                        {/* Share removed */}
-                    </div>
-                    {/* Media Type Badge removed */}
+                    {/* Gradient Overlay bottom */}
+                    <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none"></div>
                 </div>
 
-                {/* Likes text removed */}
-
-                <div className="text-sm text-muted-foreground mb-3">
-                    <span className="font-bold text-foreground mr-2">{post.user.artistic_name || post.user.name}</span>
-                    {post.description}
-                </div>
-
-                {/* Comment Input Preview - Hide for Admin */}
-                {!isAdmin && (
-                    <Link to={`/post/${post.id}`}>
-                        <div className="flex gap-2 items-center mt-2 border-t border-border pt-3 opacity-80 hover:opacity-100 transition-opacity cursor-text">
-                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150" className="w-6 h-6 rounded-full" alt="User" />
-                            <div className="flex-1 text-muted-foreground text-sm">Agrega un comentario...</div>
+                {/* Absolute Actions Overlay */}
+                <div className="absolute bottom-0 w-full p-4 z-20">
+                    <div className="flex items-end justify-between mb-2">
+                        <div className="flex-1 mr-12">
+                            <p className="text-sm text-gray-200 line-clamp-2 drop-shadow-md">
+                                <span className="font-bold text-white mr-2">{post.user.artistic_name}</span>
+                                {post.description}
+                            </p>
                         </div>
-                    </Link>
-                )}
+
+                        <div className="flex flex-col items-center gap-4">
+                            {!isAdmin && (
+                                <>
+                                    <button
+                                        onClick={handleLike}
+                                        className={`transition-all active:scale-90 flex flex-col items-center gap-1 group`}
+                                    >
+                                        <div className={`p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 group-hover:bg-pink-500/20 transition-colors ${isLiked ? 'text-pink-500 border-pink-500/50' : 'text-white'}`}>
+                                            <Heart size={24} className={isLiked ? 'fill-pink-500' : ''} />
+                                        </div>
+                                        <span className="text-xs font-bold text-white shadow-black drop-shadow">{likeCount}</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setShowCommentInput(!showCommentInput)}
+                                        className="transition-all active:scale-90 flex flex-col items-center gap-1 group"
+                                    >
+                                        <div className="p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 group-hover:bg-blue-500/20 transition-colors text-white">
+                                            <MessageCircle size={24} />
+                                        </div>
+                                        <span className="text-xs font-bold text-white shadow-black drop-shadow">{commentCount}</span>
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Quick Comment Input */}
+                    {showCommentInput && !isAdmin && (
+                        <div className="flex gap-2 items-center mt-3 animate-fade-in-up">
+                            <Avatar src={user?.avatar_url} size="xs" />
+                            <div className="flex-1 relative">
+                                <input
+                                    type="text"
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    placeholder="Añade un comentario..."
+                                    className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-full py-2 px-4 text-sm text-white focus:outline-none focus:border-pink-500 placeholder-gray-400"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleComment()}
+                                    autoFocus
+                                />
+                                <button
+                                    onClick={handleComment}
+                                    disabled={!commentText.trim()}
+                                    className="absolute right-1 top-1 p-1.5 bg-pink-600 rounded-full text-white disabled:opacity-50 disabled:bg-transparent hover:bg-pink-500 transition-colors"
+                                >
+                                    <Send size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+
+            {/* Modals */}
+            {showReportModal && <ReportModal />}
+        </>
     );
 }

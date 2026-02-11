@@ -1,9 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Body
 from typing import List, Optional
+from pydantic import BaseModel
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
 from src.services.storage import upload_file
 from datetime import datetime, timedelta
+
+class ReportCreate(BaseModel):
+    post_id: str
+    reason: str
+    description: Optional[str] = None
 
 router = APIRouter()
 
@@ -126,8 +132,58 @@ async def get_feed(
     else: # recent
         query = query.order("created_at", desc=True)
         
+    # Fetch posts with model info (including last_seen)
+    query = db.client.table("posts").select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
+    
     response = query.limit(50).execute()
-    return response.data
+    posts = response.data
+    
+    if not posts:
+        return []
+
+    # Enrich with 'is_liked' and 'is_online'
+    post_ids = [p['id'] for p in posts]
+    
+    # Check likes by current user
+    liked_posts = []
+    if post_ids:
+        likes_res = db.client.table("interactions") \
+            .select("target_id") \
+            .eq("actor_id", user.user_id) \
+            .eq("action", "like") \
+            .in_("target_id", post_ids) \
+            .execute()
+        liked_posts = {l['target_id'] for l in likes_res.data}
+
+    # Process posts
+    threshold = datetime.utcnow() - timedelta(minutes=5)
+    
+    enriched_posts = []
+    for p in posts:
+        # Check Online Status
+        model = p.get('models', {})
+        last_seen_str = model.get('last_seen')
+        is_online = False
+        if last_seen_str:
+            try:
+                # Handle ISO format with or without Timezone "Z"
+                ls_dt = datetime.fromisoformat(last_seen_str.replace('Z', '+00:00'))
+                # Simpler comparison if both are unaware or aware, assuming UTC
+                is_online = ls_dt.replace(tzinfo=None) > threshold
+            except:
+                pass # Parse error, assume offline
+        
+        enriched_posts.append({
+            **p,
+            "is_liked": p['id'] in liked_posts,
+            "is_online": is_online,
+            # Ensure counts are present (fallback to 0)
+            "likes_count": p.get("likes_count", 0),
+            "comments_count": p.get("comments_count", 0)
+        })
+
+    return enriched_posts
+
 @router.get("/post/{post_id}")
 async def get_post_detail(post_id: str):
     """Get a single post by ID."""
@@ -172,3 +228,61 @@ async def delete_post(
     db.client.table("posts").delete().eq("id", post_id).execute()
     
     return {"message": "Post deleted successfully"}
+
+@router.post("/report")
+async def report_post(
+    report: ReportCreate,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Report a post content."""
+    # Verify post exists
+    post = db.client.table("posts").select("id").eq("id", report.post_id).single().execute()
+    if not post.data:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    data = {
+        "post_id": report.post_id,
+        "reporter_id": user.id, # Telegram ID
+        "reporter_role": user.role,
+        "reason": report.reason,
+        "description": report.description,
+        "status": "pending"
+    }
+
+    try:
+        db.client.table("reported_posts").insert(data).execute()
+        return {"message": "Report submitted successfully"}
+    except Exception as e:
+        print(f"[Report] Error submitting report: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit report")
+
+@router.get("/admin/reports")
+async def get_reports(user: TelegramUser = Depends(get_current_user)):
+    """Get all reports (Admin only)."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Fetch reports with Post and Reporter details
+    # Note: Supabase joins can be complex.
+    # We fetch reports, then manually fetch related data or use deep select if relations exist.
+    # Assuming relations: reported_posts.post_id -> posts.id
+    
+    response = db.client.table("reported_posts") \
+        .select("*, posts(*, models(username, artistic_name))") \
+        .order("created_at", desc=True) \
+        .execute()
+        
+    return response.data
+
+@router.put("/admin/reports/{report_id}")
+async def update_report_status(
+    report_id: str,
+    status: str = Body(..., embed=True),
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Update report status (resolved, ignored)."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+        
+    response = db.client.table("reported_posts").update({"status": status}).eq("id", report_id).execute()
+    return response.data[0]

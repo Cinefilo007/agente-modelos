@@ -12,6 +12,19 @@ router = APIRouter()
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 ADMIN_ID = 1123020118 # Hardcoded admin ID
 
+@router.post("/heartbeat")
+async def heartbeat(user: TelegramUser = Depends(get_current_user)):
+    """Update user's last_seen timestamp."""
+    if user.role == "model":
+        try:
+            now = datetime.utcnow().isoformat()
+            db.client.table("models").update({"last_seen": now}).eq("telegram_id", user.id).execute()
+            return {"status": "online"}
+        except Exception as e:
+            print(f"[Heartbeat] Error updating model status: {e}")
+            raise HTTPException(status_code=500, detail="Error updating status")
+    return {"status": "ok"}
+
 @router.post("/upload-image")
 async def upload_profile_image(
     file: UploadFile = File(...),

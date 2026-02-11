@@ -100,10 +100,63 @@ function Feed() {
         }
     };
 
+    // Polling for New Posts
+    const [newPostsCount, setNewPostsCount] = useState(0);
+    const latestPostIdRef = useRef(null);
+
+    useEffect(() => {
+        if (posts.length > 0 && !latestPostIdRef.current) {
+            latestPostIdRef.current = posts[0].id;
+        }
+    }, [posts]);
+
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            if (!latestPostIdRef.current) return;
+            try {
+                const { data } = await api.get('/content/feed?sort=recent&limit=1');
+                if (data && data.length > 0) {
+                    const newest = data[0];
+                    if (newest.id !== latestPostIdRef.current) {
+                        // Simple check, in real world we'd count how many
+                        setNewPostsCount(prev => prev + 1);
+                    }
+                }
+            } catch (e) {
+                console.error("Polling error", e);
+            }
+        }, 15000); // Check every 15s
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const reloadFeed = () => {
+        setLoading(true);
+        setNewPostsCount(0);
+        // Trigger fetch by toggling filter (hacky but works) or just reload window? 
+        // Better: extract fetchPosts to function and call it.
+        // For simplicity here, let's force re-mount or duplicate fetch logic.
+        // Actually, let's just use window.location.reload() for a "hard refresh" feel or update state.
+        window.location.reload();
+    };
+
     return (
-        <div className="pb-24 pt-0">
+        <div className="pb-24 pt-0 relative">
             {/* 1. Sticky Filters (Top 0) */}
             <FeedFilter currentFilter={filter} onFilterChange={setFilter} />
+
+            {/* New Posts Alert */}
+            {newPostsCount > 0 && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 animate-bounce">
+                    <button
+                        onClick={reloadFeed}
+                        className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+                    >
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                        Nuevas Publicaciones
+                    </button>
+                </div>
+            )}
 
             {/* Stories Viewer Modal */}
             {selectedStoryIndex !== null && (

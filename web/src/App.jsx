@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
+import api from './api/axios';
 
 // Pages
 import Feed from './pages/Feed';
@@ -23,6 +24,32 @@ import Onboarding from './pages/Onboarding';
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    // Telegram Mini App Config
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand(); // Force Fullscreen
+
+      // Set header color
+      window.Telegram.WebApp.setHeaderColor('#000000');
+    }
+
+    // Heartbeat for Online Status (every 2 mins)
+    const heartbeatInterval = setInterval(async () => {
+      if (user?.role === 'model') {
+        try {
+          // Assuming 'api' is imported or globally available
+          // If not, you'll need to add 'import api from './utils/api';' or similar
+          await api.post('/profile/heartbeat');
+        } catch (e) {
+          console.error("Heartbeat failed", e);
+        }
+      }
+    }, 120000);
+
+    return () => clearInterval(heartbeatInterval);
+  }, [user]);
 
   if (loading) {
     return (
