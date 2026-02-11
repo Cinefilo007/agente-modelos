@@ -38,11 +38,21 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/landing" state={{ from: location }} replace />;
   }
 
+  console.log("[Router] Verificando acceso para:", user.username || user.id, "Rol:", user.role);
+
   // Strict check for profile completion - Only for CLIENTS
   // Models are already verified by the admin through the bot ( Phase A )
   const isClient = user.role === 'client';
+  const isModel = user.role === 'model';
+
+  // A model should NEVER go to onboarding
   const needsOnboarding = isClient && (!user.birth_date || !user.terms_accepted);
   const isCurrentlyInOnboarding = location.pathname === '/onboarding';
+
+  if (isModel && isCurrentlyInOnboarding) {
+    console.log("[Router] Modelo detectado en onboarding, redirigiendo al feed saludablemente.");
+    return <Navigate to="/" replace />;
+  }
 
   if (needsOnboarding && !isCurrentlyInOnboarding) {
     console.warn("[Router] Cliente con perfil incompleto, redirigiendo a onboarding.");

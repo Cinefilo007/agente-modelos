@@ -99,7 +99,7 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
     # 1. Models
     try:
         model_res = db.client.table("models").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
-        if model_res and model_res.data:
+        if model_res is not None and hasattr(model_res, 'data') and model_res.data:
             user_role = "model"
             user_data = model_res.data
             if user_data.get('status') == 'rejected':
@@ -107,13 +107,13 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error checking models: {e}")
+        print(f"[Backend Auth] Error checking models for {telegram_id}: {str(e)}")
 
     # 2. Clients
     if not user_data:
         try:
             client_res = db.client.table("clients").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
-            if client_res and client_res.data:
+            if client_res is not None and hasattr(client_res, 'data') and client_res.data:
                 user_role = "client"
                 user_data = client_res.data
                 if user_data.get('is_blacklisted'):
@@ -128,19 +128,26 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                 }
                 try:
                     res = db.client.table("clients").insert(new_client).execute()
-                    if res and res.data and len(res.data) > 0:
+                    if res is not None and hasattr(res, 'data') and res.data and len(res.data) > 0:
                         user_data = res.data[0]
                     else:
-                        print(f"Error creating client: Response was {res}")
-                        raise HTTPException(status_code=500, detail="Error al crear el usuario en la base de datos.")
+                        print(f"[Backend Auth] Insertion failed or returned no data for {telegram_id}. Response: {res}")
+                        # Last ditch effort: try to select again in case it was created but returning nothing
+                        retry_res = db.client.table("clients").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
+                        if retry_res and retry_res.data:
+                            user_data = retry_res.data
+                        else:
+                            raise HTTPException(status_code=500, detail="Error crítico al crear el usuario. Intenta de nuevo.")
                 except HTTPException:
                     raise
                 except Exception as e:
-                     raise HTTPException(status_code=500, detail=f"Database Error during insert: {str(e)}")
+                     print(f"[Backend Auth] Database Error during insert for {telegram_id}: {str(e)}")
+                     raise HTTPException(status_code=500, detail="Error de base de datos al registrar usuario.")
         except HTTPException:
             raise
         except Exception as e:
-             raise HTTPException(status_code=500, detail=f"Database Error checking clients: {str(e)}")
+             print(f"[Backend Auth] Database Error checking clients for {telegram_id}: {str(e)}")
+             raise HTTPException(status_code=500, detail="Error al buscar perfil en la base de datos.")
 
     # Age check
     birth_date_str = user_data.get('birth_date')
