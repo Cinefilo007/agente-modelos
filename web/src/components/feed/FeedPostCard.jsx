@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Link } from 'react-router-dom';
 import { timeAgo } from '../../utils/date';
 
-export function FeedPostCard({ post }) {
+export function FeedPostCard({ post, isAdmin, onDelete }) {
     const { themeColor } = useTheme();
     const [isLiked, setIsLiked] = useState(false);
     const [isMuted, setIsMuted] = useState(true);
