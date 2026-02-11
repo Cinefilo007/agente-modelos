@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Body
 from typing import List, Optional
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
@@ -148,18 +148,27 @@ async def get_post_detail(post_id: str):
 @router.delete("/posts/{post_id}")
 async def delete_post(
     post_id: str,
+    reason: Optional[str] = Body(None, embed=True), # Optional reason for admin deletion
     user: TelegramUser = Depends(get_current_user)
 ):
-    """Delete a post (only author)."""
-    # 1. Check ownership
+    """Delete a post (author or admin)."""
+    # 1. Check ownership or admin role
     post = db.client.table("posts").select("model_id").eq("id", post_id).single().execute()
     if not post.data:
         raise HTTPException(status_code=404, detail="Post not found")
-        
-    if str(post.data['model_id']) != str(user.user_id): # Ensure string comparison
+    
+    is_author = str(post.data['model_id']) == str(user.user_id)
+    is_admin = user.role == "admin"
+
+    if not is_author and not is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to delete this post")
         
-    # 2. Delete (Storage deletion is ideal but optional for now, just DB)
+    # 2. Log deletion reason if admin (Future: Notify model)
+    if is_admin and reason:
+        print(f"[Admin] Post {post_id} deleted by admin {user.id}. Reason: {reason}")
+        # TODO: Insert into 'notifications' table for the model
+
+    # 3. Delete (Storage deletion is ideal but optional for now, just DB)
     db.client.table("posts").delete().eq("id", post_id).execute()
     
     return {"message": "Post deleted successfully"}

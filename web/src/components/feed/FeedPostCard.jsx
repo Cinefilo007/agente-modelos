@@ -105,17 +105,29 @@ export function FeedPostCard({ post }) {
             <div className="p-4 pt-3">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setIsLiked(!isLiked)}
-                            className={`transition-all hover:scale-110 flex items-center gap-1 ${isLiked ? 'text-pink-500' : 'text-foreground hover:text-pink-400'}`}
-                        >
-                            <Heart size={26} className={isLiked ? 'fill-pink-500' : ''} />
-                            <span className="text-sm font-bold ml-1">{post.likes.toLocaleString()}</span>
-                        </button>
-                        <Link to={`/post/${post.id}`} className="text-foreground hover:text-blue-400 transition-colors hover:scale-110 flex items-center gap-1 group">
-                            <MessageCircle size={26} />
-                            <span className="text-xs font-bold text-muted-foreground group-hover:text-blue-400 transition-colors">{commentCount}</span>
-                        </Link>
+                        {isAdmin ? (
+                            <button
+                                onClick={onDelete}
+                                className="flex items-center gap-2 text-red-500 hover:text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
+                                <span className="text-sm font-bold">Eliminar</span>
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => setIsLiked(!isLiked)}
+                                    className={`transition-all hover:scale-110 flex items-center gap-1 ${isLiked ? 'text-pink-500' : 'text-foreground hover:text-pink-400'}`}
+                                >
+                                    <Heart size={26} className={isLiked ? 'fill-pink-500' : ''} />
+                                    <span className="text-sm font-bold ml-1">{post.likes.toLocaleString()}</span>
+                                </button>
+                                <Link to={`/post/${post.id}`} className="text-foreground hover:text-blue-400 transition-colors hover:scale-110 flex items-center gap-1 group">
+                                    <MessageCircle size={26} />
+                                    <span className="text-xs font-bold text-muted-foreground group-hover:text-blue-400 transition-colors">{commentCount}</span>
+                                </Link>
+                            </>
+                        )}
                         {/* Share removed */}
                     </div>
                     {/* Media Type Badge removed */}
@@ -128,13 +140,15 @@ export function FeedPostCard({ post }) {
                     {post.description}
                 </div>
 
-                {/* Comment Input Preview */}
-                <Link to={`/post/${post.id}`}>
-                    <div className="flex gap-2 items-center mt-2 border-t border-border pt-3 opacity-80 hover:opacity-100 transition-opacity cursor-text">
-                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150" className="w-6 h-6 rounded-full" alt="User" />
-                        <div className="flex-1 text-muted-foreground text-sm">Agrega un comentario...</div>
-                    </div>
-                </Link>
+                {/* Comment Input Preview - Hide for Admin */}
+                {!isAdmin && (
+                    <Link to={`/post/${post.id}`}>
+                        <div className="flex gap-2 items-center mt-2 border-t border-border pt-3 opacity-80 hover:opacity-100 transition-opacity cursor-text">
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150" className="w-6 h-6 rounded-full" alt="User" />
+                            <div className="flex-1 text-muted-foreground text-sm">Agrega un comentario...</div>
+                        </div>
+                    </Link>
+                )}
             </div>
         </div>
     );

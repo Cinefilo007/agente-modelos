@@ -108,14 +108,24 @@ async def apply_as_model(
                 ]
             ]
             
-            await bot.send_photo(
-                chat_id=ADMIN_ID,
-                photo=verification_url, # Telegram might need a file object or URL. URL usually works if public.
-                caption=caption,
-                parse_mode="Markdown",
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
-            print("[Apply Model] Admin notified successfully")
+            try:
+                await bot.send_photo(
+                    chat_id=ADMIN_ID,
+                    photo=verification_url, 
+                    caption=caption,
+                    parse_mode="Markdown",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                print("[Apply Model] Admin notified successfully with photo")
+            except Exception as photo_err:
+                print(f"[Admin Notify] Photo failed, sending text fallback: {photo_err}")
+                await bot.send_message(
+                    chat_id=ADMIN_ID,
+                    text=caption, # Caption contains the link
+                    parse_mode="Markdown",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                print("[Apply Model] Admin notified successfully with text fallback")
         except Exception as e:
             print(f"[Admin Notify Error] {e}")
             traceback.print_exc()

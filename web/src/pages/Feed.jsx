@@ -81,6 +81,24 @@ function Feed() {
         if (index !== -1) setSelectedStoryIndex(index);
     };
 
+    const { user } = useAuth(); // Get user for role check
+    const isAdmin = user?.role === 'admin';
+
+    // Handle Delete (Admin)
+    const handleDeletePost = async (postId) => {
+        const reason = window.prompt("¿Motivo de la eliminación? (Opcional)");
+        if (reason === null) return; // Cancelled
+
+        try {
+            await api.delete(`/content/posts/${postId}`, { data: { reason } });
+            // Remove from state
+            setPosts(prev => prev.filter(p => p.id !== postId));
+        } catch (err) {
+            console.error("Error deleting post:", err);
+            alert("Error al eliminar el post.");
+        }
+    };
+
     return (
         <div className="pb-24 pt-0">
             {/* 1. Sticky Filters (Top 0) */}
@@ -112,7 +130,12 @@ function Feed() {
                     </div>
                 ) : (
                     posts.map((post) => (
-                        <FeedPostCard key={post.id} post={post} />
+                        <FeedPostCard
+                            key={post.id}
+                            post={post}
+                            isAdmin={isAdmin}
+                            onDelete={() => handleDeletePost(post.id)}
+                        />
                     ))
                 )}
             </div>

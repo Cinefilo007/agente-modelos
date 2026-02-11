@@ -82,8 +82,8 @@ export default function Layout() {
                         <NavItem to="/" icon={Home} label="Inicio" />
                         <NavItem to="/explore" icon={Compass} label="Explorar" />
 
-                        {/* Central Action Button (Models only) */}
-                        {isModel && (
+                        {/* Central Action Button (Models only, NOT Admin) */}
+                        {isModel && user?.role !== 'admin' && (
                             <div className="relative -top-5 flex flex-col items-center justify-center w-[20%]">
                                 <Link to="/create-post">
                                     <button
@@ -99,8 +99,17 @@ export default function Layout() {
                             </div>
                         )}
 
-                        <NavItem to="/notifications" icon={Bell} label="Alertas" />
-                        <NavItem to="/profile" icon={User} label="Perfil" />
+                        {/* Hide Notifications for Admin */}
+                        {user?.role !== 'admin' && (
+                            <NavItem to="/notifications" icon={Bell} label="Alertas" />
+                        )}
+
+                        {/* Profile redirects to Admin Dashboard if admin */}
+                        <NavItem
+                            to={user?.role === 'admin' ? "/admin" : "/profile"}
+                            icon={User}
+                            label={user?.role === 'admin' ? "Admin" : "Perfil"}
+                        />
                     </nav>
                 )}
             </div>
