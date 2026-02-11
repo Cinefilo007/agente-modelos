@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
 import api from './api/axios';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Pages
 import Feed from './pages/Feed';
@@ -106,57 +107,59 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Route: Landing Page */}
-            <Route path="/landing" element={
-              <PublicRoute>
-                <LandingPage />
-              </PublicRoute>
-            } />
+    <ErrorBoundary>
+      <AuthProvider>
+        <ThemeProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Route: Landing Page */}
+              <Route path="/landing" element={
+                <PublicRoute>
+                  <LandingPage />
+                </PublicRoute>
+              } />
 
-            {/* Admin Route - Separate Layout potentially? Or same? Let's use separate for focus */}
-            <Route path="/admin" element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
+              {/* Admin Route - Separate Layout potentially? Or same? Let's use separate for focus */}
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
 
-            {/* Protected Routes */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Feed />} />
-              <Route path="explore" element={<Explore />} />
-              <Route path="profile/:username?" element={<Profile />} />
-              <Route path="reviews" element={<Reviews />} />
-              <Route path="notifications" element={<Notifications />} />
-              <Route path="edit-profile" element={<EditProfile />} />
-              <Route path="create-post" element={<CreatePost />} />
-              <Route path="create-story" element={<CreateStory />} />
-              <Route path="post/:id" element={<PostDetail />} />
-              {/* Legacy admin panel routes if needed, or remove */}
-              <Route path="client" element={<ClientProfile />} />
-              <Route path="checkout" element={<ServiceCheckout />} />
-            </Route>
+              {/* Protected Routes */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<Feed />} />
+                <Route path="explore" element={<Explore />} />
+                <Route path="profile/:username?" element={<Profile />} />
+                <Route path="reviews" element={<Reviews />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="edit-profile" element={<EditProfile />} />
+                <Route path="create-post" element={<CreatePost />} />
+                <Route path="create-story" element={<CreateStory />} />
+                <Route path="post/:id" element={<PostDetail />} />
+                {/* Legacy admin panel routes if needed, or remove */}
+                <Route path="client" element={<ClientProfile />} />
+                <Route path="checkout" element={<ServiceCheckout />} />
+              </Route>
 
-            {/* Onboarding Route */}
-            <Route path="/onboarding" element={
-              <ProtectedRoute>
-                <Onboarding />
-              </ProtectedRoute>
-            } />
+              {/* Onboarding Route */}
+              <Route path="/onboarding" element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              } />
 
-            {/* Catch all - Redirect to Landing */}
-            <Route path="*" element={<Navigate to="/landing" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
-    </AuthProvider>
+              {/* Catch all - Redirect to Landing */}
+              <Route path="*" element={<Navigate to="/landing" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </ThemeProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
