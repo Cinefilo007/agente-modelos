@@ -183,10 +183,54 @@ const Onboarding = () => {
                         </div>
                         <textarea placeholder="Cuéntanos sobre ti (Bio)" value={creatorBio} onChange={e => setCreatorBio(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white h-24" />
 
-                        <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center cursor-pointer hover:border-purple-500 transition-colors relative">
-                            <input type="file" onChange={e => setVerificationPhoto(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" required />
-                            <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-300">{verificationPhoto ? verificationPhoto.name : "Subir Selfie con Documento"}</p>
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium text-gray-300">Foto de Verificación</label>
+
+                            <div className="bg-purple-900/20 border border-purple-500/30 rounded-xl p-4 flex gap-3 items-start">
+                                <Shield className="w-5 h-5 text-purple-400 mt-0.5 shrink-0" />
+                                <div>
+                                    <p className="text-xs text-purple-200 font-medium mb-1">Requisito de Seguridad</p>
+                                    <p className="text-xs text-purple-300/80 leading-relaxed">
+                                        Sube una selfie sosteniendo tu documento de identidad (Cédula, DNI o Pasaporte).
+                                        Asegúrate de que tu rostro y los datos del documento sean totalmente legibles.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="border-2 border-dashed border-white/20 rounded-xl relative h-48 flex flex-col items-center justify-center overflow-hidden hover:border-purple-500 transition-colors group cursor-pointer bg-black/20">
+                                <input
+                                    type="file"
+                                    onChange={(e) => {
+                                        if (e.target.files[0]) setVerificationPhoto(e.target.files[0]);
+                                    }}
+                                    className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                                    accept="image/*"
+                                    required
+                                />
+
+                                {verificationPhoto ? (
+                                    <>
+                                        <img
+                                            src={URL.createObjectURL(verificationPhoto)}
+                                            alt="Preview"
+                                            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity z-0"
+                                        />
+                                        <div className="relative z-10 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2 border border-white/10 shadow-xl">
+                                            <CheckCircle className="w-4 h-4 text-green-400" />
+                                            <span className="text-sm font-medium text-white truncate max-w-[150px]">{verificationPhoto.name}</span>
+                                        </div>
+                                        <p className="relative z-10 text-xs text-white/50 mt-2">Toca para cambiar</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                            <Camera className="w-6 h-6 text-gray-400 group-hover:text-purple-400" />
+                                        </div>
+                                        <p className="text-sm text-gray-300 font-medium">Sube tu Selfie aquí</p>
+                                        <p className="text-xs text-gray-500 mt-1">JPG, PNG (Max 5MB)</p>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex gap-3 pt-4">

@@ -46,69 +46,87 @@ async def apply_as_model(
     2. Crea/Actualiza registro en 'models' con estado 'verifying'.
     3. Notifica al Admin por Telegram.
     """
-    # 1. Upload Verification Photo
-    verification_url = await upload_file(file, bucket_name="verifications", folder=f"{user.id}")
+    import traceback
+    print(f"[Apply Model] Starting application for user {user.id} ({user.username})")
     
-    # 2. Upsert Model Record
-    model_data = {
-        "telegram_id": user.id,
-        "username": user.username or f"user_{user.id}",
-        "full_name": full_name,
-        "bio_short": bio, # Using bio_short for initial bio
-        "birth_date": birth_date,
-        "status": "verifying",
-        "verification_video_id": verification_url, # Storing photo URL in existing column for now
-        "social_links": [{"network": "country", "url": country_code}] # Storing country in social_links or add column? generic 'config_persona' maybe?
-        # Let's verify schema. Using 'config_persona' for country temporarily or add to metadata.
-    }
-    
-    # Check if model exists
-    existing = db.client.table("models").select("*").eq("telegram_id", user.id).maybe_single().execute()
-    
-    if existing and existing.data:
-        # Update existing
-        db.client.table("models").update(model_data).eq("telegram_id", user.id).execute()
-        model_id = existing.data['id']
-    else:
-        # Insert new
-        res = db.client.table("models").insert(model_data).execute()
-        if res.data:
-            model_id = res.data[0]['id']
-        else:
-            raise HTTPException(status_code=500, detail="Error creating model record")
-
-    # 3. Notify Admin
     try:
-        bot = Bot(token=TELEGRAM_TOKEN)
+        # 1. Upload Verification Photo
+        print(f"[Apply Model] Uploading file: {file.filename}")
+        verification_url = await upload_file(file, bucket_name="verifications", folder=f"{user.id}")
+        print(f"[Apply Model] File uploaded. URL: {verification_url}")
         
-        caption = (
-            f"📝 *Nueva Solicitud de Creador*\n\n"
-            f"👤 *Usuario:* @{user.username} (ID: `{user.id}`)\n"
-            f"📛 *Nombre Real:* {full_name}\n"
-            f"🌍 *País:* {country_code}\n"
-            f"🎂 *Fecha Nac:* {birth_date}\n\n"
-            f"📸 *Evidencia:* [Ver Foto]({verification_url})"
-        )
+        # 2. Upsert Model Record
+        model_data = {
+            "telegram_id": user.id,
+            "username": user.username or f"user_{user.id}",
+            "full_name": full_name,
+            "bio_short": bio, # Using bio_short for initial bio
+            "birth_date": birth_date,
+            "status": "verifying",
+            "verification_video_id": verification_url, # Storing photo URL in existing column for now
+            "social_links": [{"network": "country", "url": country_code}] # Storing country in social_links or add column? generic 'config_persona' maybe?
+            # Let's verify schema. Using 'config_persona' for country temporarily or add to metadata.
+        }
         
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ Aprobar", callback_data=f"admin_approve|{user.id}"),
-                InlineKeyboardButton("❌ Rechazar", callback_data=f"admin_reject|{user.id}")
-            ]
-        ]
+        print(f"[Apply Model] Upserting DB record: {model_data}")
+        # Check if model exists
+        existing = db.client.table("models").select("*").eq("telegram_id", user.id).maybe_single().execute()
         
-        await bot.send_photo(
-            chat_id=ADMIN_ID,
-            photo=verification_url, # Telegram might need a file object or URL. URL usually works if public.
-            caption=caption,
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-    except Exception as e:
-        print(f"[Admin Notify Error] {e}")
-        # Don't fail the request if notification fails, but log it.
+        if existing and existing.data:
+            # Update existing
+            db.client.table("models").update(model_data).eq("telegram_id", user.id).execute()
+            model_id = existing.data['id']
+            print(f"[Apply Model] Updated existing model: {model_id}")
+        else:
+            # Insert new
+            res = db.client.table("models").insert(model_data).execute()
+            if res.data:
+                model_id = res.data[0]['id']
+                print(f"[Apply Model] Created new model: {model_id}")
+            else:
+                print("[Apply Model] Insert returned no data")
+                raise HTTPException(status_code=500, detail="Error creating model record")
     
-    return {"status": "success", "message": "Solicitud enviada. Te notificaremos cuando seas aprobada."}
+        # 3. Notify Admin
+        print(f"[Apply Model] Notifying admin {ADMIN_ID}")
+        try:
+            bot = Bot(token=TELEGRAM_TOKEN)
+            
+            caption = (
+                f"📝 *Nueva Solicitud de Creador*\n\n"
+                f"👤 *Usuario:* @{user.username} (ID: `{user.id}`)\n"
+                f"📛 *Nombre Real:* {full_name}\n"
+                f"🌍 *País:* {country_code}\n"
+                f"🎂 *Fecha Nac:* {birth_date}\n\n"
+                f"📸 *Evidencia:* [Ver Foto]({verification_url})"
+            )
+            
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Aprobar", callback_data=f"admin_approve|{user.id}"),
+                    InlineKeyboardButton("❌ Rechazar", callback_data=f"admin_reject|{user.id}")
+                ]
+            ]
+            
+            await bot.send_photo(
+                chat_id=ADMIN_ID,
+                photo=verification_url, # Telegram might need a file object or URL. URL usually works if public.
+                caption=caption,
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            print("[Apply Model] Admin notified successfully")
+        except Exception as e:
+            print(f"[Admin Notify Error] {e}")
+            traceback.print_exc()
+            # Don't fail the request if notification fails, but log it.
+        
+        return {"status": "success", "message": "Solicitud enviada. Te notificaremos cuando seas aprobada."}
+    
+    except Exception as exc:
+        print(f"[Apply Model CRITICAL ERROR] {exc}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(exc)}")
 
 class StartProfileUpdate(BaseModel):
     full_name: Optional[str] = None # Allow updating real name too if needed, or keep it read-only? 
