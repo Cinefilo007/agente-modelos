@@ -36,6 +36,7 @@ class StartProfileUpdate(BaseModel):
     cover_url: Optional[str] = None
     avatar_url: Optional[str] = None
     terms_accepted: Optional[bool] = None
+    birth_date: Optional[str] = None
 
 @router.get("/me")
 async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
@@ -44,7 +45,9 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
         client = db.client.table("clients").select("*").eq("telegram_id", user.id).single().execute()
         if not client.data:
              raise HTTPException(status_code=404, detail="Client profile not found.")
-        return client.data
+        user_data = client.data
+        user_data['role'] = 'client'
+        return user_data
 
     # Default to Model
     model = db.client.table("models").select("*").eq("telegram_id", user.id).single().execute()
@@ -60,6 +63,7 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
     except:
         user_data['posts_count'] = 0
 
+    user_data['role'] = 'model'
     return user_data
 
 @router.put("/me")
@@ -135,7 +139,7 @@ async def get_models_for_explore():
     try:
         response = db.client.table("models") \
             .select("id, artistic_name, username, avatar_url, is_online") \
-            .eq("status", "active") \
+            .in_("status", ["active", "verifying"]) \
             .execute()
         return response.data if response.data else []
     except Exception as e:

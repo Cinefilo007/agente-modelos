@@ -26,7 +26,11 @@ function Profile() {
     // 1. Determine if we are viewing "me" or another user
     const isMe = !username ||
         username === 'me' ||
-        (currentUser && (username === currentUser.username || String(username) === String(currentUser.id)));
+        (currentUser && (
+            username === currentUser.username ||
+            String(username) === String(currentUser.id) ||
+            String(username) === String(currentUser.telegram_id)
+        ));
 
     const isClient = currentUser?.role === 'client';
 

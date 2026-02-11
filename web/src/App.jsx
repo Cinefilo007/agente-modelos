@@ -19,6 +19,7 @@ import AdminPanel from './pages/AdminPanel';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import ClientProfile from './pages/ClientProfile';
 import ServiceCheckout from './pages/ServiceCheckout';
+import Onboarding from './pages/Onboarding';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -33,7 +34,22 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!user) {
+    console.log("[Router] Usuario no autenticado, redirigiendo a landing.");
     return <Navigate to="/landing" state={{ from: location }} replace />;
+  }
+
+  // Strict check for profile completion
+  const needsOnboarding = !user.birth_date || !user.terms_accepted;
+  const isCurrentlyInOnboarding = location.pathname === '/onboarding';
+
+  if (needsOnboarding && !isCurrentlyInOnboarding) {
+    console.warn("[Router] Perfil incompleto (Falta Edad o T&C), redirigiendo a onboarding.");
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (!needsOnboarding && isCurrentlyInOnboarding) {
+    console.log("[Router] Perfil ya completo, redirigiendo al feed.");
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -79,6 +95,13 @@ function App() {
               <Route path="client" element={<ClientProfile />} />
               <Route path="checkout" element={<ServiceCheckout />} />
             </Route>
+
+            {/* Onboarding Route */}
+            <Route path="/onboarding" element={
+              <ProtectedRoute>
+                <Onboarding />
+              </ProtectedRoute>
+            } />
 
             {/* Catch all - Redirect to Landing */}
             <Route path="*" element={<Navigate to="/landing" replace />} />
