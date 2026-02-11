@@ -15,8 +15,7 @@ import CreatePost from './pages/CreatePost';
 import CreateStory from './pages/CreateStory';
 import EditProfile from './pages/EditProfile';
 import PostDetail from './pages/PostDetail';
-import AdminPanel from './pages/AdminPanel';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import AdminDashboard from './pages/AdminDashboard'; // [NEW]
 import ClientProfile from './pages/ClientProfile';
 import ServiceCheckout from './pages/ServiceCheckout';
 import Onboarding from './pages/Onboarding';
@@ -42,26 +41,30 @@ const ProtectedRoute = ({ children }) => {
 
   // Strict check for profile completion - Only for CLIENTS
   // Models are already verified by the admin through the bot ( Phase A )
+  // Admins are verified by system config
   const isClient = user.role === 'client';
   const isModel = user.role === 'model';
+  const isAdmin = user.role === 'admin';
 
-  // A model should NEVER go to onboarding
+  // A model or admin should NEVER go to onboarding
   const needsOnboarding = isClient && (!user.birth_date || !user.terms_accepted);
   const isCurrentlyInOnboarding = location.pathname === '/onboarding';
 
-  if (isModel && isCurrentlyInOnboarding) {
-    console.log("[Router] Modelo detectado en onboarding, redirigiendo al feed saludablemente.");
-    return <Navigate to="/" replace />;
+  if ((isModel || isAdmin) && isCurrentlyInOnboarding) {
+    console.log(`[Router] ${isAdmin ? 'Admin' : 'Modelo'} detectado en onboarding, redirigiendo al feed/admin.`);
+    return <Navigate to={isAdmin ? "/admin" : "/"} replace />;
   }
 
   if (needsOnboarding && !isCurrentlyInOnboarding) {
+    // Allow public paths or specific paths? No, strict onboarding.
     console.warn("[Router] Cliente con perfil incompleto, redirigiendo a onboarding.");
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (!needsOnboarding && isCurrentlyInOnboarding) {
-    console.log("[Router] Perfil ya completo, redirigiendo al feed.");
-    return <Navigate to="/" replace />;
+  // If user is admin trying to access root, maybe redirect to admin dashboard or let them see feed?
+  // User asked "if admin enters, redirect to admin panel"
+  if (isAdmin && location.pathname === '/' && !location.pathname.startsWith('/admin')) {
+    return <Navigate to="/admin" replace />;
   }
 
   return children;
@@ -87,6 +90,13 @@ function App() {
               </PublicRoute>
             } />
 
+            {/* Admin Route - Separate Layout potentially? Or same? Let's use separate for focus */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+
             {/* Protected Routes */}
             <Route path="/" element={
               <ProtectedRoute>
@@ -102,8 +112,7 @@ function App() {
               <Route path="create-post" element={<CreatePost />} />
               <Route path="create-story" element={<CreateStory />} />
               <Route path="post/:id" element={<PostDetail />} />
-              <Route path="admin-panel" element={<AdminPanel />} />
-              <Route path="super-admin" element={<SuperAdminDashboard />} />
+              {/* Legacy admin panel routes if needed, or remove */}
               <Route path="client" element={<ClientProfile />} />
               <Route path="checkout" element={<ServiceCheckout />} />
             </Route>

@@ -2,144 +2,269 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Shield, Calendar, CheckCircle, ChevronRight, AlertCircle } from 'lucide-react';
+import {
+    Shield, Calendar, CheckCircle, ChevronRight, AlertCircle,
+    User, Camera, Star, Heart, Zap, Award, Smile
+} from 'lucide-react';
+
+const AVATARS = [
+    { id: 'avatar_1', icon: User, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+    { id: 'avatar_2', icon: Star, color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
+    { id: 'avatar_3', icon: Heart, color: 'text-pink-400', bg: 'bg-pink-500/20' },
+    { id: 'avatar_4', icon: Zap, color: 'text-purple-400', bg: 'bg-purple-500/20' },
+    { id: 'avatar_5', icon: Award, color: 'text-green-400', bg: 'bg-green-500/20' },
+    { id: 'avatar_6', icon: Smile, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+];
 
 const Onboarding = () => {
     const { user, updateUser, logout } = useAuth();
     const navigate = useNavigate();
-    const [birthDate, setBirthDate] = useState('');
-    const [termsAccepted, setTermsAccepted] = useState(false);
+
+    // States: 'select_role', 'fan_flow', 'creator_flow', 'success_creator'
+    const [step, setStep] = useState('select_role');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const handleSubmit = async (e) => {
+    // Fan Data
+    const [birthDate, setBirthDate] = useState('');
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0].id);
+
+    // Creator Data
+    const [creatorName, setCreatorName] = useState('');
+    const [creatorCountry, setCreatorCountry] = useState('');
+    const [creatorBio, setCreatorBio] = useState('');
+    const [creatorBirthDate, setCreatorBirthDate] = useState('');
+    const [verificationPhoto, setVerificationPhoto] = useState(null);
+
+    const handleFanSubmit = async (e) => {
         e.preventDefault();
         setError(null);
 
-        // Basic validation
-        if (!birthDate) {
-            setError("Por favor, ingresa tu fecha de nacimiento.");
-            return;
-        }
-        if (!termsAccepted) {
-            setError("Debes aceptar los términos y condiciones.");
-            return;
-        }
-
-        // Age validation (frontend check)
+        // Age check logic remains same
         const birth = new Date(birthDate);
         const today = new Date();
         let age = today.getFullYear() - birth.getFullYear();
         const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-            age--;
-        }
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
 
         if (age < 18) {
-            setError("Lo sentimos, debes ser mayor de 18 años para acceder al portal.");
+            setError("Debes ser mayor de 18 años.");
+            return;
+        }
+
+        if (!termsAccepted) {
+            setError("Acepta los términos para continuar.");
             return;
         }
 
         setLoading(true);
         try {
-            console.log("[Onboarding] Enviando datos de registro:", { birthDate, termsAccepted });
-            const response = await api.put('/profile/me', {
+            // Update profile with avatar_url logic (using predefined IDs for now)
+            // Backend should handle 'avatar_url' update if sent
+            const avatarUrl = `https://ui-avatars.com/api/?name=${user.username}&background=random`; // Fallback or map ID to asset
+
+            await api.put('/profile/me', {
                 birth_date: birthDate,
-                terms_accepted: true
+                terms_accepted: true,
+                avatar_url: avatarUrl // Saving a default generated one based on username for now, or map icon ID
             });
 
-            console.log("[Onboarding] Registro completado con éxito.");
-            // Update local user state
             updateUser({
                 birth_date: birthDate,
-                terms_accepted: true
+                terms_accepted: true,
+                role: 'client'
             });
-
-            // Redirect to feed
             navigate('/');
         } catch (err) {
-            console.error("[Onboarding] Error al guardar datos:", err);
-            setError(err.response?.data?.detail || "Ocurrió un error al guardar tus datos. Intenta de nuevo.");
+            setError("Error al guardar perfil.");
         } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <div className="min-h-screen bg-[#050510] text-white flex items-center justify-center p-4 font-sans">
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
-                <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-pink-600/10 rounded-full blur-[100px]"></div>
-            </div>
+    const handleCreatorSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
 
-            <div className="max-w-md w-full bg-black/40 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl relative z-10">
-                <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-3 shadow-lg shadow-purple-500/20">
-                        <Shield className="w-8 h-8 text-white" />
+        if (!verificationPhoto) {
+            setError("Debes subir una foto de verificación.");
+            return;
+        }
+
+        const birth = new Date(creatorBirthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        if (age < 18) {
+            setError("Debes ser mayor de 18 años para ser creador.");
+            return;
+        }
+
+        setLoading(true);
+        const formData = new FormData();
+        formData.append('full_name', creatorName);
+        formData.append('country_code', creatorCountry);
+        formData.append('birth_date', creatorBirthDate);
+        formData.append('bio', creatorBio);
+        formData.append('file', verificationPhoto);
+
+        try {
+            await api.post('/profile/apply-model', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setStep('success_creator');
+        } catch (err) {
+            setError("Error al enviar solicitud. Intenta de nuevo.");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // --- RENDER STEPS ---
+
+    if (step === 'select_role') {
+        return (
+            <div className="min-h-screen bg-[#050510] text-white flex items-center justify-center p-4">
+                <div className="max-w-2xl w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div
+                        onClick={() => setStep('fan_flow')}
+                        className="bg-gray-900/50 hover:bg-purple-900/20 border border-white/10 hover:border-purple-500 cursor-pointer p-8 rounded-3xl transition-all group text-center"
+                    >
+                        <div className="w-20 h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                            <Heart className="w-10 h-10 text-purple-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2">Soy Fan</h2>
+                        <p className="text-gray-400 text-sm">Quiero descubrir contenido exclusivo y conectar con creadores.</p>
                     </div>
-                    <h1 className="text-3xl font-black mb-2 tracking-tight">Casi listo, <span className="text-purple-400">{user?.username || 'Usuario'}</span></h1>
-                    <p className="text-gray-400">Necesitamos completar tu perfil para garantizar la seguridad de la comunidad.</p>
+
+                    <div
+                        onClick={() => setStep('creator_flow')}
+                        className="bg-gray-900/50 hover:bg-pink-900/20 border border-white/10 hover:border-pink-500 cursor-pointer p-8 rounded-3xl transition-all group text-center"
+                    >
+                        <div className="w-20 h-20 bg-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                            <Star className="w-10 h-10 text-pink-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2">Soy Creador</h2>
+                        <p className="text-gray-400 text-sm">Quiero monetizar mi contenido y crecer mi audiencia.</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (step === 'success_creator') {
+        return (
+            <div className="min-h-screen bg-[#050510] text-white flex items-center justify-center p-4 text-center">
+                <div className="max-w-md bg-gray-900/80 p-8 rounded-3xl border border-green-500/30">
+                    <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <CheckCircle className="w-10 h-10 text-green-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-4">¡Solicitud Enviada!</h2>
+                    <p className="text-gray-400 mb-6">Hemos recibido tus datos. Nuestro equipo revisará tu perfil y te notificaremos por Telegram cuando seas aprobado.</p>
+                    <button onClick={logout} className="text-purple-400 hover:text-purple-300">Volver al inicio</button>
+                </div>
+            </div>
+        );
+    }
+
+    if (step === 'creator_flow') {
+        return (
+            <div className="min-h-screen bg-[#050510] flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-gray-900/80 border border-white/10 p-8 rounded-3xl">
+                    <h2 className="text-2xl font-bold mb-6 text-white">Verificación de Creador</h2>
+                    {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+                    <form onSubmit={handleCreatorSubmit} className="space-y-4">
+                        <input type="text" placeholder="Nombre Real Completo" value={creatorName} onChange={e => setCreatorName(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white" required />
+                        <input type="text" placeholder="País" value={creatorCountry} onChange={e => setCreatorCountry(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white" required />
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-400">Fecha de Nacimiento</label>
+                            <input type="date" value={creatorBirthDate} onChange={e => setCreatorBirthDate(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white" required />
+                        </div>
+                        <textarea placeholder="Cuéntanos sobre ti (Bio)" value={creatorBio} onChange={e => setCreatorBio(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white h-24" />
+
+                        <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center cursor-pointer hover:border-purple-500 transition-colors relative">
+                            <input type="file" onChange={e => setVerificationPhoto(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" required />
+                            <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-300">{verificationPhoto ? verificationPhoto.name : "Subir Selfie con Documento"}</p>
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button type="button" onClick={() => setStep('select_role')} className="flex-1 py-3 text-gray-400">Volver</button>
+                            <button type="submit" disabled={loading} className="flex-[2] py-3 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl text-white font-bold">
+                                {loading ? 'Enviando...' : 'Aplicar'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    // Default: Fan Flow
+    return (
+        <div className="min-h-screen bg-[#050510] text-white flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-black/40 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl relative z-10">
+                <div className="text-center mb-6">
+                    <h1 className="text-2xl font-bold">Bienvenido, Fan 🚀</h1>
+                    <p className="text-gray-400 text-sm">Personaliza tu perfil para empezar.</p>
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-shake">
-                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                    <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-2">
+                        <AlertCircle className="w-5 h-5 text-red-500" />
                         <p className="text-sm text-red-400">{error}</p>
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleFanSubmit} className="space-y-6">
+                    {/* Avatar Selection */}
+                    <div>
+                        <label className="text-sm font-medium text-gray-300 mb-3 block">Elige tu Avatar</label>
+                        <div className="grid grid-cols-3 gap-3">
+                            {AVATARS.map((av) => (
+                                <div
+                                    key={av.id}
+                                    onClick={() => setSelectedAvatar(av.id)}
+                                    className={`p-3 rounded-xl flex items-center justify-center cursor-pointer border transition-all ${selectedAvatar === av.id ? 'border-purple-500 bg-purple-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10'}`}
+                                >
+                                    <av.icon className={`w-6 h-6 ${av.color}`} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-purple-400" />
-                            Fecha de Nacimiento
-                        </label>
+                        <label className="text-sm font-medium text-gray-300">Fecha de Nacimiento</label>
                         <input
                             type="date"
                             value={birthDate}
                             onChange={(e) => setBirthDate(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all appearance-none"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                             required
                         />
-                        <p className="text-[10px] text-gray-500">Debes ser mayor de 18 años para ingresar.</p>
                     </div>
 
-                    <div className="flex items-start gap-3 p-4 bg-white/5 rounded-xl border border-white/5 hover:border-purple-500/20 transition-all cursor-pointer group" onClick={() => setTermsAccepted(!termsAccepted)}>
-                        <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${termsAccepted ? 'bg-purple-500 border-purple-500 shadow-sm shadow-purple-500/50' : 'border-white/20'}`}>
+                    <div className="flex items-start gap-3 p-3 bg-white/5 rounded-xl cursor-pointer" onClick={() => setTermsAccepted(!termsAccepted)}>
+                        <div className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center border transition-all ${termsAccepted ? 'bg-purple-500 border-purple-500' : 'border-white/30'}`}>
                             {termsAccepted && <CheckCircle className="w-3.5 h-3.5 text-white" />}
                         </div>
-                        <div className="text-sm">
-                            <span className="text-gray-300 block group-hover:text-white transition-colors font-medium">Acepto los Términos y Condiciones</span>
-                            <span className="text-[10px] text-gray-500">Al continuar, confirmas que has leído nuestras políticas de privacidad y uso de la plataforma.</span>
+                        <div className="text-xs text-gray-300">
+                            Acepto tener más de 18 años y los Términos y Condiciones.
                         </div>
                     </div>
 
-                    <div className="pt-2">
+                    <div className="flex gap-3 pt-2">
+                        <button type="button" onClick={() => setStep('select_role')} className="flex-1 py-3 text-gray-400 hover:text-white">Atrás</button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:opacity-90 transition-all transform active:scale-[0.98] shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 group"
+                            className="flex-[2] py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-purple-500/25 disabled:opacity-50"
                         >
-                            {loading ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            ) : (
-                                <>
-                                    Confirmar y Entrar
-                                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                </>
-                            )}
+                            {loading ? 'Guardando...' : 'Comenzar'}
                         </button>
                     </div>
                 </form>
-
-                <div className="mt-8 text-center">
-                    <button
-                        onClick={logout}
-                        className="text-gray-500 hover:text-white text-sm transition-colors"
-                    >
-                        Cerrar Sesión
-                    </button>
-                </div>
             </div>
         </div>
     );

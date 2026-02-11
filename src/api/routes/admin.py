@@ -2,6 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from src.services.database import db
+import os
+from telegram import Bot
+
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 router = APIRouter()
 
@@ -16,6 +20,9 @@ class BlacklistAddRequest(BaseModel):
 class DisputeResolveRequest(BaseModel):
     resolution: str # client_win, model_win
     admin_notes: str
+
+class VerificationAction(BaseModel):
+    action: str # approve, reject
 
 # --- Routes ---
 
@@ -67,8 +74,57 @@ async def get_dashboard_kpis():
     """Retorna KPIs globales."""
     # En el futuro, esto consultaría la BBDD real
     return {
-        "revenue": "$45,230",
-        "active_models": 124,
-        "active_disputes": len(db.get_active_disputes()),
         "credits": "1.2M"
     }
+
+# VERIFICATIONS
+@router.get("/verifications")
+async def get_pending_verifications():
+    """Obtiene modelos pendientes de verificación."""
+    try:
+        # Fetch models with status 'verifying'
+        response = db.client.table("models").select("*").eq("status", "verifying").execute()
+        return response.data if response.data else []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/verify/{model_id}")
+async def process_verification(model_id: str, body: VerificationAction):
+    """Aprueba o rechaza una verificación."""
+    try:
+        new_status = "active" if body.action == "approve" else "rejected"
+        is_verified = (body.action == "approve")
+        
+        # 1. Update DB
+        if body.action == "approve":
+            db.client.table("models").update({"status": "active", "is_verified": True}).eq("id", model_id).execute()
+        else:
+             db.client.table("models").update({"status": "rejected"}).eq("id", model_id).execute()
+
+        # 2. Get Model to notify
+        model = db.get_model_by_uuid(model_id)
+        if not model:
+             return {"status": "success", "message": "Updated but model not found for notification"}
+
+        # 3. Notify via Telegram
+        if TELEGRAM_TOKEN:
+            bot = Bot(token=TELEGRAM_TOKEN)
+            try:
+                if body.action == "approve":
+                    await bot.send_message(
+                        chat_id=model['telegram_id'],
+                        text="✅ *¡Felicidades! Tu cuenta ha sido verificada.*\n\nYa eres oficialmente un Creador. Accede al portal para configurar tus paquetes y empezar a ganar.",
+                        parse_mode="Markdown"
+                    )
+                else:
+                    await bot.send_message(
+                        chat_id=model['telegram_id'],
+                        text="❌ *Solicitud Rechazada*\n\nTu perfil no cumple con nuestros requisitos de verificación.",
+                        parse_mode="Markdown"
+                    )
+            except Exception as e:
+                print(f"Error notifying user {model['telegram_id']}: {e}")
+
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

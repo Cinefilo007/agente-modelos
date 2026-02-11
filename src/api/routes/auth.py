@@ -10,7 +10,6 @@ from jose import jwt
 from src.services.database import db
 from urllib.parse import parse_qsl
 import json
-import traceback
 
 router = APIRouter()
 
@@ -132,28 +131,26 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                     if res is not None and hasattr(res, 'data') and res.data and len(res.data) > 0:
                         user_data = res.data[0]
                     else:
-                        print(f"[Backend Auth] Insertion failed or returned no data for {telegram_id}. Response: {res}")
-                        # Last ditch effort: try to select again in case it was created but returning nothing
+                        print(f"[Backend Auth] Insertion failed for {telegram_id}. Response: {res}")
+                        # Final retry select
                         retry_res = db.client.table("clients").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
                         if retry_res and retry_res.data:
                             user_data = retry_res.data
                         else:
-                            raise HTTPException(status_code=500, detail="Error crítico al crear el usuario. Intenta de nuevo.")
+                            raise HTTPException(status_code=500, detail="Error al crear el perfil de usuario.")
                 except HTTPException:
                     raise
                 except Exception as e:
-                     error_trace = traceback.format_exc()
-                     print(f"[Backend Auth] Database Error during insert for {telegram_id}: {str(e)}\n{error_trace}")
-                     raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+                     print(f"[Backend Auth] Database Error during insert for {telegram_id}: {str(e)}")
+                     raise HTTPException(status_code=500, detail="Fallo en el registro del usuario.")
         except HTTPException:
             raise
         except Exception as e:
-             error_detail = f"Database Error checking clients: {str(e)}\n{traceback.format_exc()}"
-             print(f"[Backend Auth] {error_detail}")
-             raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+             print(f"[Backend Auth] Database Error checking clients: {str(e)}")
+             raise HTTPException(status_code=500, detail="Error de comunicación con la base de datos.")
 
     if not user_data:
-         raise HTTPException(status_code=500, detail="No se pudo obtener o crear la información del usuario.")
+         raise HTTPException(status_code=500, detail="No se pudo procesar la sesión del usuario.")
 
     # Age check
     birth_date_str = user_data.get('birth_date')
@@ -174,20 +171,30 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
     except:
         pass
 
+    # Validar si es Admin (Hardcoded por seguridad/simplicidad en esta fase)
+    ADMIN_ID = 1123020118
+    is_admin = (telegram_id == ADMIN_ID)
+    final_role = "admin" if is_admin else user_role
+
     token_data = {
         "sub": str(telegram_id),
-        "role": user_role,
+        "role": final_role,
         "user_id": user_data['id'],
         "username": user_data.get('username'),
         "iat": datetime.utcnow()
     }
     token = jwt.encode(token_data, JWT_SECRET, algorithm=ALGORITHM)
     
+    # Inject admin role in response too so frontend knows
+    user_data_response = user_data.copy()
+    if is_admin:
+        user_data_response['role'] = 'admin'
+
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": user_data,
-        "role": user_role
+        "user": user_data_response,
+        "role": final_role
     }
 
 @router.post("/telegram")
