@@ -14,14 +14,14 @@ export default function NebulaBackground() {
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black/5">
             {/* Primary Blob (Top Left) */}
             <div
-                className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] rounded-full blur-[120px] animate-pulse transition-colors duration-1000"
+                className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] rounded-full blur-[120px] animate-pulse-slow transition-colors duration-1000"
                 style={{ backgroundColor: themeColor, opacity: 0.15 }}
             ></div>
 
             {/* Secondary Blob (Bottom Right) */}
             <div
-                className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] animate-pulse transition-colors duration-1000"
-                style={{ backgroundColor: themeColor, opacity: 0.15, animationDelay: '2s' }}
+                className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] animate-pulse-slow transition-colors duration-1000"
+                style={{ backgroundColor: themeColor, opacity: 0.15, animationDelay: '4s' }}
             ></div>
 
             {/* Center/Random Blob for extra depth */}
