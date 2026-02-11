@@ -126,3 +126,32 @@ Este sistema está diseñado bajo la filosofía de "Mejora Infinita", funcionado
 -   **Motor IA**: OpenRouter API (`openai` python client).
 -   **Base de Datos**: Supabase (PostgreSQL + Storage).
 -   **Despliegue**: Railway (Docker).
+
+## 7. Estado Actual de Implementación (Hitos Completados)
+
+### 7.1 Autenticación y Seguridad
+-   **Sistema Híbrido**: Validación de `initData` de Telegram + JWT propio.
+-   **Roles de Usuario**: Soporte para `model` (Creador), `client` (Fan), y `admin` (Administrador).
+-   **Gestión de Admins**: Tabla dedicada `admins` en base de datos para asignar roles (`owner`, `moderator`) y permisos granulares, eliminando hardcoding.
+-   **Protección de Rutas**: Middleware en Frontend (`ProtectedRoute`) que valida token y completitud del perfil (Términos, Edad).
+
+### 7.2 Onboarding y Verificación
+-   **Flujo Diferenciado**:
+    -   **Fans**: Selección de Avatar, Confirmación de Edad (+18), Aceptación de T&C.
+    -   **Creadores**: Formulario completo + Selfie con Documento (ID).
+-   **Verificación Automática/Manual**:
+    -   Carga de evidencia a Bucket `verifications` (con auto-creación de bucket si falla).
+    -   Notificación inmediata a Telegram del Admin con foto y botones de Aprobar/Rechazar.
+    -   Fallback a texto con enlace si la API de Telegram falla al renderizar la imagen.
+
+### 7.3 Experiencia de Administrador (God Mode)
+-   **Dashboard Integrado**: Acceso directo desde el perfil.
+-   **Feed de Moderación**: 
+    -   Vista idéntica al usuario pero sin interacciones sociales (Likes/Comentarios ocultos).
+    -   Botón **Eliminar** (Papelera) en cada post.
+    -   Registro de motivos de eliminación.
+-   **Navegación Simplificada**: Menú adaptado que oculta "Crear Post" y "Notificaciones" para centrarse en la gestión.
+
+### 7.4 Infraestructura y Robustez
+-   **Storage Inteligente**: Detección y auto-creación de buckets de Supabase (`verifications`, `posts`, `stories`) para evitar errores 500.
+-   **Logging Extendido**: Trazabilidad completa en backend (`auth.py`, `profile.py`) para depuración rápida en Railway.
