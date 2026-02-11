@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FeedPostCard } from '../components/feed/FeedPostCard';
 import { FeedFilter } from '../components/feed/FeedFilter';
