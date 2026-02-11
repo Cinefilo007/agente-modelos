@@ -276,51 +276,36 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             className="w-full h-full object-cover"
                         />
                     )}
-
-                    {/* Gradient Overlay bottom */}
-                    <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none"></div>
                 </div>
 
-                {/* Absolute Actions Overlay */}
-                <div className="absolute bottom-0 w-full p-4 z-20">
-                    <div className="flex items-end justify-between mb-2">
-                        <div className="flex-1 mr-12">
-                            <p className="text-sm text-gray-200 line-clamp-2 drop-shadow-md">
-                                <span className="font-bold text-white mr-2">{post.user.artistic_name}</span>
-                                {post.description}
-                            </p>
-                        </div>
+                {/* Bottom Actions Area */}
+                <div className="p-4 bg-black/40 backdrop-blur-md">
+                    <div className="flex items-center gap-4 mb-3">
+                        <button
+                            onClick={handleLike}
+                            className={`flex items-center gap-1.5 transition-all active:scale-90 ${isLiked ? 'text-pink-500' : 'text-white'}`}
+                        >
+                            <Heart size={24} className={isLiked ? 'fill-pink-500' : ''} />
+                            <span className="text-sm font-bold">{likeCount}</span>
+                        </button>
 
-                        <div className="flex flex-col items-center gap-4">
-                            {!isAdmin && (
-                                <>
-                                    <button
-                                        onClick={handleLike}
-                                        className={`transition-all active:scale-90 flex flex-col items-center gap-1 group`}
-                                    >
-                                        <div className={`p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 group-hover:bg-pink-500/20 transition-colors ${isLiked ? 'text-pink-500 border-pink-500/50' : 'text-white'}`}>
-                                            <Heart size={24} className={isLiked ? 'fill-pink-500' : ''} />
-                                        </div>
-                                        <span className="text-xs font-bold text-white shadow-black drop-shadow">{likeCount}</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setShowCommentInput(!showCommentInput)}
-                                        className="transition-all active:scale-90 flex flex-col items-center gap-1 group"
-                                    >
-                                        <div className="p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 group-hover:bg-blue-500/20 transition-colors text-white">
-                                            <MessageCircle size={24} />
-                                        </div>
-                                        <span className="text-xs font-bold text-white shadow-black drop-shadow">{commentCount}</span>
-                                    </button>
-                                </>
-                            )}
-                        </div>
+                        <button
+                            onClick={() => setShowCommentInput(true)}
+                            className="flex items-center gap-1.5 text-white transition-all active:scale-90"
+                        >
+                            <MessageCircle size={24} />
+                            <span className="text-sm font-bold">{commentCount}</span>
+                        </button>
                     </div>
 
-                    {/* Quick Comment Input */}
-                    {showCommentInput && !isAdmin && (
-                        <div className="flex gap-2 items-center mt-3 animate-fade-in-up">
+                    <p className="text-sm text-gray-200 mb-3 line-clamp-3">
+                        <span className="font-bold text-white mr-2">{post.user.artistic_name || post.user.name}</span>
+                        {post.description}
+                    </p>
+
+                    {/* Quick Comment Input - Now integrated better */}
+                    {!isAdmin && (
+                        <div className="flex gap-2 items-center pt-3 border-t border-white/5">
                             <Avatar src={user?.avatar_url} size="xs" />
                             <div className="flex-1 relative">
                                 <input
@@ -328,17 +313,17 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                                     value={commentText}
                                     onChange={(e) => setCommentText(e.target.value)}
                                     placeholder="Añade un comentario..."
-                                    className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-full py-2 px-4 text-sm text-white focus:outline-none focus:border-pink-500 placeholder-gray-400"
+                                    className="w-full bg-white/5 border border-white/10 rounded-full py-2 px-4 text-sm text-white focus:outline-none focus:border-pink-500/50 placeholder-gray-500 transition-all"
                                     onKeyDown={(e) => e.key === 'Enter' && handleComment()}
-                                    autoFocus
                                 />
-                                <button
-                                    onClick={handleComment}
-                                    disabled={!commentText.trim()}
-                                    className="absolute right-1 top-1 p-1.5 bg-pink-600 rounded-full text-white disabled:opacity-50 disabled:bg-transparent hover:bg-pink-500 transition-colors"
-                                >
-                                    <Send size={14} />
-                                </button>
+                                {commentText.trim() && (
+                                    <button
+                                        onClick={handleComment}
+                                        className="absolute right-1 top-1 p-1.5 bg-pink-600 rounded-full text-white hover:bg-pink-500 transition-colors"
+                                    >
+                                        <Send size={14} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     )}

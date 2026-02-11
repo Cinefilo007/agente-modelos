@@ -42,7 +42,9 @@ export default function Layout() {
     };
 
     const mainTabs = ['/', '/explore', '/notifications', '/profile'];
-    const showNav = mainTabs.includes(location.pathname);
+    const showNav = mainTabs.some(tab =>
+        location.pathname === tab || (tab !== '/' && location.pathname.startsWith(tab))
+    );
 
     // Prevent right click globally
     React.useEffect(() => {
