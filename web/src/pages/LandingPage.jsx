@@ -2,41 +2,30 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Zap, Heart, Globe, Lock, Star, ChevronRight, TrendingUp } from 'lucide-react'; // Assuming lucide-react is installed or I'll use SVGs
-
-// Fallback SVGs if lucide-react is not available (which it likely isn't based on previous file lists)
-const Icon = ({ name, className }) => {
-    // Simple SVG paths for used icons
-    const icons = {
-        shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
-        zap: <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />,
-        heart: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />,
-        globe: <circle cx="12" cy="12" r="10" />, // simplified
-        lock: <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a7 7 0 00-14 0v2" />,
-        star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />,
-        chevron: <polyline points="9 18 15 12 9 6" />,
-        trending: <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-    };
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            {icons[name] || <circle cx="12" cy="12" r="10" />}
-        </svg>
-    );
-};
+import { Shield, Zap, Heart, Globe, Lock, Star, ChevronRight, TrendingUp, Users, DollarSign, Bot } from 'lucide-react';
 
 const LandingPage = () => {
     const { loginWithTelegram } = useAuth();
     const navigate = useNavigate();
     const telegramWrapperRef = useRef(null);
-    const [activeTab, setActiveTab] = useState('models'); // 'models' or 'clients'
+    const [activeTab, setActiveTab] = useState('creators'); // 'creators' (priority) or 'fans'
+    const [scrolled, setScrolled] = useState(false);
 
+    // Scroll effect for navbar
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 50);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Telegram Widget
     useEffect(() => {
         if (telegramWrapperRef.current && telegramWrapperRef.current.innerHTML !== "") return;
         const script = document.createElement('script');
         script.src = "https://telegram.org/js/telegram-widget.js?22";
         script.setAttribute('data-telegram-login', 'AgenteNebulaIA_bot');
         script.setAttribute('data-size', 'large');
-        script.setAttribute('data-radius', '10');
+        script.setAttribute('data-radius', '12');
         script.setAttribute('data-request-access', 'write');
         script.setAttribute('data-userpic', 'false');
         script.setAttribute('data-onauth', 'onTelegramAuth(user)');
@@ -47,161 +36,128 @@ const LandingPage = () => {
             try { await loginWithTelegram(user); navigate('/'); }
             catch (error) { alert(error.response?.data?.detail || "Login failed"); }
         };
+        // Clean global only on unmount
         return () => { window.onTelegramAuth = undefined; }
     }, [loginWithTelegram, navigate]);
 
+    const scrollToLogin = () => {
+        telegramWrapperRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
     return (
-        <div className="min-h-screen bg-[#050510] text-white flex flex-col font-sans selection:bg-purple-500 selection:text-white overflow-x-hidden">
+        <div className="min-h-screen bg-[#030014] text-white font-sans selection:bg-pink-500 selection:text-white overflow-x-hidden">
+
+            {/* Background Effects */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-purple-900/20 rounded-full blur-[120px] animate-pulse"></div>
+                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-pink-900/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute top-[40%] left-[20%] w-[300px] h-[300px] bg-blue-900/10 rounded-full blur-[80px]"></div>
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+            </div>
 
             {/* Navbar */}
-            <nav className="fixed top-0 w-full z-50 backdrop-blur-md border-b border-white/10 bg-black/50">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 animate-pulse"></div>
-                        <span className="font-bold text-xl tracking-wider">AGENTE <span className="text-purple-400">NEBULA</span></span>
+            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 py-4' : 'bg-transparent py-6'}`}>
+                <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+                    <div className="flex items-center gap-2 group cursor-pointer">
+                        <div className="relative">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center transform group-hover:rotate-12 transition-transform shadow-[0_0_20px_rgba(236,72,153,0.5)]">
+                                <Zap className="w-6 h-6 text-white text-shadow" />
+                            </div>
+                        </div>
+                        <span className="font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                            NEBULA<span className="text-pink-500">.AGENCY</span>
+                        </span>
                     </div>
-                    <button onClick={() => telegramWrapperRef.current?.scrollIntoView({ behavior: 'smooth' })} className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 transition-all font-medium text-sm">
-                        Acceder
+                    <div className="hidden md:flex gap-8 text-sm font-medium text-gray-300">
+                        <a href="#features" className="hover:text-white transition-colors">Características</a>
+                        <a href="#creators" className="hover:text-white transition-colors">Para Creadoras</a>
+                        <a href="#fans" className="hover:text-white transition-colors">Para Fans</a>
+                    </div>
+                    <button
+                        onClick={scrollToLogin}
+                        className="px-6 py-2.5 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 hover:border-pink-500/50 hover:shadow-[0_0_20px_rgba(236,72,153,0.3)] transition-all font-bold text-sm backdrop-blur-md"
+                    >
+                        Ingresar
                     </button>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <section className="relative min-h-screen flex items-center justify-center pt-20">
-                {/* Background Gradients */}
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                    <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px]"></div>
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-pink-600/20 rounded-full blur-[120px]"></div>
-                </div>
+            <section className="relative min-h-screen flex items-center justify-center pt-20 px-4 z-10">
+                <div className="container mx-auto grid lg:grid-cols-2 gap-16 items-center">
 
-                <div className="container mx-auto px-4 z-10 grid md:grid-cols-2 gap-12 items-center">
-                    <div className="text-left space-y-6">
-                        <div className="inline-flex items-center px-4 py-1 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-bold uppercase tracking-widest mb-4">
-                            <span className="w-2 h-2 rounded-full bg-purple-400 mr-2 animate-ping"></span>
-                            Revolución IA 2.0
+                    {/* Text Content */}
+                    <div className="space-y-8 text-center lg:text-left">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/30 bg-purple-900/20 backdrop-blur-md animate-fade-in-up">
+                            <span className="status-dot w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                            <span className="text-xs font-bold uppercase tracking-widest text-purple-300">Revolucionando la Creator Economy</span>
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-black leading-tight">
-                            El Futuro de la <br />
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
-                                Gestión Digital
+
+                        <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight">
+                            Tu Imperio Digital, <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 animate-gradient-x">
+                                100% Automatizado
                             </span>
                         </h1>
-                        <p className="text-lg text-gray-400 max-w-xl leading-relaxed">
-                            Optimiza tu carrera, automatiza tus ventas y conecta con una comunidad exclusiva.
-                            Todo potenciado por Inteligencia Artificial y la seguridad de Telegram.
+
+                        <p className="text-xl text-gray-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                            La primera plataforma que combina <strong>Inteligencia Artificial</strong> con gestión humana.
+                            Deja que nuestro Chatbot venda por ti mientras tú te enfocas en crear.
                         </p>
-                        <div className="flex flex-wrap gap-4 pt-4">
-                            <button onClick={() => telegramWrapperRef.current?.scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-                                Comenzar Ahora
+
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+                            <button
+                                onClick={scrollToLogin}
+                                className="px-8 py-4 bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl font-bold text-lg shadow-[0_0_40px_rgba(236,72,153,0.4)] hover:shadow-[0_0_60px_rgba(236,72,153,0.6)] hover:scale-105 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Zap className="w-5 h-5" /> Comenzar Ahora
                             </button>
-                            <button className="px-8 py-4 bg-transparent border border-white/20 rounded-xl hover:bg-white/5 transition-all text-gray-300">
-                                Saber Más
+                            <button className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2 backdrop-blur-sm">
+                                <Bot className="w-5 h-5 text-gray-400" /> Ver Demo
                             </button>
+                        </div>
+
+                        <div className="pt-8 flex items-center justify-center lg:justify-start gap-8 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
+                            <div className="flex -space-x-4">
+                                {[1, 2, 3, 4].map(i => (
+                                    <div key={i} className="w-10 h-10 rounded-full border-2 border-[#030014] overflow-hidden">
+                                        <img src={`https://randomuser.me/api/portraits/women/${20 + i}.jpg`} alt="User" className="w-full h-full object-cover" />
+                                    </div>
+                                ))}
+                                <div className="w-10 h-10 rounded-full border-2 border-[#030014] bg-white/10 flex items-center justify-center text-xs font-bold">+2k</div>
+                            </div>
+                            <div className="text-sm font-medium">
+                                <span className="text-white font-bold block">Creadoras Activas</span>
+                                <span className="text-green-400">Generando ahora</span>
+                            </div>
                         </div>
                     </div>
 
                     {/* Hero Visual */}
-                    <div className="relative h-[600px] hidden md:block">
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-transparent to-transparent z-10"></div>
-                        {/* Image Placeholder - Cyberpunk Fashion Model */}
-                        <img
-                            src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"
-                            alt="Digital Model"
-                            className="w-full h-full object-cover rounded-3xl shadow-2xl opacity-80 mask-image-gradient"
-                        />
-
-                        {/* Floating Cards */}
-                        <div className="absolute top-10 right-10 bg-black/60 backdrop-blur-xl border border-white/10 p-4 rounded-2xl flex items-center gap-4 animate-bounce" style={{ animationDuration: '3s' }}>
-                            <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-green-400"><Icon name="trending" /></div>
-                            <div>
-                                <div className="text-xs text-gray-400">Ingresos Mensuales</div>
-                                <div className="font-bold text-lg text-green-400">+127% 🚀</div>
-                            </div>
-                        </div>
-
-                        <div className="absolute bottom-20 left-[-20px] bg-black/60 backdrop-blur-xl border border-white/10 p-4 rounded-2xl flex items-center gap-4 animate-pulse">
-                            <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400"><Icon name="shield" /></div>
-                            <div>
-                                <div className="text-xs text-gray-400">Seguridad Activa</div>
-                                <div className="font-bold text-sm text-blue-400">Verificado por IA</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Dual Track Section */}
-            <section className="py-24 relative bg-black/50">
-                <div className="container mx-auto px-4">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-bold mb-6">Elige tu Camino</h2>
-                        <div className="flex justify-center gap-8">
-                            <button
-                                onClick={() => setActiveTab('models')}
-                                className={`pb-2 text-xl font-medium transition-all ${activeTab === 'models' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-500 hover:text-white'}`}
-                            >
-                                Para Modelos
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('clients')}
-                                className={`pb-2 text-xl font-medium transition-all ${activeTab === 'clients' ? 'text-pink-400 border-b-2 border-pink-400' : 'text-gray-500 hover:text-white'}`}
-                            >
-                                Para Miembros
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-12 items-center">
-                        <div className={`space-y-8 transition-opacity duration-500 ${activeTab === 'models' ? 'opacity-100' : 'hidden opacity-0'}`}>
-                            <div className="feature-card p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all group">
-                                <div className="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><Icon name="zap" /></div>
-                                <h3 className="text-xl font-bold mb-2">Asistente de Ventas IA</h3>
-                                <p className="text-gray-400">Nuestro bot atiende a tus fans 24/7, filtra curiosos y cierra ventas automáticamente sin que tú muevas un dedo.</p>
-                            </div>
-                            <div className="feature-card p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all group">
-                                <div className="w-12 h-12 rounded-xl bg-green-500/20 text-green-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><Icon name="shield" /></div>
-                                <h3 className="text-xl font-bold mb-2">Protección Total</h3>
-                                <p className="text-gray-400">Sistema anti-filtraciones, marca de agua dinámica y lista negra global compartida entre todas las modelos.</p>
-                            </div>
-                            <div className="feature-card p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all group">
-                                <div className="w-12 h-12 rounded-xl bg-yellow-500/20 text-yellow-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><Icon name="star" /></div>
-                                <h3 className="text-xl font-bold mb-2">Marca Personal</h3>
-                                <p className="text-gray-400">Tu propio perfil web premium, tienda de contenido y sistema de suscripciones integrado en Telegram.</p>
-                            </div>
-                        </div>
-
-                        <div className={`space-y-8 transition-opacity duration-500 ${activeTab === 'clients' ? 'opacity-100' : 'hidden opacity-0'}`}>
-                            <div className="feature-card p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-pink-500/50 transition-all group">
-                                <div className="w-12 h-12 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><Icon name="heart" /></div>
-                                <h3 className="text-xl font-bold mb-2">Contenido Exclusivo</h3>
-                                <p className="text-gray-400">Accede a una red curada de modelos verificadas. Contenido real, sin estafas ni perfiles falsos.</p>
-                            </div>
-                            <div className="feature-card p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-pink-500/50 transition-all group">
-                                <div className="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><Icon name="lock" /></div>
-                                <h3 className="text-xl font-bold mb-2">Privacidad Garantizada</h3>
-                                <p className="text-gray-400">Tus datos nunca se comparten. Pagos seguros y chat encriptado punto a punto.</p>
-                            </div>
-                            <div className="feature-card p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-pink-500/50 transition-all group">
-                                <div className="w-12 h-12 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><Icon name="zap" /></div>
-                                <h3 className="text-xl font-bold mb-2">Experiencia Rápida</h3>
-                                <p className="text-gray-400">Todo sucede en Telegram. Sin registros externos complicados ni apps lentas.</p>
-                            </div>
-                        </div>
-
-                        {/* Dynamic Image Side */}
-                        <div className="h-[500px] relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+                    <div className="relative h-[600px] w-full hidden lg:block perspective-1000">
+                        {/* Main Image */}
+                        <div className="relative w-full h-full transform rotate-y-[-10deg] hover:rotate-y-0 transition-transform duration-700 ease-out z-20">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-pink-600 to-purple-600 rounded-[2.5rem] blur-2xl opacity-30 animate-pulse"></div>
                             <img
-                                src={activeTab === 'models'
-                                    ? "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?q=80&w=2669&auto=format&fit=crop" // Business Woman / Creator
-                                    : "https://images.unsplash.com/photo-1614030635339-b9a35e4d1f2e?q=80&w=2670&auto=format&fit=crop" // Phone User / Client
-                                }
-                                alt="Experience"
-                                className="w-full h-full object-cover transition-opacity duration-500 hover:scale-105"
+                                src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1974&auto=format&fit=crop"
+                                alt="Futuristic Model"
+                                className="w-full h-full object-cover rounded-[2rem] border-2 border-white/10 shadow-2xl relative z-10"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-8">
+
+                            {/* Floating Stats Cards */}
+                            <div className="absolute top-20 -right-10 bg-black/60 backdrop-blur-xl border border-white/10 p-4 rounded-2xl flex items-center gap-4 animate-float z-30 shadow-xl">
+                                <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center text-green-400"><DollarSign /></div>
                                 <div>
-                                    <h4 className="text-2xl font-bold">{activeTab === 'models' ? 'Monetiza tu Influencia' : 'Descubre la Excelencia'}</h4>
-                                    <p className="text-gray-300 mt-2">{activeTab === 'models' ? 'Las mejores herramientas para creadoras de contenido.' : 'Una comunidad selecta para gustos exigentes.'}</p>
+                                    <div className="text-xs text-gray-400 font-medium tracking-wide">Ingresos Hoy</div>
+                                    <div className="font-bold text-xl text-white ml-1">$1,240.50</div>
+                                </div>
+                            </div>
+
+                            <div className="absolute bottom-32 -left-10 bg-black/60 backdrop-blur-xl border border-white/10 p-4 rounded-2xl flex items-center gap-4 animate-float z-30 shadow-xl" style={{ animationDelay: '2s' }}>
+                                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-400"><Bot /></div>
+                                <div>
+                                    <div className="text-xs text-gray-400 font-medium tracking-wide">Bot Activo</div>
+                                    <div className="font-bold text-sm text-white">Cerrando venta...</div>
                                 </div>
                             </div>
                         </div>
@@ -209,49 +165,174 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* Login CTA Section */}
-            <section className="py-24 relative overflow-hidden text-center">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[100px] z-0"></div>
+            {/* Value Proposition Toggle */}
+            <section className="py-24 relative z-10" id="creators">
+                <div className="container mx-auto px-4">
+                    <div className="flex flex-col items-center mb-16">
+                        <h2 className="text-4xl md:text-5xl font-black text-center mb-8">
+                            Diseñado para <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Escalar</span>
+                        </h2>
 
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="max-w-3xl mx-auto bg-black/40 backdrop-blur-xl border border-white/10 p-12 rounded-3xl shadow-2xl">
-                        <h2 className="text-4xl font-bold mb-6">Únete a la Comunidad</h2>
-                        <p className="text-gray-400 mb-8 text-lg">
-                            El acceso es exclusivo a través de Telegram para garantizar la seguridad de todos nuestros miembros.
+                        <div className="p-1.5 bg-white/5 rounded-full border border-white/10 flex relative backdrop-blur-sm">
+                            <div
+                                className={`absolute inset-y-1.5 w-1/2 bg-gradient-to-r from-pink-600 to-purple-600 rounded-full transition-all duration-300 shadow-lg ${activeTab === 'creators' ? 'left-1.5' : 'left-[calc(50%-0.375rem)] translate-x-full'}`}
+                            ></div>
+                            <button
+                                onClick={() => setActiveTab('creators')}
+                                className={`relative z-10 px-8 py-3 rounded-full text-sm font-bold tracking-wide transition-colors ${activeTab === 'creators' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                Soy Creadora
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('fans')}
+                                className={`relative z-10 px-8 py-3 rounded-full text-sm font-bold tracking-wide transition-colors ${activeTab === 'fans' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                Soy Fan
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Creators Content */}
+                    <div className={`grid md:grid-cols-3 gap-8 transition-opacity duration-500 ${activeTab === 'creators' ? 'opacity-100' : 'hidden opacity-0'}`}>
+                        <FeatureCard
+                            icon={Bot}
+                            color="purple"
+                            title="Bot Hunter & Manager"
+                            desc="Nuestro sistema de IA interactúa con tus leads, filtra curiosos y cierra ventas sin que tengas que responder un solo mensaje."
+                        />
+                        <FeatureCard
+                            icon={TrendingUp}
+                            color="green"
+                            title="Ingresos Pasivos"
+                            desc="Configura tu contenido una vez y véndelo infinitas veces. Sistema de suscripciones y PPV automatizado."
+                        />
+                        <FeatureCard
+                            icon={Shield}
+                            color="blue"
+                            title="Seguridad Nivel Banco"
+                            desc="Verificación de usuarios, marcas de agua dinámicas y lista negra compartida para evitar estafas."
+                        />
+                    </div>
+
+                    {/* Fans Content */}
+                    <div className={`grid md:grid-cols-3 gap-8 transition-opacity duration-500 ${activeTab === 'fans' ? 'opacity-100' : 'hidden opacity-0'}`}>
+                        <FeatureCard
+                            icon={Star}
+                            color="yellow"
+                            title="Creadoras Verificadas"
+                            desc="Accede a perfiles 100% reales. Cada creadora pasa por un riguroso proceso de verificación biométrica."
+                        />
+                        <FeatureCard
+                            icon={Zap}
+                            color="pink"
+                            title="Atención Inmediata"
+                            desc="Olvídate de esperar horas por una respuesta. Nuestro sistema garantiza interacción fluida y entrega instantánea."
+                        />
+                        <FeatureCard
+                            icon={Lock}
+                            color="indigo"
+                            title="Privacidad Total"
+                            desc="Tus datos están encriptados. Disfruta de contenido exclusivo con la seguridad de la infraestructura de Telegram."
+                        />
+                    </div>
+                </div>
+            </section>
+
+            {/* Social Proof / Stats */}
+            <section className="py-20 border-y border-white/5 bg-white/[0.02]">
+                <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                    <StatItem number="$1.2M+" label="Pagado a Creadoras" />
+                    <StatItem number="50k+" label="Usuarios Activos" />
+                    <StatItem number="24/7" label="Soporte IA" />
+                    <StatItem number="0%" label="Comisión de Entrada" />
+                </div>
+            </section>
+
+            {/* CTA Login Section */}
+            <section className="py-32 relative text-center z-10" id="login">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-pink-600/20 to-purple-600/20 rounded-full blur-[120px] -z-10"></div>
+
+                <div className="container mx-auto px-4">
+                    <div className="max-w-4xl mx-auto bg-black/40 backdrop-blur-2xl border border-white/10 p-12 md:p-20 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+
+                        {/* Hover Gradient Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+                        <h2 className="text-4xl md:text-6xl font-black mb-6">¿Lista para empezar?</h2>
+                        <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
+                            Únete a la plataforma de gestión más avanzada del mercado.
+                            Sin contratos forzosos. Sin letras pequeñas.
                         </p>
 
-                        <div className="flex justify-center mb-8">
-                            <div className="p-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
-                                <div className="bg-black rounded-full p-4" ref={telegramWrapperRef}>
-                                    {/* Widget renders here */}
+                        <div className="flex flex-col items-center justify-center gap-6 relative z-10">
+                            <div className="p-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full shadow-[0_0_50px_rgba(236,72,153,0.5)] transform hover:scale-105 transition-transform duration-300">
+                                <div className="bg-black rounded-full px-8 py-4 min-w-[300px] min-h-[60px] flex items-center justify-center" ref={telegramWrapperRef}>
+                                    {/* Telegram Widget Renders Here */}
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="text-sm text-gray-500 flex items-center justify-center gap-2">
-                            <Icon name="lock" className="w-4 h-4" />
-                            Acceso Seguro y Encriptado
+                            <p className="text-xs text-gray-500 uppercase tracking-widest mt-4 flex items-center gap-2">
+                                <Lock className="w-3 h-3" /> Acceso Seguro vía Telegram
+                            </p>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="border-t border-white/5 py-12 bg-black/80">
+            <footer className="py-12 border-t border-white/5 bg-black">
                 <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="text-center md:text-left">
-                        <div className="font-bold text-lg mb-2">AGENTE NEBULA</div>
-                        <p className="text-gray-500 text-sm">© 2024. Todos los derechos reservados.</p>
+                    <div className="flex items-center gap-2 grayscale hover:grayscale-0 transition-all opacity-50 hover:opacity-100">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center">
+                            <Zap className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="font-bold tracking-widest text-sm">NEBULA</span>
                     </div>
-                    <div className="flex gap-8 text-gray-400 text-sm">
-                        <a href="#" className="hover:text-white transition-colors">Términos</a>
-                        <a href="#" className="hover:text-white transition-colors">Privacidad</a>
-                        <a href="#" className="hover:text-white transition-colors">Soporte</a>
+                    <div className="text-gray-500 text-sm">
+                        © 2024 Nebula Agency. Built for the future.
                     </div>
                 </div>
             </footer>
+
+            <style>{`
+                .text-shadow { text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+                .perspective-1000 { perspective: 1000px; }
+                @keyframes float {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-20px); }
+                }
+                .animate-float { animation: float 6s ease-in-out infinite; }
+            `}</style>
         </div>
     );
 };
+
+// Helper Components
+const FeatureCard = ({ icon: Icon, color, title, desc }) => {
+    const colorClasses = {
+        purple: "bg-purple-500/10 text-purple-400 border-purple-500/20 group-hover:border-purple-500/50",
+        pink: "bg-pink-500/10 text-pink-400 border-pink-500/20 group-hover:border-pink-500/50",
+        blue: "bg-blue-500/10 text-blue-400 border-blue-500/20 group-hover:border-blue-500/50",
+        green: "bg-green-500/10 text-green-400 border-green-500/20 group-hover:border-green-500/50",
+        yellow: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20 group-hover:border-yellow-500/50",
+        indigo: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20 group-hover:border-indigo-500/50",
+    };
+
+    return (
+        <div className={`p-8 rounded-3xl border ${colorClasses[color].split(' ')[2]} ${colorClasses[color].split(' ')[3]} bg-white/[0.02] backdrop-blur-sm transition-all duration-300 hover:-translate-y-2 hover:bg-white/[0.05] group cursor-default`}>
+            <div className={`w-14 h-14 rounded-2xl ${colorClasses[color].split(' ')[0]} ${colorClasses[color].split(' ')[1]} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                <Icon className="w-7 h-7" />
+            </div>
+            <h3 className="text-xl font-bold mb-3">{title}</h3>
+            <p className="text-gray-400 leading-relaxed text-sm">{desc}</p>
+        </div>
+    );
+};
+
+const StatItem = ({ number, label }) => (
+    <div className="space-y-2">
+        <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-500">{number}</div>
+        <div className="text-sm font-medium text-gray-500 uppercase tracking-widest">{label}</div>
+    </div>
+);
 
 export default LandingPage;
