@@ -192,9 +192,9 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
 
     return (
         <>
-            <div ref={containerRef} className="mb-6 glass-panel rounded-xl overflow-hidden border border-white/5 shadow-2xl mx-1 relative group">
-                {/* Header */}
-                <div className="flex items-center justify-between p-4 bg-black/40 backdrop-blur-md absolute top-0 w-full z-20 border-b border-white/5">
+            <div ref={containerRef} className="mb-6 bg-white/5 backdrop-blur-xl rounded-xl overflow-hidden border border-white/10 shadow-2xl mx-1 relative group">
+                {/* Header - Thinner and Faded */}
+                <div className="flex items-center justify-between p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent absolute top-0 w-full z-20">
                     <div className="flex items-center gap-3">
                         <Link to={`/profile/${post.user.id}`}>
                             <Avatar
@@ -277,8 +277,8 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                     )}
                 </Link>
 
-                {/* Bottom Actions Area */}
-                <div className="p-4 bg-black/40 backdrop-blur-md">
+                {/* Bottom Actions Area - Liquid glass style */}
+                <div className="p-4 bg-white/5 backdrop-blur-xl border-t border-white/5">
                     <div className="flex items-center gap-4 mb-3">
                         <button
                             onClick={handleLike}

@@ -271,7 +271,8 @@ async def get_models_for_explore():
     try:
         response = db.client.table("models") \
             .select("id, artistic_name, username, avatar_url, is_online") \
-            .in_("status", ["active", "verifying"]) \
+            .eq("status", "active") \
+            .eq("is_verified", True) \
             .execute()
         return response.data if response.data else []
     except Exception as e:
