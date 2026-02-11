@@ -59,8 +59,8 @@ async def create_interaction(
             .eq("action", "like") \
             .execute()
         if existing.data:
-            # Already liked, maybe unlike? For now just return existing
-             return existing.data[0]
+            # Already liked, ignore duplicate to avoid inflating counters
+            return {"status": "already_liked", "id": existing.data[0]['id']}
 
     data = {
         "actor_id": actor_id,

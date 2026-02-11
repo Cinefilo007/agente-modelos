@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX, AlertTriangle, Send, X } from 'lucide-react';
+import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX, AlertTriangle, Send, X, Trash2, Flag } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useTheme } from '../../context/ThemeContext';
 import { Link } from 'react-router-dom';
@@ -231,14 +231,14 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                                         onClick={onDelete}
                                         className="w-full text-left px-4 py-3 text-red-500 hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
                                     >
-                                        <X size={16} /> Eliminar Publicación
+                                        <Trash2 size={16} /> Eliminar
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => { setShowReportModal(true); setShowMenu(false); }}
-                                        className="w-full text-left px-4 py-3 text-yellow-500 hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
+                                        className="w-full text-left px-4 py-3 text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-2 text-sm font-bold"
                                     >
-                                        <AlertTriangle size={16} /> Reportar
+                                        <Flag size={16} /> Reportar
                                     </button>
                                 )}
                             </div>

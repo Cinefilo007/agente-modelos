@@ -11,27 +11,9 @@ export default function NebulaBackground() {
     if (excludePaths.includes(location.pathname)) return null;
 
     return (
-        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black/5">
-            {/* Primary Blob (Top Left) */}
-            <div
-                className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] rounded-full blur-[120px] animate-pulse-slow transition-colors duration-1000 will-change-[opacity]"
-                style={{ backgroundColor: themeColor, opacity: 0.15 }}
-            ></div>
-
-            {/* Secondary Blob (Bottom Right) */}
-            <div
-                className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] animate-pulse-slow transition-colors duration-1000 will-change-[opacity]"
-                style={{ backgroundColor: themeColor, opacity: 0.15, animationDelay: '2s' }}
-            ></div>
-
-            {/* Center/Random Blob for extra depth */}
-            <div
-                className="absolute top-[40%] left-[20%] w-[300px] h-[300px] rounded-full blur-[80px] transition-colors duration-1000 will-change-[opacity]"
-                style={{ backgroundColor: themeColor, opacity: 0.1 }}
-            ></div>
-
-            {/* Noise Texture */}
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black">
+            {/* Noise Texture - Kept for subtle texture without performance impact */}
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 brightness-50 contrast-125"></div>
         </div>
     );
 }

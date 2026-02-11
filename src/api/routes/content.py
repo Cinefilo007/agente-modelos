@@ -132,8 +132,8 @@ async def get_feed(
     else: # recent
         query = query.order("created_at", desc=True)
         
-    # Fetch posts with model info (including last_seen)
-    query = db.client.table("posts").select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
+    # Fetch posts with model info (including last_seen) and counts
+    query = db.client.table("posts").select("*, likes_count, comments_count, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
     
     response = query.limit(50).execute()
     posts = response.data
