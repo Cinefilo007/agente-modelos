@@ -13,8 +13,8 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
 
     // State
     const [isLiked, setIsLiked] = useState(post.is_liked || false);
-    const [likeCount, setLikeCount] = useState(post.likes_count || 0);
-    const [commentCount, setCommentCount] = useState(post.comments_count || 0);
+    const [likeCount, setLikeCount] = useState(Number(post.likes_count) || 0);
+    const [commentCount, setCommentCount] = useState(Number(post.comments_count) || 0);
     const [isMuted, setIsMuted] = useState(true);
     const [showMenu, setShowMenu] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
@@ -196,18 +196,17 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 bg-black/40 backdrop-blur-md absolute top-0 w-full z-20 border-b border-white/5">
                     <div className="flex items-center gap-3">
-                        <Link to={`/profile/${post.user.id}`} className="relative">
-                            <div className="relative">
-                                <Avatar src={post.user.avatar} size="sm" />
-                                {post.is_online && (
-                                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-black rounded-full shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse"></span>
-                                )}
-                            </div>
+                        <Link to={`/profile/${post.user.id}`}>
+                            <Avatar
+                                src={post.user.avatar_url || post.user.avatar}
+                                size="md"
+                                isOnline={post.is_online}
+                            />
                         </Link>
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="font-bold text-sm text-white leading-none shadow-black drop-shadow-md">
-                                    {post.user.artistic_name || post.user.name}
+                                    {post.user.artistic_name || post.user.full_name || post.user.name}
                                 </h3>
                                 {post.user.is_verified && <span className="text-blue-400 text-[10px]">Verify</span>}
                             </div>
@@ -227,12 +226,12 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         {/* Dropdown Menu */}
                         {showMenu && (
                             <div className="absolute right-0 mt-2 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-fade-in origin-top-right">
-                                {isAdmin ? (
+                                {(isAdmin || user?.id === post.user.id) ? (
                                     <button
                                         onClick={onDelete}
                                         className="w-full text-left px-4 py-3 text-red-500 hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
                                     >
-                                        <X size={16} /> Eliminar Post
+                                        <X size={16} /> Eliminar Publicación
                                     </button>
                                 ) : (
                                     <button
