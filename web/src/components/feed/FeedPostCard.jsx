@@ -192,7 +192,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
 
     return (
         <>
-            <div ref={containerRef} className="mb-6 glass-panel rounded-3xl overflow-hidden border border-white/5 shadow-2xl mx-1 relative group">
+            <div ref={containerRef} className="mb-6 glass-panel rounded-xl overflow-hidden border border-white/5 shadow-2xl mx-1 relative group">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 bg-black/40 backdrop-blur-md absolute top-0 w-full z-20 border-b border-white/5">
                     <div className="flex items-center gap-3">
@@ -247,8 +247,8 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                     </div>
                 </div>
 
-                {/* Media */}
-                <div className="relative aspect-[4/5] bg-black cursor-pointer" onDoubleClick={handleLike}>
+                {/* Media Link to Detail */}
+                <Link to={`/post/${post.id}`} className="block relative aspect-[4/5] bg-black">
                     {post.media_type === 'video' ? (
                         <>
                             <video
@@ -276,7 +276,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             className="w-full h-full object-cover"
                         />
                     )}
-                </div>
+                </Link>
 
                 {/* Bottom Actions Area */}
                 <div className="p-4 bg-black/40 backdrop-blur-md">
@@ -303,10 +303,9 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         {post.description}
                     </p>
 
-                    {/* Quick Comment Input - Now integrated better */}
+                    {/* Quick Comment Input - Simplified */}
                     {!isAdmin && (
                         <div className="flex gap-2 items-center pt-3 border-t border-white/5">
-                            <Avatar src={user?.avatar_url} size="xs" />
                             <div className="flex-1 relative">
                                 <input
                                     type="text"
