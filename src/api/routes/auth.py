@@ -98,22 +98,24 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
     
     # 1. Models
     try:
-        model = db.client.table("models").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
-        if model.data:
+        model_res = db.client.table("models").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
+        if model_res and model_res.data:
             user_role = "model"
-            user_data = model.data
+            user_data = model_res.data
             if user_data.get('status') == 'rejected':
                  raise HTTPException(status_code=403, detail="Tu cuenta de modelo ha sido rechazada.")
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error checking models: {e}")
 
     # 2. Clients
     if not user_data:
         try:
-            client = db.client.table("clients").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
-            if client.data:
+            client_res = db.client.table("clients").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
+            if client_res and client_res.data:
                 user_role = "client"
-                user_data = client.data
+                user_data = client_res.data
                 if user_data.get('is_blacklisted'):
                     raise HTTPException(status_code=403, detail="Acceso denegado por políticas de la comunidad.")
             else:
@@ -126,14 +128,19 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                 }
                 try:
                     res = db.client.table("clients").insert(new_client).execute()
-                    if res.data:
+                    if res and res.data and len(res.data) > 0:
                         user_data = res.data[0]
                     else:
-                        raise HTTPException(status_code=500, detail="Error creating user")
+                        print(f"Error creating client: Response was {res}")
+                        raise HTTPException(status_code=500, detail="Error al crear el usuario en la base de datos.")
+                except HTTPException:
+                    raise
                 except Exception as e:
-                     raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+                     raise HTTPException(status_code=500, detail=f"Database Error during insert: {str(e)}")
+        except HTTPException:
+            raise
         except Exception as e:
-             raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+             raise HTTPException(status_code=500, detail=f"Database Error checking clients: {str(e)}")
 
     # Age check
     birth_date_str = user_data.get('birth_date')

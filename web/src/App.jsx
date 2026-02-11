@@ -38,12 +38,14 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/landing" state={{ from: location }} replace />;
   }
 
-  // Strict check for profile completion
-  const needsOnboarding = !user.birth_date || !user.terms_accepted;
+  // Strict check for profile completion - Only for CLIENTS
+  // Models are already verified by the admin through the bot ( Phase A )
+  const isClient = user.role === 'client';
+  const needsOnboarding = isClient && (!user.birth_date || !user.terms_accepted);
   const isCurrentlyInOnboarding = location.pathname === '/onboarding';
 
   if (needsOnboarding && !isCurrentlyInOnboarding) {
-    console.warn("[Router] Perfil incompleto (Falta Edad o T&C), redirigiendo a onboarding.");
+    console.warn("[Router] Cliente con perfil incompleto, redirigiendo a onboarding.");
     return <Navigate to="/onboarding" replace />;
   }
 

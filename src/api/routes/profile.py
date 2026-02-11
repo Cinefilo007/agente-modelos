@@ -87,6 +87,12 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
         return {"message": "No changes detected"}
 
     response = db.client.table(table).update(updates).eq("telegram_id", user.id).execute()
+    
+    if not response or not response.data:
+        # Fallback to fetching the record if update didn't return data (depends on Postgres version/config)
+        profile = db.client.table(table).select("*").eq("telegram_id", user.id).single().execute()
+        return profile.data
+
     return response.data[0]
 
 import uuid
