@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Zap, Heart, Globe, Lock, Star, ChevronRight, TrendingUp, Users, DollarSign, Bot } from 'lucide-react';
+import { Shield, Zap, Heart, Globe, Lock, Star, ChevronRight, TrendingUp, Users, DollarSign, Bot, X, Check } from 'lucide-react';
 
 const LandingPage = () => {
     const { loginWithTelegram } = useAuth();
@@ -112,9 +112,9 @@ const LandingPage = () => {
                             >
                                 <Zap className="w-5 h-5" /> Comenzar Ahora
                             </button>
-                            <button className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2 backdrop-blur-sm">
+                            <a href="https://t.me/AgenteNebulaIA_bot" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2 backdrop-blur-sm">
                                 <Bot className="w-5 h-5 text-gray-400" /> Ver Demo
-                            </button>
+                            </a>
                         </div>
 
                         <div className="pt-8 flex items-center justify-center lg:justify-start gap-8 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
@@ -173,19 +173,32 @@ const LandingPage = () => {
                             Diseñado para <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Escalar</span>
                         </h2>
 
-                        <div className="p-1.5 bg-white/5 rounded-full border border-white/10 flex relative backdrop-blur-sm">
+                        {/* Selector Fixed & Width constrained */}
+                        {/* Replaced logic with grid for perfect alignment */}
+                        <div className="p-1.5 bg-white/5 rounded-full border border-white/10 grid grid-cols-2 relative backdrop-blur-sm w-[320px] isolate">
+                            {/* Animated Background */}
                             <div
-                                className={`absolute inset-y-1.5 w-1/2 bg-gradient-to-r from-pink-600 to-purple-600 rounded-full transition-all duration-300 shadow-lg ${activeTab === 'creators' ? 'left-1.5' : 'left-[calc(50%-0.375rem)] translate-x-full'}`}
+                                className={`absolute inset-y-1.5 w-[calc(50%-0.375rem)] bg-gradient-to-r from-pink-600 to-purple-600 rounded-full transition-all duration-300 shadow-lg -z-10`}
+                                style={{
+                                    left: activeTab === 'creators' ? '0.375rem' : '50%'
+                                }}
                             ></div>
+
                             <button
-                                onClick={() => setActiveTab('creators')}
-                                className={`relative z-10 px-8 py-3 rounded-full text-sm font-bold tracking-wide transition-colors ${activeTab === 'creators' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                                onClick={() => {
+                                    setActiveTab('creators');
+                                    setTimeout(() => document.getElementById('creators-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                                }}
+                                className={`py-3 rounded-full text-sm font-bold tracking-wide transition-colors ${activeTab === 'creators' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                             >
                                 Soy Creadora
                             </button>
                             <button
-                                onClick={() => setActiveTab('fans')}
-                                className={`relative z-10 px-8 py-3 rounded-full text-sm font-bold tracking-wide transition-colors ${activeTab === 'fans' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                                onClick={() => {
+                                    setActiveTab('fans');
+                                    setTimeout(() => document.getElementById('fans-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                                }}
+                                className={`py-3 rounded-full text-sm font-bold tracking-wide transition-colors ${activeTab === 'fans' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                             >
                                 Soy Fan
                             </button>
@@ -193,47 +206,92 @@ const LandingPage = () => {
                     </div>
 
                     {/* Creators Content */}
-                    <div className={`grid md:grid-cols-3 gap-8 transition-opacity duration-500 ${activeTab === 'creators' ? 'opacity-100' : 'hidden opacity-0'}`}>
-                        <FeatureCard
-                            icon={Bot}
-                            color="purple"
-                            title="Bot Hunter & Manager"
-                            desc="Nuestro sistema de IA interactúa con tus leads, filtra curiosos y cierra ventas sin que tengas que responder un solo mensaje."
-                        />
-                        <FeatureCard
-                            icon={TrendingUp}
-                            color="green"
-                            title="Ingresos Pasivos"
-                            desc="Configura tu contenido una vez y véndelo infinitas veces. Sistema de suscripciones y PPV automatizado."
-                        />
-                        <FeatureCard
-                            icon={Shield}
-                            color="blue"
-                            title="Seguridad Nivel Banco"
-                            desc="Verificación de usuarios, marcas de agua dinámicas y lista negra compartida para evitar estafas."
-                        />
+                    <div id="creators-content" className={`transition-all duration-700 ${activeTab === 'creators' ? 'opacity-100 translate-y-0' : 'hidden opacity-0 translate-y-10 fixed top-0 -z-50'}`}>
+                        {/* Hide visually but keep in DOM or actually hide */}
+                        <div className={activeTab === 'creators' ? '' : 'hidden'}>
+                            <div className="grid md:grid-cols-3 gap-8 mb-24">
+                                <FeatureCard
+                                    icon={Bot}
+                                    color="purple"
+                                    title="Bot Hunter & Manager"
+                                    desc="Nuestro sistema de IA interactúa con tus leads, filtra curiosos y cierra ventas sin que tengas que responder un solo mensaje."
+                                />
+                                <FeatureCard
+                                    icon={TrendingUp}
+                                    color="green"
+                                    title="Ingresos Pasivos"
+                                    desc="Configura tu contenido una vez y véndelo infinitas veces. Sistema de suscripciones y PPV automatizado."
+                                />
+                                <FeatureCard
+                                    icon={Shield}
+                                    color="blue"
+                                    title="Seguridad Nivel Banco"
+                                    desc="Verificación de usuarios, marcas de agua dinámicas y lista negra compartida para evitar estafas."
+                                />
+                            </div>
+
+                            {/* Comparison Table Section */}
+                            <div className="max-w-5xl mx-auto mb-20 animate-fade-in-up">
+                                <h3 className="text-3xl font-bold text-center mb-12">¿Por qué Elegir Nebula?</h3>
+                                <div className="glass-panel overflow-hidden rounded-3xl border border-white/10 bg-black/40 shadow-2xl">
+                                    <div className="grid grid-cols-12 p-6 border-b border-white/10 bg-white/5 font-bold text-sm md:text-xl gap-4">
+                                        <div className="col-span-4 text-gray-400">Punto de Dolor</div>
+                                        <div className="col-span-4 text-center text-red-400">Modo Tradicional</div>
+                                        <div className="col-span-4 text-center text-green-400">Modo Nebula</div>
+                                    </div>
+
+                                    <ComparisonRow
+                                        title="Gestión de Mensajes"
+                                        traditional="Responder manualmente 100+ DMs. Pérdida de tiempo."
+                                        nebula="IA responde al instante y cierra ventas 24/7."
+                                    />
+                                    <ComparisonRow
+                                        title="Adquisición"
+                                        traditional="Hacer SFS, Spammear grupos, Mendigar likes."
+                                        nebula="Tráfico orgánico y herramientas de promoción."
+                                    />
+                                    <ComparisonRow
+                                        title="Seguridad"
+                                        traditional="Riesgo de estafas y cuentas falsas."
+                                        nebula="Verificación Biométrica + Blacklist Global."
+                                    />
+                                    <ComparisonRow
+                                        title="Estabilidad"
+                                        traditional="Miedo constante a baneos de redes."
+                                        nebula="Infraestructura propia y base de datos segura."
+                                    />
+                                    <ComparisonRow
+                                        title="Estadísticas"
+                                        traditional="Cero datos. No sabes quién te compra."
+                                        nebula="CRM Financiero en tiempo real."
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Fans Content */}
-                    <div className={`grid md:grid-cols-3 gap-8 transition-opacity duration-500 ${activeTab === 'fans' ? 'opacity-100' : 'hidden opacity-0'}`}>
-                        <FeatureCard
-                            icon={Star}
-                            color="yellow"
-                            title="Creadoras Verificadas"
-                            desc="Accede a perfiles 100% reales. Cada creadora pasa por un riguroso proceso de verificación biométrica."
-                        />
-                        <FeatureCard
-                            icon={Zap}
-                            color="pink"
-                            title="Atención Inmediata"
-                            desc="Olvídate de esperar horas por una respuesta. Nuestro sistema garantiza interacción fluida y entrega instantánea."
-                        />
-                        <FeatureCard
-                            icon={Lock}
-                            color="indigo"
-                            title="Privacidad Total"
-                            desc="Tus datos están encriptados. Disfruta de contenido exclusivo con la seguridad de la infraestructura de Telegram."
-                        />
+                    <div id="fans-section" className={`transition-all duration-700 ${activeTab === 'fans' ? 'opacity-100 translate-y-0' : 'hidden opacity-0 translate-y-10'}`}>
+                        <div className="grid md:grid-cols-3 gap-8">
+                            <FeatureCard
+                                icon={Star}
+                                color="yellow"
+                                title="Creadoras Verificadas"
+                                desc="Accede a perfiles 100% reales. Cada creadora pasa por un riguroso proceso de verificación biométrica."
+                            />
+                            <FeatureCard
+                                icon={Zap}
+                                color="pink"
+                                title="Atención Inmediata"
+                                desc="Olvídate de esperar horas por una respuesta. Nuestro sistema garantiza interacción fluida y entrega instantánea."
+                            />
+                            <FeatureCard
+                                icon={Lock}
+                                color="indigo"
+                                title="Privacidad Total"
+                                desc="Tus datos están encriptados. Disfruta de contenido exclusivo con la seguridad de la infraestructura de Telegram."
+                            />
+                        </div>
                     </div>
                 </div>
             </section>
@@ -265,8 +323,9 @@ const LandingPage = () => {
                         </p>
 
                         <div className="flex flex-col items-center justify-center gap-6 relative z-10">
-                            <div className="p-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full shadow-[0_0_50px_rgba(236,72,153,0.5)] transform hover:scale-105 transition-transform duration-300">
-                                <div className="bg-black rounded-full px-8 py-4 min-w-[300px] min-h-[60px] flex items-center justify-center" ref={telegramWrapperRef}>
+                            {/* Simplified container without glow border */}
+                            <div className="flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
+                                <div ref={telegramWrapperRef}>
                                     {/* Telegram Widget Renders Here */}
                                 </div>
                             </div>
@@ -327,6 +386,21 @@ const FeatureCard = ({ icon: Icon, color, title, desc }) => {
         </div>
     );
 };
+
+// ADDED: ComparisonRow Component (Missing in simple code block)
+const ComparisonRow = ({ title, traditional, nebula }) => (
+    <div className="grid grid-cols-12 p-6 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors gap-4 items-center">
+        <div className="col-span-4 font-bold text-white text-sm md:text-base">{title}</div>
+        <div className="col-span-4 text-center text-red-400/80 text-xs md:text-sm flex flex-col items-center">
+            <X className="w-5 h-5 mb-1 opacity-50" />
+            {traditional}
+        </div>
+        <div className="col-span-4 text-center text-green-400 text-xs md:text-sm font-medium flex flex-col items-center bg-green-500/5 p-2 rounded-xl border border-green-500/20">
+            <Check className="w-5 h-5 mb-1" />
+            {nebula}
+        </div>
+    </div>
+);
 
 const StatItem = ({ number, label }) => (
     <div className="space-y-2">
