@@ -10,6 +10,7 @@ from jose import jwt
 from src.services.database import db
 from urllib.parse import parse_qsl
 import json
+import traceback
 
 router = APIRouter()
 
@@ -141,13 +142,18 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                 except HTTPException:
                     raise
                 except Exception as e:
-                     print(f"[Backend Auth] Database Error during insert for {telegram_id}: {str(e)}")
-                     raise HTTPException(status_code=500, detail="Error de base de datos al registrar usuario.")
+                     error_trace = traceback.format_exc()
+                     print(f"[Backend Auth] Database Error during insert for {telegram_id}: {str(e)}\n{error_trace}")
+                     raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
         except HTTPException:
             raise
         except Exception as e:
-             print(f"[Backend Auth] Database Error checking clients for {telegram_id}: {str(e)}")
-             raise HTTPException(status_code=500, detail="Error al buscar perfil en la base de datos.")
+             error_detail = f"Database Error checking clients: {str(e)}\n{traceback.format_exc()}"
+             print(f"[Backend Auth] {error_detail}")
+             raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+
+    if not user_data:
+         raise HTTPException(status_code=500, detail="No se pudo obtener o crear la información del usuario.")
 
     # Age check
     birth_date_str = user_data.get('birth_date')
