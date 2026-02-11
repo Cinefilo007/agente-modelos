@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { CheckCircle, XCircle, Search, Clock, ShieldAlert, Flag, UserCheck, AlertTriangle } from 'lucide-react';
 import { timeAgo } from '../utils/date';
+import NebulaBackground from '../components/ui/NebulaBackground';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('verifications'); // 'verifications' | 'reports'
@@ -69,8 +70,9 @@ const AdminDashboard = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#050510] text-white p-6 md:p-12 font-sans pb-24">
-            <div className="max-w-7xl mx-auto">
+        <div className="min-h-screen bg-black text-white p-6 md:p-12 font-sans pb-24 relative overflow-hidden">
+            <NebulaBackground />
+            <div className="max-w-7xl mx-auto relative z-10">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
                     <div>

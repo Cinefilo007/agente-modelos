@@ -24,13 +24,13 @@ export default function ThemeSettings() {
         >
             {/* Handle / Trigger */}
             <div
-                className="w-8 h-12 bg-card/60 backdrop-blur-md border-y border-l border-border rounded-l-xl flex items-center justify-center cursor-pointer shadow-lg"
+                className="w-12 h-14 bg-card/80 backdrop-blur-xl border-y border-l border-white/20 rounded-l-2xl flex items-center justify-center cursor-pointer shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:w-14 transition-all group"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 {isOpen ? (
-                    <ChevronRight size={20} className="text-muted-foreground" />
+                    <ChevronRight size={28} className="text-white group-hover:text-pink-500 transition-colors" />
                 ) : (
-                    <ChevronLeft size={20} className="text-muted-foreground" />
+                    <Palette size={28} className="text-white animate-pulse group-hover:text-pink-500 transition-colors" />
                 )}
             </div>
 

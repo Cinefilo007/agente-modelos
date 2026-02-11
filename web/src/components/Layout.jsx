@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { TermsModal } from './auth/TermsModal';
 
 import ThemeSettings from './ui/ThemeSettings';
+import NebulaBackground from './ui/NebulaBackground';
 
 export default function Layout() {
     const location = useLocation();
@@ -69,6 +70,7 @@ export default function Layout() {
 
                 {showTerms && <TermsModal onAccept={() => setShowTerms(false)} />}
 
+                <NebulaBackground />
                 <ThemeSettings />
 
                 {/* Main Content Area */}
