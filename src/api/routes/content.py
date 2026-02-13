@@ -63,8 +63,8 @@ async def create_post(
         "model_id": user.user_id,
         "media_url": public_url,
         "media_type": media_type,
-        "caption": caption,
-        "thumbnail_url": thumbnail_url
+        "caption": caption
+        # "thumbnail_url": thumbnail_url # Descomentar después de añadir la columna en Supabase
     }
     
     response = db.client.table("posts").insert(data).execute()
