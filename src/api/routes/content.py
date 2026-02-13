@@ -24,13 +24,17 @@ def calculate_is_online(last_seen_str: Optional[str]) -> bool:
 
 router = APIRouter()
 
-from src.services.storage import upload_file, generate_video_thumbnail
+from src.services.storage import upload_file, generate_video_thumbnail, trim_video
 import io
 
 @router.post("/posts")
 async def create_post(
     file: UploadFile = File(...),
+    thumbnail: Optional[UploadFile] = File(None),
     caption: Optional[str] = Form(None),
+    start_time: float = Form(0),
+    end_time: Optional[float] = Form(None),
+    thumbnail_time: float = Form(0.1),
     user: TelegramUser = Depends(get_current_user)
 ):
     """Create a new post with file upload."""
@@ -45,30 +49,55 @@ async def create_post(
     # Para no duplicar lectura, pasamos el contenido o re-usamos UploadFile
     public_url = await upload_file(file, bucket_name="posts")
     
-    # Determine media type (basic check)
+    # Determine media type
     media_type = "video" if file.content_type.startswith("video") else "image"
     thumbnail_url = None
 
     if media_type == "video":
+        # Process trimming if duration is specified
+        if end_time is not None and end_time > start_time:
+            print(f"[Video Editor] Trimming video from {start_time} to {end_time}")
+            file_content = await trim_video(file_content, start_time, end_time)
+        
         try:
-            thumb_content = await generate_video_thumbnail(file_content)
-            # Crear un objeto "file-like" para subir la miniatura
-            from fastapi import UploadFile as FastUploadFile
-            import uuid
+            # Handle Thumbnail
+            thumb_content = None
+            if thumbnail:
+                print("[Video Editor] Using provided thumbnail file")
+                thumb_content = await thumbnail.read()
+            else:
+                print(f"[Video Editor] Generating thumbnail from frame at {thumbnail_time}s")
+                thumb_content = await generate_video_thumbnail(file_content, ss=thumbnail_time)
             
-            thumb_filename = f"thumb_{uuid.uuid4()}.jpg"
-            # Subida manual simplificada a bucket 'thumbnails'
-            try:
-                db.service_client.storage.from_("posts").upload(
-                    path=f"thumbnails/{thumb_filename}",
-                    file=thumb_content,
-                    file_options={"content-type": "image/jpeg"}
-                )
-                thumbnail_url = db.service_client.storage.from_("posts").get_public_url(f"thumbnails/{thumb_filename}")
-            except Exception as e:
-                print(f"Error uploading thumbnail: {e}")
+            if thumb_content:
+                import uuid
+                thumb_filename = f"thumb_{uuid.uuid4()}.jpg"
+                try:
+                    db.service_client.storage.from_("posts").upload(
+                        path=f"thumbnails/{thumb_filename}",
+                        file=thumb_content,
+                        file_options={"content-type": "image/jpeg"}
+                    )
+                    thumbnail_url = db.service_client.storage.from_("posts").get_public_url(f"thumbnails/{thumb_filename}")
+                except Exception as e:
+                    print(f"Error uploading thumbnail: {e}")
         except Exception as e:
-            print(f"Error generating thumbnail: {e}")
+            print(f"Error processing video media: {e}")
+
+    # Final file upload (if trimmed, we need a new way to upload bytes or save to temp again)
+    # Actually 'upload_file' takes 'UploadFile'. Let's refactor or use a byte-based upload here.
+    if media_type == "video" and end_time is not None:
+         import uuid
+         unique_id = uuid.uuid4()
+         filename = f"uploads/{unique_id}.mp4"
+         db.service_client.storage.from_("posts").upload(
+             path=filename,
+             file=file_content,
+             file_options={"content-type": "video/mp4"}
+         )
+         public_url = db.service_client.storage.from_("posts").get_public_url(filename)
+    else:
+        public_url = await upload_file(file, bucket_name="posts")
 
     data = {
         "model_id": user.user_id,

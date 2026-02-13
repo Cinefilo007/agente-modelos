@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@import "tailwindcss";
-
 @theme {
   --font-sans: Inter, sans-serif;
 
@@ -52,49 +50,30 @@
   --animate-pulse-slow: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Base styles using HSL variables */
 :root {
-  /* Dark Mode Default */
   --background: 240 10% 3.9%;
-  /* #09090b */
   --foreground: 0 0% 98%;
-  /* #fafafa */
-
   --card: 240 10% 3.9%;
   --card-foreground: 0 0% 98%;
-
   --popover: 240 10% 3.9%;
   --popover-foreground: 0 0% 98%;
-
   --primary: 0 0% 98%;
   --primary-foreground: 240 5.9% 10%;
-
   --secondary: 240 3.7% 15.9%;
-  /* #27272a */
   --secondary-foreground: 0 0% 98%;
-
   --muted: 240 3.7% 15.9%;
   --muted-foreground: 240 5% 64.9%;
-
   --accent: 240 3.7% 15.9%;
   --accent-foreground: 0 0% 98%;
-
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
   --ring: 240 4.9% 83.9%;
-
   --radius: 0.5rem;
-
-  /* Custom Dynamic Theme Vars - Dark Defaults */
   --glass-border: rgba(255, 255, 255, 0.1);
-  /* Gradient will be overwritten by JS dynamically, but default fallback: */
   --bg-gradient: radial-gradient(circle at top center, #1e1b4b 0%, #000000 60%);
 }
-
-/* .dark class removed as it is now default */
 
 @utility border-border {
   border-color: hsl(var(--border));
@@ -111,7 +90,6 @@
 body {
   margin: 0;
   min-height: 100vh;
-  /* Use Tailwind semantic colors */
   background-color: hsl(var(--background));
   background-image: var(--bg-gradient);
   background-attachment: fixed;
@@ -132,4 +110,32 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Custom Video Editor Sliders */
+.slider-thumb-pink::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #ec4899;
+  border: 3px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+}
+
+.slider-thumb-white::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border: 3px solid #333;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.video-control-btn {
+  @apply p-2 rounded-full bg-black/40 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/60 transition-all border border-white/10;
 }

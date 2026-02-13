@@ -6,9 +6,9 @@ from pathlib import Path
 from fastapi import UploadFile, HTTPException
 from src.services.database import db
 
-async def generate_video_thumbnail(video_content: bytes) -> bytes:
+async def generate_video_thumbnail(video_content: bytes, ss: float = 0.1) -> bytes:
     """
-    Genera una miniatura (frame 0.1s) de un video usando ffmpeg.
+    Genera una miniatura de un frame específico de un video usando ffmpeg.
     """
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
         temp_video.write(video_content)
@@ -17,10 +17,10 @@ async def generate_video_thumbnail(video_content: bytes) -> bytes:
     temp_thumb_path = temp_video_path + ".jpg"
     
     try:
-        # Extraer un frame a los 0.1 segundos
+        # Extraer un frame en el tiempo indicado (segundos)
         cmd = [
             "ffmpeg", "-y", "-i", temp_video_path,
-            "-ss", "00:00:00.100", "-vframes", "1",
+            "-ss", str(ss), "-vframes", "1",
             "-f", "image2", "-vcodec", "mjpeg",
             temp_thumb_path
         ]
@@ -36,6 +36,46 @@ async def generate_video_thumbnail(video_content: bytes) -> bytes:
             os.remove(temp_video_path)
         if os.path.exists(temp_thumb_path):
             os.remove(temp_thumb_path)
+
+async def trim_video(video_content: bytes, start_time: float, end_time: float) -> bytes:
+    """
+    Recorta un video usando ffmpeg.
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_in:
+        temp_in.write(video_content)
+        temp_in_path = temp_in.name
+
+    temp_out_path = temp_in_path + "_trimmed.mp4"
+    
+    try:
+        # Recortar video: -ss inicio, -to fin (o -t duración)
+        # Usamos -c copy si es posible para velocidad, o re-encodificamos para precisión
+        cmd = [
+            "ffmpeg", "-y", "-ss", str(start_time), "-i", temp_in_path,
+            "-to", str(end_time - start_time), "-c:v", "libx264", "-c:a", "aac",
+            "-strict", "experimental", temp_out_path
+        ]
+        # Nota: -to en algunas versiones es relativo al inicio con -ss antes de -i. 
+        # Pero mejor usar -t para duración: end - start.
+        duration = max(0.1, end_time - start_time)
+        cmd = [
+            "ffmpeg", "-y", "-ss", str(start_time), "-i", temp_in_path,
+            "-t", str(duration), "-c:v", "libx264", "-c:a", "aac",
+            "-pix_fmt", "yuv420p", # Compatibilidad amplia
+            temp_out_path
+        ]
+        
+        subprocess.run(cmd, check=True, capture_output=True)
+        
+        with open(temp_out_path, "rb") as f:
+            trimmed_content = f.read()
+            
+        return trimmed_content
+    finally:
+        if os.path.exists(temp_in_path):
+            os.remove(temp_in_path)
+        if os.path.exists(temp_out_path):
+            os.remove(temp_out_path)
 
 async def upload_file(file: UploadFile, bucket_name: str, folder: str = "uploads") -> str:
     """

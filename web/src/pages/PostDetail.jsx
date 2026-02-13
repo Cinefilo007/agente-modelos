@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Volume2, VolumeX, Send, X, Maximize2 } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Volume2, VolumeX, Send, X, Maximize2, Trash2, Flag } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/ui/Avatar';
@@ -20,6 +20,9 @@ export default function PostDetail() {
     const [newComment, setNewComment] = useState("");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
+
+    const videoRef = React.useRef(null);
 
     useEffect(() => {
         const fetchPostData = async () => {
@@ -154,23 +157,35 @@ export default function PostDetail() {
                 </button>
                 <span className="text-[var(--text-primary)] font-bold text-xs tracking-[0.2em] uppercase opacity-80">Publicación</span>
 
-                {/* Options Menu (Only if owner) */}
-                <div className="w-10 flex justify-end">
-                    {isOwner && (
+                {/* Actions: Delete (Standalone) or Menu (Images only) */}
+                <div className="flex items-center gap-2">
+                    {(isOwner || currentUser?.role === 'admin') && (
+                        <button
+                            onClick={handleDelete}
+                            className="p-2 rounded-full bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                            title="Eliminar Publicación"
+                        >
+                            <Trash2 size={20} />
+                        </button>
+                    )}
+
+                    {/* Only show menu if NOT a video (as requested) */}
+                    {post.media_type !== 'video' && (
                         <div className="relative group">
-                            <button className="p-2 rounded-full bg-[var(--card-bg)]/50 backdrop-blur-md text-white hover:bg-white/20 transition-colors">
+                            <button className="p-2 rounded-full bg-[var(--card-bg)]/50 backdrop-blur-md text-white hover:bg-white/20 transition-colors border border-[var(--glass-border)]">
                                 <MoreVertical size={24} />
                             </button>
-                            {/* Dropdown */}
-                            <div className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                <button
-                                    onClick={handleDelete}
-                                    className="w-full text-left px-4 py-3 text-red-500 hover:bg-white/5 text-sm font-medium flex items-center gap-2"
-                                >
-                                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                    Eliminar Publicación
-                                </button>
-                            </div>
+                            {/* Dropdown can stay for report etc if not owner, or just leave as is */}
+                            {!isOwner && (
+                                <div className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                    <button
+                                        className="w-full text-left px-4 py-3 text-white/70 hover:bg-white/5 text-sm font-medium flex items-center gap-2"
+                                    >
+                                        <Flag size={16} />
+                                        Reportar
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -179,18 +194,36 @@ export default function PostDetail() {
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth pb-[80px]"> {/* Padding needed for fixed input */}
 
-                {/* Media Container */}
-                <div className="w-full aspect-[4/5] bg-black/5 relative group mb-4 flex items-center justify-center bg-black">
+                <div className="w-full aspect-[4/5] bg-black relative group mb-4 flex items-center justify-center overflow-hidden">
                     {post.media_type === 'video' ? (
-                        <video
-                            src={post.media_url}
-                            controls
-                            autoPlay
-                            className="w-full h-full object-contain"
-                            poster={post.thumbnail_url}
-                            controlsList="nodownload"
-                            onContextMenu={(e) => e.preventDefault()}
-                        />
+                        <div className="relative w-full h-full">
+                            <video
+                                ref={videoRef}
+                                src={post.media_url}
+                                autoPlay
+                                loop
+                                muted={isMuted}
+                                className="w-full h-full object-contain"
+                                poster={post.thumbnail_url}
+                                playsInline
+                                onContextMenu={(e) => e.preventDefault()}
+                            />
+                            {/* Custom Overlays for Video */}
+                            <div className="absolute bottom-4 left-4 flex gap-2">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                                    className="p-2 rounded-full bg-black/50 backdrop-blur-md text-white hover:bg-white/20 transition-all border border-white/10"
+                                >
+                                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setIsFullscreen(true); }}
+                                    className="p-2 rounded-full bg-black/50 backdrop-blur-md text-white hover:bg-white/20 transition-all border border-white/10"
+                                >
+                                    <Maximize2 size={20} />
+                                </button>
+                            </div>
+                        </div>
                     ) : (
                         <img
                             src={post.media_url}
@@ -199,11 +232,6 @@ export default function PostDetail() {
                             alt="Post Content"
                         />
                     )}
-                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        <div className="bg-black/60 backdrop-blur-md p-1.5 rounded-lg">
-                            <Maximize2 size={16} className="text-white/80" />
-                        </div>
-                    </div>
                 </div>
 
                 {/* Post Info */}
