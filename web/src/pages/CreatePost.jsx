@@ -100,11 +100,40 @@ function CreatePost() {
     };
 
     useEffect(() => {
+        let metadataCheckInterval;
+        let safetyTimeout;
+
         if (isEditingVideo && videoRef.current) {
-            videoRef.current.load();
             setIsMetadataReady(false);
+            videoRef.current.load();
+
+            // Safety timeout: 5 seconds to force ready state if we have some duration
+            safetyTimeout = setTimeout(() => {
+                const duration = videoRef.current?.duration;
+                if (duration && duration > 0.1 && !isMetadataReady) {
+                    console.log("Forcing metadata ready via safety timeout");
+                    handleVideoMetadata({ target: videoRef.current });
+                }
+            }, 5000);
+
+            // Polling: periodic check for duration as onLoadedMetadata is unreliable on some mobile browsers
+            metadataCheckInterval = setInterval(() => {
+                const video = videoRef.current;
+                if (video && video.duration && !isNaN(video.duration) && video.duration > 0.1) {
+                    if (!isMetadataReady) {
+                        console.log("Metadata ready via polling");
+                        handleVideoMetadata({ target: video });
+                    }
+                    clearInterval(metadataCheckInterval);
+                }
+            }, 500);
         }
-    }, [isEditingVideo]);
+
+        return () => {
+            clearInterval(metadataCheckInterval);
+            clearTimeout(safetyTimeout);
+        };
+    }, [isEditingVideo, isMetadataReady]);
 
     const handleVideoMetadata = (e) => {
         const video = e.target;
@@ -113,7 +142,7 @@ function CreatePost() {
         if (!duration || isNaN(duration) || duration === Infinity || duration < 0.1) return;
 
         setVideoDuration(duration);
-        setTrimEnd(prev => (prev === 20 || prev === 0) ? Math.min(duration, 20) : prev);
+        setTrimEnd(prev => (prev === 20 || prev === 0 || prev > duration) ? Math.min(duration, 20) : prev);
         setIsMetadataReady(true);
 
         if (previewUrl && filmstrip.length === 0 && !isGeneratingFrames) {
@@ -282,8 +311,13 @@ function CreatePost() {
                                 playsInline
                                 webkit-playsinline="true"
                                 muted
+                                autoPlay
+                                loop
                                 preload="auto"
                                 onClick={togglePlay}
+                                onCanPlay={() => {
+                                    if (!isMetadataReady) handleVideoMetadata({ target: videoRef.current });
+                                }}
                             />
 
                             {/* Play/Pause Button Overlay */}
