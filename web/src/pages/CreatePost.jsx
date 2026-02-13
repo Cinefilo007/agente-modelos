@@ -103,7 +103,9 @@ function CreatePost() {
         const duration = video.duration;
         setVideoDuration(duration);
         setTrimEnd(Math.min(duration, 20));
-        if (previewUrl) generateFilmstrip(previewUrl);
+        if (previewUrl && filmstrip.length === 0 && !isGeneratingFrames) {
+            generateFilmstrip(previewUrl);
+        }
     };
 
     const togglePlay = () => {
