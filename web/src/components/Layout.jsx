@@ -75,7 +75,9 @@ export default function Layout() {
         const fetchUnread = async () => {
             try {
                 const res = await api.get('/notifications/unread-count');
-                setUnreadCount(res.count);
+                if (res.data) {
+                    setUnreadCount(res.data.count || 0);
+                }
             } catch (e) {
                 console.error("Error fetching unread count", e);
             }

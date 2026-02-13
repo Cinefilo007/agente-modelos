@@ -17,7 +17,7 @@ const Notifications = () => {
     const fetchNotifications = async () => {
         try {
             const res = await api.get('/notifications');
-            setNotifications(res.data);
+            setNotifications(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error("Error fetching notifications:", error);
         } finally {
@@ -55,7 +55,7 @@ const Notifications = () => {
                     </button>
                     <h1 className="text-base font-bold text-white uppercase tracking-wider">Notificaciones</h1>
 
-                    {notifications.some(n => !n.is_read) && (
+                    {Array.isArray(notifications) && notifications.some(n => !n.is_read) && (
                         <button
                             onClick={markAllRead}
                             className="ml-auto text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-widest bg-blue-400/10 px-3 py-1.5 rounded-full"
