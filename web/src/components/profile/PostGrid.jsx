@@ -12,7 +12,14 @@ export function PostGrid({ posts }) {
                     className="relative aspect-square overflow-hidden bg-gray-900 group block"
                 >
                     {post.media_type === 'video' ? (
-                        <video src={post.media_url} className="w-full h-full object-cover" />
+                        <video
+                            src={`${post.media_url}#t=0.1`}
+                            poster={post.thumbnail_url}
+                            className="w-full h-full object-cover"
+                            playsInline
+                            muted
+                            preload="metadata"
+                        />
                     ) : (
                         <img
                             src={post.media_url}

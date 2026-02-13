@@ -13,6 +13,9 @@ class ReportCreate(BaseModel):
 
 router = APIRouter()
 
+from src.services.storage import upload_file, generate_video_thumbnail
+import io
+
 @router.post("/posts")
 async def create_post(
     file: UploadFile = File(...),
@@ -23,17 +26,45 @@ async def create_post(
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Only models can create posts")
 
+    # Leer contenido del archivo para poder procesarlo si es video
+    file_content = await file.read()
+    file.file.seek(0) # Reset para upload_file
+    
     # Upload file to 'posts' bucket
+    # Para no duplicar lectura, pasamos el contenido o re-usamos UploadFile
     public_url = await upload_file(file, bucket_name="posts")
     
     # Determine media type (basic check)
     media_type = "video" if file.content_type.startswith("video") else "image"
+    thumbnail_url = None
+
+    if media_type == "video":
+        try:
+            thumb_content = await generate_video_thumbnail(file_content)
+            # Crear un objeto "file-like" para subir la miniatura
+            from fastapi import UploadFile as FastUploadFile
+            import uuid
+            
+            thumb_filename = f"thumb_{uuid.uuid4()}.jpg"
+            # Subida manual simplificada a bucket 'thumbnails'
+            try:
+                db.service_client.storage.from_("posts").upload(
+                    path=f"thumbnails/{thumb_filename}",
+                    file=thumb_content,
+                    file_options={"content-type": "image/jpeg"}
+                )
+                thumbnail_url = db.service_client.storage.from_("posts").get_public_url(f"thumbnails/{thumb_filename}")
+            except Exception as e:
+                print(f"Error uploading thumbnail: {e}")
+        except Exception as e:
+            print(f"Error generating thumbnail: {e}")
 
     data = {
         "model_id": user.user_id,
         "media_url": public_url,
         "media_type": media_type,
-        "caption": caption
+        "caption": caption,
+        "thumbnail_url": thumbnail_url
     }
     
     response = db.client.table("posts").insert(data).execute()
@@ -126,15 +157,15 @@ async def get_feed(
         else:
              return [] # Not a client
 
+    # Fetch posts with model info (including last_seen) and counts
+    query = db.client.table("posts").select("*, likes_count, comments_count, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
+    
     # Sort
     if sort == "top":
         query = query.order("likes_count", desc=True)
     else: # recent
         query = query.order("created_at", desc=True)
-        
-    # Fetch posts with model info (including last_seen) and counts
-    query = db.client.table("posts").select("*, likes_count, comments_count, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
-    
+
     response = query.limit(50).execute()
     posts = response.data
     

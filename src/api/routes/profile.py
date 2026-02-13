@@ -270,9 +270,7 @@ async def get_models_for_explore():
     """Get list of models for the explore page."""
     try:
         response = db.client.table("models") \
-            .select("id, artistic_name, username, avatar_url, is_online") \
-            .eq("status", "active") \
-            .eq("is_verified", True) \
+            .select("id, artistic_name, username, avatar_url, last_seen") \
             .execute()
         return response.data if response.data else []
     except Exception as e:

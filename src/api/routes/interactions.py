@@ -50,7 +50,7 @@ async def create_interaction(
         "action": interaction.action
     }
     
-    # Check for duplicates if it's a 'like'
+    # Check for duplicates or toggle if it's a 'like'
     if interaction.action == 'like':
         existing = db.client.table("interactions") \
             .select("id") \
@@ -58,9 +58,22 @@ async def create_interaction(
             .eq("target_id", interaction.target_id) \
             .eq("action", "like") \
             .execute()
+        
         if existing.data:
-            # Already liked, ignore duplicate to avoid inflating counters
-            return {"status": "already_liked", "id": existing.data[0]['id']}
+            # Already liked, perform UNLIKE (Toggle)
+            interaction_id = existing.data[0]['id']
+            db.client.table("interactions").delete().eq("id", interaction_id).execute()
+            
+            # Decrement counter
+            if interaction.target_type == 'post':
+                try:
+                    post = db.client.table("posts").select("likes_count").eq("id", interaction.target_id).single().execute()
+                    new_count = max(0, (post.data.get('likes_count') or 0) - 1)
+                    db.client.table("posts").update({"likes_count": new_count}).eq("id", interaction.target_id).execute()
+                except Exception as e:
+                    print(f"Error decrementing likes: {e}")
+            
+            return {"status": "unliked", "id": interaction_id}
 
     data = {
         "actor_id": actor_id,
@@ -68,7 +81,7 @@ async def create_interaction(
         "target_id": interaction.target_id,
         "target_type": interaction.target_type or 'post',
         "action": interaction.action,
-        "content": getattr(interaction, 'content', None) # For comments
+        "content": interaction.content
     }
     
     # Insert interaction
@@ -77,7 +90,6 @@ async def create_interaction(
     # Increment counters on Posts
     if interaction.target_type == 'post':
         if interaction.action == 'like':
-            # RPC increment would be better, but explicit update for MVP
              try:
                  post = db.client.table("posts").select("likes_count").eq("id", interaction.target_id).single().execute()
                  new_count = (post.data.get('likes_count') or 0) + 1
