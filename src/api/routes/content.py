@@ -255,7 +255,10 @@ async def delete_post(
         print(f"[Admin] Post {post_id} deleted by admin {user.id}. Reason: {reason}")
         # TODO: Insert into 'notifications' table for the model
 
-    # 3. Delete (Storage deletion is ideal but optional for now, just DB)
+    # 3. Delete associated interactions first (to trigger total_likes decrement in models table)
+    db.client.table("interactions").delete().eq("target_id", post_id).execute()
+
+    # 4. Delete the post
     db.client.table("posts").delete().eq("id", post_id).execute()
     
     return {"message": "Post deleted successfully"}

@@ -64,15 +64,7 @@ async def create_interaction(
             interaction_id = existing.data[0]['id']
             db.client.table("interactions").delete().eq("id", interaction_id).execute()
             
-            # Decrement counter
-            if interaction.target_type == 'post':
-                try:
-                    post = db.client.table("posts").select("likes_count").eq("id", interaction.target_id).single().execute()
-                    new_count = max(0, (post.data.get('likes_count') or 0) - 1)
-                    db.client.table("posts").update({"likes_count": new_count}).eq("id", interaction.target_id).execute()
-                except Exception as e:
-                    print(f"Error decrementing likes: {e}")
-            
+            # Decrement counter (Handled by DB Trigger)
             return {"status": "unliked", "id": interaction_id}
 
     data = {
@@ -87,24 +79,7 @@ async def create_interaction(
     # Insert interaction
     res = db.client.table("interactions").insert(data).execute()
     
-    # Increment counters on Posts
-    if interaction.target_type == 'post':
-        if interaction.action == 'like':
-             try:
-                 post = db.client.table("posts").select("likes_count").eq("id", interaction.target_id).single().execute()
-                 new_count = (post.data.get('likes_count') or 0) + 1
-                 db.client.table("posts").update({"likes_count": new_count}).eq("id", interaction.target_id).execute()
-             except Exception as e:
-                 print(f"Error incrementing likes: {e}")
-
-        elif interaction.action == 'comment':
-             try:
-                 post = db.client.table("posts").select("comments_count").eq("id", interaction.target_id).single().execute()
-                 new_count = (post.data.get('comments_count') or 0) + 1
-                 db.client.table("posts").update({"comments_count": new_count}).eq("id", interaction.target_id).execute()
-             except Exception as e:
-                 print(f"Error incrementing comments: {e}")
-        
+    # Increment counters (Handled by DB Trigger)
     return res.data[0]
 
 @router.post("/reviews")
