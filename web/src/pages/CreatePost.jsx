@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, X, Loader } from 'lucide-react';
+import { ArrowLeft, ImagePlus, X, Loader, Play, Pause } from 'lucide-react';
 import api from '../api/axios';
 
 function CreatePost() {
@@ -17,6 +17,9 @@ function CreatePost() {
     const [trimEnd, setTrimEnd] = useState(20);
     const [thumbnailTime, setThumbnailTime] = useState(0.1);
     const [filmstrip, setFilmstrip] = useState([]);
+    const [isGeneratingFrames, setIsGeneratingFrames] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
     const [isDragging, setIsDragging] = useState(null); // 'start', 'end', or null
 
     const fileInputRef = useRef(null);
@@ -38,29 +41,61 @@ function CreatePost() {
         }
     };
 
-    const generateFilmstrip = async (video) => {
+    const generateFilmstrip = async (videoSrc) => {
+        setIsGeneratingFrames(true);
         const frames = [];
         const count = 10;
-        const duration = video.duration;
+
+        // Create hidden video element for extraction
+        const video = document.createElement('video');
+        video.src = videoSrc;
+        video.muted = true;
+        video.playsInline = true;
+        video.preload = 'auto';
+
+        await new Promise(resolve => {
+            video.onloadedmetadata = () => resolve();
+            video.onerror = () => resolve();
+        });
+
+        const duration = video.duration || 0;
+        if (duration === 0) {
+            setIsGeneratingFrames(false);
+            return;
+        }
+
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         canvas.width = 160;
         canvas.height = 90;
 
         for (let i = 0; i < count; i++) {
             const time = (duration / count) * i;
             video.currentTime = time;
-            await new Promise(resolve => {
-                const onSeek = () => {
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    frames.push(canvas.toDataURL('image/jpeg', 0.5));
-                    video.removeEventListener('seeked', onSeek);
-                    resolve();
-                };
-                video.addEventListener('seeked', onSeek);
-            });
+
+            try {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        video.removeEventListener('seeked', onSeek);
+                        resolve(); // Skip this frame if it takes too long
+                    }, 2000);
+
+                    const onSeek = () => {
+                        clearTimeout(timeout);
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        frames.push(canvas.toDataURL('image/jpeg', 0.6));
+                        video.removeEventListener('seeked', onSeek);
+                        resolve();
+                    };
+                    video.addEventListener('seeked', onSeek);
+                    video.load(); // Some browsers need load() or play() to trigger seek on invisible elements
+                });
+            } catch (e) {
+                console.warn("Failed to capture frame at", time);
+            }
         }
         setFilmstrip(frames);
+        setIsGeneratingFrames(false);
     };
 
     const handleVideoMetadata = (e) => {
@@ -68,7 +103,31 @@ function CreatePost() {
         const duration = video.duration;
         setVideoDuration(duration);
         setTrimEnd(Math.min(duration, 20));
-        generateFilmstrip(video);
+        if (previewUrl) generateFilmstrip(previewUrl);
+    };
+
+    const togglePlay = () => {
+        if (videoRef.current) {
+            if (videoRef.current.paused) {
+                videoRef.current.play();
+                setIsPlaying(true);
+            } else {
+                videoRef.current.pause();
+                setIsPlaying(false);
+            }
+        }
+    };
+
+    const handleTimeUpdate = (e) => {
+        const time = e.target.currentTime;
+        setCurrentTime(time);
+
+        // Loop within trimmed range
+        if (time >= trimEnd) {
+            e.target.currentTime = trimStart;
+        } else if (time < trimStart) {
+            e.target.currentTime = trimStart;
+        }
     };
 
     const handleSubmit = async () => {
@@ -202,13 +261,24 @@ function CreatePost() {
                                 ref={videoRef}
                                 src={previewUrl}
                                 onLoadedMetadata={handleVideoMetadata}
+                                onTimeUpdate={handleTimeUpdate}
                                 className="max-w-full max-h-full rounded-lg shadow-2xl"
                                 playsInline
                                 webkit-playsinline="true"
                                 muted
-                                loop
                                 preload="auto"
+                                onClick={togglePlay}
                             />
+
+                            {/* Play/Pause Button Overlay */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                                className={`absolute inset-0 flex items-center justify-center bg-black/10 transition-opacity z-40 ${isPlaying ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}
+                            >
+                                <div className="p-5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl scale-125">
+                                    {isPlaying ? <Pause size={32} className="text-white fill-white" /> : <Play size={32} className="text-white fill-white ml-1" />}
+                                </div>
+                            </button>
 
                             {/* Playback Progress Indicator (Vertical Line) */}
                             <div
@@ -256,20 +326,20 @@ function CreatePost() {
                                     >
                                         {/* Start Handle */}
                                         <div
-                                            className="absolute -left-1.5 top-0 h-full w-4 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-l-sm flex items-center justify-center p-[2px]"
+                                            className="absolute -left-2.5 top-[-4px] bottom-[-4px] w-5 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-l-md flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.3)] z-30"
                                             onMouseDown={() => setIsDragging('start')}
                                             onTouchStart={(e) => { e.preventDefault(); setIsDragging('start'); }}
                                         >
-                                            <div className="w-[2px] h-4 bg-black/30 rounded-full" />
+                                            <div className="w-[2px] h-6 bg-black/40 rounded-full" />
                                         </div>
 
                                         {/* End Handle */}
                                         <div
-                                            className="absolute -right-1.5 top-0 h-full w-4 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-r-sm flex items-center justify-center p-[2px]"
+                                            className="absolute -right-2.5 top-[-4px] bottom-[-4px] w-5 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-r-md flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.3)] z-30"
                                             onMouseDown={() => setIsDragging('end')}
                                             onTouchStart={(e) => { e.preventDefault(); setIsDragging('end'); }}
                                         >
-                                            <div className="w-[2px] h-4 bg-black/30 rounded-full" />
+                                            <div className="w-[2px] h-6 bg-black/40 rounded-full" />
                                         </div>
                                     </div>
 
