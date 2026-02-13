@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, Loader, Play, Pause } from 'lucide-react';
 import api from '../api/axios';
@@ -10,6 +10,7 @@ function CreatePost() {
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
     const [isEditingVideo, setIsEditingVideo] = useState(false);
+    const [isMetadataReady, setIsMetadataReady] = useState(false);
 
     // Video Edit State
     const [videoDuration, setVideoDuration] = useState(0);
@@ -98,11 +99,23 @@ function CreatePost() {
         setIsGeneratingFrames(false);
     };
 
+    useEffect(() => {
+        if (isEditingVideo && videoRef.current) {
+            videoRef.current.load();
+            setIsMetadataReady(false);
+        }
+    }, [isEditingVideo]);
+
     const handleVideoMetadata = (e) => {
         const video = e.target;
         const duration = video.duration;
+
+        if (!duration || isNaN(duration) || duration === Infinity || duration < 0.1) return;
+
         setVideoDuration(duration);
-        setTrimEnd(Math.min(duration, 20));
+        setTrimEnd(prev => (prev === 20 || prev === 0) ? Math.min(duration, 20) : prev);
+        setIsMetadataReady(true);
+
         if (previewUrl && filmstrip.length === 0 && !isGeneratingFrames) {
             generateFilmstrip(previewUrl);
         }
@@ -263,6 +276,7 @@ function CreatePost() {
                                 ref={videoRef}
                                 src={previewUrl}
                                 onLoadedMetadata={handleVideoMetadata}
+                                onDurationChange={handleVideoMetadata}
                                 onTimeUpdate={handleTimeUpdate}
                                 className="max-w-full max-h-full rounded-lg shadow-2xl"
                                 playsInline
@@ -302,126 +316,136 @@ function CreatePost() {
                         {/* Controls Container - Telegram Style */}
                         <div className="bg-[#111] p-6 pb-12 space-y-10 rounded-t-3xl border-t border-white/10">
 
-                            {/* Filmstrip & Trimmer */}
-                            <div className="relative pt-4">
-                                <span className="absolute -top-4 left-1 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Recortar Video</span>
+                            {!isMetadataReady ? (
+                                <div className="h-40 flex flex-col items-center justify-center space-y-4">
+                                    <Loader className="animate-spin text-yellow-500" size={32} />
+                                    <p className="text-xs text-gray-400">Preparando video...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Filmstrip & Trimmer */}
+                                    <div className="relative pt-4">
+                                        <span className="absolute -top-4 left-1 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Recortar Video</span>
 
-                                <div className="relative h-16 w-full bg-black/40 rounded-lg overflow-hidden flex select-none">
-                                    {/* Filmstrip Background */}
-                                    {filmstrip.length > 0 ? filmstrip.map((src, i) => (
-                                        <img key={i} src={src} className="h-full flex-1 object-cover opacity-60 grayscale-[0.5] pointer-events-none" />
-                                    )) : (
-                                        <div className="flex-1 h-full bg-white/5 animate-pulse" />
-                                    )}
+                                        <div className="relative h-16 w-full bg-black/40 rounded-lg overflow-hidden flex select-none">
+                                            {/* Filmstrip Background */}
+                                            {filmstrip.length > 0 ? filmstrip.map((src, i) => (
+                                                <img key={i} src={src} className="h-full flex-1 object-cover opacity-60 grayscale-[0.5] pointer-events-none" />
+                                            )) : (
+                                                <div className="flex-1 h-full bg-white/5 animate-pulse" />
+                                            )}
 
-                                    {/* Draggable Shrouds (Darkened areas outside selection) */}
-                                    <div className="absolute top-0 left-0 h-full bg-black/60 z-10" style={{ width: `${(trimStart / videoDuration) * 100}%` }} />
-                                    <div className="absolute top-0 right-0 h-full bg-black/60 z-10" style={{ width: `${(1 - trimEnd / videoDuration) * 100}%` }} />
+                                            {/* Draggable Shrouds (Darkened areas outside selection) */}
+                                            <div className="absolute top-0 left-0 h-full bg-black/70 z-10" style={{ width: `${(trimStart / videoDuration) * 100}%` }} />
+                                            <div className="absolute top-0 right-0 h-full bg-black/70 z-10" style={{ width: `${Math.max(0, (1 - trimEnd / videoDuration) * 100)}%` }} />
 
-                                    {/* Trim Box with Handles */}
-                                    <div
-                                        className="absolute top-0 h-full border-y-2 border-yellow-500 z-20 pointer-events-none transition-none"
-                                        style={{
-                                            left: `${(trimStart / videoDuration) * 100}%`,
-                                            right: `${(1 - trimEnd / videoDuration) * 100}%`
-                                        }}
-                                    >
-                                        {/* Start Handle */}
-                                        <div
-                                            className="absolute -left-2.5 top-[-4px] bottom-[-4px] w-5 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-l-md flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.3)] z-30"
-                                            onMouseDown={() => setIsDragging('start')}
-                                            onTouchStart={(e) => { e.preventDefault(); setIsDragging('start'); }}
-                                        >
-                                            <div className="w-[2px] h-6 bg-black/40 rounded-full" />
+                                            {/* Trim Box with Handles */}
+                                            <div
+                                                className="absolute top-0 h-full border-y-2 border-yellow-500 z-20 pointer-events-none transition-none"
+                                                style={{
+                                                    left: `${(trimStart / videoDuration) * 100}%`,
+                                                    width: `${((trimEnd - trimStart) / videoDuration) * 100}%`
+                                                }}
+                                            >
+                                                {/* Start Handle */}
+                                                <div
+                                                    className="absolute -left-3 top-[-4px] bottom-[-4px] w-6 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-l-md flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.4)] z-30 touch-none"
+                                                    onMouseDown={() => setIsDragging('start')}
+                                                    onTouchStart={(e) => { e.preventDefault(); setIsDragging('start'); }}
+                                                >
+                                                    <div className="w-[3px] h-6 bg-black/40 rounded-full" />
+                                                </div>
+
+                                                {/* End Handle */}
+                                                <div
+                                                    className="absolute -right-3 top-[-4px] bottom-[-4px] w-6 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-r-md flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.4)] z-30 touch-none"
+                                                    onMouseDown={() => setIsDragging('end')}
+                                                    onTouchStart={(e) => { e.preventDefault(); setIsDragging('end'); }}
+                                                >
+                                                    <div className="w-[3px] h-6 bg-black/40 rounded-full" />
+                                                </div>
+                                            </div>
+
+                                            {/* Interaction Overlay */}
+                                            <div
+                                                className="absolute inset-0 z-30 touch-none"
+                                                onMouseMove={(e) => {
+                                                    if (!isDragging || !videoDuration) return;
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    const pos = (e.clientX - rect.left) / rect.width;
+                                                    const time = Math.max(0, Math.min(videoDuration, pos * videoDuration));
+
+                                                    if (isDragging === 'start') {
+                                                        setTrimStart(Math.min(time, trimEnd - 0.5));
+                                                        if (videoRef.current) videoRef.current.currentTime = time;
+                                                    } else if (isDragging === 'end') {
+                                                        setTrimEnd(Math.max(time, trimStart + 0.5));
+                                                        if (videoRef.current) videoRef.current.currentTime = time;
+                                                    }
+                                                }}
+                                                onMouseUp={() => setIsDragging(null)}
+                                                onMouseLeave={() => setIsDragging(null)}
+                                                onTouchMove={(e) => {
+                                                    if (!isDragging || !videoDuration) return;
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    const touch = e.touches[0];
+                                                    const pos = (touch.clientX - rect.left) / rect.width;
+                                                    const time = Math.max(0, Math.min(videoDuration, pos * videoDuration));
+
+                                                    if (isDragging === 'start') {
+                                                        setTrimStart(Math.min(time, trimEnd - 0.5));
+                                                        if (videoRef.current) videoRef.current.currentTime = time;
+                                                    } else if (isDragging === 'end') {
+                                                        setTrimEnd(Math.max(time, trimStart + 0.5));
+                                                        if (videoRef.current) videoRef.current.currentTime = time;
+                                                    }
+                                                }}
+                                                onTouchEnd={() => setIsDragging(null)}
+                                            />
                                         </div>
-
-                                        {/* End Handle */}
-                                        <div
-                                            className="absolute -right-2.5 top-[-4px] bottom-[-4px] w-5 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-r-md flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.3)] z-30"
-                                            onMouseDown={() => setIsDragging('end')}
-                                            onTouchStart={(e) => { e.preventDefault(); setIsDragging('end'); }}
-                                        >
-                                            <div className="w-[2px] h-6 bg-black/40 rounded-full" />
+                                        <div className="flex justify-between mt-2 text-[10px] text-gray-500 font-mono">
+                                            <span>{trimStart.toFixed(1)}s</span>
+                                            <span>Fin en {trimEnd.toFixed(1)}s</span>
                                         </div>
                                     </div>
 
-                                    {/* Interaction Overlay */}
-                                    <div
-                                        className="absolute inset-0 z-30"
-                                        onMouseMove={(e) => {
-                                            if (!isDragging) return;
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const pos = (e.clientX - rect.left) / rect.width;
-                                            const time = Math.max(0, Math.min(videoDuration, pos * videoDuration));
+                                    {/* Thumbnail Selector Slider */}
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Miniatúra Portada</span>
+                                            <span className="text-[10px] text-yellow-500 font-bold">{thumbnailTime.toFixed(1)}s</span>
+                                        </div>
+                                        <div className="relative h-6 flex items-center">
+                                            <input
+                                                type="range"
+                                                min={trimStart}
+                                                max={trimEnd}
+                                                step="0.1"
+                                                value={thumbnailTime}
+                                                onChange={(e) => {
+                                                    const val = parseFloat(e.target.value);
+                                                    setThumbnailTime(val);
+                                                    if (videoRef.current) {
+                                                        videoRef.current.currentTime = val;
+                                                        videoRef.current.pause();
+                                                        setIsPlaying(false);
+                                                    }
+                                                }}
+                                                className="w-full h-1.5 appearance-none bg-white/10 rounded-full cursor-pointer accent-yellow-500"
+                                            />
+                                        </div>
+                                    </div>
 
-                                            if (isDragging === 'start') {
-                                                setTrimStart(Math.min(time, trimEnd - 0.5));
-                                                if (videoRef.current) videoRef.current.currentTime = time;
-                                            } else if (isDragging === 'end') {
-                                                setTrimEnd(Math.max(time, trimStart + 0.5));
-                                                if (videoRef.current) videoRef.current.currentTime = time;
-                                            }
-                                        }}
-                                        onMouseUp={() => setIsDragging(null)}
-                                        onMouseLeave={() => setIsDragging(null)}
-                                        onTouchMove={(e) => {
-                                            if (!isDragging) return;
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const touch = e.touches[0];
-                                            const pos = (touch.clientX - rect.left) / rect.width;
-                                            const time = Math.max(0, Math.min(videoDuration, pos * videoDuration));
-
-                                            if (isDragging === 'start') {
-                                                setTrimStart(Math.min(time, trimEnd - 0.5));
-                                                if (videoRef.current) videoRef.current.currentTime = time;
-                                            } else if (isDragging === 'end') {
-                                                setTrimEnd(Math.max(time, trimStart + 0.5));
-                                                if (videoRef.current) videoRef.current.currentTime = time;
-                                            }
-                                        }}
-                                        onTouchEnd={() => setIsDragging(null)}
-                                    />
-                                </div>
-                                <div className="flex justify-between mt-2 text-[10px] text-gray-500 font-mono">
-                                    <span>{trimStart.toFixed(1)}s</span>
-                                    <span>Fin en {trimEnd.toFixed(1)}s</span>
-                                </div>
-                            </div>
-
-                            {/* Thumbnail Selector Slider */}
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center px-1">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Miniatúra Portada</span>
-                                    <span className="text-[10px] text-yellow-500 font-bold">{thumbnailTime.toFixed(1)}s</span>
-                                </div>
-                                <div className="relative h-6 flex items-center">
-                                    <input
-                                        type="range"
-                                        min={trimStart}
-                                        max={trimEnd}
-                                        step="0.1"
-                                        value={thumbnailTime}
-                                        onChange={(e) => {
-                                            const val = parseFloat(e.target.value);
-                                            setThumbnailTime(val);
-                                            if (videoRef.current) {
-                                                videoRef.current.currentTime = val;
-                                                videoRef.current.pause();
-                                            }
-                                        }}
-                                        className="w-full h-1.5 appearance-none bg-white/10 rounded-full cursor-pointer accent-yellow-500"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Error Notification */}
-                            {(trimEnd - trimStart) > 20.1 && (
-                                <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex items-center gap-3">
-                                    <div className="p-2 bg-red-500 rounded-lg"><X size={16} className="text-white" /></div>
-                                    <p className="text-[11px] text-red-500 font-medium leading-tight">
-                                        Duración excedida. Telegram permite hasta 20 segundos por post.
-                                    </p>
-                                </div>
+                                    {/* Error Notification */}
+                                    {(trimEnd - trimStart) > 20.1 && (
+                                        <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex items-center gap-3">
+                                            <div className="p-2 bg-red-500 rounded-lg"><X size={16} className="text-white" /></div>
+                                            <p className="text-[11px] text-red-500 font-medium leading-tight">
+                                                Duración excedida. Telegram permite hasta 20 segundos por post.
+                                            </p>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
