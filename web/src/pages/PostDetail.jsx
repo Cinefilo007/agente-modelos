@@ -212,7 +212,7 @@ export default function PostDetail() {
                         <Avatar
                             src={user.avatar_url || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username || 'User'}`}
                             size="md"
-                            isOnline={false}
+                            isOnline={post.is_online}
                         />
                         <div className="flex-1">
                             <h3 className="text-[var(--text-primary)] font-bold text-base">{user.full_name || user.username}</h3>

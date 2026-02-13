@@ -11,6 +11,17 @@ class ReportCreate(BaseModel):
     reason: str
     description: Optional[str] = None
 
+def calculate_is_online(last_seen_str: Optional[str]) -> bool:
+    """Helper to check if a model is online based on last_seen timestamp."""
+    if not last_seen_str:
+        return False
+    try:
+        threshold = datetime.utcnow() - timedelta(minutes=5)
+        ls_dt = datetime.fromisoformat(last_seen_str.replace('Z', '+00:00'))
+        return ls_dt.replace(tzinfo=None) > threshold
+    except:
+        return False
+
 router = APIRouter()
 
 from src.services.storage import upload_file, generate_video_thumbnail
@@ -193,16 +204,7 @@ async def get_feed(
     for p in posts:
         # Check Online Status
         model = p.get('models', {})
-        last_seen_str = model.get('last_seen')
-        is_online = False
-        if last_seen_str:
-            try:
-                # Handle ISO format with or without Timezone "Z"
-                ls_dt = datetime.fromisoformat(last_seen_str.replace('Z', '+00:00'))
-                # Simpler comparison if both are unaware or aware, assuming UTC
-                is_online = ls_dt.replace(tzinfo=None) > threshold
-            except:
-                pass # Parse error, assume offline
+        is_online = calculate_is_online(model.get('last_seen'))
         
         enriched_posts.append({
             **p,
@@ -226,11 +228,13 @@ async def get_post_detail(post_id: str):
     
     if not response.data:
         raise HTTPException(status_code=404, detail="Post not found")
+    
+    post = response.data
+    # Enrich with is_online
+    model = post.get('models', {})
+    post['is_online'] = calculate_is_online(model.get('last_seen'))
         
-    if not response.data:
-        raise HTTPException(status_code=404, detail="Post not found")
-        
-    return response.data
+    return post
 
 @router.delete("/posts/{post_id}")
 async def delete_post(

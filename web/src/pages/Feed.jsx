@@ -63,8 +63,9 @@ function Feed() {
                         name: p.models?.full_name || p.models?.username || 'Unknown',
                         artistic_name: p.models?.artistic_name, // Support artistic name
                         avatar: p.models?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.models?.username || 'User'}`,
-                        isOnline: false
-                    }
+                        isOnline: p.is_online
+                    },
+                    is_online: p.is_online
                 }));
 
                 setPosts(mappedPosts);
