@@ -1,6 +1,10 @@
+import os
+import uuid
 import subprocess
 import tempfile
 from pathlib import Path
+from fastapi import UploadFile, HTTPException
+from src.services.database import db
 
 async def generate_video_thumbnail(video_content: bytes) -> bytes:
     """
