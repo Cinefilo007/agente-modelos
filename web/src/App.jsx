@@ -21,6 +21,7 @@ import AdminDashboard from './pages/AdminDashboard'; // [NEW]
 import ClientProfile from './pages/ClientProfile';
 import ServiceCheckout from './pages/ServiceCheckout';
 import Onboarding from './pages/Onboarding';
+import InstallPWA from './components/pwa/InstallPWA';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -110,6 +111,7 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <ThemeProvider>
+          <InstallPWA />
           <BrowserRouter>
             <Routes>
               {/* Public Route: Landing Page */}
