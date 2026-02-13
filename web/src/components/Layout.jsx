@@ -17,7 +17,7 @@ export default function Layout() {
     // For now assuming everyone can see it or logical check:
     const isModel = user?.role === 'model';
 
-    const NavItem = ({ to, icon: Icon, label }) => {
+    const NavItem = ({ to, icon: Icon, label, badge }) => {
         const isActive = location.pathname === to;
         return (
             <Link
@@ -27,8 +27,11 @@ export default function Layout() {
                     isActive ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 )}
             >
-                <div className={clsx("p-1 rounded-full", isActive && "bg-[var(--text-primary)]/10")}>
+                <div className={clsx("p-1 rounded-full relative", isActive && "bg-[var(--text-primary)]/10")}>
                     <Icon className="w-6 h-6" style={{ color: isActive ? themeColor : undefined }} />
+                    {badge > 0 && (
+                        <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full ring-2 ring-background animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                    )}
                 </div>
                 <span className="text-[10px] font-medium">{label}</span>
                 {isActive && (
@@ -63,6 +66,25 @@ export default function Layout() {
             setShowTerms(false);
         }
     }, [user]);
+
+    // Unread notifications polling
+    const [unreadCount, setUnreadCount] = React.useState(0);
+    React.useEffect(() => {
+        if (!user) return;
+
+        const fetchUnread = async () => {
+            try {
+                const res = await api.get('/notifications/unread-count');
+                setUnreadCount(res.count);
+            } catch (e) {
+                console.error("Error fetching unread count", e);
+            }
+        };
+
+        fetchUnread();
+        const interval = setInterval(fetchUnread, 30000); // Every 30s
+        return () => clearInterval(interval);
+    }, [user, location.pathname]);
 
     return (
         // Background is now handled by body with var(--bg-gradient) and var(--background)
@@ -105,7 +127,12 @@ export default function Layout() {
 
                         {/* Hide Notifications for Admin */}
                         {user?.role !== 'admin' && (
-                            <NavItem to="/notifications" icon={Bell} label="Alertas" />
+                            <NavItem
+                                to="/notifications"
+                                icon={Bell}
+                                label="Alertas"
+                                badge={unreadCount}
+                            />
                         )}
 
                         {/* Profile redirects to Admin Dashboard if admin */}

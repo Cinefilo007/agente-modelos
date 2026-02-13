@@ -79,6 +79,24 @@ async def create_interaction(
     # Insert interaction
     res = db.client.table("interactions").insert(data).execute()
     
+    # Notify target user
+    try:
+        if interaction.action in ['like', 'comment']:
+            # Get post owner
+            post = db.client.table("posts").select("model_id").eq("id", interaction.target_id).maybe_single().execute()
+            if post.data:
+                target_user_id = post.data['model_id']
+                if str(target_user_id) != str(actor_id): # Don't notify self
+                    db.client.table("notifications").insert({
+                        "user_id": target_user_id,
+                        "actor_id": actor_id,
+                        "type": interaction.action,
+                        "target_id": interaction.target_id,
+                        "content": interaction.content if interaction.action == 'comment' else None
+                    }).execute()
+    except Exception as e:
+        print(f"Error creating notification: {e}")
+
     # Increment counters (Handled by DB Trigger)
     return res.data[0]
 
@@ -124,6 +142,17 @@ async def follow_model(
     
     try:
         res = db.client.table("followers").insert(data).execute()
+        
+        # Notify model
+        try:
+            db.client.table("notifications").insert({
+                "user_id": follow.model_id,
+                "actor_id": client_res.data['id'],
+                "type": "follow"
+            }).execute()
+        except Exception as notif_err:
+            print(f"Error creating follow notification: {notif_err}")
+
         return res.data[0]
     except Exception as e:
         # Check for unique violation if needed, usually Supabase returns error
