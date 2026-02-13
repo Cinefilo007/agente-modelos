@@ -181,71 +181,73 @@ async def get_feed(
     user: TelegramUser = Depends(get_current_user)
 ):
     """Get global feed with filters."""
-    # Fetch posts with model info (including last_seen) and counts
-    query = db.client.table("posts").select("*, likes_count, comments_count, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
-    
-    # Filter by following (if strictly requested)
-    if filter_type == "following":
-        # Get user ID (could be model or client)
-        # Try to find their client record first as follows are stored by client_id
-        client = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
-        if client.data:
-            following = db.client.table("followers").select("model_id").eq("client_id", client.data['id']).execute()
-            model_ids = [f['model_id'] for f in following.data]
-            if model_ids:
-                query = query.in_("model_id", model_ids)
-            else:
-                return [] # Follows no one
-        else:
-             # Look if they are a model following others? (In some systems models are also treated as fans)
-             # For now, if no client record, they have no followers list
-             return [] 
-
-    # Sort
-    if sort == "top":
-        query = query.order("likes_count", desc=True)
-    else: # recent
-        query = query.order("created_at", desc=True)
-
-    response = query.limit(50).execute()
-    posts = response.data
-    
-    if not posts:
-        return []
-
-    # Enrich with 'is_liked' and 'is_online'
-    post_ids = [p['id'] for p in posts]
-    
-    # Check likes by current user
-    liked_posts = []
-    if post_ids:
-        likes_res = db.client.table("interactions") \
-            .select("target_id") \
-            .eq("actor_id", user.user_id) \
-            .eq("action", "like") \
-            .in_("target_id", post_ids) \
-            .execute()
-        liked_posts = {l['target_id'] for l in likes_res.data}
-
-    # Process posts
-    threshold = datetime.utcnow() - timedelta(minutes=5)
-    
-    enriched_posts = []
-    for p in posts:
-        # Check Online Status
-        model = p.get('models', {})
-        is_online = calculate_is_online(model.get('last_seen'))
+    try:
+        # Fetch posts with model info (including last_seen) and counts
+        query = db.client.table("posts").select("*, likes_count, comments_count, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
         
-        enriched_posts.append({
-            **p,
-            "is_liked": p['id'] in liked_posts,
-            "is_online": is_online,
-            # Ensure counts are present (fallback to 0)
-            "likes_count": p.get("likes_count", 0),
-            "comments_count": p.get("comments_count", 0)
-        })
+        # Filter by following (if strictly requested)
+        if filter_type == "following":
+            # Get user ID (could be model or client)
+            # Try to find their client record first as follows are stored by client_id
+            client = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
+            if client.data:
+                following = db.client.table("followers").select("model_id").eq("client_id", client.data['id']).execute()
+                model_ids = [f['model_id'] for f in following.data]
+                if model_ids:
+                    query = query.in_("model_id", model_ids)
+                else:
+                    return [] # Follows no one
+            else:
+                 # Look if they are a model following others? (In some systems models are also treated as fans)
+                 # For now, if no client record, they have no followers list
+                 return [] 
 
-    return enriched_posts
+        # Sort
+        if sort == "top":
+            query = query.order("likes_count", desc=True)
+        else: # recent
+            query = query.order("created_at", desc=True)
+
+        response = query.limit(50).execute()
+        posts = response.data
+        
+        if not posts:
+            return []
+
+        # Enrich with 'is_liked' and 'is_online'
+        post_ids = [p['id'] for p in posts]
+        
+        # Check likes by current user
+        liked_posts = []
+        if post_ids:
+            likes_res = db.client.table("interactions") \
+                .select("target_id") \
+                .eq("actor_id", user.user_id) \
+                .eq("action", "like") \
+                .in_("target_id", post_ids) \
+                .execute()
+            liked_posts = {l['target_id'] for l in likes_res.data}
+
+        # Process posts
+        enriched_posts = []
+        for p in posts:
+            # Check Online Status
+            model = p.get('models', {})
+            is_online = calculate_is_online(model.get('last_seen'))
+            
+            enriched_posts.append({
+                **p,
+                "is_liked": p['id'] in liked_posts,
+                "is_online": is_online,
+                # Ensure counts are present (fallback to 0)
+                "likes_count": p.get("likes_count", 0),
+                "comments_count": p.get("comments_count", 0)
+            })
+
+        return enriched_posts
+    except Exception as e:
+        print(f"Error in get_feed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/post/{post_id}")
 async def get_post_detail(post_id: str):

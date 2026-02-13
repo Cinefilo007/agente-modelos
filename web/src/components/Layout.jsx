@@ -6,6 +6,7 @@ import { clsx } from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { TermsModal } from './auth/TermsModal';
 
+import api from '../api/axios';
 import ThemeSettings from './ui/ThemeSettings';
 import NebulaBackground from './ui/NebulaBackground';
 
