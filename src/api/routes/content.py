@@ -181,11 +181,13 @@ async def get_feed(
     user: TelegramUser = Depends(get_current_user)
 ):
     """Get global feed with filters."""
-    query = db.client.table("posts").select("*, models(username, full_name, artistic_name, avatar_url, is_verified)")
+    # Fetch posts with model info (including last_seen) and counts
+    query = db.client.table("posts").select("*, likes_count, comments_count, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
     
     # Filter by following (if strictly requested)
     if filter_type == "following":
-        # Get client ID
+        # Get user ID (could be model or client)
+        # Try to find their client record first as follows are stored by client_id
         client = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
         if client.data:
             following = db.client.table("followers").select("model_id").eq("client_id", client.data['id']).execute()
@@ -195,11 +197,10 @@ async def get_feed(
             else:
                 return [] # Follows no one
         else:
-             return [] # Not a client
+             # Look if they are a model following others? (In some systems models are also treated as fans)
+             # For now, if no client record, they have no followers list
+             return [] 
 
-    # Fetch posts with model info (including last_seen) and counts
-    query = db.client.table("posts").select("*, likes_count, comments_count, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
-    
     # Sort
     if sort == "top":
         query = query.order("likes_count", desc=True)
