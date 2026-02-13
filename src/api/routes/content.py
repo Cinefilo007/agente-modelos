@@ -183,12 +183,11 @@ async def get_feed(
     """Get global feed with filters."""
     try:
         # Fetch posts with model info (including last_seen) and counts
-        query = db.client.table("posts").select("*, likes_count, comments_count, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
+        # We use * to get everything. If likes_count/comments_count are real columns, they will be there.
+        query = db.client.table("posts").select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
         
         # Filter by following (if strictly requested)
         if filter_type == "following":
-            # Get user ID (could be model or client)
-            # Try to find their client record first as follows are stored by client_id
             client = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
             if client.data:
                 following = db.client.table("followers").select("model_id").eq("client_id", client.data['id']).execute()
@@ -198,18 +197,21 @@ async def get_feed(
                 else:
                     return [] # Follows no one
             else:
-                 # Look if they are a model following others? (In some systems models are also treated as fans)
-                 # For now, if no client record, they have no followers list
                  return [] 
 
         # Sort
         if sort == "top":
-            query = query.order("likes_count", desc=True)
+            # Only order by likes_count if you are sure the column exists. 
+            # If not, use created_at.
+            try:
+                query = query.order("likes_count", desc=True)
+            except:
+                query = query.order("created_at", desc=True)
         else: # recent
             query = query.order("created_at", desc=True)
 
         response = query.limit(50).execute()
-        posts = response.data
+        posts = response.data or []
         
         if not posts:
             return []
@@ -218,28 +220,30 @@ async def get_feed(
         post_ids = [p['id'] for p in posts]
         
         # Check likes by current user
-        liked_posts = []
+        liked_posts = set()
         if post_ids:
-            likes_res = db.client.table("interactions") \
-                .select("target_id") \
-                .eq("actor_id", user.user_id) \
-                .eq("action", "like") \
-                .in_("target_id", post_ids) \
-                .execute()
-            liked_posts = {l['target_id'] for l in likes_res.data}
+            try:
+                likes_res = db.client.table("interactions") \
+                    .select("target_id") \
+                    .eq("actor_id", user.user_id) \
+                    .eq("action", "like") \
+                    .in_("target_id", post_ids) \
+                    .execute()
+                liked_posts = {l['target_id'] for l in likes_res.data} if likes_res.data else set()
+            except Exception as e:
+                print(f"[Feed] Error checking likes: {e}")
 
         # Process posts
         enriched_posts = []
         for p in posts:
             # Check Online Status
-            model = p.get('models', {})
-            is_online = calculate_is_online(model.get('last_seen'))
+            model = p.get('models') or {}
+            is_online = calculate_is_online(model.get('last_seen')) if model else False
             
             enriched_posts.append({
                 **p,
                 "is_liked": p['id'] in liked_posts,
                 "is_online": is_online,
-                # Ensure counts are present (fallback to 0)
                 "likes_count": p.get("likes_count", 0),
                 "comments_count": p.get("comments_count", 0)
             })
@@ -247,26 +251,34 @@ async def get_feed(
         return enriched_posts
     except Exception as e:
         print(f"Error in get_feed: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/post/{post_id}")
 async def get_post_detail(post_id: str):
     """Get a single post by ID."""
-    response = db.client.table("posts") \
-        .select("*, models(username, full_name, artistic_name, avatar_url, is_verified)") \
-        .eq("id", post_id) \
-        .single() \
-        .execute()
-    
-    if not response.data:
-        raise HTTPException(status_code=404, detail="Post not found")
-    
-    post = response.data
-    # Enrich with is_online
-    model = post.get('models', {})
-    post['is_online'] = calculate_is_online(model.get('last_seen'))
+    try:
+        response = db.client.table("posts") \
+            .select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)") \
+            .eq("id", post_id) \
+            .single() \
+            .execute()
         
-    return post
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Post not found")
+        
+        post = response.data
+        # Enrich with is_online
+        model = post.get('models') or {}
+        post['is_online'] = calculate_is_online(model.get('last_seen')) if model else False
+            
+        return post
+    except Exception as e:
+        print(f"Error in get_post_detail: {e}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/posts/{post_id}")
 async def delete_post(
