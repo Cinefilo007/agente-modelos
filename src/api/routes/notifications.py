@@ -1,8 +1,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
+import logging
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
+
+logger = logging.getLogger(__name__)
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -18,7 +21,7 @@ async def get_notifications(
     offset: int = 0
 ):
     """Get notifications for the current user."""
-    print(f"[DEBUG] Fetching notifications for User System ID: {user.user_id}")
+    logger.info(f"[Notifications] Fetching for user {user.user_id}")
     
     try:
         response = db.client.table("notifications") \
@@ -29,14 +32,13 @@ async def get_notifications(
             .execute()
             
         data = response.data or []
-        print(f"[DEBUG] Found {len(data)} notifications")
+        logger.info(f"[Notifications] Found {len(data)} items")
         
         if not data:
             return []
 
         # Collect unique actor IDs
         actor_ids = list(set([str(n['actor_id']) for n in data]))
-        print(f"[DEBUG] Actor IDs to fetch: {actor_ids}")
         
         # Fetch details from Models and Clients
         user_map = {}
@@ -57,7 +59,7 @@ async def get_notifications(
                             "avatar_url": c.get('avatar_url') 
                         }
             except Exception as e:
-                print(f"[DEBUG] Error fetching actor details: {e}")
+                logger.error(f"[Notifications] Error fetching actors: {e}")
 
         # Enrich data
         for n in data:
@@ -66,7 +68,7 @@ async def get_notifications(
 
         return data
     except Exception as e:
-        print(f"[DEBUG] Global error in get_notifications: {e}")
+        logger.error(f"[Notifications] Global error: {e}")
         import traceback
         traceback.print_exc()
         return []

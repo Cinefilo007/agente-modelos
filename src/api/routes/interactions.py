@@ -2,8 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Literal
+import logging
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -86,7 +89,7 @@ async def create_interaction(
             post = db.client.table("posts").select("model_id").eq("id", interaction.target_id).maybe_single().execute()
             if post.data:
                 target_user_id = post.data['model_id']
-                print(f"[DEBUG] Notifying - Action: {interaction.action}, Actor: {actor_id}, Target Post Owner: {target_user_id}")
+                logger.info(f"[Notifications] Creating {interaction.action} for model {target_user_id}")
                 
                 if str(target_user_id) != str(actor_id): # Don't notify self
                     notif_data = {
@@ -96,15 +99,15 @@ async def create_interaction(
                         "target_id": interaction.target_id,
                         "content": interaction.content if interaction.action == 'comment' else None
                     }
-                    print(f"[DEBUG] Inserting Notification: {notif_data}")
-                    notif_res = db.client.table("notifications").insert(notif_data).execute()
-                    print(f"[DEBUG] Notification Insert Result: {notif_res.data}")
+                    # Use service_client to bypass RLS for notification creation
+                    db.service_client.table("notifications").insert(notif_data).execute()
+                    logger.info(f"[Notifications] Success: Created {interaction.action} notification")
                 else:
-                    print("[DEBUG] Skipping notification: User interacted with their own post")
+                     logger.info("[Notifications] Skipped: Self-interaction")
             else:
-                print(f"[DEBUG] Target post {interaction.target_id} not found for notification")
+                logger.warning(f"[Notifications] Post {interaction.target_id} not found")
     except Exception as e:
-        print(f"[DEBUG] Error creating notification: {e}")
+        logger.error(f"[Notifications] Error creating notification: {e}")
         import traceback
         traceback.print_exc()
 
