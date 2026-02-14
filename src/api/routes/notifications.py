@@ -24,7 +24,8 @@ async def get_notifications(
     logger.info(f"[Notifications] Fetching for user {user.user_id}")
     
     try:
-        response = db.client.table("notifications") \
+        # Use service_client to bypass RLS for reading notifications
+        response = db.service_client.table("notifications") \
             .select("*") \
             .eq("user_id", user.user_id) \
             .order("created_at", desc=True) \
@@ -44,14 +45,14 @@ async def get_notifications(
         user_map = {}
         if actor_ids:
             try:
-                models = db.client.table("models").select("id, username, artistic_name, avatar_url").in_("id", actor_ids).execute()
+                models = db.service_client.table("models").select("id, username, artistic_name, avatar_url").in_("id", actor_ids).execute()
                 for m in models.data:
                     user_map[str(m['id'])] = { 
                         "username": m.get('artistic_name') or m.get('username'), 
                         "avatar_url": m.get('avatar_url') 
                     }
                 
-                clients = db.client.table("clients").select("id, username, avatar_url").in_("id", actor_ids).execute()
+                clients = db.service_client.table("clients").select("id, username, avatar_url").in_("id", actor_ids).execute()
                 for c in clients.data:
                     if str(c['id']) not in user_map:
                         user_map[str(c['id'])] = { 
@@ -79,7 +80,7 @@ async def mark_as_read(
     user: TelegramUser = Depends(get_current_user)
 ):
     """Mark a notification as read."""
-    res = db.client.table("notifications") \
+    db.service_client.table("notifications") \
         .update({"is_read": True}) \
         .eq("id", notification_id) \
         .eq("user_id", user.user_id) \
@@ -91,7 +92,7 @@ async def mark_all_as_read(
     user: TelegramUser = Depends(get_current_user)
 ):
     """Mark all notifications as read for current user."""
-    res = db.client.table("notifications") \
+    db.service_client.table("notifications") \
         .update({"is_read": True}) \
         .eq("user_id", user.user_id) \
         .eq("is_read", False) \
@@ -103,7 +104,7 @@ async def get_unread_count(
     user: TelegramUser = Depends(get_current_user)
 ):
     """Get the count of unread notifications."""
-    res = db.client.table("notifications") \
+    res = db.service_client.table("notifications") \
         .select("id", count="exact") \
         .eq("user_id", user.user_id) \
         .eq("is_read", False) \
