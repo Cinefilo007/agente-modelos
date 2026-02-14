@@ -14,17 +14,18 @@ router = APIRouter()
 class NotificationUpdate(BaseModel):
     is_read: bool
 
-@router.get("/")
+@router.get("")
 async def get_notifications(
     user: TelegramUser = Depends(get_current_user),
     limit: int = 20,
     offset: int = 0
 ):
     """Get notifications for the current user."""
-    logger.info(f"[Notifications] Fetching for user {user.user_id}")
+    logger.info(f"[Notifications] API Request - User: {user.username} (ID: {user.user_id})")
     
     try:
-        # Use service_client to bypass RLS for reading notifications
+        # 1. Fetch from DB
+        logger.info(f"[Notifications] Querying DB for user_id={user.user_id}")
         response = db.service_client.table("notifications") \
             .select("*") \
             .eq("user_id", user.user_id) \
@@ -33,43 +34,57 @@ async def get_notifications(
             .execute()
             
         data = response.data or []
-        logger.info(f"[Notifications] Found {len(data)} items")
+        logger.info(f"[Notifications] Got {len(data)} raw notifications from DB")
         
         if not data:
+            logger.info("[Notifications] Returning empty list (no data found)")
             return []
 
-        # Collect unique actor IDs
-        actor_ids = list(set([str(n['actor_id']) for n in data]))
+        # 2. Extract actor IDs
+        actor_ids = []
+        for n in data:
+            if n.get('actor_id'):
+                actor_ids.append(str(n['actor_id']))
+        actor_ids = list(set(actor_ids))
+        logger.info(f"[Notifications] Found unique actors: {actor_ids}")
         
-        # Fetch details from Models and Clients
+        # 3. Enrich actors
         user_map = {}
         if actor_ids:
             try:
-                models = db.service_client.table("models").select("id, username, artistic_name, avatar_url").in_("id", actor_ids).execute()
-                for m in models.data:
+                # Models
+                models_res = db.service_client.table("models").select("id, username, artistic_name, avatar_url").in_("id", actor_ids).execute()
+                for m in models_res.data:
                     user_map[str(m['id'])] = { 
-                        "username": m.get('artistic_name') or m.get('username'), 
+                        "username": m.get('artistic_name') or m.get('username') or "Modelo", 
                         "avatar_url": m.get('avatar_url') 
                     }
                 
-                clients = db.service_client.table("clients").select("id, username, avatar_url").in_("id", actor_ids).execute()
-                for c in clients.data:
-                    if str(c['id']) not in user_map:
-                        user_map[str(c['id'])] = { 
-                            "username": c.get('username'), 
+                # Clients
+                clients_res = db.service_client.table("clients").select("id, username, avatar_url").in_("id", actor_ids).execute()
+                for c in clients_res.data:
+                    cid = str(c['id'])
+                    if cid not in user_map:
+                        user_map[cid] = { 
+                            "username": c.get('username') or "Usuario", 
                             "avatar_url": c.get('avatar_url') 
                         }
+                logger.info(f"[Notifications] Successfully mapped {len(user_map)} actor details")
             except Exception as e:
-                logger.error(f"[Notifications] Error fetching actors: {e}")
+                logger.error(f"[Notifications] Actor enrichment failed: {e}")
 
-        # Enrich data
+        # 4. Final mapping
+        enriched_data = []
         for n in data:
-            actor_info = user_map.get(str(n['actor_id']), {"username": "Usuario", "avatar_url": None})
-            n['actor'] = actor_info
+            actor_id = str(n.get('actor_id'))
+            n['actor'] = user_map.get(actor_id, {"username": "Usuario", "avatar_url": None})
+            enriched_data.append(n)
 
-        return data
+        logger.info(f"[Notifications] Returning {len(enriched_data)} enriched notifications")
+        return enriched_data
+
     except Exception as e:
-        logger.error(f"[Notifications] Global error: {e}")
+        logger.error(f"[Notifications] CRITICAL ERROR: {e}")
         import traceback
         traceback.print_exc()
         return []

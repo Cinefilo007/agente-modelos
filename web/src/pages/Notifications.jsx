@@ -16,7 +16,9 @@ const Notifications = () => {
 
     const fetchNotifications = async () => {
         try {
+            console.log("[Notifications] Fetching from /notifications...");
             const res = await api.get('/notifications');
+            console.log("[Notifications] Response received:", res.data);
             setNotifications(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error("Error fetching notifications:", error);
