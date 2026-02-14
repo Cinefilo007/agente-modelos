@@ -21,11 +21,8 @@ async def get_notifications(
     offset: int = 0
 ):
     """Get notifications for the current user."""
-    logger.info(f"[Notifications] API Request - User: {user.username} (ID: {user.user_id})")
-    
     try:
-        # 1. Fetch from DB
-        logger.info(f"[Notifications] Querying DB for user_id={user.user_id}")
+        # Fetch from DB
         response = db.service_client.table("notifications") \
             .select("*") \
             .eq("user_id", user.user_id) \
@@ -34,21 +31,13 @@ async def get_notifications(
             .execute()
             
         data = response.data or []
-        logger.info(f"[Notifications] Got {len(data)} raw notifications from DB")
-        
         if not data:
-            logger.info("[Notifications] Returning empty list (no data found)")
             return []
 
-        # 2. Extract actor IDs
-        actor_ids = []
-        for n in data:
-            if n.get('actor_id'):
-                actor_ids.append(str(n['actor_id']))
-        actor_ids = list(set(actor_ids))
-        logger.info(f"[Notifications] Found unique actors: {actor_ids}")
+        # Extract actor IDs
+        actor_ids = list(set([str(n['actor_id']) for n in data if n.get('actor_id')]))
         
-        # 3. Enrich actors
+        # Enrich actors
         user_map = {}
         if actor_ids:
             try:
@@ -69,24 +58,17 @@ async def get_notifications(
                             "username": c.get('username') or "Usuario", 
                             "avatar_url": c.get('avatar_url') 
                         }
-                logger.info(f"[Notifications] Successfully mapped {len(user_map)} actor details")
             except Exception as e:
                 logger.error(f"[Notifications] Actor enrichment failed: {e}")
 
-        # 4. Final mapping
-        enriched_data = []
+        # Final mapping
         for n in data:
-            actor_id = str(n.get('actor_id'))
-            n['actor'] = user_map.get(actor_id, {"username": "Usuario", "avatar_url": None})
-            enriched_data.append(n)
+            n['actor'] = user_map.get(str(n.get('actor_id')), {"username": "Usuario", "avatar_url": None})
 
-        logger.info(f"[Notifications] Returning {len(enriched_data)} enriched notifications")
-        return enriched_data
+        return data
 
     except Exception as e:
-        logger.error(f"[Notifications] CRITICAL ERROR: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"[Notifications] Global error: {e}")
         return []
 
 @router.put("/{notification_id}/read")

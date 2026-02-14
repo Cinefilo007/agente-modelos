@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 export function Avatar({ src, alt, size = 'md', isOnline, className }) {
+    const [imgError, setImgError] = useState(false);
+
     const sizeClasses = {
         sm: 'w-8 h-8',
         md: 'w-12 h-12',
@@ -10,13 +12,17 @@ export function Avatar({ src, alt, size = 'md', isOnline, className }) {
         xl: 'w-24 h-24'
     };
 
+    // Default silhouette
+    const fallbackSrc = `https://api.dicebear.com/7.x/initials/svg?seed=${alt || 'User'}&backgroundColor=1a1a1a&fontFamily=Inter&fontWeight=700`;
+
     return (
-        <div className="relative inline-block">
+        <div className="relative inline-block shrink-0">
             <img
-                src={src ? src : `https://api.dicebear.com/7.x/avataaars/svg?seed=${alt || 'User'}`}
+                src={(!src || imgError) ? fallbackSrc : src}
                 alt={alt}
+                onError={() => setImgError(true)}
                 className={twMerge(
-                    'rounded-full object-cover border-2 border-white/10',
+                    'rounded-full object-cover border-2 border-white/10 bg-[#1a1a1a]',
                     sizeClasses[size],
                     className
                 )}
