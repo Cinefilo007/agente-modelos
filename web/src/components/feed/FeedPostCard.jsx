@@ -8,12 +8,6 @@ import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
-    console.log(`[DEBUG] Rendering FeedPostCard for ID: ${post?.id}`, {
-        media_url: post?.media_url,
-        media_type: post?.media_type,
-        user: post?.user,
-        models: post?.models
-    });
     const { user } = useAuth();
     const { themeColor } = useTheme();
 

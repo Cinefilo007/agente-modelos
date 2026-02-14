@@ -41,64 +41,72 @@ async def create_post(
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Only models can create posts")
 
-    # Leer contenido del archivo para poder procesarlo si es video
-    file_content = await file.read()
-    file.file.seek(0) # Reset para upload_file
-    
-    # Upload file to 'posts' bucket
-    # Para no duplicar lectura, pasamos el contenido o re-usamos UploadFile
-    public_url = await upload_file(file, bucket_name="posts")
-    
-    # Determine media type
+    # 1. Determine media type and read content
     media_type = "video" if file.content_type.startswith("video") else "image"
+    file_content = await file.read()
+    
+    public_url = None
     thumbnail_url = None
 
+    # 2. Process Media
     if media_type == "video":
-        # Process trimming if duration is specified
+        # Handle Trimming if requested
         if end_time is not None and end_time > start_time:
-            print(f"[Video Editor] Trimming video from {start_time} to {end_time}")
+            print(f"[Video Editor] Trimming video: {start_time}s to {end_time}s")
             file_content = await trim_video(file_content, start_time, end_time)
         
+        # Upload Video (Standard or Trimmed)
+        import uuid
+        unique_id = uuid.uuid4()
+        extension = "mp4" # Standardize or get from extension
+        filename = f"uploads/{unique_id}.{extension}"
+        
         try:
-            # Handle Thumbnail
+            db.service_client.storage.from_("posts").upload(
+                path=filename,
+                file=file_content,
+                file_options={"content-type": "video/mp4"}
+            )
+            public_url = db.service_client.storage.from_("posts").get_public_url(filename)
+            
+            # 3. Handle Thumbnail
             thumb_content = None
             if thumbnail:
-                print("[Video Editor] Using provided thumbnail file")
                 thumb_content = await thumbnail.read()
             else:
-                print(f"[Video Editor] Generating thumbnail from frame at {thumbnail_time}s")
                 thumb_content = await generate_video_thumbnail(file_content, ss=thumbnail_time)
             
             if thumb_content:
-                import uuid
-                thumb_filename = f"thumb_{uuid.uuid4()}.jpg"
-                try:
-                    db.service_client.storage.from_("posts").upload(
-                        path=f"thumbnails/{thumb_filename}",
-                        file=thumb_content,
-                        file_options={"content-type": "image/jpeg"}
-                    )
-                    thumbnail_url = db.service_client.storage.from_("posts").get_public_url(f"thumbnails/{thumb_filename}")
-                except Exception as e:
-                    print(f"Error uploading thumbnail: {e}")
+                thumb_filename = f"thumbnails/thumb_{uuid.uuid4()}.jpg"
+                db.service_client.storage.from_("posts").upload(
+                    path=thumb_filename,
+                    file=thumb_content,
+                    file_options={"content-type": "image/jpeg"}
+                )
+                thumbnail_url = db.service_client.storage.from_("posts").get_public_url(thumb_filename)
         except Exception as e:
-            print(f"Error processing video media: {e}")
+            print(f"Error processing video upload: {e}")
+            raise HTTPException(status_code=500, detail="Error al subir video")
 
-    # Final file upload (if trimmed, we need a new way to upload bytes or save to temp again)
-    # Actually 'upload_file' takes 'UploadFile'. Let's refactor or use a byte-based upload here.
-    if media_type == "video" and end_time is not None:
-         import uuid
-         unique_id = uuid.uuid4()
-         filename = f"uploads/{unique_id}.mp4"
-         db.service_client.storage.from_("posts").upload(
-             path=filename,
-             file=file_content,
-             file_options={"content-type": "video/mp4"}
-         )
-         public_url = db.service_client.storage.from_("posts").get_public_url(filename)
     else:
-        public_url = await upload_file(file, bucket_name="posts")
+        # It's an image. Upload once.
+        import uuid
+        unique_id = uuid.uuid4()
+        file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+        filename = f"uploads/{unique_id}.{file_ext}"
+        
+        try:
+            db.service_client.storage.from_("posts").upload(
+                path=filename,
+                file=file_content,
+                file_options={"content-type": file.content_type}
+            )
+            public_url = db.service_client.storage.from_("posts").get_public_url(filename)
+        except Exception as e:
+            print(f"Error uploading image: {e}")
+            raise HTTPException(status_code=500, detail="Error al subir imagen")
 
+    # 4. Save to Database
     data = {
         "model_id": user.user_id,
         "media_url": public_url,
@@ -269,10 +277,6 @@ async def get_post_detail(post_id: str):
             raise HTTPException(status_code=404, detail="Post not found")
         
         post = response.data
-        print(f"[DEBUG] Post Detail ID: {post.get('id')}")
-        print(f"[DEBUG] Media Type: {post.get('media_type')}")
-        print(f"[DEBUG] Media URL: {post.get('media_url')}")
-        print(f"[DEBUG] Model Info: {post.get('models')}")
 
         # Enrich with is_online
         model = post.get('models') or {}
