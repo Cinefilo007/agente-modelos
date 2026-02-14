@@ -269,6 +269,11 @@ async def get_post_detail(post_id: str):
             raise HTTPException(status_code=404, detail="Post not found")
         
         post = response.data
+        print(f"[DEBUG] Post Detail ID: {post.get('id')}")
+        print(f"[DEBUG] Media Type: {post.get('media_type')}")
+        print(f"[DEBUG] Media URL: {post.get('media_url')}")
+        print(f"[DEBUG] Model Info: {post.get('models')}")
+
         # Enrich with is_online
         model = post.get('models') or {}
         post['is_online'] = calculate_is_online(model.get('last_seen')) if model else False

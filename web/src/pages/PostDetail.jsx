@@ -29,6 +29,7 @@ export default function PostDetail() {
             try {
                 // Fetch Post
                 const { data: postData } = await api.get(`/content/post/${id}`);
+                console.log("[DEBUG] Post Data Received:", postData);
                 setPost(postData);
 
                 // Fetch Comments
