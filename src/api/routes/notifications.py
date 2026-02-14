@@ -18,48 +18,57 @@ async def get_notifications(
     offset: int = 0
 ):
     """Get notifications for the current user."""
-    # We need to map user.user_id (which is model or client ID) to Auth UUID if needed
-    # But in notifications table we use auth.users(id) as user_id for RLS
-    # Let's get the Auth UUID for this telegram user
-    
-    # In this system, user.id is the telegram_id, and user.user_id is the system ID (UUID)
-    # Actually, RLS policy uses auth.uid(), so we must use the Auth UUID.
-    
-    auth_id = user.id # Verify if dependencies provide auth_id
-    # Let's assume user.user_id corresponds to the user receiving the notification in our schema
+    print(f"[DEBUG] Fetching notifications for User System ID: {user.user_id}")
     
     try:
         response = db.client.table("notifications") \
-            .select("*, actor:actor_id(username, avatar_url)") \
+            .select("*") \
             .eq("user_id", user.user_id) \
             .order("created_at", desc=True) \
             .range(offset, offset + limit - 1) \
             .execute()
             
-        # Enrich with actor details if necessary (Supabase-py join might need explicit config)
-        # For now, let's fetch actor details separately if join fails
-        data = response.data
+        data = response.data or []
+        print(f"[DEBUG] Found {len(data)} notifications")
         
-        # Collect unique actor IDs from different sources (models/clients)
-        actor_ids = list(set([n['actor_id'] for n in data]))
+        if not data:
+            return []
+
+        # Collect unique actor IDs
+        actor_ids = list(set([str(n['actor_id']) for n in data]))
+        print(f"[DEBUG] Actor IDs to fetch: {actor_ids}")
         
+        # Fetch details from Models and Clients
+        user_map = {}
         if actor_ids:
-            models = db.client.table("models").select("id, username, avatar_url").in_("id", actor_ids).execute()
-            clients = db.client.table("clients").select("id, username").in_("id", actor_ids).execute()
-            
-            user_map = {}
-            for m in models.data:
-                user_map[m['id']] = { "username": m['username'], "avatar_url": m['avatar_url'] }
-            for c in clients.data:
-                user_map[c['id']] = { "username": c['username'], "avatar_url": None }
+            try:
+                models = db.client.table("models").select("id, username, artistic_name, avatar_url").in_("id", actor_ids).execute()
+                for m in models.data:
+                    user_map[str(m['id'])] = { 
+                        "username": m.get('artistic_name') or m.get('username'), 
+                        "avatar_url": m.get('avatar_url') 
+                    }
                 
-            for n in data:
-                actor = user_map.get(n['actor_id'], {"username": "Usuario", "avatar_url": None})
-                n['actor'] = actor
+                clients = db.client.table("clients").select("id, username, avatar_url").in_("id", actor_ids).execute()
+                for c in clients.data:
+                    if str(c['id']) not in user_map:
+                        user_map[str(c['id'])] = { 
+                            "username": c.get('username'), 
+                            "avatar_url": c.get('avatar_url') 
+                        }
+            except Exception as e:
+                print(f"[DEBUG] Error fetching actor details: {e}")
+
+        # Enrich data
+        for n in data:
+            actor_info = user_map.get(str(n['actor_id']), {"username": "Usuario", "avatar_url": None})
+            n['actor'] = actor_info
 
         return data
     except Exception as e:
-        print(f"Error fetching notifications: {e}")
+        print(f"[DEBUG] Global error in get_notifications: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 @router.put("/{notification_id}/read")
