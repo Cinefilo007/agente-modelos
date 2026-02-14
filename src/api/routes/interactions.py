@@ -86,16 +86,27 @@ async def create_interaction(
             post = db.client.table("posts").select("model_id").eq("id", interaction.target_id).maybe_single().execute()
             if post.data:
                 target_user_id = post.data['model_id']
+                print(f"[DEBUG] Notifying - Action: {interaction.action}, Actor: {actor_id}, Target Post Owner: {target_user_id}")
+                
                 if str(target_user_id) != str(actor_id): # Don't notify self
-                    db.client.table("notifications").insert({
+                    notif_data = {
                         "user_id": target_user_id,
                         "actor_id": actor_id,
                         "type": interaction.action,
                         "target_id": interaction.target_id,
                         "content": interaction.content if interaction.action == 'comment' else None
-                    }).execute()
+                    }
+                    print(f"[DEBUG] Inserting Notification: {notif_data}")
+                    notif_res = db.client.table("notifications").insert(notif_data).execute()
+                    print(f"[DEBUG] Notification Insert Result: {notif_res.data}")
+                else:
+                    print("[DEBUG] Skipping notification: User interacted with their own post")
+            else:
+                print(f"[DEBUG] Target post {interaction.target_id} not found for notification")
     except Exception as e:
-        print(f"Error creating notification: {e}")
+        print(f"[DEBUG] Error creating notification: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Increment counters (Handled by DB Trigger)
     return res.data[0]
