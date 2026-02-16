@@ -65,7 +65,7 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     const bgGradient = getBgColor(displayName);
 
     return (
-        <div className={twMerge("relative inline-block shrink-0", sizeClasses[size], className)}>
+        <div className={twMerge("relative inline-block shrink-0 rounded-full", sizeClasses[size], className)}>
             <div className="w-full h-full rounded-full overflow-hidden border border-white/10 flex items-center justify-center bg-[#1a1a1a]">
                 {(!finalSrc || imgError) ? (
                     <div className={twMerge("w-full h-full flex items-center justify-center bg-gradient-to-br font-bold text-white uppercase select-none", bgGradient)}>
