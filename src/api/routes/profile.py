@@ -267,12 +267,22 @@ async def get_public_profile(identifier: str):
 
 @router.get("/models/explore")
 async def get_models_for_explore():
-    """Get list of models for the explore page."""
+    """
+    Get list of models for the explore page with business filters:
+    - Verified (is_verified = True)
+    - Active status (status = 'active')
+    - Positive credits (credits_balance > 0)
+    - Has profile photo (avatar_url IS NOT NULL)
+    """
     try:
         response = db.client.table("models") \
-            .select("id, artistic_name, username, avatar_url, last_seen") \
+            .select("id, artistic_name, username, avatar_url, last_seen, country, reputation_score, is_verified") \
+            .eq("is_verified", True) \
+            .eq("status", "active") \
+            .gt("credits_balance", 0) \
+            .not_.is_("avatar_url", "null") \
             .execute()
         return response.data if response.data else []
     except Exception as e:
-        print(f"Error fetching models: {e}")
+        print(f"Error fetching models for explore: {e}")
         return []
