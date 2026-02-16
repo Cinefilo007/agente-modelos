@@ -25,6 +25,7 @@ import ServiceInvoicePage from './pages/ServiceInvoicePage';
 import ShopManager from './pages/ShopManager';
 import Onboarding from './pages/Onboarding';
 import InstallPWA from './components/pwa/InstallPWA';
+import WalletPage from './pages/WalletPage';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
