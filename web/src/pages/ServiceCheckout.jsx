@@ -13,20 +13,20 @@ export default function ServiceCheckout() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Get model from navigation state or fallback
-    const model = location.state?.model;
-
     // Status: 'summary', 'processing', 'held', 'completed', 'disputed'
     const [status, setStatus] = useState('summary');
 
-    // Service Data (Dynamic if model exists)
+    // Get data from navigation state
+    const { service: initialService, option: selectedOption, model: initialModel } = location.state || {};
+
+    // Service Data (Dynamic from navigation state)
     const service = {
-        title: "Video Saludo Personalizado",
-        modelName: model?.name || "Modelo Desconocida",
-        modelAvatar: model?.avatar || "https://github.com/shadcn.png",
-        price: 50.00,
-        description: `Un video de 1 minuto de ${model?.name || 'la modelo'} saludándote por tu nombre y enviándote un beso.`,
-        deliveryTime: "24h"
+        title: initialService?.title || "Servicio Seleccionado",
+        modelName: initialModel?.artistic_name || initialModel?.username || "Modelo",
+        modelAvatar: initialModel?.avatar_url || "https://github.com/shadcn.png",
+        price: selectedOption?.price || 0,
+        description: initialService?.description || "Cargando detalles...",
+        deliveryTime: "24-48h"
     };
 
     const handlePayment = () => {

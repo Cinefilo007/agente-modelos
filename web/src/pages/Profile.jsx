@@ -208,10 +208,11 @@ function Profile() {
                 </>
             )}
 
-            {/* Content Tabs (Posts & Reviews) */}
+            {/* Content Tabs (Posts, Shop & Reviews) */}
             <ProfileContent
                 posts={posts}
                 modelId={profileUser.id}
+                username={profileUser.username}
                 isOwnProfile={isOwnProfile}
                 onPostClick={(id) => navigate(`/post/${id}`)}
             />

@@ -3,14 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs } from '../ui/Tabs';
 import { PostGrid } from './PostGrid';
 import { ReviewList } from './ReviewList';
-import { Grid, Star, Loader } from 'lucide-react';
+import { Grid, Star, Loader, ShoppingBag } from 'lucide-react';
+import { ShopTabContent } from './ShopTabContent';
 
-export function ProfileContent({ posts, onPostClick, modelId, isOwnProfile }) {
+export function ProfileContent({ posts, onPostClick, modelId, isOwnProfile, username }) {
     const [activeTab, setActiveTab] = useState('posts');
     const navigate = useNavigate();
 
     const tabs = [
         { id: 'posts', label: <Grid size={20} /> },
+        { id: 'shop', label: <ShoppingBag size={20} /> },
         { id: 'reviews', label: <Star size={20} /> },
     ];
 
@@ -43,6 +45,8 @@ export function ProfileContent({ posts, onPostClick, modelId, isOwnProfile }) {
                             )}
                         </div>
                     )
+                ) : activeTab === 'shop' ? (
+                    <ShopTabContent modelId={modelId} isOwnProfile={isOwnProfile} username={username} />
                 ) : (
                     <ReviewList modelId={modelId} />
                 )}

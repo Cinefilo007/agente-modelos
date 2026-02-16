@@ -20,6 +20,7 @@ import PostDetail from './pages/PostDetail';
 import AdminDashboard from './pages/AdminDashboard'; // [NEW]
 import ClientProfile from './pages/ClientProfile';
 import ServiceCheckout from './pages/ServiceCheckout';
+import ServiceInvoicePage from './pages/ServiceInvoicePage';
 import Onboarding from './pages/Onboarding';
 import InstallPWA from './components/pwa/InstallPWA';
 
@@ -143,9 +144,9 @@ function App() {
                 <Route path="create-post" element={<CreatePost />} />
                 <Route path="create-story" element={<CreateStory />} />
                 <Route path="post/:id" element={<PostDetail />} />
-                {/* Legacy admin panel routes if needed, or remove */}
-                <Route path="client" element={<ClientProfile />} />
+                <Route path="service/:serviceId" element={<ServiceInvoicePage />} />
                 <Route path="checkout" element={<ServiceCheckout />} />
+                <Route path="shop-manager" element={<div>Panel de Tienda (Próximamente)</div>} />
               </Route>
 
               {/* Onboarding Route */}
