@@ -5,7 +5,6 @@ import { twMerge } from 'tailwind-merge';
 export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     const [imgError, setImgError] = useState(false);
 
-    // Supabase Public Storage URL base
     const STORAGE_BASE = "https://vyvntwuxzskreghxidnd.supabase.co/storage/v1/object/public/profiles/";
 
     const sizeClasses = {
@@ -15,11 +14,9 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
         xl: 'w-24 h-24 text-4xl'
     };
 
-    // Construct URL gracefully
     const getSafeUrl = (url) => {
         if (!url) return null;
         if (url.startsWith('http')) return url;
-        // Clean relative path and join with base
         const cleanPath = url.replace(/^\/+/, '');
         return `${STORAGE_BASE}${cleanPath}`;
     };
@@ -40,7 +37,6 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     };
 
     const getBgColor = (text) => {
-        if (!text) return 'bg-gray-700';
         const colors = [
             'from-blue-600 to-indigo-700',
             'from-purple-600 to-pink-700',
@@ -51,8 +47,10 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
             'from-amber-600 to-orange-700'
         ];
         let hash = 0;
-        for (let i = 0; i < text.length; i++) {
-            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        if (text) {
+            for (let i = 0; i < text.length; i++) {
+                hash = text.charCodeAt(i) + ((hash << 5) - hash);
+            }
         }
         return colors[Math.abs(hash) % colors.length];
     };
@@ -60,42 +58,26 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     const displayName = name || alt || '?';
     const bgGradient = getBgColor(displayName);
 
-    if (!finalSrc || imgError) {
-        return (
-            <div className={twMerge("relative inline-block shrink-0 rounded-full", sizeClasses[size], className)}>
-                <div
-                    className={twMerge(
-                        'w-full h-full rounded-full flex items-center justify-center font-bold text-white uppercase select-none bg-gradient-to-br border-2 border-white/20',
-                        bgGradient
-                    )}
-                >
-                    {getInitials(displayName)}
-                </div>
-                {isOnline !== undefined && (
-                    <span className={clsx(
-                        'absolute bottom-0 right-0 block rounded-full ring-2 ring-black',
-                        isOnline ? 'bg-green-500' : 'bg-gray-500',
-                        size === 'lg' || size === 'xl' ? 'w-4 h-4' : 'w-2.5 h-2.5'
-                    )} />
+    return (
+        <div className={twMerge("relative inline-block shrink-0", sizeClasses[size], className)}>
+            <div className="w-full h-full rounded-full overflow-hidden border border-white/10 flex items-center justify-center bg-[#1a1a1a]">
+                {(!finalSrc || imgError) ? (
+                    <div className={twMerge("w-full h-full flex items-center justify-center bg-gradient-to-br font-bold text-white uppercase select-none", bgGradient)}>
+                        {getInitials(displayName)}
+                    </div>
+                ) : (
+                    <img
+                        src={finalSrc}
+                        alt={alt}
+                        onError={() => setImgError(true)}
+                        className="w-full h-full object-cover block"
+                    />
                 )}
             </div>
-        );
-    }
 
-    return (
-        <div className={twMerge("relative inline-block shrink-0 rounded-full", sizeClasses[size], className)}>
-            <img
-                src={finalSrc}
-                alt={alt}
-                onError={() => {
-                    console.log(`[Avatar] 404/Error: Fallback trigger for ${displayName}`);
-                    setImgError(true);
-                }}
-                className="w-full h-full rounded-full object-cover border-2 border-white/10 block"
-            />
             {isOnline !== undefined && (
                 <span className={clsx(
-                    'absolute bottom-0 right-0 block rounded-full ring-2 ring-black',
+                    'absolute bottom-0 right-0 block rounded-full ring-2 ring-black z-20',
                     isOnline ? 'bg-green-500' : 'bg-gray-500',
                     size === 'lg' || size === 'xl' ? 'w-4 h-4' : 'w-2.5 h-2.5'
                 )} />
