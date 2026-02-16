@@ -17,7 +17,8 @@ import CreatePost from './pages/CreatePost';
 import CreateStory from './pages/CreateStory';
 import EditProfile from './pages/EditProfile';
 import PostDetail from './pages/PostDetail';
-import AdminDashboard from './pages/AdminDashboard'; // [NEW]
+import AdminDashboard from './pages/AdminDashboard';
+import AdminPanel from './pages/AdminPanel';
 import ClientProfile from './pages/ClientProfile';
 import ServiceCheckout from './pages/ServiceCheckout';
 import ServiceInvoicePage from './pages/ServiceInvoicePage';
