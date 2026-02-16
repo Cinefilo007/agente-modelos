@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import List, Optional
 from src.services.database import db
-from src.api.routes.auth import get_current_user, TelegramUser
+from src.api.dependencies import get_current_user, TelegramUser
 from datetime import datetime, timedelta
 
 router = APIRouter()
