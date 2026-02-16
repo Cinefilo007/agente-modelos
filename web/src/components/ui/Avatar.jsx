@@ -16,6 +16,12 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
 
     const getSafeUrl = (url) => {
         if (!url) return null;
+
+        // Bloquear URLs de Telegram que sabemos que fallan (404)
+        if (typeof url === 'string' && (url.includes('t.me/i/userpic') || url.includes('telegram.org'))) {
+            return null;
+        }
+
         if (url.startsWith('http')) return url;
         const cleanPath = url.replace(/^\/+/, '');
         return `${STORAGE_BASE}${cleanPath}`;
