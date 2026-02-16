@@ -45,9 +45,9 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
     
     try:
         # 1. Get model UUID
-        model_res = db.client.table("models").select("id, credits").eq("telegram_id", user.id).single().execute()
+        model_res = db.client.table("models").select("id, credits_balance").eq("telegram_id", user.id).single().execute()
         model_id = model_res.data['id']
-        credits = model_res.data.get('credits', 0)
+        credits = model_res.data.get('credits_balance', 0)
         
         # 2. Get total views
         views_res = db.client.table("profile_views") \
