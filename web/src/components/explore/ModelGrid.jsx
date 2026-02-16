@@ -34,13 +34,21 @@ export function ModelGrid({ models }) {
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
 
-                    {/* Online Indicator */}
-                    {(model.last_seen && (new Date() - new Date(model.last_seen)) < 300000) && (
-                        <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-green-500/30 z-10">
-                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                            <span className="text-[10px] uppercase font-bold text-white tracking-wider">Online</span>
-                        </div>
-                    )}
+                    {/* Status Badge */}
+                    <div className={clsx(
+                        "absolute top-2 right-2 flex items-center gap-1.5 backdrop-blur-md px-2 py-1 rounded-lg border z-10",
+                        (model.last_seen && (new Date() - new Date(model.last_seen)) < 300000)
+                            ? "bg-green-500/20 border-green-500/30 text-green-400"
+                            : "bg-black/40 border-white/10 text-gray-400"
+                    )}>
+                        <span className={clsx(
+                            "w-1.5 h-1.5 rounded-full",
+                            (model.last_seen && (new Date() - new Date(model.last_seen)) < 300000) ? "bg-green-500 animate-pulse" : "bg-gray-500"
+                        )}></span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider">
+                            {(model.last_seen && (new Date() - new Date(model.last_seen)) < 300000) ? 'Online' : 'Offline'}
+                        </span>
+                    </div>
 
                     {/* Info Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90">

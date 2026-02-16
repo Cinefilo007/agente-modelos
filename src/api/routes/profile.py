@@ -268,12 +268,15 @@ async def get_public_profile(identifier: str):
 @router.get("/models/explore")
 async def get_models_for_explore(
     filter: str = "all",
+    q: Optional[str] = None,
     user: Optional[TelegramUser] = Depends(get_current_user)
 ):
     """
-    Get list of models for the explore page with filters.
+    Get list of models for the explore page with filters and search.
     """
     try:
+        from datetime import datetime, timedelta
+        
         query = db.client.table("models") \
             .select("id, artistic_name, username, avatar_url, last_seen, country, reputation_score, is_verified, created_at") \
             .eq("is_verified", True) \
@@ -281,13 +284,21 @@ async def get_models_for_explore(
             .gt("credits_balance", 0) \
             .not_.is_("avatar_url", "null")
             
+        # Apply Search Query
+        if q:
+            # Search by artistic_name or username
+            query = query.or_(f"artistic_name.ilike.%{q}%,username.ilike.%{q}%")
+
+        # Apply Filters
         if filter == "new":
             query = query.order("created_at", desc=True)
         elif filter == "top":
             query = query.order("reputation_score", desc=True)
+        elif filter == "online":
+            five_minutes_ago = (datetime.utcnow() - timedelta(minutes=5)).isoformat()
+            query = query.gte("last_seen", five_minutes_ago)
         elif filter == "near":
             if user:
-                # Get user's country from clients or models table
                 is_model = user.role == "model"
                 table = "models" if is_model else "clients"
                 field = "country" if is_model else "country_code"
