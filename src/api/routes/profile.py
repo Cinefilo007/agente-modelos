@@ -195,6 +195,17 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
     except:
         user_data['posts_count'] = 0
 
+    # Map legacy config_ columns to flat fields for frontend
+    def extract_text(val):
+        if isinstance(val, dict): return val.get('text', '')
+        if isinstance(val, list) and len(val) > 0: return str(val[0]) # Fallback
+        return str(val) if val else ''
+
+    user_data['prices'] = extract_text(user_data.get('config_prices'))
+    user_data['personality'] = extract_text(user_data.get('config_persona'))
+    user_data['physical_aspects'] = extract_text(user_data.get('config_physique'))
+    user_data['payment_methods'] = extract_text(user_data.get('config_payments'))
+
     user_data['role'] = 'model'
     return user_data
 
@@ -214,6 +225,16 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
     if "social_links" in updates and table == "models":
         # Convert Pydantic model to dict for JSONB
         updates["social_links"] = updates["social_links"]
+    
+    # Map flat fields to config_ JSONB columns
+    if "prices" in updates:
+        updates["config_prices"] = {"text": updates.pop("prices")}
+    if "personality" in updates:
+        updates["config_persona"] = {"text": updates.pop("personality")}
+    if "physical_aspects" in updates:
+        updates["config_physique"] = {"text": updates.pop("physical_aspects")}
+    if "payment_methods" in updates:
+        updates["config_payments"] = {"text": updates.pop("payment_methods")}
     
     if not updates:
         return {"message": "No changes detected"}
