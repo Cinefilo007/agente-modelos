@@ -199,6 +199,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         <Link to={`/profile/${post.user.id}`}>
                             <Avatar
                                 src={post.user.avatar_url || post.user.avatar}
+                                name={post.user.artistic_name || post.user.full_name || post.user.name}
                                 size="md"
                                 isOnline={post.is_online}
                             />

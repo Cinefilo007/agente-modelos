@@ -157,7 +157,12 @@ function EditProfile() {
 
                     <div className="flex justify-center -mt-12 relative z-10">
                         <div className="relative group cursor-pointer" onClick={() => document.getElementById('avatarInput').click()}>
-                            <Avatar src={formData.avatar_url} size="xl" className="ring-4 ring-[var(--card-bg)] transition-shadow group-hover:opacity-80" />
+                            <Avatar
+                                src={formData.avatar_url}
+                                name={formData.artistic_name || formData.full_name || formData.username}
+                                size="xl"
+                                className="ring-4 ring-[var(--card-bg)] transition-shadow group-hover:opacity-80"
+                            />
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-full">
                                 <Camera size={20} className="text-white" />
                             </div>

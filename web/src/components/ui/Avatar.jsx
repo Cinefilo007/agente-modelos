@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export function Avatar({ src, alt, size = 'md', isOnline, className }) {
+export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     const [imgError, setImgError] = useState(false);
 
     // Reset error state if src changes
@@ -11,34 +11,33 @@ export function Avatar({ src, alt, size = 'md', isOnline, className }) {
     }, [src]);
 
     const sizeClasses = {
-        sm: 'w-8 h-8',
-        md: 'w-12 h-12',
-        lg: 'w-20 h-20',
-        xl: 'w-24 h-24'
+        sm: 'w-8 h-8 text-[10px]',
+        md: 'w-12 h-12 text-sm',
+        lg: 'w-20 h-20 text-xl',
+        xl: 'w-24 h-24 text-2xl'
     };
 
-    const renderPlaceholder = () => (
-        <div
-            className={twMerge(
-                'rounded-full border-2 border-white/10 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center overflow-hidden',
-                sizeClasses[size],
-                className
-            )}
-        >
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="w-1/2 h-1/2 text-gray-500"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+    const getInitials = (displayName) => {
+        if (!displayName) return '?';
+        const parts = displayName.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].substring(0, 1).toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    };
+
+    const renderPlaceholder = () => {
+        const initials = getInitials(name || alt);
+        return (
+            <div
+                className={twMerge(
+                    'rounded-full border-2 border-white/10 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center overflow-hidden font-bold text-gray-300 uppercase select-none',
+                    sizeClasses[size],
+                    className
+                )}
             >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-            </svg>
-        </div>
-    );
+                {initials}
+            </div>
+        );
+    };
 
     return (
         <div className="relative inline-block shrink-0">
@@ -54,7 +53,7 @@ export function Avatar({ src, alt, size = 'md', isOnline, className }) {
                     }}
                     className={twMerge(
                         'rounded-full object-cover border-2 border-white/10 bg-[#1a1a1a]',
-                        sizeClasses[size],
+                        sizeClasses[size].split(' ')[0], // Only take width/height classes for img
                         className
                     )}
                 />

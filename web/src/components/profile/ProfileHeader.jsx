@@ -130,7 +130,8 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     <div className="-mt-14 mb-3 relative group">
                         <div className="absolute inset-0 rounded-full blur-md opacity-50 transform group-hover:scale-105 transition-transform duration-500" style={{ backgroundColor: themeColor }}></div>
                         <Avatar
-                            src={user.avatar_url || user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'}
+                            src={user.avatar_url || user.avatar}
+                            name={user.artistic_name || user.full_name || user.name}
                             alt={user.full_name || user.name}
                             size="xl"
                             isOnline={user.isOnline}

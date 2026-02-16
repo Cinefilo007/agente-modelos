@@ -71,6 +71,7 @@ export function NotificationItem({ notification, onRead }) {
                     <Avatar
                         src={actor.avatar_url}
                         alt={actor.username}
+                        name={actor.username}
                         size="md"
                         className="border-none ring-2 ring-white/5"
                     />

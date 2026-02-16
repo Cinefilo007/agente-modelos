@@ -167,7 +167,7 @@ export default function SuperAdminDashboard() {
                                 {modelsData.map((model) => (
                                     <tr key={model.id} className="hover:bg-white/5 transition-colors">
                                         <td className="px-6 py-4 flex items-center gap-3">
-                                            <Avatar src={model.avatar} size="md" />
+                                            <Avatar src={model.avatar} name={model.name} size="md" />
                                             <div>
                                                 <div className="font-bold text-foreground">{model.name}</div>
                                                 <div className="text-xs text-muted-foreground">{model.username}</div>
@@ -175,8 +175,8 @@ export default function SuperAdminDashboard() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-bold border ${model.status === 'verified' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                                                    model.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                        'bg-red-500/10 text-red-400 border-red-500/20'
+                                                model.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                    'bg-red-500/10 text-red-400 border-red-500/20'
                                                 }`}>
                                                 {model.status === 'verified' ? 'Verificada' : model.status === 'pending' ? 'Pendiente' : 'Baneada'}
                                             </span>

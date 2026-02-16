@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Loader, MessageSquare } from 'lucide-react';
+import { Avatar } from '../ui/Avatar';
 import api from '../../api/axios';
 
 export function ReviewList({ modelId }) {
@@ -56,13 +57,11 @@ export function ReviewList({ modelId }) {
                     <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
                             {/* Client Avatar fallback */}
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white uppercase overflow-hidden">
-                                {review.clients?.avatar_url ? (
-                                    <img src={review.clients.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                ) : (
-                                    (review.clients?.username || "A").substring(0, 2)
-                                )}
-                            </div>
+                            <Avatar
+                                src={review.clients?.avatar_url}
+                                name={review.clients?.username}
+                                size="sm"
+                            />
                             <div className="font-bold text-sm text-gray-200">
                                 {review.clients?.username || "Usuario"}
                             </div>

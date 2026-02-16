@@ -38,8 +38,8 @@ export default function ClientProfile() {
                 <div className="relative mb-3 group">
                     <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl transform group-hover:scale-110 transition-transform duration-500"></div>
                     <Avatar
-                        src={avatarUrl}
-                        alt={name}
+                        src={user.avatar_url || user.avatar}
+                        name={name}
                         size="xl"
                         className="w-24 h-24 border-4 border-background relative z-10"
                     />
@@ -88,7 +88,12 @@ export default function ClientProfile() {
                     {following.map((model) => (
                         <div key={model.id} className="flex flex-col items-center min-w-[70px]">
                             <div className="relative mb-2">
-                                <Avatar src={model.avatar} size="lg" className="border-2 border-card" />
+                                <Avatar
+                                    src={model.avatar}
+                                    name={model.name}
+                                    size="lg"
+                                    className="border-2 border-card"
+                                />
                                 {model.status === 'online' && (
                                     <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-card rounded-full"></div>
                                 )}

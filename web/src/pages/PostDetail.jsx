@@ -238,7 +238,8 @@ export default function PostDetail() {
                 <div className="px-4 pb-4">
                     <div className="flex items-center gap-3 mb-3">
                         <Avatar
-                            src={user.avatar_url || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username || 'User'}`}
+                            src={user.avatar_url || user.avatar}
+                            name={user.full_name || user.username}
                             size="md"
                             isOnline={post.is_online}
                         />
@@ -280,13 +281,11 @@ export default function PostDetail() {
                         ) : (
                             comments.map((comment, i) => (
                                 <div key={comment.id || i} className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-[var(--card-bg)] flex-shrink-0 overflow-hidden">
-                                        <img
-                                            src={comment.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.username}`}
-                                            alt={comment.username}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
+                                    <Avatar
+                                        src={comment.avatar_url}
+                                        name={comment.username}
+                                        size="sm"
+                                    />
                                     <div className="flex-1 space-y-1">
                                         <div className="flex items-baseline justify-between">
                                             <span className="text-sm font-semibold text-[var(--text-primary)]">{comment.username}</span>
@@ -309,12 +308,11 @@ export default function PostDetail() {
             <div className="absolute bottom-0 left-0 right-0 p-3 bg-[var(--card-bg)]/80 backdrop-blur-xl border-t border-[var(--glass-border)] z-20">
                 <div className="flex items-center gap-3">
                     {/* User Avatar (Current User - if context available, or generic) */}
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[1px]">
-                        <div className="w-full h-full rounded-full bg-[var(--card-bg)] overflow-hidden">
-                            {/* Ideally fetch current user avatar from context */}
-                            <img src={currentUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username || 'Me'}`} className="w-full h-full object-cover opacity-80" />
-                        </div>
-                    </div>
+                    <Avatar
+                        src={currentUser?.avatar_url}
+                        name={currentUser?.username || 'Me'}
+                        size="sm"
+                    />
                     <div className="flex-1 relative">
                         <input
                             type="text"
