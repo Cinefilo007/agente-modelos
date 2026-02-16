@@ -74,7 +74,7 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
             
         # 3. Get total sales (completed orders)
         try:
-            sales_res = db.client.table("orders") \
+            sales_res = db.client.table("escrow_orders") \
                 .select("amount") \
                 .eq("model_id", model_id) \
                 .eq("status", "completed") \
@@ -90,7 +90,7 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
             total_revenue = sum([safe_float(o['amount']) for o in sales_res.data]) if sales_res.data else 0.0
             print(f"[Analytics] Sales count: {total_sales_count}, Revenue: {total_revenue}")
         except Exception as e:
-            print(f"[Analytics] WARNING error querying 'orders', defaulting to 0: {e}")
+            print(f"[Analytics] WARNING error querying 'escrow_orders', defaulting to 0: {e}")
             total_sales_count = 0
             total_revenue = 0.0
         
@@ -114,12 +114,12 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
             visitors_growth = round(((curr_views - prev_views) / prev_views * 100), 1) if prev_views > 0 else (100.0 if curr_views > 0 else 0.0)
 
             # Current Period Sales
-            curr_sales_res = db.client.table("orders").select("id", count="exact") \
+            curr_sales_res = db.client.table("escrow_orders").select("id", count="exact") \
                 .eq("model_id", model_id).eq("status", "completed").gte("created_at", last_7_days).execute()
             curr_sales = curr_sales_res.count or 0
 
             # Previous Period Sales
-            prev_sales_res = db.client.table("orders").select("id", count="exact") \
+            prev_sales_res = db.client.table("escrow_orders").select("id", count="exact") \
                 .eq("model_id", model_id).eq("status", "completed").gte("created_at", prev_7_days).lt("created_at", last_7_days).execute()
             prev_sales = prev_sales_res.count or 0
 
