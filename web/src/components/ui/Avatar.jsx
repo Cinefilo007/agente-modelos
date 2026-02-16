@@ -11,25 +11,49 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     }, [src]);
 
     const sizeClasses = {
-        sm: 'w-8 h-8 text-[10px]',
-        md: 'w-12 h-12 text-sm',
-        lg: 'w-20 h-20 text-xl',
-        xl: 'w-24 h-24 text-2xl'
+        sm: 'w-8 h-8 text-xs',
+        md: 'w-12 h-12 text-lg',
+        lg: 'w-20 h-20 text-3xl',
+        xl: 'w-24 h-24 text-4xl'
     };
 
     const getInitials = (displayName) => {
         if (!displayName) return '?';
-        const parts = displayName.trim().split(/\s+/);
+        const cleanName = displayName.replace(/^@/, '').trim();
+        if (!cleanName) return '?';
+        const parts = cleanName.split(/\s+/);
         if (parts.length === 1) return parts[0].substring(0, 1).toUpperCase();
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     };
 
+    const getBgColor = (text) => {
+        if (!text) return 'from-gray-700 to-gray-800';
+        const colors = [
+            'from-blue-600 to-indigo-700',
+            'from-purple-600 to-pink-700',
+            'from-pink-600 to-rose-700',
+            'from-indigo-600 to-blue-700',
+            'from-cyan-600 to-blue-700',
+            'from-emerald-600 to-teal-700',
+            'from-amber-600 to-orange-700'
+        ];
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    };
+
     const renderPlaceholder = () => {
-        const initials = getInitials(name || alt);
+        const displayName = name || alt || '?';
+        const initials = getInitials(displayName);
+        const bgGradient = getBgColor(displayName);
+
         return (
             <div
                 className={twMerge(
-                    'rounded-full border-2 border-white/10 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center overflow-hidden font-bold text-gray-300 uppercase select-none',
+                    'rounded-full border-2 border-white/20 flex items-center justify-center overflow-hidden font-bold text-white uppercase select-none shadow-md bg-gradient-to-br',
+                    bgGradient,
                     sizeClasses[size],
                     className
                 )}
@@ -52,8 +76,8 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
                         setImgError(true);
                     }}
                     className={twMerge(
-                        'rounded-full object-cover border-2 border-white/10 bg-[#1a1a1a]',
-                        sizeClasses[size].split(' ')[0], // Only take width/height classes for img
+                        'rounded-full object-cover border-2 border-white/10 bg-[#1a1a1a] shadow-sm',
+                        sizeClasses[size],
                         className
                     )}
                 />
