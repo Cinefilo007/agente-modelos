@@ -3,12 +3,20 @@ import { useTheme } from '../context/ThemeContext';
 import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck, ShoppingBag, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import clsx from 'clsx';
 
 export default function AdminPanel() {
     const { themeColor } = useTheme();
     const [stats, setStats] = useState({ visitors: 0, sales_count: 0, revenue: 0, credits: 0, conversion_rate: 0 });
     const [exposure, setExposure] = useState([0, 0, 0, 0, 0, 0, 0]);
     const [activeTab, setActiveTab] = useState('analytics'); // analytics, bot, shop
+    const [loading, setLoading] = useState(true);
+    const [config, setConfig] = useState({
+        prices: "",
+        personality: "",
+        physicalAspects: "",
+        paymentMethods: ""
+    });
 
     useEffect(() => {
         const fetchDashboardData = async () => {
