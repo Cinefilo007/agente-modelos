@@ -87,6 +87,9 @@ function Profile() {
 
     useEffect(() => {
         if (!isMe && profileUser?.id) {
+            // Record view for analytics
+            api.post('/analytics/view', { model_id: profileUser.id }).catch(() => { });
+
             const checkFollow = async () => {
                 try {
                     const { data } = await api.get(`/interactions/followers/status/${profileUser.id}`);

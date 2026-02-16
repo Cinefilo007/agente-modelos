@@ -1,35 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck, ShoppingBag, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 
 export default function AdminPanel() {
     const { themeColor } = useTheme();
+    const [stats, setStats] = useState({ visitors: 0, sales_count: 0, revenue: 0, credits: 0, conversion_rate: 0 });
+    const [exposure, setExposure] = useState([0, 0, 0, 0, 0, 0, 0]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data for Charts
-    const exposureData = [40, 65, 50, 80, 75, 95, 120];
-    const maxVal = Math.max(...exposureData);
-    const chartPoints = exposureData.map((val, i) => {
-        const x = (i / (exposureData.length - 1)) * 100;
-        const y = 100 - (val / 150) * 100; // Scale to 150 max visual
-        return `${x},${y}`;
-    }).join(' ');
-
-    const lastX = 100;
-    const lastY = 100 - (exposureData[exposureData.length - 1] / 150) * 100;
-    const areaPath = `0,100 ${chartPoints} 100,100`;
-
-    // Form State
+    // Bot Config Form State
     const [config, setConfig] = useState({
-        prices: "5 fotos x $10 | 10 fotos x $18 | Video personalizado $50",
-        personality: "Soy una chica dulce pero atrevida, me gusta conversar y que me consientan...",
-        physicalAspects: "Rubia, Ojos Azules, 1.70m, Athletic",
-        paymentMethods: "Binance, PayPal, Transferencia"
+        prices: "",
+        personality: "",
+        physicalAspects: "",
+        paymentMethods: ""
     });
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const [summaryRes, exposureRes, profileRes] = await Promise.all([
+                    api.get('/analytics/model/summary'),
+                    api.get('/analytics/model/exposure'),
+                    api.get('/profile/me')
+                ]);
+
+                setStats(summaryRes.data);
+                setExposure(exposureRes.data);
+
+                // Set Bot Config from profile data (assuming these fields exist in model profile)
+                if (profileRes.data) {
+                    setConfig({
+                        prices: profileRes.data.prices || "",
+                        personality: profileRes.data.personality || "",
+                        physicalAspects: profileRes.data.physical_aspects || "",
+                        paymentMethods: profileRes.data.payment_methods || ""
+                    });
+                }
+            } catch (err) {
+                console.error("Error fetching dashboard data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDashboardData();
+    }, []);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setConfig(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSaveBotConfig = async () => {
+        try {
+            // Update profile with bot config fields
+            await api.put('/profile/me', {
+                prices: config.prices,
+                personality: config.personality,
+                physical_aspects: config.physicalAspects,
+                payment_methods: config.paymentMethods
+            });
+            alert("Configuración guardada correctamente");
+        } catch (err) {
+            alert("Error al guardar la configuración");
+        }
     };
 
     return (
@@ -58,7 +94,7 @@ export default function AdminPanel() {
                         <Users size={40} />
                     </div>
                     <span className="text-muted-foreground text-xs uppercase tracking-wider font-semibold mb-1">Visitantes</span>
-                    <span className="text-2xl font-bold text-foreground">1.2k</span>
+                    <span className="text-2xl font-bold text-foreground">{stats.visitors.toLocaleString()}</span>
                     <span className="text-xs text-green-400 flex items-center gap-1 mt-1">
                         <TrendingUp size={10} /> +12%
                     </span>
@@ -70,10 +106,38 @@ export default function AdminPanel() {
                         <DollarSign size={40} />
                     </div>
                     <span className="text-muted-foreground text-xs uppercase tracking-wider font-semibold mb-1">Ventas</span>
-                    <span className="text-2xl font-bold text-foreground">$850</span>
+                    <span className="text-2xl font-bold text-foreground">${stats.revenue.toLocaleString()}</span>
                     <span className="text-xs text-green-400 flex items-center gap-1 mt-1">
                         <TrendingUp size={10} /> +5%
                     </span>
+                </div>
+
+                {/* Conversion Rate */}
+                <div className="bg-card/40 border border-white/5 rounded-2xl p-4 flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-3 opacity-10">
+                        <Sparkles size={40} />
+                    </div>
+                    <span className="text-muted-foreground text-xs uppercase tracking-wider font-semibold mb-1">Conversión</span>
+                    <span className="text-2xl font-bold text-foreground">{stats.conversion_rate}%</span>
+                    <span className="text-xs text-blue-400 font-medium mt-1">Visitas a Ventas</span>
+                </div>
+
+                {/* Persuasive Banner */}
+                <div className="col-span-2 bg-gradient-to-r from-primary/20 to-blue-500/10 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                            Potencia tus Ganancias 🚀
+                        </p>
+                        <p className="text-[11px] text-muted-foreground leading-tight">
+                            {stats.conversion_rate < 5 ?
+                                "Tu conversión está por debajo del promedio. Activa las respuestas automáticas del Bot para no perder ninguna venta." :
+                                "¡Excelente ritmo! Estás convirtiendo más que el promedio. Sigue así para maximizar tus ingresos."
+                            }
+                        </p>
+                    </div>
+                    <Link to="/admin" className="px-4 py-2 bg-white text-black font-bold text-[10px] rounded-xl hover:scale-105 transition-transform whitespace-nowrap">
+                        Configurar Bot
+                    </Link>
                 </div>
 
                 {/* Credits */}
@@ -81,7 +145,7 @@ export default function AdminPanel() {
                     <div className="flex justify-between items-center mb-2">
                         <div className="flex flex-col">
                             <span className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Créditos Disponibles</span>
-                            <span className="text-3xl font-bold text-foreground" style={{ color: themeColor }}>2,450</span>
+                            <span className="text-3xl font-bold text-foreground" style={{ color: themeColor }}>{stats.credits.toLocaleString()}</span>
                         </div>
                         <div className="p-3 bg-white/5 rounded-full border border-white/5">
                             <CreditCard size={24} style={{ color: themeColor }} />
@@ -101,46 +165,54 @@ export default function AdminPanel() {
                     </h3>
                     <select className="bg-black/20 border border-white/10 rounded-lg text-[10px] px-2 py-1 text-muted-foreground outline-none">
                         <option>Últimos 7 días</option>
-                        <option>Este mes</option>
                     </select>
                 </div>
 
                 <div className="h-40 w-full relative">
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                        <defs>
-                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={themeColor} stopOpacity="0.5" />
-                                <stop offset="100%" stopColor={themeColor} stopOpacity="0" />
-                            </linearGradient>
-                        </defs>
-                        {/* Area */}
-                        <path
-                            d={`M0,100 ${chartPoints} L100,100 Z`}
-                            fill="url(#chartGradient)"
-                            className="transition-all duration-500"
-                        />
-                        {/* Line */}
-                        <polyline
-                            points={chartPoints}
-                            fill="none"
-                            stroke={themeColor}
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="transition-all duration-500"
-                        />
-                    </svg>
+                    {(() => {
+                        const maxVal = Math.max(...exposure, 10);
+                        const points = exposure.map((val, i) => {
+                            const x = (i / (exposure.length - 1)) * 100;
+                            const y = 100 - (val / maxVal) * 100;
+                            return `${x},${y}`;
+                        }).join(' ');
 
-                    {/* Tooltip Overlay (simplified visual) */}
+                        return (
+                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                                <defs>
+                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor={themeColor} stopOpacity="0.5" />
+                                        <stop offset="100%" stopColor={themeColor} stopOpacity="0" />
+                                    </linearGradient>
+                                </defs>
+                                <path
+                                    d={`M0,100 ${points} L100,100 Z`}
+                                    fill="url(#chartGradient)"
+                                    className="transition-all duration-500"
+                                />
+                                <polyline
+                                    points={points}
+                                    fill="none"
+                                    stroke={themeColor}
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="transition-all duration-500"
+                                />
+                            </svg>
+                        );
+                    })()}
+
+                    {/* Tooltip Overlay */}
                     <div className="absolute top-0 right-10 flex flex-col items-center">
                         <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)] mb-1"></div>
                         <div className="bg-popover border border-white/10 rounded-lg px-2 py-1 text-[10px] font-bold text-foreground shadow-lg">
-                            120 visitas
+                            {exposure[exposure.length - 1]} visitas hoy
                         </div>
                     </div>
                 </div>
                 <p className="text-center text-xs text-muted-foreground mt-2">
-                    ¡Tu perfil está creciendo! Tienes un <span className="text-green-400 font-bold">12% más</span> de visitas que la semana pasada. Sigue publicando historias. 🔥
+                    Estadísticas basadas en visitas únicas a tu perfil durante la última semana.
                 </p>
             </div>
 
@@ -302,10 +374,11 @@ export default function AdminPanel() {
                     </div>
 
                     <button
-                        className="w-full py-4 rounded-2xl font-bold text-white shadow-lg mt-2 flex items-center justify-center gap-2 transition-transform active:scale-95"
+                        onClick={handleSaveBotConfig}
+                        className="w-full py-4 rounded-2xl font-bold text-white shadow-lg mt-2 flex items-center justify-center gap-2 transition-transform active:scale-95 hover:brightness-110"
                         style={{ backgroundColor: themeColor, boxShadow: `0 10px 30px -10px ${themeColor}60` }}
                     >
-                        <Save size={18} /> Guardar Cambios
+                        <Save size={18} /> Guardar Cambios en el Bot
                     </button>
 
                 </div>

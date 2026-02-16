@@ -108,6 +108,14 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
+const DashboardRouter = () => {
+  const { user } = useAuth();
+  if (user?.role === 'admin') {
+    return <AdminDashboard />;
+  }
+  return <AdminPanel />;
+};
+
 function App() {
   return (
     <ErrorBoundary>
@@ -126,7 +134,7 @@ function App() {
               {/* Admin Route - Separate Layout potentially? Or same? Let's use separate for focus */}
               <Route path="/admin" element={
                 <ProtectedRoute>
-                  <AdminDashboard />
+                  <DashboardRouter />
                 </ProtectedRoute>
               } />
 
