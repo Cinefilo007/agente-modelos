@@ -4,7 +4,6 @@ import { twMerge } from 'tailwind-merge';
 
 export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     const [imgError, setImgError] = useState(false);
-    const [loading, setLoading] = useState(true);
 
     // Supabase Public Storage URL if needed
     const SUPABASE_STORAGE_URL = "https://vyvntwuxzskreghxidnd.supabase.co/storage/v1/object/public/profiles/";
@@ -26,29 +25,9 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
 
     const fullSrc = getFullUrl(src);
 
+    // Reset error state if src changes
     useEffect(() => {
-        if (!fullSrc) {
-            setImgError(true);
-            setLoading(false);
-            return;
-        }
-
-        setLoading(true);
         setImgError(false);
-
-        const img = new Image();
-        img.src = fullSrc;
-
-        img.onload = () => {
-            setImgError(false);
-            setLoading(false);
-        };
-
-        img.onerror = () => {
-            console.warn(`[Avatar] Failed to load: ${fullSrc}`);
-            setImgError(true);
-            setLoading(false);
-        };
     }, [fullSrc]);
 
     const getInitials = (displayName) => {
@@ -86,7 +65,7 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
         return (
             <div
                 className={twMerge(
-                    'rounded-full border-2 border-white/20 flex items-center justify-center overflow-hidden font-bold text-white uppercase select-none shadow-md bg-gradient-to-br transition-all duration-300',
+                    'rounded-full border-2 border-white/20 flex items-center justify-center overflow-hidden font-bold text-white uppercase select-none shadow-md bg-gradient-to-br',
                     bgGradient,
                     sizeClasses[size],
                     className
@@ -102,20 +81,19 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
             {(imgError || !fullSrc) ? (
                 renderPlaceholder()
             ) : (
-                <div className={twMerge(
-                    'rounded-full bg-white/5 overflow-hidden transition-all duration-300',
-                    sizeClasses[size],
-                    className,
-                    loading ? 'animate-pulse' : ''
-                )}>
-                    {!loading && (
-                        <img
-                            src={fullSrc}
-                            alt={alt}
-                            className="w-full h-full object-cover border-2 border-white/10 shadow-sm"
-                        />
+                <img
+                    src={fullSrc}
+                    alt={alt}
+                    onError={() => {
+                        console.warn(`[Avatar] Failed to load: ${fullSrc}`);
+                        setImgError(true);
+                    }}
+                    className={twMerge(
+                        'rounded-full object-cover border-2 border-white/10 bg-[#1a1a1a] shadow-sm',
+                        sizeClasses[size],
+                        className
                     )}
-                </div>
+                />
             )}
 
             {/* Online Status Indicator */}
