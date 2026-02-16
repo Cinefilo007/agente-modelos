@@ -141,20 +141,20 @@ export default function ShopManager() {
 
     if (loading && services.length === 0 && !isCreating) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <Loader className="animate-spin text-primary" />
+            <div className="min-h-screen bg-transparent flex items-center justify-center">
+                <Loader className="animate-spin text-primary" style={{ color: themeColor }} />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-black pb-32 pt-6 px-4 animate-in fade-in duration-500">
+        <div className="min-h-screen bg-transparent pb-32 pt-6 px-4 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex items-center justify-between mb-8 max-w-2xl mx-auto">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => isCreating ? setIsCreating(false) : navigate('/admin')}
-                        className="p-2 rounded-full bg-white/5 border border-white/10 text-muted-foreground"
+                        className="p-2 rounded-full bg-card/50 border border-white/5 text-muted-foreground hover:text-foreground transition-colors"
                     >
                         <ArrowLeft size={20} />
                     </button>
@@ -181,7 +181,7 @@ export default function ShopManager() {
                         <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground uppercase tracking-tighter">
                             <LayoutGrid size={16} /> Información General
                         </div>
-                        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4 shadow-xl">
+                        <div className="bg-card/40 backdrop-blur-md border border-white/10 rounded-[32px] p-8 space-y-6 shadow-2xl">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Categoría</label>
                                 <select
@@ -280,13 +280,14 @@ export default function ShopManager() {
                         <section className="space-y-4">
                             <div className="flex items-center justify-between text-sm font-bold text-muted-foreground uppercase tracking-tighter">
                                 <span className="flex items-center gap-2"><Zap size={16} className="text-yellow-400" /> Beneficios</span>
-                                <button type="button" onClick={() => handleAddTag('benefits')} className="p-1 bg-white/5 rounded-md hover:bg-white/10"><Plus size={14} /></button>
+                                <button type="button" onClick={() => handleAddTag('benefits')} className="p-1.5 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"><Plus size={14} /></button>
                             </div>
-                            <div className="bg-white/5 border border-white/10 rounded-3xl p-5 min-h-[100px] space-y-2">
+                            <div className="bg-card/40 backdrop-blur-sm border border-white/5 rounded-[32px] p-6 min-h-[120px] space-y-2 shadow-xl">
+                                {formData.benefits.length === 0 && <p className="text-[10px] text-muted-foreground/30 text-center py-4 italic">No hay beneficios añadidos</p>}
                                 {formData.benefits.map((b, i) => (
-                                    <div key={i} className="flex justify-between items-center text-xs text-gray-300 bg-white/5 rounded-lg px-3 py-2">
-                                        <span className="flex items-center gap-2"><CheckCircle2 size={12} className="text-green-500" /> {b}</span>
-                                        <button type="button" onClick={() => handleRemoveTag('benefits', i)} className="text-red-400 opacity-50"><Trash2 size={12} /></button>
+                                    <div key={i} className="flex justify-between items-center text-xs text-gray-300 bg-white/5 rounded-xl px-4 py-2.5 border border-white/5 group">
+                                        <span className="flex items-center gap-2 font-medium"><CheckCircle2 size={12} className="text-green-500" /> {b}</span>
+                                        <button type="button" onClick={() => handleRemoveTag('benefits', i)} className="text-red-400 opacity-0 group-hover:opacity-60 transition-opacity"><Trash2 size={12} /></button>
                                     </div>
                                 ))}
                             </div>
@@ -295,13 +296,14 @@ export default function ShopManager() {
                         <section className="space-y-4">
                             <div className="flex items-center justify-between text-sm font-bold text-muted-foreground uppercase tracking-tighter">
                                 <span className="flex items-center gap-2"><AlertCircle size={16} className="text-red-400" /> Reglas</span>
-                                <button type="button" onClick={() => handleAddTag('rules')} className="p-1 bg-white/5 rounded-md hover:bg-white/10"><Plus size={14} /></button>
+                                <button type="button" onClick={() => handleAddTag('rules')} className="p-1.5 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"><Plus size={14} /></button>
                             </div>
-                            <div className="bg-white/5 border border-white/10 rounded-3xl p-5 min-h-[100px] space-y-2">
+                            <div className="bg-card/40 backdrop-blur-sm border border-white/5 rounded-[32px] p-6 min-h-[120px] space-y-2 shadow-xl">
+                                {formData.rules.length === 0 && <p className="text-[10px] text-muted-foreground/30 text-center py-4 italic">No hay reglas añadidas</p>}
                                 {formData.rules.map((r, i) => (
-                                    <div key={i} className="flex justify-between items-center text-xs text-gray-300 bg-white/5 rounded-lg px-3 py-2">
-                                        <span className="flex items-center gap-2"><Info size={12} className="text-red-400" /> {r}</span>
-                                        <button type="button" onClick={() => handleRemoveTag('rules', i)} className="text-red-400 opacity-50"><Trash2 size={12} /></button>
+                                    <div key={i} className="flex justify-between items-center text-xs text-gray-300 bg-white/5 rounded-xl px-4 py-2.5 border border-white/5 group">
+                                        <span className="flex items-center gap-2 font-medium"><AlertCircle size={12} className="text-red-400" /> {r}</span>
+                                        <button type="button" onClick={() => handleRemoveTag('rules', i)} className="text-red-400 opacity-0 group-hover:opacity-60 transition-opacity"><Trash2 size={12} /></button>
                                     </div>
                                 ))}
                             </div>
@@ -311,10 +313,11 @@ export default function ShopManager() {
                     <button
                         type="submit"
                         disabled={saving}
-                        className="w-full py-5 rounded-3xl bg-primary text-white font-black text-lg shadow-2xl transition-all active:scale-[0.98] disabled:opacity-50"
-                        style={{ backgroundColor: themeColor }}
+                        className="w-full py-5 rounded-[32px] bg-primary text-white font-black text-lg shadow-2xl transition-all active:scale-[0.98] disabled:opacity-50 hover:brightness-110 flex items-center justify-center gap-3"
+                        style={{ backgroundColor: themeColor, boxShadow: `0 15px 40px -10px ${themeColor}80` }}
                     >
-                        {saving ? <Loader className="animate-spin mx-auto" /> : 'Publicar Servicio Digital'}
+                        {saving ? <Loader className="animate-spin" /> : <Save size={20} />}
+                        {saving ? 'Guardando...' : 'Publicar Servicio Digital'}
                     </button>
                 </form>
             ) : (
@@ -341,8 +344,8 @@ export default function ShopManager() {
                                     <p className="text-xs text-muted-foreground line-clamp-1 mb-3">{service.description}</p>
                                     <div className="flex flex-wrap gap-2">
                                         {service.model_service_options?.map(opt => (
-                                            <span key={opt.id} className="bg-white/5 text-[10px] px-2 py-1 rounded text-white/70">
-                                                {opt.label}: <span className="text-green-400 font-bold">${opt.price}</span>
+                                            <span key={opt.id} className="bg-white/5 border border-white/5 text-[10px] px-2.5 py-1.5 rounded-xl text-white/80 font-medium">
+                                                {opt.label}: <span className="text-green-400 font-bold ml-1">${opt.price}</span>
                                             </span>
                                         ))}
                                     </div>
