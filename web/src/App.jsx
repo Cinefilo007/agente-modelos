@@ -166,6 +166,13 @@ function App() {
                 </ProtectedRoute>
               } />
 
+              {/* Wallet Route */}
+              <Route path="/wallet" element={
+                <ProtectedRoute>
+                  <WalletPage />
+                </ProtectedRoute>
+              } />
+
               {/* Catch all - Redirect to Landing */}
               <Route path="*" element={<Navigate to="/landing" replace />} />
             </Routes>

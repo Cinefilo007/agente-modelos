@@ -4,14 +4,20 @@ import {
     ShieldCheck, Lock, CheckCircle, AlertTriangle, ArrowLeft,
     Clock, Wallet, MessageSquare
 } from 'lucide-react';
+import clsx from 'clsx';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Avatar } from '../components/ui/Avatar';
-import { clientService } from '../api/client';
+import api from '../api/axios';
 
 export default function ServiceCheckout() {
     const { themeColor } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
+
+    // Financial State
+    const [balance, setBalance] = useState({ balance: 0, currency: 'USDT' });
+    const [loadingBalance, setLoadingBalance] = useState(true);
+    const [errorMsg, setErrorMsg] = useState(null);
 
     // Status: 'summary', 'processing', 'held', 'completed', 'disputed'
     const [status, setStatus] = useState('summary');
@@ -29,14 +35,57 @@ export default function ServiceCheckout() {
         deliveryTime: "24-48h"
     };
 
-    const handlePayment = () => {
+    const fee = 2.50;
+    const totalAmount = service.price + fee;
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const res = await api.get('/wallet/balance');
+                setBalance(res.data);
+            } catch (e) {
+                console.error("Error fetching balance", e);
+            } finally {
+                setLoadingBalance(false);
+            }
+        };
+        fetchBalance();
+    }, []);
+
+    const handlePayment = async () => {
+        setErrorMsg(null);
+
+        if (balance.balance < totalAmount) {
+            alert("Saldo insuficiente. Por favor recarga tu billetera.");
+            navigate('/wallet');
+            return;
+        }
+
         setStatus('processing');
-        setTimeout(() => {
-            setStatus('held');
-        }, 2000); // Simulate network
+
+        try {
+            const res = await api.post('/escrow/create', {
+                model_id: initialModel?.id,
+                service_id: initialService?.id || "custom-service",
+                amount: totalAmount
+            });
+
+            if (res.data.success) {
+                // Success!
+                setStatus('held');
+            }
+        } catch (e) {
+            console.error("Payment failed", e);
+            setErrorMsg(e.response?.data?.detail || "Error al procesar el pago. Intenta nuevamente.");
+            setStatus('summary');
+        }
     };
 
     const handleConfirm = () => {
+        // In real flow, this makes a request to Release funds
+        // For now, let's assume client is happy and we confirm locally or call API
+        // Ideally: api.post('/escrow/release', { escrow_id: ... })
+        // But we didn't save escrow_id in state yet. For UI Demo purposes:
         setStatus('completed');
     };
 
@@ -49,7 +98,7 @@ export default function ServiceCheckout() {
 
             {/* Header */}
             <div className="w-full flex items-center mb-6">
-                <Link to="/profile" className="p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground">
+                <Link to="/explore" className="p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground">
                     <ArrowLeft size={20} />
                 </Link>
                 <span className="ml-2 font-bold text-lg">Checkout Seguro</span>
@@ -86,20 +135,49 @@ export default function ServiceCheckout() {
                         </div>
                         <div className="border-t border-white/10 pt-4 flex justify-between items-center">
                             <span className="font-bold text-lg">Total</span>
-                            <span className="font-bold text-2xl text-foreground">${(service.price + 2.50).toFixed(2)}</span>
+                            <span className="font-bold text-2xl text-foreground">${totalAmount.toFixed(2)}</span>
                         </div>
                     </div>
 
-                    {/* Pay Button */}
+                    {/* Pay Button / Wallet Info */}
+                    <div className="bg-gradient-to-r from-gray-900 to-black p-4 rounded-2xl border border-white/10 mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs text-gray-400 uppercase tracking-widest font-bold">Saldo Disponible</span>
+                            {loadingBalance ? <span className="text-xs">Cargando...</span> : (
+                                <span className={balance.balance >= totalAmount ? "text-green-400 font-bold" : "text-red-400 font-bold"}>
+                                    ${Number(balance.balance).toFixed(2)} {balance.currency}
+                                </span>
+                            )}
+                        </div>
+                        {balance.balance < totalAmount && !loadingBalance && (
+                            <div className="text-xs text-red-300 bg-red-500/10 p-2 rounded-lg mb-2">
+                                Saldo insuficiente. Necesitas al menos ${totalAmount.toFixed(2)}.
+                            </div>
+                        )}
+                    </div>
+
                     <button
                         onClick={handlePayment}
-                        className="w-full py-4 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 group relative overflow-hidden"
+                        disabled={loadingBalance || balance.balance < totalAmount}
+                        className={clsx(
+                            "w-full py-4 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 group relative overflow-hidden",
+                            loadingBalance || balance.balance < totalAmount ? "opacity-50 cursor-not-allowed grayscale" : ""
+                        )}
                         style={{ backgroundColor: themeColor }}
                     >
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                         <ShieldCheck size={20} className="relative z-10" />
-                        <span className="relative z-10">Pagar con Protección Escrow</span>
+                        <span className="relative z-10">
+                            {balance.balance < totalAmount ? "Recargar Billetera" : "Pagar con Saldo"}
+                        </span>
                     </button>
+
+                    {errorMsg && (
+                        <p className="text-center text-red-500 text-xs mt-2 font-bold p-2 bg-red-500/10 rounded-lg">
+                            {errorMsg}
+                        </p>
+                    )}
+
                     <p className="text-center text-[10px] text-muted-foreground mt-4 flex items-center justify-center gap-1 opacity-70">
                         <Lock size={10} /> Tus fondos se retienen hasta que confirmes la entrega.
                     </p>
@@ -124,7 +202,7 @@ export default function ServiceCheckout() {
                     </div>
                     <h2 className="text-2xl font-bold mb-2">Fondos en Garantía</h2>
                     <p className="text-sm text-muted-foreground mb-8">
-                        Hemos retenido <strong>${(service.price + 2.50).toFixed(2)}</strong> de tu wallet.<br />
+                        Hemos retenido <strong>${totalAmount.toFixed(2)}</strong> de tu wallet.<br />
                         La modelo ha sido notificada para comenzar el servicio.
                     </p>
 

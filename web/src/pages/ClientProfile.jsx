@@ -4,14 +4,30 @@ import {
     CreditCard, ArrowUpRight, History, Settings, LogOut, Edit3
 } from 'lucide-react';
 import { Avatar } from '../components/ui/Avatar';
-import { Link } from 'react-router-dom';
+import { Avatar } from '../components/ui/Avatar';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import api from '../api/axios';
+import { useEffect } from 'react';
 
 export default function ClientProfile() {
     const { themeColor } = useTheme();
     const { user, logout } = useAuth();
-    const [balance, setBalance] = useState(0.00);
+    const [balance, setBalance] = useState({ balance: 0, currency: 'USDT' });
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const res = await api.get('/wallet/balance');
+                setBalance(res.data);
+            } catch (e) {
+                console.error("Error fetching balance", e);
+            }
+        };
+        fetchBalance();
+    }, []);
 
     if (!user) return null;
 
@@ -65,13 +81,13 @@ export default function ClientProfile() {
                 </div>
                 <div className="relative z-10">
                     <p className="text-blue-200 text-xs font-semibold uppercase tracking-wider mb-2">Telegram Wallet Balance</p>
-                    <h1 className="text-4xl font-bold mb-6">${balance.toFixed(2)}</h1>
+                    <h1 className="text-4xl font-bold mb-6">${Number(balance.balance).toFixed(2)} <span className="text-lg opacity-70">{balance.currency}</span></h1>
 
                     <div className="flex gap-3">
-                        <button className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/10 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
+                        <button onClick={() => navigate('/wallet')} className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/10 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer">
                             <ArrowUpRight size={18} /> Recargar
                         </button>
-                        <button className="flex-1 bg-black/20 hover:bg-black/30 backdrop-blur-md border border-white/5 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
+                        <button onClick={() => navigate('/wallet')} className="flex-1 bg-black/20 hover:bg-black/30 backdrop-blur-md border border-white/5 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer">
                             <History size={18} /> Historial
                         </button>
                     </div>

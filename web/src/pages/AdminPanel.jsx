@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, 
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import clsx from 'clsx';
+import WalletPanel from '../components/wallet/WalletPanel';
 
 export default function AdminPanel() {
     const { themeColor } = useTheme();
@@ -145,6 +146,7 @@ export default function AdminPanel() {
                     <TabButton id="analytics" label="Analíticas" icon={TrendingUp} />
                     <TabButton id="bot" label="Bot IA" icon={Sparkles} />
                     <TabButton id="shop" label="Tienda y Seguridad" icon={ShoppingBag} />
+                    <TabButton id="wallet" label="Billetera" icon={Wallet} />
                 </div>
 
                 {activeTab === 'analytics' && (
@@ -476,6 +478,11 @@ export default function AdminPanel() {
                                 {saving ? 'Guardando...' : 'Guardar Entrenamiento'}
                             </button>
                         </div>
+                    </div>
+                )}
+                {activeTab === 'wallet' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 mb-20">
+                        <WalletPanel />
                     </div>
                 )}
             </div>
