@@ -66,7 +66,7 @@ async def get_wallet_balance(user: TelegramUser = Depends(get_current_user)):
         
     except Exception as e:
         print(f"Error fetching wallet balance: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching wallet balance")
+        raise HTTPException(status_code=500, detail=f"Debug Error: {str(e)}")
 
 @router.get("/deposit-info", response_model=DepositInfoResponse)
 async def get_deposit_info(user: TelegramUser = Depends(get_current_user)):
@@ -91,7 +91,7 @@ async def get_deposit_info(user: TelegramUser = Depends(get_current_user)):
         
     except Exception as e:
         print(f"Error fetching deposit info: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching deposit info")
+        raise HTTPException(status_code=500, detail=f"Debug Error: {str(e)}")
 
 @router.get("/history", response_model=List[TransactionResponse])
 async def get_transaction_history(user: TelegramUser = Depends(get_current_user)):
@@ -110,7 +110,7 @@ async def get_transaction_history(user: TelegramUser = Depends(get_current_user)
         
     except Exception as e:
         print(f"Error fetching history: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching transaction history")
+        raise HTTPException(status_code=500, detail=f"Debug Error: {str(e)}")
 
 class WithdrawRequest(BaseModel):
     amount: float
@@ -169,4 +169,4 @@ async def withdraw_funds(request: WithdrawRequest, user: TelegramUser = Depends(
         raise he
     except Exception as e:
         print(f"Error processing withdrawal: {e}")
-        raise HTTPException(status_code=500, detail="Error processing withdrawal")
+        raise HTTPException(status_code=500, detail=f"Debug Error: {str(e)}")
