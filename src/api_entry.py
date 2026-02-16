@@ -16,19 +16,29 @@ def run_api():
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 def main():
-    # Option 1: Run API in a separate thread (Uvicorn blocking) and Bot in main thread (or async mix)
-    # Since ptb bot.run_polling() is blocking, we should ideally use the async interface of PTB
-    # But for simplicity in this script, we can run Uvicorn in a thread.
+    enable_api = os.getenv("ENABLE_API", "true").lower() == "true"
+    enable_bot = os.getenv("ENABLE_BOT", "true").lower() == "true"
+
+    if enable_api:
+        logger.info("Starting API thread...")
+        t = threading.Thread(target=run_api, daemon=True)
+        t.start()
+    else:
+        logger.info("API is disabled (ENABLE_API=false)")
     
-    t = threading.Thread(target=run_api, daemon=True) # daemon=True allows thread to exit when main exits
-    t.start()
-    
-    # Run Bot
-    logger.info("Starting Telegram Bot...")
-    # NOTE: We need to modify src/bot.py slightly if we want it to be purely async accessible, 
-    # but run_polling() is fine directly here as it blocks the main thread, keeping the process alive.
-    # The API thread will run in background.
-    start_bot_polling()
+    if enable_bot:
+        logger.info("Starting Telegram Bot...")
+        start_bot_polling()
+    else:
+        logger.info("Bot is disabled (ENABLE_BOT=false)")
+        # If API is running, we need to keep the main thread alive.
+        if enable_api:
+            # Keep main thread alive while API thread runs
+            while True:
+                import time
+                time.sleep(10)
+        else:
+            logger.info("Nothing to run. Exiting.")
 
 if __name__ == "__main__":
     main()
