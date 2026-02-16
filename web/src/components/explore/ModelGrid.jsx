@@ -37,23 +37,23 @@ export function ModelGrid({ models }) {
 
                     {/* Status Badge (Top Right) */}
                     <div className={cn(
-                        "absolute top-2 right-2 flex items-center gap-1.5 backdrop-blur-md px-2 py-1 rounded-lg border z-10",
+                        "absolute top-2 right-2 flex items-center gap-1.5 backdrop-blur-md bg-black/40 border border-white/10 h-7 px-2.5 rounded-lg z-10",
                         (model.last_seen && (new Date() - new Date(model.last_seen)) < 300000)
-                            ? "bg-green-500/20 border-green-500/30 text-green-400"
-                            : "bg-black/40 border-white/10 text-gray-400"
+                            ? "text-green-400"
+                            : "text-gray-400"
                     )}>
                         <span className={cn(
                             "w-1.5 h-1.5 rounded-full",
                             (model.last_seen && (new Date() - new Date(model.last_seen)) < 300000) ? "bg-green-500 animate-pulse" : "bg-gray-500"
                         )}></span>
-                        <span className="text-[10px] uppercase font-bold tracking-wider">
+                        <span className="text-[10px] uppercase font-bold tracking-wider leading-none">
                             {(model.last_seen && (new Date() - new Date(model.last_seen)) < 300000) ? 'Online' : 'Offline'}
                         </span>
                     </div>
 
                     {/* Rating Badge (Top Left) */}
-                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 z-10">
-                        <span className="font-bold text-[11px] text-white">
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5 backdrop-blur-md bg-black/40 border border-white/10 h-7 px-2.5 rounded-lg z-10">
+                        <span className="font-bold text-[10px] text-white leading-none">
                             {(model.reputation_score !== undefined && model.reputation_score !== null)
                                 ? parseFloat(model.reputation_score).toFixed(1)
                                 : '5.0'}
