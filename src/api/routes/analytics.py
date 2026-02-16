@@ -43,39 +43,63 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Solo para modelos")
     
+    print(f"[Analytics] Fetching summary for Telegram User: {user.id}")
     try:
-        # 1. Get model UUID - Use maybe_single to avoid exception if not found
-        model_res = db.client.table("models").select("id, credits_balance").eq("telegram_id", user.id).maybe_single().execute()
-        
-        if not model_res.data:
-            print(f"[Analytics] Model not found in DB for Telegram ID: {user.id}")
-            raise HTTPException(status_code=404, detail="Perfil de modelo no encontrado en la base de datos.")
+        # 1. Get model UUID and Credits
+        try:
+            model_res = db.client.table("models").select("id, artistic_name, credits_balance").eq("telegram_id", user.id).maybe_single().execute()
+            if not model_res.data:
+                print(f"[Analytics] Model NOT FOUND in DB for Telegram ID: {user.id}")
+                raise HTTPException(status_code=404, detail="Perfil de modelo no encontrado en el sistema.")
             
-        model_id = model_res.data['id']
-        credits = model_res.data.get('credits_balance', 0) or 0
-        
-        # 2. Get total views
-        views_res = db.client.table("profile_views") \
-            .select("id", count="exact") \
-            .eq("model_id", model_id) \
-            .execute()
-        total_views = views_res.count if views_res.count is not None else 0
-        
+            model_id = model_res.data['id']
+            artistic_name = model_res.data.get('artistic_name', 'Modelo')
+            credits = model_res.data.get('credits_balance', 0) or 0
+            print(f"[Analytics] Found model: {model_id} ({artistic_name}), Credits: {credits}")
+        except Exception as e:
+            print(f"[Analytics] CRITICAL ERROR querying 'models' table: {e}")
+            raise HTTPException(status_code=500, detail=f"Error al consultar perfil del modelo: {str(e)}")
+
+        # 2. Get total views (Visitors)
+        try:
+            views_res = db.client.table("profile_views") \
+                .select("id", count="exact") \
+                .eq("model_id", model_id) \
+                .execute()
+            total_views = views_res.count if views_res.count is not None else 0
+            print(f"[Analytics] Total Views (DB Count): {total_views}")
+        except Exception as e:
+            print(f"[Analytics] WARNING error querying 'profile_views', defaulting to 0: {e}")
+            total_views = 0
+            
         # 3. Get total sales (completed orders)
-        sales_res = db.client.table("orders") \
-            .select("amount") \
-            .eq("model_id", model_id) \
-            .eq("status", "completed") \
-            .execute()
-        
-        total_sales_count = len(sales_res.data) if sales_res.data else 0
-        # Convert amount to float because Postgres Decimal can come as string
-        total_revenue = sum([float(o['amount']) for o in sales_res.data if o.get('amount')]) if sales_res.data else 0
+        try:
+            sales_res = db.client.table("orders") \
+                .select("amount") \
+                .eq("model_id", model_id) \
+                .eq("status", "completed") \
+                .execute()
+            
+            total_sales_count = len(sales_res.data) if sales_res.data else 0
+            
+            # Use a safe converter for Decimal/Numeric to float
+            def safe_float(val):
+                try: return float(val) if val is not None else 0.0
+                except: return 0.0
+                
+            total_revenue = sum([safe_float(o['amount']) for o in sales_res.data]) if sales_res.data else 0.0
+            print(f"[Analytics] Sales count: {total_sales_count}, Revenue: {total_revenue}")
+        except Exception as e:
+            print(f"[Analytics] WARNING error querying 'orders', defaulting to 0: {e}")
+            total_sales_count = 0
+            total_revenue = 0.0
         
         # 4. Calculate Conversion Rate
+        # Conversion = (Sales / Views) * 100
         conversion_rate = (total_sales_count / total_views * 100) if total_views > 0 else 0
         
         return {
+            "model_name": artistic_name,
             "visitors": total_views,
             "sales_count": total_sales_count,
             "revenue": round(total_revenue, 2),
@@ -85,10 +109,10 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[Analytics] Error fetching summary for {user.id}: {e}")
+        print(f"[Analytics] UNEXPECTED FATAL ERROR for {user.id}: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error interno al calcular estadísticas: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno inesperado: {str(e)}")
 
 
 @router.get("/model/exposure")
