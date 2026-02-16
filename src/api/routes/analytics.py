@@ -89,7 +89,7 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error interno al calcular estadísticas: {str(e)}")
- patches y correcciones aplicadas
+
 
 @router.get("/model/exposure")
 async def get_model_exposure(user: TelegramUser = Depends(get_current_user)):
