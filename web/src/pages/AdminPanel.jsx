@@ -19,6 +19,10 @@ export default function AdminPanel() {
         paymentMethods: ""
     });
 
+    // Tag Input State
+    const [tags, setTags] = useState([]);
+    const [tagInput, setTagInput] = useState("");
+
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
@@ -33,12 +37,18 @@ export default function AdminPanel() {
 
                 // Set Bot Config from profile data (assuming these fields exist in model profile)
                 if (profileRes.data) {
+                    const physicalAspects = profileRes.data.physical_aspects || "";
                     setConfig({
                         prices: profileRes.data.prices || "",
                         personality: profileRes.data.personality || "",
-                        physicalAspects: profileRes.data.physical_aspects || "",
+                        physicalAspects: physicalAspects,
                         paymentMethods: profileRes.data.payment_methods || ""
                     });
+
+                    // Initialize tags from string
+                    if (physicalAspects) {
+                        setTags(physicalAspects.split(',').map(t => t.trim()).filter(Boolean));
+                    }
                 }
             } catch (err) {
                 console.error("Error fetching dashboard data:", err);
@@ -52,6 +62,26 @@ export default function AdminPanel() {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setConfig(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Tag Handlers
+    const handleTagKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
+            e.preventDefault();
+            const value = tagInput.trim();
+            if (value && !tags.includes(value)) {
+                const newTags = [...tags, value];
+                setTags(newTags);
+                setConfig(prev => ({ ...prev, physicalAspects: newTags.join(', ') }));
+                setTagInput("");
+            }
+        }
+    };
+
+    const removeTag = (tagToRemove) => {
+        const newTags = tags.filter(tag => tag !== tagToRemove);
+        setTags(newTags);
+        setConfig(prev => ({ ...prev, physicalAspects: newTags.join(', ') }));
     };
 
     const handleSaveBotConfig = async () => {
@@ -402,14 +432,24 @@ export default function AdminPanel() {
                                 <label className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
                                     <Tag size={16} /> Tus Atributos (Tags)
                                 </label>
-                                <input
-                                    type="text"
-                                    name="physicalAspects"
-                                    value={config.physicalAspects}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm text-foreground focus:outline-none focus:border-white/30 transition-all mb-4"
-                                    placeholder="Ojos verdes, Piel canela..."
-                                />
+                                <div className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 min-h-[60px] flex flex-wrap gap-2 focus-within:border-white/30 transition-all mb-4">
+                                    {tags.map((tag, index) => (
+                                        <div key={index} className="bg-white/10 border border-white/10 rounded-full px-3 py-1 text-xs font-bold text-white flex items-center gap-2 animate-in zoom-in duration-200">
+                                            <span>{tag}</span>
+                                            <button onClick={() => removeTag(tag)} className="hover:text-red-400 transition-colors">
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <input
+                                        type="text"
+                                        value={tagInput}
+                                        onChange={(e) => setTagInput(e.target.value)}
+                                        onKeyDown={handleTagKeyDown}
+                                        className="bg-transparent text-sm text-foreground focus:outline-none flex-1 min-w-[120px]"
+                                        placeholder={tags.length === 0 ? "Ojos verdes, Piel canela..." : ""}
+                                    />
+                                </div>
                             </div>
 
                             <div className="bg-card/40 border border-white/5 rounded-3xl p-6">

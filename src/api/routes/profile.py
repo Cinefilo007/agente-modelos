@@ -198,8 +198,18 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
     # Map legacy config_ columns to flat fields for frontend
     def extract_text(val):
         if isinstance(val, dict): return val.get('text', '')
+        # Handle stringified JSON for text columns if they were wrongly saved
+        if isinstance(val, str):
+            val_str = val.strip()
+            if val_str.startswith('{"text":') and val_str.endswith('}'):
+                try:
+                    import json
+                    return json.loads(val_str).get('text', '')
+                except:
+                    pass
+            return val
         if isinstance(val, list) and len(val) > 0: return str(val[0]) # Fallback
-        return str(val) if val else ''
+        return str(val) if val is not None else ''
 
     user_data['prices'] = extract_text(user_data.get('config_prices'))
     user_data['personality'] = extract_text(user_data.get('config_persona'))
@@ -230,9 +240,9 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
     if "prices" in updates:
         updates["config_prices"] = {"text": updates.pop("prices")}
     if "personality" in updates:
-        updates["config_persona"] = {"text": updates.pop("personality")}
+        updates["config_persona"] = updates.pop("personality") # TEXT column, direct save
     if "physical_aspects" in updates:
-        updates["config_physique"] = {"text": updates.pop("physical_aspects")}
+        updates["config_physique"] = updates.pop("physical_aspects") # TEXT column, direct save
     if "payment_methods" in updates:
         updates["config_payments"] = {"text": updates.pop("payment_methods")}
     
