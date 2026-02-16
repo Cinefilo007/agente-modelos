@@ -44,10 +44,15 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Solo para modelos")
     
     try:
-        # 1. Get model UUID
-        model_res = db.client.table("models").select("id, credits_balance").eq("telegram_id", user.id).single().execute()
+        # 1. Get model UUID - Use maybe_single to avoid exception if not found
+        model_res = db.client.table("models").select("id, credits_balance").eq("telegram_id", user.id).maybe_single().execute()
+        
+        if not model_res.data:
+            print(f"[Analytics] Model not found in DB for Telegram ID: {user.id}")
+            raise HTTPException(status_code=404, detail="Perfil de modelo no encontrado en la base de datos.")
+            
         model_id = model_res.data['id']
-        credits = model_res.data.get('credits_balance', 0)
+        credits = model_res.data.get('credits_balance', 0) or 0
         
         # 2. Get total views
         views_res = db.client.table("profile_views") \
@@ -58,13 +63,14 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
         
         # 3. Get total sales (completed orders)
         sales_res = db.client.table("orders") \
-            .select("amount", count="exact") \
+            .select("amount") \
             .eq("model_id", model_id) \
             .eq("status", "completed") \
             .execute()
         
-        total_sales_count = sales_res.count if sales_res.count is not None else 0
-        total_revenue = sum([o['amount'] for o in sales_res.data]) if sales_res.data else 0
+        total_sales_count = len(sales_res.data) if sales_res.data else 0
+        # Convert amount to float because Postgres Decimal can come as string
+        total_revenue = sum([float(o['amount']) for o in sales_res.data if o.get('amount')]) if sales_res.data else 0
         
         # 4. Calculate Conversion Rate
         conversion_rate = (total_sales_count / total_views * 100) if total_views > 0 else 0
@@ -72,13 +78,18 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
         return {
             "visitors": total_views,
             "sales_count": total_sales_count,
-            "revenue": total_revenue,
+            "revenue": round(total_revenue, 2),
             "credits": credits,
             "conversion_rate": round(conversion_rate, 2)
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"[Analytics] Error fetching summary: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"[Analytics] Error fetching summary for {user.id}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error interno al calcular estadísticas: {str(e)}")
+ patches y correcciones aplicadas
 
 @router.get("/model/exposure")
 async def get_model_exposure(user: TelegramUser = Depends(get_current_user)):
