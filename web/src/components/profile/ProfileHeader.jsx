@@ -154,9 +154,11 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                             <div className="w-px h-6 bg-white/10"></div>
                             <div className="flex flex-col items-center">
                                 <span className="font-bold text-lg text-foreground leading-none flex items-center gap-1">
-                                    {user.reputation_score ? parseFloat(user.reputation_score).toFixed(1) : '5.0'} <Star size={12} className="fill-amber-400 text-amber-400" />
+                                    {(user.reputation_score !== undefined && user.reputation_score !== null)
+                                        ? parseFloat(user.reputation_score).toFixed(1)
+                                        : '5.0'} <Star size={12} className="fill-amber-400 text-amber-400" />
                                 </span>
-                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Rating</span>
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Puntos</span>
                             </div>
                             <div className="w-px h-6 bg-white/10"></div>
                             <div className="flex flex-col items-center">

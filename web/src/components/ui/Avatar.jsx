@@ -83,7 +83,7 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
 
             {isOnline !== undefined && (
                 <span className={clsx(
-                    'absolute bottom-0 right-0 block rounded-full ring-2 ring-black z-20',
+                    'absolute bottom-[5%] right-[5%] block rounded-full ring-2 ring-black z-20',
                     isOnline ? 'bg-green-500' : 'bg-gray-500',
                     size === 'lg' || size === 'xl' ? 'w-4 h-4' : 'w-2.5 h-2.5'
                 )} />
