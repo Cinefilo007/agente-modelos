@@ -31,7 +31,7 @@ async def create_escrow_order(
     try:
         # Call RPC
         rpc_params = {
-            "p_user_id": user.id,
+            "p_user_id": user.user_id,
             "p_amount": request.amount,
             "p_service_id": request.service_id,
             "p_model_id": request.model_id
@@ -92,7 +92,7 @@ async def release_escrow_funds(
         # Model CANNOT release (conflict of interest), unless auto-release logic triggers (cron).
         # Admin can release.
         
-        if order["client_id"] != user.id and user.role != "admin":
+        if order["client_id"] != user.user_id and user.role != "admin":
              raise HTTPException(status_code=403, detail="No tienes permiso para liberar estos fondos")
 
         if order["status"] != "HELD":

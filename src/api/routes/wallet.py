@@ -39,16 +39,15 @@ async def get_wallet_balance(user: TelegramUser = Depends(get_current_user)):
     """
     try:
         # Try to fetch wallet
-        res = db.client.table("wallets").select("*").eq("user_id", user.id).execute()
+        res = db.client.table("wallets").select("*").eq("user_id", user.user_id).execute()
         
         if not res.data:
             # Create wallet if not exists
-            # Generate a simple memo based on UUID (first 8 chars) or full UUID
-            # Ideally, use a shorter unique string, but UUID is safe.
-            memo = f"user_{user.id.split('-')[0]}" 
+            # Generate a simple memo based on UUID (first 8 chars)
+            memo = f"user_{user.user_id.split('-')[0]}" 
             
             new_wallet = {
-                "user_id": user.id,
+                "user_id": user.user_id,
                 "balance": 0.00,
                 "locked_balance": 0.00,
                 "deposit_memo": memo
@@ -74,12 +73,12 @@ async def get_deposit_info(user: TelegramUser = Depends(get_current_user)):
     Get the deposit instructions (Central Wallet Address + Unique Memo).
     """
     try:
-        res = db.client.table("wallets").select("deposit_memo").eq("user_id", user.id).execute()
+        res = db.client.table("wallets").select("deposit_memo").eq("user_id", user.user_id).execute()
         
         if not res.data:
             # Should have been created by /balance or login, but just in case
-            memo = f"user_{user.id.split('-')[0]}"
-            db.client.table("wallets").insert({"user_id": user.id, "deposit_memo": memo}).execute()
+            memo = f"user_{user.user_id.split('-')[0]}"
+            db.client.table("wallets").insert({"user_id": user.user_id, "deposit_memo": memo}).execute()
         else:
             memo = res.data[0]["deposit_memo"]
             
@@ -101,7 +100,7 @@ async def get_transaction_history(user: TelegramUser = Depends(get_current_user)
     try:
         res = db.client.table("crypto_transactions")\
             .select("*")\
-            .eq("user_id", user.id)\
+            .eq("user_id", user.user_id)\
             .order("created_at", desc=True)\
             .limit(50)\
             .execute()
@@ -137,7 +136,7 @@ async def withdraw_funds(request: WithdrawRequest, user: TelegramUser = Depends(
         # Better approach for safety: Use an RPC or simple check-update.
         
         # Let's check balance first
-        wallet_res = db.client.table("wallets").select("balance").eq("user_id", user.id).execute()
+        wallet_res = db.client.table("wallets").select("balance").eq("user_id", user.user_id).execute()
         if not wallet_res.data:
             raise HTTPException(status_code=404, detail="Wallet not found")
         
@@ -149,11 +148,11 @@ async def withdraw_funds(request: WithdrawRequest, user: TelegramUser = Depends(
         # 2. Perform Deduction
         # TODO: Wrap in transaction or RPC for true safety. For MVP this is acceptable.
         new_balance = current_balance - request.amount
-        db.client.table("wallets").update({"balance": new_balance}).eq("user_id", user.id).execute()
+        db.client.table("wallets").update({"balance": new_balance}).eq("user_id", user.user_id).execute()
         
         # 3. Record Transaction
         tx_data = {
-            "user_id": user.id,
+            "user_id": user.user_id,
             "type": "withdrawal",
             "amount": request.amount, # Store as positive, type implies direction
             "currency": "USDT",
