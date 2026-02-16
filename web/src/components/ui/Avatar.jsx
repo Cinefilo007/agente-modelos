@@ -62,13 +62,11 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
 
     if (!finalSrc || imgError) {
         return (
-            <div className="relative inline-block shrink-0">
+            <div className={twMerge("relative inline-block shrink-0 rounded-full", sizeClasses[size], className)}>
                 <div
                     className={twMerge(
-                        'rounded-full flex items-center justify-center font-bold text-white uppercase select-none shadow-lg bg-gradient-to-br border-2 border-white/20',
-                        bgGradient,
-                        sizeClasses[size],
-                        className
+                        'w-full h-full rounded-full flex items-center justify-center font-bold text-white uppercase select-none bg-gradient-to-br border-2 border-white/20',
+                        bgGradient
                     )}
                 >
                     {getInitials(displayName)}
@@ -85,7 +83,7 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     }
 
     return (
-        <div className="relative inline-block shrink-0">
+        <div className={twMerge("relative inline-block shrink-0 rounded-full", sizeClasses[size], className)}>
             <img
                 src={finalSrc}
                 alt={alt}
@@ -93,11 +91,7 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
                     console.log(`[Avatar] 404/Error: Fallback trigger for ${displayName}`);
                     setImgError(true);
                 }}
-                className={twMerge(
-                    'rounded-full object-cover border-2 border-white/10 block',
-                    sizeClasses[size],
-                    className
-                )}
+                className="w-full h-full rounded-full object-cover border-2 border-white/10 block"
             />
             {isOnline !== undefined && (
                 <span className={clsx(
