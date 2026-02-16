@@ -197,109 +197,149 @@ export default function AdminPanel() {
                         </div>
 
                         {/* Exposure Chart */}
-                        <div className="bg-card/40 border border-white/5 rounded-3xl p-5 mb-8 relative overflow-hidden">
-                            <div className="flex justify-between items-center mb-4">
+                        <div className="bg-card/40 border border-white/5 rounded-3xl p-6 mb-8 relative overflow-hidden">
+                            <div className="flex justify-between items-center mb-6">
                                 <h3 className="font-bold text-foreground flex items-center gap-2">
-                                    <TrendingUp size={16} className="text-blue-400" /> Exposición
+                                    <TrendingUp size={18} className="text-blue-400" /> Exposición
                                 </h3>
-                                <select className="bg-black/20 border border-white/10 rounded-lg text-[10px] px-2 py-1 text-muted-foreground outline-none">
-                                    <option>Últimos 7 días</option>
-                                </select>
+                                <div className="text-[10px] text-muted-foreground bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                                    Últimos 7 días
+                                </div>
                             </div>
 
-                            <div className="h-40 w-full relative">
+                            <div className="h-48 w-full relative mt-4">
                                 {(() => {
-                                    const maxVal = Math.max(...exposure, 10);
+                                    const maxVal = Math.max(...exposure, 5);
+                                    const width = 100;
+                                    const height = 100;
                                     const points = exposure.map((val, i) => {
-                                        const x = (i / (exposure.length - 1)) * 100;
-                                        const y = 100 - (val / maxVal) * 100;
-                                        return `${x},${y}`;
-                                    }).join(' ');
+                                        const x = (i / (exposure.length - 1)) * width;
+                                        const y = height - (val / maxVal) * height;
+                                        return { x, y };
+                                    });
+
+                                    const pathStr = points.map(p => `${p.x},${p.y}`).join(' ');
+                                    const areaPath = `M 0,${height} ` + points.map(p => `L ${p.x},${p.y}`).join(' ') + ` L ${width},${height} Z`;
+
+                                    const lastPoint = points[points.length - 1];
 
                                     return (
-                                        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                                            <defs>
-                                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor={themeColor} stopOpacity="0.5" />
-                                                    <stop offset="100%" stopColor={themeColor} stopOpacity="0" />
-                                                </linearGradient>
-                                            </defs>
-                                            <path
-                                                d={`M0,100 ${points} L100,100 Z`}
-                                                fill="url(#chartGradient)"
-                                                className="transition-all duration-500"
-                                            />
-                                            <polyline
-                                                points={points}
-                                                fill="none"
-                                                stroke={themeColor}
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                className="transition-all duration-500"
-                                            />
-                                        </svg>
+                                        <div className="absolute inset-0">
+                                            <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                                                <defs>
+                                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="0%" stopColor={themeColor} stopOpacity="0.3" />
+                                                        <stop offset="100%" stopColor={themeColor} stopOpacity="0" />
+                                                    </linearGradient>
+                                                </defs>
+                                                <path
+                                                    d={areaPath}
+                                                    fill="url(#chartGradient)"
+                                                    className="transition-all duration-700 ease-in-out"
+                                                />
+                                                <polyline
+                                                    points={pathStr}
+                                                    fill="none"
+                                                    stroke={themeColor}
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="transition-all duration-700 ease-in-out"
+                                                />
+                                            </svg>
+
+                                            <div
+                                                className="absolute transform -translate-x-1/2 -translate-y-full"
+                                                style={{
+                                                    left: `${lastPoint.x}%`,
+                                                    top: `${lastPoint.y}%`,
+                                                    marginTop: '-12px'
+                                                }}
+                                            >
+                                                <div className="relative flex flex-col items-center">
+                                                    <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-xl px-3 py-1.5 text-[11px] font-bold text-white shadow-2xl whitespace-nowrap">
+                                                        {exposure[exposure.length - 1]} visitas hoy
+                                                    </div>
+                                                    <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_15px_rgba(255,255,255,1)] border-2 border-black/50 mt-1"></div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     );
                                 })()}
-
-                                {/* Tooltip Overlay */}
-                                <div className="absolute top-0 right-10 flex flex-col items-center">
-                                    <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)] mb-1"></div>
-                                    <div className="bg-popover border border-white/10 rounded-lg px-2 py-1 text-[10px] font-bold text-foreground shadow-lg">
-                                        {exposure[exposure.length - 1]} visitas hoy
-                                    </div>
-                                </div>
                             </div>
-                            <p className="text-center text-xs text-muted-foreground mt-2">
-                                Estadísticas basadas en visitas únicas a tu perfil durante la última semana.
+
+                            <div className="flex justify-between items-center text-[10px] text-muted-foreground/60 mt-8 px-1">
+                                <span>Hace 7 días</span>
+                                <span>Hoy</span>
+                            </div>
+                            <p className="text-center text-[11px] text-muted-foreground/40 mt-4 leading-relaxed">
+                                Estadísticas en tiempo real basadas en la actividad de los usuarios.
                             </p>
                         </div>
+                    </>
+                )}
 
-                        {/* DISPUTES SECTION (ACTIVE) */}
-                        <div className="bg-card/40 border border-white/5 rounded-2xl p-5 mb-8">
-                            <h3 className="font-bold text-amber-400 flex items-center gap-2 mb-4">
-                                <div className="p-1 bg-amber-500/10 rounded-md"><AlertTriangle size={16} /></div>
-                                Disputas en Curso
-                            </h3>
-                            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="font-bold text-foreground">Orden #ORDER-123</span>
-                                    <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">Revisión Admin</span>
+                {activeTab === 'shop' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+                        {/* Commercial Management */}
+                        <div className="mb-10">
+                            <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                                <ShoppingBag size={24} style={{ color: themeColor }} /> Gestión Comercial
+                            </h2>
+                            <div className="bg-gradient-to-br from-primary/30 to-purple-600/20 border border-white/10 rounded-[32px] p-8 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-all duration-700">
+                                    <ShoppingBag size={120} />
                                 </div>
-                                <p className="text-xs text-muted-foreground mb-3">Cliente: <span className="text-foreground">Anon_99</span> reportó "No entregó video".</p>
-                                <button className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors">
-                                    <ShieldCheck size={14} /> Subir Evidencia de Entrega
-                                </button>
+                                <div className="relative z-10">
+                                    <h3 className="text-xl font-bold text-white mb-3">Tu Tienda Digital</h3>
+                                    <p className="text-sm text-white/70 mb-8 max-w-[300px] leading-relaxed">
+                                        Configura tus packs exclusivos, videollamadas y servicios personalizados para tus fans.
+                                    </p>
+                                    <Link to="/shop-manager" className="inline-flex items-center gap-3 px-8 py-4 bg-white text-black font-bold rounded-2xl hover:scale-105 transition-all active:scale-95 shadow-2xl">
+                                        <Sparkles size={20} /> Editar Servicios
+                                    </Link>
+                                </div>
                             </div>
                         </div>
 
-                        {/* BLACKLIST SECTION (READ ONLY) */}
-                        <div className="bg-card/40 border border-white/5 rounded-2xl p-5 mb-8">
-                            <h3 className="font-bold text-red-400 flex items-center gap-2 mb-4">
-                                <div className="p-1 bg-red-500/10 rounded-md"><ShieldAlert size={16} /></div>
-                                Lista Negra de Clientes
+                        {/* Security */}
+                        <div className="bg-card/40 border border-white/5 rounded-[32px] p-8 mb-8">
+                            <h3 className="font-bold text-amber-400 flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-amber-500/10 rounded-xl"><AlertTriangle size={20} /></div>
+                                Seguridad y Disputas
                             </h3>
-                            <div className="overflow-hidden rounded-xl border border-white/5">
+                            <div className="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-5">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="font-bold text-foreground">Casos Pendientes (0)</span>
+                                    <span className="text-[10px] bg-green-500/20 text-green-400 border border-green-500/20 px-3 py-1 rounded-full font-bold">Todo en orden</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground/60">No tienes disputas activas.</p>
+                            </div>
+                        </div>
+
+                        {/* Blacklist */}
+                        <div className="bg-card/40 border border-white/5 rounded-[32px] p-8">
+                            <h3 className="font-bold text-red-400 flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-red-500/10 rounded-xl"><ShieldAlert size={20} /></div>
+                                Usuarios Restringidos
+                            </h3>
+                            <div className="overflow-hidden rounded-2xl border border-white/5">
                                 <table className="w-full text-left text-sm">
-                                    <thead className="bg-white/5 text-xs uppercase text-muted-foreground font-semibold">
+                                    <thead className="bg-white/5 text-[10px] uppercase text-muted-foreground font-bold tracking-widest leading-none">
                                         <tr>
-                                            <th className="px-4 py-3">Usuario</th>
-                                            <th className="px-4 py-3">Razón</th>
-                                            <th className="px-4 py-3 text-right">Gravedad</th>
+                                            <th className="px-5 py-4">Usuario</th>
+                                            <th className="px-5 py-4">Motivo</th>
+                                            <th className="px-5 py-4 text-right">Estado</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
-                                        {[
-                                            { name: '@stalker_joe', reason: 'Acoso persistente', severity: 'high' },
-                                            { name: '@fake_payment_guy', reason: 'Estafas', severity: 'medium' },
-                                        ].map((item, i) => (
-                                            <tr key={i} className="hover:bg-white/5 transition-colors">
-                                                <td className="px-4 py-3 font-medium text-foreground">{item.name}</td>
-                                                <td className="px-4 py-3 text-muted-foreground text-xs">{item.reason}</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${item.severity === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
-                                                        }`}>
-                                                        {item.severity === 'high' ? 'Alta' : 'Media'}
+                                        {[{ name: '@stalker_joe', reason: 'Acoso', status: 'Baneado' }].map((item, i) => (
+                                            <tr key={i} className="hover:bg-white/5 transition-colors group">
+                                                <td className="px-5 py-4 font-bold text-foreground text-xs">{item.name}</td>
+                                                <td className="px-5 py-4 text-muted-foreground text-xs opacity-60">{item.reason}</td>
+                                                <td className="px-5 py-4 text-right">
+                                                    <span className="text-[9px] uppercase font-black px-2 py-0.5 rounded-md bg-red-500/10 text-red-500 border border-red-500/20">
+                                                        {item.status}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -307,122 +347,84 @@ export default function AdminPanel() {
                                     </tbody>
                                 </table>
                             </div>
-                            <p className="text-[10px] text-muted-foreground mt-2 opacity-60">
-                                * Si detectas a uno de estos usuarios, bloquéalo inmediatamente.
-                            </p>
-                        </div>
-
-                        {/* SHOP MANAGEMENT SECTION */}
-                        <div className="mb-10">
-                            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                                <ShoppingBag size={20} style={{ color: themeColor }} /> Servicios y Tienda
-                            </h2>
-                            <div className="bg-gradient-to-br from-primary/20 to-purple-500/10 border border-white/10 rounded-3xl p-6 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                                    <ShoppingBag size={80} />
-                                </div>
-                                <div className="relative z-10">
-                                    <h3 className="text-lg font-bold text-white mb-2">Tu Mostrador Digital</h3>
-                                    <p className="text-sm text-muted-foreground mb-6 max-w-[240px]">
-                                        Configura tus packs, videollamadas y servicios personalizados con pagos seguros.
-                                    </p>
-                                    <Link
-                                        to="/shop-manager"
-                                        className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black font-bold rounded-2xl hover:bg-gray-200 transition-all active:scale-95 shadow-xl"
-                                    >
-                                        <Sparkles size={18} /> Gestionar Tienda
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* BOT CONFIGURATION SECTION */}
-                        <div className="mb-20">
-                            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                                <Sparkles size={20} style={{ color: themeColor }} /> Configuración del Bot
-                            </h2>
-
-                            <div className="flex flex-col gap-4">
-
-                                {/* Prices */}
-                                <div className="bg-card/40 border border-white/5 rounded-2xl p-5">
-                                    <label className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                                        <DollarSign size={14} /> Lista de Precios
-                                    </label>
-                                    <textarea
-                                        name="prices"
-                                        value={config.prices}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-white/30 transition-colors resize-none"
-                                        placeholder="Ej: Pack 5 fotos - $10..."
-                                    />
-                                    <p className="text-[10px] text-muted-foreground mt-2 opacity-60">Describe tus menús y precios claramente.</p>
-                                </div>
-
-                                {/* Personality */}
-                                <div className="bg-card/40 border border-white/5 rounded-2xl p-5">
-                                    <label className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                                        <FileText size={14} /> Personalidad (Prompt)
-                                    </label>
-                                    <textarea
-                                        name="personality"
-                                        value={config.personality}
-                                        onChange={handleInputChange}
-                                        rows={4}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-white/30 transition-colors resize-none"
-                                        placeholder="Describe cómo debe comportarse tu IA..."
-                                    />
-                                </div>
-
-                                {/* Physical Aspects (Tags) */}
-                                <div className="bg-card/40 border border-white/5 rounded-2xl p-5">
-                                    <label className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                                        <Tag size={14} /> Aspectos Físicos (Tags)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="physicalAspects"
-                                        value={config.physicalAspects}
-                                        onChange={handleInputChange}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-white/30 transition-colors mb-3"
-                                        placeholder="Rubia, Alta, Ojos Azules..."
-                                    />
-                                    <div className="flex flex-wrap gap-2">
-                                        {config.physicalAspects.split(',').filter(t => t.trim() !== '').map((tag, i) => (
-                                            <span key={i} className="text-[10px] px-2 py-1 rounded-md bg-secondary/50 text-secondary-foreground border border-white/5">
-                                                #{tag.trim()}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Payment Methods */}
-                                <div className="bg-card/40 border border-white/5 rounded-2xl p-5">
-                                    <label className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                                        <Wallet size={14} /> Métodos de Pago
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="paymentMethods"
-                                        value={config.paymentMethods}
-                                        onChange={handleInputChange}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-white/30 transition-colors"
-                                        placeholder="Binance, PayPal..."
-                                    />
-                                </div>
-
-                                <button
-                                    onClick={handleSaveBotConfig}
-                                    className="w-full py-4 rounded-2xl font-bold text-white shadow-lg mt-2 flex items-center justify-center gap-2 transition-transform active:scale-95 hover:brightness-110"
-                                    style={{ backgroundColor: themeColor, boxShadow: `0 10px 30px -10px ${themeColor}60` }}
-                                >
-                                    <Save size={18} /> Guardar Cambios en el Bot
-                                </button>
-
-                            </div>
                         </div>
                     </div>
+                )}
+
+                {activeTab === 'bot' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 mb-20">
+                        <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                            <Sparkles size={24} style={{ color: themeColor }} /> Entrenamiento de tu Bot
+                        </h2>
+
+                        <div className="flex flex-col gap-5">
+                            <div className="bg-card/40 border border-white/5 rounded-3xl p-6">
+                                <label className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
+                                    <DollarSign size={16} /> Lista de Precios y Servicios
+                                </label>
+                                <textarea
+                                    name="prices"
+                                    value={config.prices}
+                                    onChange={handleInputChange}
+                                    rows={4}
+                                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm text-foreground focus:outline-none focus:border-white/30 transition-all resize-none"
+                                    placeholder="Ej: Chat caliente: $10..."
+                                />
+                            </div>
+
+                            <div className="bg-card/40 border border-white/5 rounded-3xl p-6">
+                                <label className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
+                                    <FileText size={16} /> Personalidad (Tu Prompt)
+                                </label>
+                                <textarea
+                                    name="personality"
+                                    value={config.personality}
+                                    onChange={handleInputChange}
+                                    rows={5}
+                                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm text-foreground focus:outline-none focus:border-white/30 transition-all resize-none"
+                                    placeholder="Ej: Eres amable pero coqueta..."
+                                />
+                            </div>
+
+                            <div className="bg-card/40 border border-white/5 rounded-3xl p-6">
+                                <label className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
+                                    <Tag size={16} /> Tus Atributos (Tags)
+                                </label>
+                                <input
+                                    type="text"
+                                    name="physicalAspects"
+                                    value={config.physicalAspects}
+                                    onChange={handleInputChange}
+                                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm text-foreground focus:outline-none focus:border-white/30 transition-all mb-4"
+                                    placeholder="Ojos verdes, Piel canela..."
+                                />
+                            </div>
+
+                            <div className="bg-card/40 border border-white/5 rounded-3xl p-6">
+                                <label className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
+                                    <Wallet size={16} /> Métodos de Pago
+                                </label>
+                                <input
+                                    type="text"
+                                    name="paymentMethods"
+                                    value={config.paymentMethods}
+                                    onChange={handleInputChange}
+                                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm text-foreground focus:outline-none focus:border-white/30 transition-all"
+                                    placeholder="Binance, PayPal..."
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleSaveBotConfig}
+                                className="w-full py-5 rounded-3xl font-bold text-white shadow-2xl mt-4 flex items-center justify-center gap-3 transition-all active:scale-95 hover:brightness-110"
+                                style={{ backgroundColor: themeColor, boxShadow: `0 15px 40px -10px ${themeColor}80` }}
+                            >
+                                <Save size={20} /> Guardar Entrenamiento
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
-            );
+        </div>
+    );
 }
