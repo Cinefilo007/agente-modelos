@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
-import { Wallet, Plus, ArrowUpRight, Copy, RefreshCw, Layers, ArrowUpFromLine } from 'lucide-react';
+import { Wallet, Plus, ArrowUpRight, Copy, RefreshCw, Layers, Upload } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import api from '../../api/axios';
 import TransactionList from './TransactionList';
