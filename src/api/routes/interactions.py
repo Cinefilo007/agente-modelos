@@ -133,6 +133,18 @@ async def create_review(
     }
     
     res = db.client.table("reviews").insert(data).execute()
+    
+    # NEW: Recalculate average rating
+    try:
+        reviews_res = db.service_client.table("reviews").select("rating").eq("model_id", review.model_id).execute()
+        if reviews_res.data:
+            ratings = [r['rating'] for r in reviews_res.data]
+            avg_rating = sum(ratings) / len(ratings)
+            db.service_client.table("models").update({"reputation_score": avg_rating}).eq("id", review.model_id).execute()
+            logger.info(f"[Rating Sync] Updated model {review.model_id} score to {avg_rating}")
+    except Exception as e:
+        logger.error(f"[Rating Sync] Error updating reputation score: {e}")
+
     return res.data[0]
 
 class FollowCreate(BaseModel):

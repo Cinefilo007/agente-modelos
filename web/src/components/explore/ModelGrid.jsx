@@ -46,7 +46,9 @@ export function ModelGrid({ models }) {
                                 </div>
                                 <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md px-2 py-1 rounded-lg shrink-0">
                                     <span className="font-bold text-sm">
-                                        {model.reputation_score ? parseFloat(model.reputation_score).toFixed(1) : '5.0'}
+                                        {(model.reputation_score !== undefined && model.reputation_score !== null)
+                                            ? parseFloat(model.reputation_score).toFixed(1)
+                                            : '5.0'}
                                     </span>
                                     <Star size={12} className="fill-yellow-400 text-yellow-400" />
                                 </div>
