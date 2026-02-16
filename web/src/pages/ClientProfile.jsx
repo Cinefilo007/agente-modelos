@@ -4,7 +4,6 @@ import {
     CreditCard, ArrowUpRight, History, Settings, LogOut, Edit3
 } from 'lucide-react';
 import { Avatar } from '../components/ui/Avatar';
-import { Avatar } from '../components/ui/Avatar';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
