@@ -6,6 +6,20 @@ import { useTheme } from '../../context/ThemeContext';
 export function ModelGrid({ models }) {
     const { themeColor } = useTheme();
 
+    if (!models || models.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 px-10 text-center opacity-60">
+                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                    <MapPin size={32} className="text-muted-foreground" />
+                </div>
+                <h3 className="font-bold text-lg mb-1">Sin resultados</h3>
+                <p className="text-sm text-balance">
+                    No encontramos modelos en esta categoría por ahora. ¡Intenta con otro filtro!
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-3">
             {models.map((model) => (

@@ -8,11 +8,20 @@ function Explore() {
     const { themeColor } = useTheme();
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState('all');
+
+    const filters = [
+        { id: 'all', label: 'Todas' },
+        { id: 'new', label: 'Nuevas' },
+        { id: 'top', label: 'Top Rated' },
+        { id: 'near', label: 'Cerca de ti' }
+    ];
 
     useEffect(() => {
         const fetchModels = async () => {
+            setLoading(true);
             try {
-                const { data } = await api.get('/profile/models/explore');
+                const { data } = await api.get(`/profile/models/explore?filter=${activeFilter}`);
                 setModels(data || []);
             } catch (err) {
                 console.error("Error fetching models:", err);
@@ -21,7 +30,7 @@ function Explore() {
             }
         };
         fetchModels();
-    }, []);
+    }, [activeFilter]);
 
     return (
         <div className="pb-24 pt- safe-top">
@@ -47,18 +56,29 @@ function Explore() {
 
                 {/* Quick Filters */}
                 <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
-                    {['Todas', 'Nuevas', 'Top Rated', 'Cerca de ti'].map((filter, i) => (
+                    {filters.map((f) => (
                         <button
-                            key={filter}
-                            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium border transition-all ${i === 0 ? 'bg-white text-black border-white' : 'bg-transparent text-gray-400 border-white/10 hover:border-white/30'}`}
+                            key={f.id}
+                            onClick={() => setActiveFilter(f.id)}
+                            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === f.id
+                                    ? 'bg-white text-black border-white'
+                                    : 'bg-transparent text-gray-400 border-white/10 hover:border-white/30'
+                                }`}
                         >
-                            {filter}
+                            {f.label}
                         </button>
                     ))}
                 </div>
             </div>
 
-            <ModelGrid models={models} />
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 opacity-50">
+                    <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4" />
+                    <p className="text-sm">Buscando modelos...</p>
+                </div>
+            ) : (
+                <ModelGrid models={models} />
+            )}
         </div>
     );
 }

@@ -266,22 +266,41 @@ async def get_public_profile(identifier: str):
     return user_data
 
 @router.get("/models/explore")
-async def get_models_for_explore():
+async def get_models_for_explore(
+    filter: str = "all",
+    user: Optional[TelegramUser] = Depends(get_current_user)
+):
     """
-    Get list of models for the explore page with business filters:
-    - Verified (is_verified = True)
-    - Active status (status = 'active')
-    - Positive credits (credits_balance > 0)
-    - Has profile photo (avatar_url IS NOT NULL)
+    Get list of models for the explore page with filters.
     """
     try:
-        response = db.client.table("models") \
-            .select("id, artistic_name, username, avatar_url, last_seen, country, reputation_score, is_verified") \
+        query = db.client.table("models") \
+            .select("id, artistic_name, username, avatar_url, last_seen, country, reputation_score, is_verified, created_at") \
             .eq("is_verified", True) \
             .eq("status", "active") \
             .gt("credits_balance", 0) \
-            .not_.is_("avatar_url", "null") \
-            .execute()
+            .not_.is_("avatar_url", "null")
+            
+        if filter == "new":
+            query = query.order("created_at", desc=True)
+        elif filter == "top":
+            query = query.order("reputation_score", desc=True)
+        elif filter == "near":
+            if user:
+                # Get user's country from clients or models table
+                is_model = user.role == "model"
+                table = "models" if is_model else "clients"
+                field = "country" if is_model else "country_code"
+                
+                profile = db.client.table(table).select(field).eq("telegram_id", user.id).maybe_single().execute()
+                if profile.data and profile.data.get(field):
+                    query = query.eq("country", profile.data.get(field))
+                else:
+                    return []
+            else:
+                return []
+
+        response = query.execute()
         return response.data if response.data else []
     except Exception as e:
         print(f"Error fetching models for explore: {e}")
