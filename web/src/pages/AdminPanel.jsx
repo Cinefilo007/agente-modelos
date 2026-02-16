@@ -11,6 +11,7 @@ export default function AdminPanel() {
     const [exposure, setExposure] = useState([0, 0, 0, 0, 0, 0, 0]);
     const [activeTab, setActiveTab] = useState('analytics'); // analytics, bot, shop
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [config, setConfig] = useState({
         prices: "",
         personality: "",
@@ -54,6 +55,7 @@ export default function AdminPanel() {
     };
 
     const handleSaveBotConfig = async () => {
+        setSaving(true);
         try {
             // Update profile with bot config fields
             await api.put('/profile/me', {
@@ -65,6 +67,8 @@ export default function AdminPanel() {
             alert("Configuración guardada correctamente");
         } catch (err) {
             alert("Error al guardar la configuración");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -424,10 +428,12 @@ export default function AdminPanel() {
 
                             <button
                                 onClick={handleSaveBotConfig}
-                                className="w-full py-5 rounded-3xl font-bold text-white shadow-2xl mt-4 flex items-center justify-center gap-3 transition-all active:scale-95 hover:brightness-110"
+                                disabled={saving}
+                                className="w-full py-5 rounded-3xl font-bold text-white shadow-2xl mt-4 flex items-center justify-center gap-3 transition-all active:scale-95 hover:brightness-110 disabled:opacity-50"
                                 style={{ backgroundColor: themeColor, boxShadow: `0 15px 40px -10px ${themeColor}80` }}
                             >
-                                <Save size={20} /> Guardar Entrenamiento
+                                {saving ? <Loader className="animate-spin" /> : <Save size={20} />}
+                                {saving ? 'Guardando...' : 'Guardar Entrenamiento'}
                             </button>
                         </div>
                     </div>

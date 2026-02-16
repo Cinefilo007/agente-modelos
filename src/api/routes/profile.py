@@ -163,6 +163,12 @@ class StartProfileUpdate(BaseModel):
     avatar_url: Optional[str] = None
     terms_accepted: Optional[bool] = None
     birth_date: Optional[str] = None
+    
+    # Bot Config Fields
+    prices: Optional[str] = None
+    personality: Optional[str] = None
+    physical_aspects: Optional[str] = None
+    payment_methods: Optional[str] = None
 
 @router.get("/me")
 async def get_my_profile(user: TelegramUser = Depends(get_current_user)):

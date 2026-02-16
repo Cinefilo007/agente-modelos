@@ -24,10 +24,10 @@ CREATE TABLE models (
     reputation_score DECIMAL(3, 2) DEFAULT 0.00, -- [NEW] (Calculado basado en reviews)
     social_links JSONB DEFAULT '{}', -- [NEW] (instagram, twitter, facebook, etc.)
     birth_date DATE, -- [NEW] For age verification
-    config_prices JSONB DEFAULT '{}',
-    config_persona TEXT,
-    config_physique TEXT,
-    config_payments JSONB DEFAULT '{}',
+    prices TEXT, -- Lista de precios para el bot
+    personality TEXT, -- Prompt de personalidad
+    physical_aspects TEXT, -- Descripción física y atributos
+    payment_methods TEXT, -- Métodos de pago aceptados
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
