@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { cn } from '../../lib/utils';
 
 export function ModelGrid({ models }) {
     const { themeColor } = useTheme();
@@ -35,13 +36,13 @@ export function ModelGrid({ models }) {
                     />
 
                     {/* Status Badge */}
-                    <div className={clsx(
+                    <div className={cn(
                         "absolute top-2 right-2 flex items-center gap-1.5 backdrop-blur-md px-2 py-1 rounded-lg border z-10",
                         (model.last_seen && (new Date() - new Date(model.last_seen)) < 300000)
                             ? "bg-green-500/20 border-green-500/30 text-green-400"
                             : "bg-black/40 border-white/10 text-gray-400"
                     )}>
-                        <span className={clsx(
+                        <span className={cn(
                             "w-1.5 h-1.5 rounded-full",
                             (model.last_seen && (new Date() - new Date(model.last_seen)) < 300000) ? "bg-green-500 animate-pulse" : "bg-gray-500"
                         )}></span>
