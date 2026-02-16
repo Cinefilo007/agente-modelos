@@ -22,6 +22,7 @@ const WalletPanel = () => {
     const [withdrawSuccess, setWithdrawSuccess] = useState(null);
 
     useEffect(() => {
+        console.log("WalletPanel v3 loaded - Upload Icon Fix");
         fetchBalance();
         fetchTransactions();
     }, []);
@@ -154,7 +155,7 @@ const WalletPanel = () => {
                         activeTab === 'withdraw' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
                     )}
                 >
-                    <ArrowUpFromLine size={16} /> Retirar
+                    <Upload size={16} /> Retirar
                 </button>
             </div>
 
