@@ -94,7 +94,44 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
             total_sales_count = 0
             total_revenue = 0.0
         
-        # 4. Calculate Conversion Rate
+        # 4. Calculate Trends (Last 7 days vs Previous 7 days)
+        try:
+            now = datetime.utcnow()
+            last_7_days = (now - timedelta(days=7)).isoformat()
+            prev_7_days = (now - timedelta(days=14)).isoformat()
+
+            # Current Period Views
+            curr_views_res = db.client.table("profile_views").select("id", count="exact") \
+                .eq("model_id", model_id).gte("viewed_at", last_7_days).execute()
+            curr_views = curr_views_res.count or 0
+
+            # Previous Period Views
+            prev_views_res = db.client.table("profile_views").select("id", count="exact") \
+                .eq("model_id", model_id).gte("viewed_at", prev_7_days).lt("viewed_at", last_7_days).execute()
+            prev_views = prev_views_res.count or 0
+
+            # Growth calc: ((curr - prev) / max(prev, 1)) * 100
+            visitors_growth = round(((curr_views - prev_views) / prev_views * 100), 1) if prev_views > 0 else (100.0 if curr_views > 0 else 0.0)
+
+            # Current Period Sales
+            curr_sales_res = db.client.table("orders").select("id", count="exact") \
+                .eq("model_id", model_id).eq("status", "completed").gte("created_at", last_7_days).execute()
+            curr_sales = curr_sales_res.count or 0
+
+            # Previous Period Sales
+            prev_sales_res = db.client.table("orders").select("id", count="exact") \
+                .eq("model_id", model_id).eq("status", "completed").gte("created_at", prev_7_days).lt("created_at", last_7_days).execute()
+            prev_sales = prev_sales_res.count or 0
+
+            sales_growth = round(((curr_sales - prev_sales) / prev_sales * 100), 1) if prev_sales > 0 else (100.0 if curr_sales > 0 else 0.0)
+            
+            print(f"[Analytics] Visitors Growth: {visitors_growth}%, Sales Growth: {sales_growth}%")
+        except Exception as e:
+            print(f"[Analytics] Error calculating trends: {e}")
+            visitors_growth = 0.0
+            sales_growth = 0.0
+
+        # 5. Calculate Conversion Rate
         # Conversion = (Sales / Views) * 100
         conversion_rate = (total_sales_count / total_views * 100) if total_views > 0 else 0
         
@@ -104,7 +141,9 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
             "sales_count": total_sales_count,
             "revenue": round(total_revenue, 2),
             "credits": credits,
-            "conversion_rate": round(conversion_rate, 2)
+            "conversion_rate": round(conversion_rate, 2),
+            "visitors_growth": visitors_growth,
+            "sales_growth": sales_growth
         }
     except HTTPException:
         raise
