@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function AdminPanel() {
@@ -199,6 +199,30 @@ export default function AdminPanel() {
                 <p className="text-[10px] text-muted-foreground mt-2 opacity-60">
                     * Si detectas a uno de estos usuarios, bloquéalo inmediatamente.
                 </p>
+            </div>
+
+            {/* SHOP MANAGEMENT SECTION */}
+            <div className="mb-10">
+                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                    <ShoppingBag size={20} style={{ color: themeColor }} /> Servicios y Tienda
+                </h2>
+                <div className="bg-gradient-to-br from-primary/20 to-purple-500/10 border border-white/10 rounded-3xl p-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                        <ShoppingBag size={80} />
+                    </div>
+                    <div className="relative z-10">
+                        <h3 className="text-lg font-bold text-white mb-2">Tu Mostrador Digital</h3>
+                        <p className="text-sm text-muted-foreground mb-6 max-w-[240px]">
+                            Configura tus packs, videollamadas y servicios personalizados con pagos seguros.
+                        </p>
+                        <Link
+                            to="/shop-manager"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black font-bold rounded-2xl hover:bg-gray-200 transition-all active:scale-95 shadow-xl"
+                        >
+                            <Sparkles size={18} /> Gestionar Tienda
+                        </Link>
+                    </div>
+                </div>
             </div>
 
             {/* BOT CONFIGURATION SECTION */}

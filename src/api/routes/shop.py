@@ -70,6 +70,29 @@ async def get_service_detail(service_id: str):
         print(f"[Shop] Error fetching service {service_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/my")
+async def get_my_services(user: TelegramUser = Depends(get_current_user)):
+    """Get all services and options for the logged-in model."""
+    if user.role != "model":
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    try:
+        # Get model id
+        model_res = db.client.table("models").select("id").eq("telegram_id", user.id).single().execute()
+        model_id = model_res.data['id']
+        
+        # Get all services (even inactive ones if desired, or just active)
+        services_res = db.client.table("model_services") \
+            .select("*, model_service_options(*)") \
+            .eq("model_id", model_id) \
+            .order("created_at", desc=True) \
+            .execute()
+            
+        return services_res.data or []
+    except Exception as e:
+        print(f"[Shop] Error fetching my services: {e}")
+        return []
+
 @router.post("/services")
 async def create_or_update_service(
     service_data: ServiceCreate,
