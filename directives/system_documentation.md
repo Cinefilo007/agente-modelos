@@ -63,7 +63,7 @@ El frontend debe ser "Mobile First" y estéticamente premium.
     -   `/ui`: Componentes base (Botones, Inputs, Avatares).
     -   `/feed`: Tarjetas de posts, filtros.
     -   `/layout`: Layout principal, navegación condicional.
--   `/pages`: Vistas principales (`Feed`, `Profile`, `Onboarding`, `Explore`).
+-   `/pages`: Vistas principales (`Feed`, `Profile`, `PostDetail`, `Onboarding`, `Explore`).
 -   `/context`:
     -   `AuthContext`: Estado global de sesión y usuario.
     -   `ThemeContext`: Gestión de temas dinámicos.
@@ -80,6 +80,7 @@ El backend expone una API RESTful documentada automáticamente en `/docs`.
 -   `auth.py`: Login y validación.
 -   `profile.py`: Gestión de perfil, onboarding (`/apply-model`), subida de avatares.
 -   `content.py`: CRUD de Posts y Stories. Endpoint especial de borrado para admin.
+-   `client.py`: Gestión de perfil de cliente/fan, wallet (recargas simuladas), y sistema de órdenes P2P (crear, confirmar, disputar).
 -   `admin.py`: Herramientas de dashboard (estadísticas, aprobación masiva).
 
 ### Manejo de Errores y Logs
