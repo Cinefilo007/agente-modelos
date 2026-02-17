@@ -16,7 +16,7 @@ const GiftSelector = ({ modelId, postId, isOpen, onClose, onGiftSent }) => {
         if (isOpen) {
             const fetchGifts = async () => {
                 try {
-                    const res = await api.get('/wallet/admin_gifts/'); // Check if this is the correct path registered in main.py
+                    const res = await api.get('/admin_gifts/');
                     setGifts(res.data);
                 } catch (err) {
                     setError("Error al cargar regalos");

@@ -43,6 +43,7 @@ app.include_router(shop.router, prefix="/api/shop", tags=["Shop"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(wallet.router, prefix="/api/wallet", tags=["Wallet"])
 app.include_router(escrow.router, prefix="/api/escrow", tags=["Escrow"])
+app.include_router(admin_gifts.router, prefix="/api/admin_gifts", tags=["Admin Gifts"])
 
 # Serve React Frontend (Static Files)
 # Ensure 'web/dist' exists (it will be created during build process)

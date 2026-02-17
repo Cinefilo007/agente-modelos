@@ -180,7 +180,8 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
     """
     try:
         # 1. Get Gift details
-        gift_res = db.client.table("gifts").select("*").eq("id", request.id).single().execute()
+        # Using request.gift_id instead of request.id
+        gift_res = db.client.table("gifts").select("*").eq("id", request.gift_id).maybe_single().execute()
         if not gift_res.data:
             raise HTTPException(status_code=404, detail="Regalo no encontrado")
         
