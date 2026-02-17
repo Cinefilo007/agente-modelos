@@ -9,6 +9,7 @@ import { timeAgo } from '../../utils/date';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { Coins, Gift } from 'lucide-react';
+import clsx from 'clsx';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
     const { user, updateUser } = useAuth();
