@@ -152,12 +152,21 @@ const WalletPanel = () => {
                 </div>
 
                 {/* Tabs Container */}
-                <div className="flex items-center space-x-1 bg-white/5 p-1 rounded-xl overflow-x-auto scrollbar-hide no-scrollbar whitespace-nowrap max-w-full">
+                <div className="flex items-center space-x-1 bg-white/5 p-1 rounded-xl overflow-x-auto md:overflow-visible scrollbar-hide no-scrollbar whitespace-nowrap w-full md:w-auto">
+                    {/* Render common and role-specific tabs in order */}
                     <button onClick={() => setActiveTab('overview')} className={clsx("px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0", activeTab === 'overview' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white")}><Wallet size={16} /> Resumen</button>
-                    <button onClick={() => setActiveTab('deposit')} className={clsx("px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0", activeTab === 'deposit' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white")}><Plus size={16} /> Recargar</button>
-                    <button onClick={() => setActiveTab('history')} className={clsx("px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0", activeTab === 'history' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white")}><Layers size={16} /> Historial</button>
-                    {user?.role === 'model' && (
-                        <button onClick={() => setActiveTab('withdraw')} className={clsx("px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0", activeTab === 'withdraw' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white")}><Upload size={16} /> Retirar</button>
+
+                    {user?.role === 'model' ? (
+                        <>
+                            <button onClick={() => setActiveTab('withdraw')} className={clsx("px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0", activeTab === 'withdraw' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white")}><Upload size={16} /> Retirar</button>
+                            <button onClick={() => setActiveTab('history')} className={clsx("px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0", activeTab === 'history' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white")}><Layers size={16} /> Historial</button>
+                            <button onClick={() => setActiveTab('deposit')} className={clsx("px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0", activeTab === 'deposit' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white")}><Plus size={16} /> Recargar</button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={() => setActiveTab('deposit')} className={clsx("px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0", activeTab === 'deposit' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white")}><Plus size={16} /> Recargar</button>
+                            <button onClick={() => setActiveTab('history')} className={clsx("px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0", activeTab === 'history' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white")}><Layers size={16} /> Historial</button>
+                        </>
                     )}
                 </div>
             </div>
