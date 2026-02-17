@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { Wallet, Plus, ArrowUpRight, Copy, RefreshCw, Layers, Upload } from 'lucide-react';
 import QRCode from 'react-qr-code';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import TransactionList from './TransactionList';
 import clsx from 'clsx';
+import { ArrowLeft } from 'lucide-react';
 
 const WalletPanel = () => {
     const [activeTab, setActiveTab] = useState('overview'); // overview, deposit, history
@@ -14,12 +17,18 @@ const WalletPanel = () => {
     const [loading, setLoading] = useState(true);
     const [loadingTx, setLoadingTx] = useState(false);
 
-    // Withdraw State
-    const [withdrawAmount, setWithdrawAmount] = useState('');
-    const [withdrawAddress, setWithdrawAddress] = useState('');
-    const [withdrawLoading, setWithdrawLoading] = useState(false);
     const [withdrawError, setWithdrawError] = useState(null);
     const [withdrawSuccess, setWithdrawSuccess] = useState(null);
+
+    const navigate = useNavigate();
+    const { user } = useAuth();
+
+    useEffect(() => {
+        // Redirigir si un cliente está en la pestaña de retiro por error
+        if (activeTab === 'withdraw' && user?.role === 'client') {
+            setActiveTab('overview');
+        }
+    }, [activeTab, user]);
 
     useEffect(() => {
         console.log("WalletPanel v3 loaded - Upload Icon Fix");
@@ -118,45 +127,66 @@ const WalletPanel = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            {/* Header / Tabs */}
-            <div className="flex items-center space-x-1 bg-white/5 p-1 rounded-xl w-fit">
-                <button
-                    onClick={() => setActiveTab('overview')}
-                    className={clsx(
-                        "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-                        activeTab === 'overview' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
+        <div className="space-y-6 animate-fade-in pb-20">
+            {/* Header / Navigation */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/profile/me')}
+                        className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all shadow-lg"
+                        title="Volver al Perfil"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div>
+                        <h2 className="text-2xl font-bold text-white tracking-tight">Mi Billetera</h2>
+                        <p className="text-gray-400 text-sm">Gestiona tus créditos y transacciones</p>
+                    </div>
+                </div>
+
+                {/* Tabs Container - Responsive Horizontal Scroll */}
+                <div className="flex items-center space-x-1 bg-white/5 p-1 rounded-xl overflow-x-auto scrollbar-hide no-scrollbar whitespace-nowrap max-w-full">
+                    <button
+                        onClick={() => setActiveTab('overview')}
+                        className={clsx(
+                            "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0",
+                            activeTab === 'overview' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
+                        )}
+                    >
+                        <Wallet size={16} /> Resumen
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('deposit')}
+                        className={clsx(
+                            "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0",
+                            activeTab === 'deposit' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
+                        )}
+                    >
+                        <Plus size={16} /> Recargar
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={clsx(
+                            "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0",
+                            activeTab === 'history' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
+                        )}
+                    >
+                        <Layers size={16} /> Historial
+                    </button>
+
+                    {/* Role-based Withraw Tab (Only models) */}
+                    {user?.role === 'model' && (
+                        <button
+                            onClick={() => setActiveTab('withdraw')}
+                            className={clsx(
+                                "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0",
+                                activeTab === 'withdraw' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
+                            )}
+                        >
+                            <Upload size={16} /> Retirar
+                        </button>
                     )}
-                >
-                    <Wallet size={16} /> Resumen
-                </button>
-                <button
-                    onClick={() => setActiveTab('deposit')}
-                    className={clsx(
-                        "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-                        activeTab === 'deposit' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
-                    )}
-                >
-                    <Plus size={16} /> Recargar
-                </button>
-                <button
-                    onClick={() => setActiveTab('history')}
-                    className={clsx(
-                        "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-                        activeTab === 'history' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
-                    )}
-                >
-                    <Layers size={16} /> Historial
-                </button>
-                <button
-                    onClick={() => setActiveTab('withdraw')}
-                    className={clsx(
-                        "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-                        activeTab === 'withdraw' ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
-                    )}
-                >
-                    <Upload size={16} /> Retirar
-                </button>
+                </div>
             </div>
 
             {/* Content Areas */}
