@@ -224,9 +224,11 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                 <div className="flex items-center justify-between p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent absolute top-0 w-full z-20">
                     <div className="flex items-center gap-3">
                         <Link to={`/profile/${post.user.id}`}>
-                            <EliteAvatar
-                                user={post.user}
+                            <Avatar
+                                src={post.user.avatar_url || post.user.avatar}
+                                name={post.user.artistic_name || post.user.full_name || post.user.username}
                                 size="md"
+                                isOnline={post.user.is_online}
                             />
                         </Link>
                         <div>
@@ -307,6 +309,19 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                 <div className="p-4 bg-white/5 backdrop-blur-xl border-t border-white/5">
                     <div className="flex items-center gap-4 mb-3">
                         <button
+                            onClick={handleFastTip}
+                            disabled={isTipping}
+                            className={clsx(
+                                "flex items-center gap-1.5 transition-all active:scale-125 hover:text-yellow-400",
+                                isTipping ? "text-yellow-500 animate-bounce" : "text-white"
+                            )}
+                            title="Enviar Moneda ($0.25)"
+                        >
+                            <Coins size={24} className={isTipping ? "fill-yellow-500" : ""} />
+                            <span className="text-sm font-bold">{post.tips_count || 0}</span>
+                        </button>
+
+                        <button
                             onClick={handleLike}
                             className={`flex items-center gap-1.5 transition-all active:scale-90 ${isLiked ? 'text-pink-500' : 'text-white'}`}
                         >
@@ -323,23 +338,12 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         </button>
 
                         <button
-                            onClick={handleFastTip}
-                            disabled={isTipping}
-                            className={clsx(
-                                "flex items-center gap-1.5 transition-all active:scale-125 hover:text-yellow-400",
-                                isTipping ? "text-yellow-500 animate-bounce" : "text-white"
-                            )}
-                            title="Enviar Moneda ($0.25)"
-                        >
-                            <Coins size={24} className={isTipping ? "fill-yellow-500" : ""} />
-                        </button>
-
-                        <button
                             onClick={() => setShowGiftSelector(true)}
                             className="flex items-center gap-1.5 text-white transition-all active:scale-110 hover:text-purple-400"
                             title="Enviar Regalo"
                         >
                             <Gift size={24} />
+                            <span className="text-sm font-bold">{post.gifts_count || 0}</span>
                         </button>
                     </div>
 

@@ -128,9 +128,10 @@ CREATE TABLE transactions (
     model_id UUID REFERENCES models(id),
     client_id UUID REFERENCES clients(id), -- Opcional
     type TEXT CHECK (type IN ('consumption', 'topup', 'bonus')),
-    amount INTEGER NOT NULL,
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    amount DECIMAL(10, 2) NOT NULL,
+    status TEXT CHECK (status IN ('COMPLETED', 'PENDING', 'FAILED')),
+    details JSONB DEFAULT '{}', -- [NEW] Metadatos (to_model, gift_name, etc.)
+    created_at TIMESTAMPTZ DEFAULT NOW(),
 );
 ```
 
