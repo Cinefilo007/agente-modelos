@@ -96,6 +96,7 @@ async def cancel_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Handler para editar
 profile_handler = ConversationHandler(
+    per_message=False,
     entry_points=[CallbackQueryHandler(profile_edit_callback, pattern="^(edit\||goto_credits)")],
     states={
         EDIT_SAVE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_profile_edit)],

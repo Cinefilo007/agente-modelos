@@ -132,6 +132,7 @@ async def cancel_mod_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 edit_model_handler = ConversationHandler(
+    per_message=False,
     entry_points=[CallbackQueryHandler(edit_mod_credits_start, pattern="^adm_mod_edit_credits")],
     states={
         EDIT_MOD_CREDITS: [MessageHandler(filters.TEXT & ~filters.COMMAND, edit_mod_credits_save)]

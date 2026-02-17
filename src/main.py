@@ -42,7 +42,9 @@ def main():
         logger.info("TON Monitor is disabled (ENABLE_MONITOR=false)")
 
     if enable_bot:
-        logger.info("Starting Telegram Bot...")
+        logger.info("Starting Telegram Bot (with 2s delay)...")
+        import time
+        time.sleep(2)
         start_bot_polling()
     else:
         logger.info("Bot is disabled (ENABLE_BOT=false)")

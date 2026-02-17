@@ -358,6 +358,7 @@ async def edit_pkg_price_step(update: Update, context: ContextTypes.DEFAULT_TYPE
     return ConversationHandler.END
 
 edit_pkg_handler = ConversationHandler(
+    per_message=False,
     entry_points=[CallbackQueryHandler(edit_pkg_start, pattern="^adm_pkg_edit")],
     states={
         EDIT_PKG_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, edit_pkg_name_step)],
@@ -368,6 +369,7 @@ edit_pkg_handler = ConversationHandler(
 )
 
 create_pkg_handler = ConversationHandler(
+    per_message=False,
     entry_points=[CallbackQueryHandler(create_pkg_start, pattern="^adm_pkg_new")],
     states={
         PKG_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, create_pkg_name)],

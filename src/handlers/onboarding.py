@@ -399,6 +399,7 @@ async def warning_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return SURVEY_VIDEO
 
 onboarding_handler = ConversationHandler(
+    per_message=False,
     entry_points=[
         CommandHandler("start", start),
         CommandHandler("setup", setup_command)
