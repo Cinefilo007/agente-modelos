@@ -7,11 +7,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { Link } from 'react-router-dom';
 import { timeAgo } from '../../utils/date';
 import api from '../../api/axios';
-import { useAuth, updateUser } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Coins, Gift } from 'lucide-react';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const { themeColor } = useTheme();
 
     // State
