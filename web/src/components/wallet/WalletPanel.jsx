@@ -248,6 +248,16 @@ const WalletPanel = () => {
                                     </div>
                                 </div>
                             )}
+
+                            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-sm text-blue-200">
+                                <p><strong>Instrucciones:</strong></p>
+                                <ol className="list-decimal list-inside space-y-1 mt-2 opacity-80">
+                                    <li>Envía <strong>USDT</strong> o <strong>TON</strong>.</li>
+                                    <li>Usa únicamente la red <strong>TON</strong>.</li>
+                                    <li>Copia y pega el <strong>Memo</strong> exactamente como aparece.</li>
+                                    <li>La acreditación es automática tras 1 confirmación de red (~30 seg).</li>
+                                </ol>
+                            </div>
                         </div>
                     )}
 
