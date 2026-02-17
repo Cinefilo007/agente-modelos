@@ -19,6 +19,7 @@ import EditProfile from './pages/EditProfile';
 import PostDetail from './pages/PostDetail';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminPanel from './pages/AdminPanel';
+import AdminGifts from './pages/AdminGifts';
 import ClientProfile from './pages/ClientProfile';
 import ServiceCheckout from './pages/ServiceCheckout';
 import ServiceInvoicePage from './pages/ServiceInvoicePage';
@@ -137,6 +138,12 @@ function App() {
               <Route path="/admin" element={
                 <ProtectedRoute>
                   <DashboardRouter />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/admin/gifts" element={
+                <ProtectedRoute>
+                  <AdminGifts />
                 </ProtectedRoute>
               } />
 

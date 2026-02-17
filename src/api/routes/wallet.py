@@ -119,6 +119,103 @@ async def get_transaction_history(user: TelegramUser = Depends(get_current_user)
         print(f"Error fetching history: {e}")
         raise HTTPException(status_code=500, detail=f"Debug Error: {str(e)}")
 
+class TipRequest(BaseModel):
+    model_id: str
+    amount: float = 0.25 # Fixed value as per user request
+    post_id: Optional[str] = None
+
+@router.post("/tip")
+async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current_user)):
+    """
+    Send a fast tip ($0.25) to a model.
+    """
+    try:
+        # 1. Check balance
+        wallet_res = db.client.table("wallets").select("balance").eq("user_id", user.user_id).execute()
+        if not wallet_res.data:
+            raise HTTPException(status_code=404, detail="Wallet not found")
+        
+        balance = float(wallet_res.data[0]["balance"])
+        if balance < request.amount:
+            raise HTTPException(status_code=400, detail="Saldo insuficiente")
+        
+        # 2. Transfer funds (Atomic-ish)
+        # Deduct from client
+        db.client.table("wallets").update({"balance": balance - request.amount}).eq("user_id", user.user_id).execute()
+        
+        # Add to model
+        model_wallet = db.client.table("wallets").select("balance").eq("user_id", request.model_id).execute()
+        if model_wallet.data:
+            new_model_balance = float(model_wallet.data[0]["balance"]) + request.amount
+            db.client.table("wallets").update({"balance": new_model_balance}).eq("user_id", request.model_id).execute()
+        
+        # 3. Record Transactions (Client and Model)
+        # For the client (Debit)
+        db.client.table("crypto_transactions").insert({
+            "user_id": user.user_id,
+            "type": "TIP",
+            "amount": request.amount,
+            "status": "COMPLETED",
+            "details": {"to_model": request.model_id, "post_id": request.post_id}
+        }).execute()
+        
+        # Note: The trigger 'trg_update_client_spending' will automatically 
+        # update 'total_spent' in 'clients' table for the elite status.
+
+        return {"success": True, "new_balance": balance - request.amount}
+
+    except Exception as e:
+        print(f"Error sending tip: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class GiftPurchaseRequest(BaseModel):
+    gift_id: str
+    model_id: str
+    post_id: Optional[str] = None
+
+@router.post("/gift/purchase")
+async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depends(get_current_user)):
+    """
+    Purchase a dynamic gift for a model.
+    """
+    try:
+        # 1. Get Gift details
+        gift_res = db.client.table("gifts").select("*").eq("id", request.id).single().execute()
+        if not gift_res.data:
+            raise HTTPException(status_code=404, detail="Regalo no encontrado")
+        
+        gift = gift_res.data
+        amount = float(gift["price"])
+
+        # 2. Check balance
+        wallet_res = db.client.table("wallets").select("balance").eq("user_id", user.user_id).execute()
+        balance = float(wallet_res.data[0]["balance"])
+        
+        if balance < amount:
+            raise HTTPException(status_code=400, detail="Saldo insuficiente")
+
+        # 3. Transfer
+        db.client.table("wallets").update({"balance": balance - amount}).eq("user_id", user.user_id).execute()
+        
+        model_wallet = db.client.table("wallets").select("balance").eq("user_id", request.model_id).execute()
+        if model_wallet.data:
+            new_model_balance = float(model_wallet.data[0]["balance"]) + amount
+            db.client.table("wallets").update({"balance": new_model_balance}).eq("user_id", request.model_id).execute()
+
+        # 4. Record
+        db.client.table("crypto_transactions").insert({
+            "user_id": user.user_id,
+            "type": "GIFT",
+            "amount": amount,
+            "status": "COMPLETED",
+            "details": {"gift_name": gift["name"], "to_model": request.model_id}
+        }).execute()
+
+        return {"success": True, "new_balance": balance - amount}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 class WithdrawRequest(BaseModel):
     amount: float
     wallet_address: str

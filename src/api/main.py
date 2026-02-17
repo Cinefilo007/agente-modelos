@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from src.api.routes import profile, feed, interactions, admin, client, auth, content, notifications, shop, analytics, wallet, escrow
+from src.api.routes import profile, feed, interactions, admin, client, auth, content, notifications, shop, analytics, wallet, escrow, admin_gifts
 
 app = FastAPI(
     title="Agency Bot Mini App API",

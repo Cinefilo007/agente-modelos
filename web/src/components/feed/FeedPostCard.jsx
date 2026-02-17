@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX, AlertTriangle, Send, X, Trash2, Flag } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
+import EliteAvatar from '../common/EliteAvatar';
+import GiftSelector from '../posts/GiftSelector';
 import { useTheme } from '../../context/ThemeContext';
 import { Link } from 'react-router-dom';
 import { timeAgo } from '../../utils/date';
 import api from '../../api/axios';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, updateUser } from '../../context/AuthContext';
+import { Coins, Gift } from 'lucide-react';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
     const { user } = useAuth();
@@ -20,6 +23,8 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
     const [showReportModal, setShowReportModal] = useState(false);
     const [commentText, setCommentText] = useState("");
     const [showCommentInput, setShowCommentInput] = useState(false);
+    const [showGiftSelector, setShowGiftSelector] = useState(false);
+    const [isTipping, setIsTipping] = useState(false);
 
     // Refs
     const videoRef = useRef(null);
@@ -111,6 +116,27 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
         }
     };
 
+    const handleFastTip = async () => {
+        if (isAdmin || isTipping) return;
+        setIsTipping(true);
+        try {
+            const res = await api.post('/wallet/tip', {
+                model_id: post.user.id,
+                post_id: post.id
+            });
+            // Update local user balance in context
+            if (res.data.new_balance !== undefined) {
+                // Assuming updateUser can take partial updates or we re-fetch
+                const userRes = await api.get('/auth/me');
+                updateUser?.(userRes.data);
+            }
+        } catch (error) {
+            console.error("Tip failed", error);
+        } finally {
+            setIsTipping(false);
+        }
+    };
+
     // Report Logic
     const ReportModal = () => {
         const [reason, setReason] = useState("");
@@ -197,11 +223,9 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                 <div className="flex items-center justify-between p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent absolute top-0 w-full z-20">
                     <div className="flex items-center gap-3">
                         <Link to={`/profile/${post.user.id}`}>
-                            <Avatar
-                                src={post.user.avatar_url || post.user.avatar}
-                                name={post.user.artistic_name || post.user.full_name || post.user.name}
+                            <EliteAvatar
+                                user={post.user}
                                 size="md"
-                                isOnline={post.is_online}
                             />
                         </Link>
                         <div>
@@ -296,6 +320,26 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             <MessageCircle size={24} />
                             <span className="text-sm font-bold">{commentCount}</span>
                         </button>
+
+                        <button
+                            onClick={handleFastTip}
+                            disabled={isTipping}
+                            className={clsx(
+                                "flex items-center gap-1.5 transition-all active:scale-125 hover:text-yellow-400",
+                                isTipping ? "text-yellow-500 animate-bounce" : "text-white"
+                            )}
+                            title="Enviar Moneda ($0.25)"
+                        >
+                            <Coins size={24} className={isTipping ? "fill-yellow-500" : ""} />
+                        </button>
+
+                        <button
+                            onClick={() => setShowGiftSelector(true)}
+                            className="flex items-center gap-1.5 text-white transition-all active:scale-110 hover:text-purple-400"
+                            title="Enviar Regalo"
+                        >
+                            <Gift size={24} />
+                        </button>
                     </div>
 
                     <p className="text-sm text-gray-200 mb-3 line-clamp-3">
@@ -331,6 +375,15 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
 
             {/* Modals */}
             {showReportModal && <ReportModal />}
+            <GiftSelector
+                isOpen={showGiftSelector}
+                onClose={() => setShowGiftSelector(false)}
+                modelId={post.user.id}
+                postId={post.id}
+                onGiftSent={(gift) => {
+                    // Refresh balance if needed
+                }}
+            />
         </>
     );
 }
