@@ -73,9 +73,6 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
         except:
             pass
 
-        except:
-            pass
-
     elif action == ACTION_PAYOUT_APPROVE:
         tx_id = model_id_str # In this case it's a UUID string
         logger.info(f"Manual payout approval triggered for TX {tx_id}")
