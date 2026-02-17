@@ -57,19 +57,25 @@ async def process_transaction(tx):
     currency = "TON"
     amount = 0.0
 
-    if value_ton >= 0.01:
+    # Heurística mejorada: 
+    # Un envío de Jetton (USDT) suele quemar entre 0.03 y 0.04 TON de gas.
+    # Un depósito de TON real suele ser >= 0.05 TON o mayor.
+    if value_ton >= 0.045:
         # Depósito de TON nativo
         currency = "TON"
         amount = value_ton
+        logger.info(f"Detected TON deposit: {amount} TON, Memo: {deposit_memo}")
     else:
-        # Notificación de USDT (Jetton)
-        # El 'value' es gas (ej. 0.05). Para USDT real necesitamos /getJettonTransfers (V3)
-        # o procesar el BOC. Como parche rápido de soporte USDT:
-        # Si el usuario dice que envió USDT y vemos el memo, guardaremos con monto 0 pero Status PENDING
-        # para que el admin lo valide o usaremos una heurística si TonCenter lo decodifica.
+        # Probable notificación de USDT (Jetton)
+        # El 'value' es gas (ej. 0.035). 
         currency = "USDT"
+        # TODO: Para USDT real necesitaríamos parsear el cuerpo del mensaje o usar GetJettonTransfers.
+        # Por ahora lo marcamos como USDT con monto 0 para revisión o placeholder.
+        # Si el usuario mandó USDT, el TonMonitor actual no puede 'leer' el monto interno 
+        # sin decodificar el BOC.
         amount = 0.0 
-        logger.warning(f"Detected USDT potential deposit for {deposit_memo}. Amount unknown, needs V3 API or manual credit.")
+        logger.warning(f"Detected USDT potential notification for {deposit_memo}. Gas: {value_ton}. Amount needs manual credit or V3 API.")
+        return # Skip auto-credit for USDT until parser is ready
 
     if amount <= 0 and currency == "TON":
         return

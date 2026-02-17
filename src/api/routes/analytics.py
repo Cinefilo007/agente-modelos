@@ -72,12 +72,12 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
             print(f"[Analytics] WARNING error querying 'profile_views', defaulting to 0: {e}")
             total_views = 0
             
-        # 3. Get total sales (completed orders)
+            # 3. Get total sales (released orders)
         try:
             sales_res = db.client.table("escrow_orders") \
                 .select("amount") \
                 .eq("model_id", model_id) \
-                .eq("status", "completed") \
+                .eq("status", "RELEASED") \
                 .execute()
             
             total_sales_count = len(sales_res.data) if sales_res.data else 0
@@ -115,12 +115,12 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
 
             # Current Period Sales
             curr_sales_res = db.client.table("escrow_orders").select("id", count="exact") \
-                .eq("model_id", model_id).eq("status", "completed").gte("created_at", last_7_days).execute()
+                .eq("model_id", model_id).eq("status", "RELEASED").gte("created_at", last_7_days).execute()
             curr_sales = curr_sales_res.count or 0
 
             # Previous Period Sales
             prev_sales_res = db.client.table("escrow_orders").select("id", count="exact") \
-                .eq("model_id", model_id).eq("status", "completed").gte("created_at", prev_7_days).lt("created_at", last_7_days).execute()
+                .eq("model_id", model_id).eq("status", "RELEASED").gte("created_at", prev_7_days).lt("created_at", last_7_days).execute()
             prev_sales = prev_sales_res.count or 0
 
             sales_growth = round(((curr_sales - prev_sales) / prev_sales * 100), 1) if prev_sales > 0 else (100.0 if curr_sales > 0 else 0.0)
