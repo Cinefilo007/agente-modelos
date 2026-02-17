@@ -169,6 +169,7 @@ class StartProfileUpdate(BaseModel):
     personality: Optional[str] = None
     physical_aspects: Optional[str] = None
     payment_methods: Optional[str] = None
+    payout_address: Optional[str] = None
 
 @router.get("/me")
 async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
@@ -245,6 +246,8 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
         updates["config_physique"] = updates.pop("physical_aspects") # TEXT column, direct save
     if "payment_methods" in updates:
         updates["config_payments"] = {"text": updates.pop("payment_methods")}
+    if "payout_address" in updates:
+        updates["payout_address"] = updates["payout_address"]
     
     if not updates:
         return {"message": "No changes detected"}
