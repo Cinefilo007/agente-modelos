@@ -10,6 +10,11 @@ import threading
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Silence noisy libraries
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("telegram.utils.request").setLevel(logging.WARNING)
+logging.getLogger("telegram.ext.Application").setLevel(logging.WARNING)
+
 def run_api():
     port = int(os.getenv("PORT", 8000))
     logger.info(f"Starting API on port {port}")

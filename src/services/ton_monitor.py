@@ -4,6 +4,7 @@ import json
 import os
 import logging
 from src.services.database import db
+from src.services.currency_service import get_ton_usd_price
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -98,14 +99,23 @@ async def process_transaction(tx):
             logger.info(f"Transaction {tx_hash} already processed. Skipping.")
             return
 
+        # DYNAMIC CONVERSION: If it's TON, we multiply by the market price
+        final_amount = amount
+        if currency == "TON":
+            price = await get_ton_usd_price()
+            final_amount = round(amount * price, 2)
+            logger.info(f"Converting {amount} TON to {final_amount} Credits (Price: ${price})")
+
         rpc_params = {
             "p_user_id": user_id,
-            "p_amount": amount,
+            "p_amount": final_amount,
             "p_details": {
                 "currency": currency,
                 "tx_hash": tx_hash,
                 "wallet_address": in_msg.get("source"),
                 "lt": lt,
+                "original_amount": amount if currency == "TON" else None,
+                "ton_price": price if currency == "TON" else None,
                 "manual_review": True if (currency == "USDT" and amount == 0) else False
             }
         }
@@ -113,7 +123,7 @@ async def process_transaction(tx):
         rpc_res = db.client.rpc("wallet_deposit", rpc_params).execute()
         
         if rpc_res.data and rpc_res.data.get("success"):
-            logger.info(f"✅ Successfully credited {amount} {currency} to user {user_id}")
+            logger.info(f"✅ Successfully credited {final_amount} {currency} credits to user {user_id}")
         else:
             logger.error(f"❌ RPC failed: {rpc_res.data}")
 
