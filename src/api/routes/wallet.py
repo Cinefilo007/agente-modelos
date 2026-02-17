@@ -4,6 +4,14 @@ from pydantic import BaseModel
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
 import os
+import requests
+
+# For sending notifications to admin
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+ADMIN_ID = 1123020118 # Based on src/handlers/admin.py
+
+# Import bot_app for scheduling jobs
+# Using import inside function to avoid circular dependencies if any
 import uuid
 
 router = APIRouter()
@@ -160,9 +168,62 @@ async def withdraw_funds(request: WithdrawRequest, user: TelegramUser = Depends(
             "details": {"destination": request.wallet_address},
             "tx_hash": None
         }
-        db.client.table("crypto_transactions").insert(tx_data).execute()
-        
-        return {"success": True, "message": "Retiro solicitado correctamente", "new_balance": new_balance}
+        # 4. Notify Admin via Telegram
+        try:
+            # We'll use a direct HTTP request to avoid dependency loops or thread issues
+            # In a more complex app, we'd use a shared event bus.
+            msg = (
+                f"💰 *Nueva Solicitud de Retiro*\n\n"
+                f"👤 *Usuario:* {user.username or user.user_id}\n"
+                f"💵 *Monto:* {request.amount} USDT\n"
+                f"🏦 *Wallet Destino:* `{request.wallet_address}`\n\n"
+                f"⏳ *Auto-liquida en:* 2 minutos."
+            )
+            
+            # Key: We encode the tx_id in the callback data
+            # Format: 'payout_approve|tx_uuid'
+            # (Note: We need the UUID from the inserted tx)
+            inserted_tx = db.client.table("crypto_transactions").select("id").eq("user_id", user.user_id).order("created_at", desc=True).limit(1).execute()
+            tx_id = inserted_tx.data[0]["id"]
+
+            inline_kb = {
+                "inline_keyboard": [
+                    [
+                        {"text": "✅ Liquidar Ya", "callback_data": f"payout_approve|{tx_id}"},
+                        {"text": "❌ Rechazar", "callback_data": f"payout_reject|{tx_id}"}
+                    ]
+                ]
+            }
+
+            requests.post(
+                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+                json={
+                    "chat_id": ADMIN_ID,
+                    "text": msg,
+                    "parse_mode": "Markdown",
+                    "reply_markup": inline_kb
+                }
+            )
+            
+            # 5. Schedule Auto-Payout (2 minutes delay)
+            try:
+                from src.bot import bot_app
+                if bot_app and bot_app.job_queue:
+                    from src.handlers.payout_jobs import process_auto_payout
+                    bot_app.job_queue.run_once(
+                        process_auto_payout, 
+                        when=120, # 2 minutes
+                        data={"tx_id": tx_id},
+                        name=f"payout_{tx_id}"
+                    )
+                    print(f"Auto-payout job scheduled for TX {tx_id}")
+            except Exception as job_err:
+                print(f"Error scheduling job: {job_err}")
+
+        except Exception as notify_err:
+            print(f"Error notifying admin: {notify_err}")
+
+        return {"success": True, "message": "Retiro solicitado. Se procesará automáticamente en 2 min si no hay rechazo manual.", "new_balance": new_balance}
 
     except HTTPException as he:
         raise he

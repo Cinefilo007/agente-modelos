@@ -15,9 +15,12 @@ def run_api():
     logger.info(f"Starting API on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
+from src.services.ton_monitor import start_monitor
+
 def main():
     enable_api = os.getenv("ENABLE_API", "true").lower() == "true"
     enable_bot = os.getenv("ENABLE_BOT", "true").lower() == "true"
+    enable_monitor = os.getenv("ENABLE_MONITOR", "true").lower() == "true"
 
     if enable_api:
         logger.info("Starting API thread...")
@@ -26,6 +29,13 @@ def main():
     else:
         logger.info("API is disabled (ENABLE_API=false)")
     
+    if enable_monitor:
+        logger.info("Starting TON Monitor thread...")
+        tm = threading.Thread(target=start_monitor, daemon=True)
+        tm.start()
+    else:
+        logger.info("TON Monitor is disabled (ENABLE_MONITOR=false)")
+
     if enable_bot:
         logger.info("Starting Telegram Bot...")
         start_bot_polling()

@@ -18,7 +18,11 @@ logger = logging.getLogger(__name__)
 # Cargar variables
 load_dotenv()
 
+# Instancia global para acceso externo
+bot_app: Application = None
+
 def main():
+    global bot_app
     token = os.getenv("TELEGRAM_TOKEN")
     if not token:
         logger.error("TELEGRAM_TOKEN not found in .env")
@@ -27,7 +31,8 @@ def main():
     logger.info("Iniciando Bot...")
     
     # Construir App
-    app = ApplicationBuilder().token(token).build()
+    bot_app = ApplicationBuilder().token(token).build()
+    app = bot_app
 
     # Handlers
     # Handlers

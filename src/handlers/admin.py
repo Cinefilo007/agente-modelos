@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 ACTION_APPROVE = "admin_approve"
 ACTION_REJECT = "admin_reject"
 ACTION_REPEAT = "admin_repeat"
+ACTION_PAYOUT_APPROVE = "payout_approve"
+ACTION_PAYOUT_REJECT = "payout_reject"
 
 ADMIN_ID = 1123020118
 
@@ -71,18 +73,69 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
         except:
             pass
 
-    elif action == ACTION_REPEAT:
-        # Update Status to trigger auto-flow
-        db.update_model(model_id, {"status": "retry_needed"})
-        try:
-            await context.bot.send_message(
-                chat_id=model_id,
-                text="🔁 *Repetir Verificación*\n\nEl administrador ha marcado tu verificación como ilegible o incompleta.\nPor favor responde con 'Hola' para reiniciar el proceso."
-            )
-            safe_user = model.get('username', 'Unknown').replace("<", "&lt;")
-            await update_message(f"🔁 Solicitado repetir a: {safe_user}")
         except:
             pass
+
+    elif action == ACTION_PAYOUT_APPROVE:
+        tx_id = model_id_str # In this case it's a UUID string
+        logger.info(f"Manual payout approval triggered for TX {tx_id}")
+        
+        # We'll use the job queue function directly to avoid code duplication
+        # But we need to create a dummy context/job or just refactor.
+        # Let's refactor the core logic into a service later, for now call directly.
+        from src.handlers.payout_jobs import process_auto_payout
+        
+        # We need a context-like object for process_auto_payout if it sends messages
+        # For manual click, we can just process it.
+        # Actually, let's just use the service directly here.
+        from src.services.payout_service import send_ton_payout
+        import os
+        
+        # 1. Fetch TX
+        tx_res = db.client.table("crypto_transactions").select("*").eq("id", tx_id).maybe_single().execute()
+        if not tx_res.data or tx_res.data["status"] != "pending":
+            await query.answer("⚠️ Transacción ya procesada o no encontrada.", show_alert=True)
+            return
+
+        tx = tx_res.data
+        mnemonic = os.getenv("PAYOUT_WALLET_MNEMONIC")
+        if not mnemonic:
+            await query.answer("❌ Error: PAYOUT_WALLET_MNEMONIC no configurado.", show_alert=True)
+            return
+
+        await update_message("⚙️ Procesando liquidación blockchain...")
+        
+        success, result = await send_ton_payout(tx["details"]["destination"], float(tx["amount"]), mnemonic)
+        
+        if success:
+            db.client.table("crypto_transactions").update({"status": "completed", "tx_hash": result}).eq("id", tx_id).execute()
+            await update_message(f"✅ ¡Liquidación Exitosa!\n\nMonto: {tx['amount']} USDT\nHash: `{result}`")
+        else:
+            await update_message(f"❌ Fallo en Liquidación:\n\n{result}")
+
+    elif action == ACTION_PAYOUT_REJECT:
+        tx_id = model_id_str
+        # 1. Fetch TX
+        tx_res = db.client.table("crypto_transactions").select("*").eq("id", tx_id).maybe_single().execute()
+        if not tx_res.data or tx_res.data["status"] != "pending":
+            await query.answer("⚠️ Transacción ya procesada.", show_alert=True)
+            return
+
+        tx = tx_res.data
+        user_uuid = tx["user_id"]
+        amount = float(tx["amount"])
+
+        # 2. Refund Wallet
+        # We increment balance back
+        wallet_res = db.client.table("wallets").select("balance").eq("user_id", user_uuid).maybe_single().execute()
+        if wallet_res.data:
+            new_balance = float(wallet_res.data["balance"]) + amount
+            db.client.table("wallets").update({"balance": new_balance}).eq("user_id", user_uuid).execute()
+        
+        # 3. Mark TX as failed/rejected
+        db.client.table("crypto_transactions").update({"status": "failed"}).eq("id", tx_id).execute()
+        
+        await update_message(f"❌ Retiro Rechazado.\n\nSe han reintegrado {amount} USDT al saldo de la modelo.")
 
 def get_admin_keyboard(model_id):
     """Genera el teclado para el mensaje de verificación."""
