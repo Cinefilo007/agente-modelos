@@ -94,5 +94,8 @@ El backend expone una API RESTful documentada automáticamente en `/docs`.
 3.  **Railway**: Detecta el push y construye la imagen Docker.
 4.  **Verificación**: Revisar logs de Railway para confirmar arranque exitoso de `uvicorn` y `python-telegram-bot`.
 
+> [!CAUTION]
+> **CONFLICTO DE INSTANCIAS**: Dado que el bot se despliega en Railway, **NUNCA** mantener una instancia local del bot (`python src/main.py`) corriendo simultáneamente. Esto causa conflictos de `getUpdates` con Telegram. Si es necesario probar localmente, detener inmediatamente el proceso al finalizar.
+
 ---
 *Última Actualización: 11 de Febrero de 2026*
