@@ -3,6 +3,7 @@ import { CheckCircle, Wallet, Plus, ArrowUpRight, Copy, RefreshCw, Layers, Uploa
 import QRCode from 'react-qr-code';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import api from '../../api/axios';
 import TransactionList from './TransactionList';
 import clsx from 'clsx';
@@ -22,6 +23,7 @@ const WalletPanel = () => {
     const [withdrawLoading, setWithdrawLoading] = useState(false);
     const [withdrawError, setWithdrawError] = useState(null);
     const [withdrawSuccess, setWithdrawSuccess] = useState(null);
+    const { showToast } = useToast();
 
     const navigate = useNavigate();
 
@@ -210,8 +212,8 @@ const WalletPanel = () => {
                                                     await api.put('/profile/me', { payout_address: withdrawAddress });
                                                     const res = await api.get('/profile/me');
                                                     updateUser(res.data);
-                                                    alert("✅ Billetera guardada.");
-                                                } catch (e) { alert("Error al guardar."); }
+                                                    showToast("✅ Billetera guardada.", "success");
+                                                } catch (e) { showToast("Error al guardar.", "error"); }
                                             }}
                                             className="px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs transition-all"
                                         >

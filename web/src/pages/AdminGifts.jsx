@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import { Gift, Plus, Trash2, Save, X, Sparkles, Loader } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -8,6 +9,7 @@ const AdminGifts = () => {
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [editingGift, setEditingGift] = useState(null);
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         name: '',
         price: '',
@@ -49,8 +51,9 @@ const AdminGifts = () => {
             }
             fetchGifts();
             resetForm();
+            showToast("Regalo guardado.", "success");
         } catch (err) {
-            alert("Error al guardar regalo");
+            showToast("Error al guardar regalo", "error");
         }
     };
 
@@ -72,7 +75,7 @@ const AdminGifts = () => {
             await api.delete(`/admin_gifts/${id}`);
             fetchGifts();
         } catch (err) {
-            alert("Error al eliminar");
+            showToast("Error al eliminar", "error");
         }
     };
 

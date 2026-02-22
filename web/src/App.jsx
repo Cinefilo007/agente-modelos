@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
 import api from './api/axios';
@@ -123,69 +124,71 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ThemeProvider>
-          <InstallPWA />
-          <BrowserRouter>
-            <Routes>
-              {/* Public Route: Landing Page */}
-              <Route path="/landing" element={
-                <PublicRoute>
-                  <LandingPage />
-                </PublicRoute>
-              } />
+        <ToastProvider>
+          <ThemeProvider>
+            <InstallPWA />
+            <BrowserRouter>
+              <Routes>
+                {/* Public Route: Landing Page */}
+                <Route path="/landing" element={
+                  <PublicRoute>
+                    <LandingPage />
+                  </PublicRoute>
+                } />
 
-              {/* Admin Route - Separate Layout potentially? Or same? Let's use separate for focus */}
-              <Route path="/admin" element={
-                <ProtectedRoute>
-                  <DashboardRouter />
-                </ProtectedRoute>
-              } />
+                {/* Admin Route - Separate Layout potentially? Or same? Let's use separate for focus */}
+                <Route path="/admin" element={
+                  <ProtectedRoute>
+                    <DashboardRouter />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/admin/gifts" element={
-                <ProtectedRoute>
-                  <AdminGifts />
-                </ProtectedRoute>
-              } />
+                <Route path="/admin/gifts" element={
+                  <ProtectedRoute>
+                    <AdminGifts />
+                  </ProtectedRoute>
+                } />
 
-              {/* Protected Routes */}
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }>
-                <Route index element={<Feed />} />
-                <Route path="explore" element={<Explore />} />
-                <Route path="profile/:username?" element={<Profile />} />
-                <Route path="reviews" element={<Reviews />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="edit-profile" element={<EditProfile />} />
-                <Route path="create-post" element={<CreatePost />} />
-                <Route path="create-story" element={<CreateStory />} />
-                <Route path="post/:id" element={<PostDetail />} />
-                <Route path="service/:serviceId" element={<ServiceInvoicePage />} />
-                <Route path="checkout" element={<ServiceCheckout />} />
-                <Route path="shop-manager" element={<ShopManager />} />
-              </Route>
+                {/* Protected Routes */}
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<Feed />} />
+                  <Route path="explore" element={<Explore />} />
+                  <Route path="profile/:username?" element={<Profile />} />
+                  <Route path="reviews" element={<Reviews />} />
+                  <Route path="notifications" element={<Notifications />} />
+                  <Route path="edit-profile" element={<EditProfile />} />
+                  <Route path="create-post" element={<CreatePost />} />
+                  <Route path="create-story" element={<CreateStory />} />
+                  <Route path="post/:id" element={<PostDetail />} />
+                  <Route path="service/:serviceId" element={<ServiceInvoicePage />} />
+                  <Route path="checkout" element={<ServiceCheckout />} />
+                  <Route path="shop-manager" element={<ShopManager />} />
+                </Route>
 
-              {/* Onboarding Route */}
-              <Route path="/onboarding" element={
-                <ProtectedRoute>
-                  <Onboarding />
-                </ProtectedRoute>
-              } />
+                {/* Onboarding Route */}
+                <Route path="/onboarding" element={
+                  <ProtectedRoute>
+                    <Onboarding />
+                  </ProtectedRoute>
+                } />
 
-              {/* Wallet Route */}
-              <Route path="/wallet" element={
-                <ProtectedRoute>
-                  <WalletPage />
-                </ProtectedRoute>
-              } />
+                {/* Wallet Route */}
+                <Route path="/wallet" element={
+                  <ProtectedRoute>
+                    <WalletPage />
+                  </ProtectedRoute>
+                } />
 
-              {/* Catch all - Redirect to Landing */}
-              <Route path="*" element={<Navigate to="/landing" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </ThemeProvider>
+                {/* Catch all - Redirect to Landing */}
+                <Route path="*" element={<Navigate to="/landing" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </ThemeProvider>
+        </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

@@ -7,6 +7,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import { cn } from '../lib/utils';
 
 const CATEGORIES = [
@@ -22,6 +23,7 @@ const CATEGORIES = [
 export default function ShopManager() {
     const { themeColor } = useTheme();
     const navigate = useNavigate();
+    const { showToast } = useToast();
 
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -123,7 +125,7 @@ export default function ShopManager() {
             });
         } catch (err) {
             console.error("Error saving service:", err);
-            alert("Error al guardar el servicio.");
+            showToast("Error al guardar el servicio.", "error");
         } finally {
             setSaving(false);
         }

@@ -2,12 +2,14 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, ImagePlus, Clock, Loader } from 'lucide-react';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 
 function CreateStory() {
     const navigate = useNavigate();
     const [file, setFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [loading, setLoading] = useState(false);
+    const { showToast } = useToast();
     const fileInputRef = useRef(null);
 
     const handleFileChange = (e) => {
@@ -34,7 +36,7 @@ function CreateStory() {
             navigate('/');
         } catch (error) {
             console.error("Error creating story:", error);
-            alert("Error al crear la historia.");
+            showToast("Error al crear la historia.", "error");
         } finally {
             setLoading(false);
         }

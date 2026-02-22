@@ -3,6 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck, ShoppingBag, Loader, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import clsx from 'clsx';
 import WalletPanel from '../components/wallet/WalletPanel';
 
@@ -13,6 +14,7 @@ export default function AdminPanel() {
     const [activeTab, setActiveTab] = useState('analytics'); // analytics, bot, shop
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const { showToast } = useToast();
     const [config, setConfig] = useState({
         prices: "",
         personality: "",
@@ -95,9 +97,9 @@ export default function AdminPanel() {
                 physical_aspects: config.physicalAspects,
                 payment_methods: config.paymentMethods
             });
-            alert("Configuración guardada correctamente");
+            showToast("Configuración guardada correctamente", "success");
         } catch (err) {
-            alert("Error al guardar la configuración");
+            showToast("Error al guardar la configuración", "error");
         } finally {
             setSaving(false);
         }

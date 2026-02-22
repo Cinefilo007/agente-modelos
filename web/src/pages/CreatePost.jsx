@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, Loader, Play, Pause } from 'lucide-react';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 
 function CreatePost() {
     const navigate = useNavigate();
@@ -10,6 +11,7 @@ function CreatePost() {
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
     const [isEditingVideo, setIsEditingVideo] = useState(false);
+    const { showToast } = useToast();
 
     // Video Edit State
     const [videoDuration, setVideoDuration] = useState(0);
@@ -170,7 +172,7 @@ function CreatePost() {
             navigate('/');
         } catch (error) {
             console.error("Error creating post:", error);
-            alert("Error al crear la publicación. Intenta de nuevo.");
+            showToast("Error al crear la publicación. Intenta de nuevo.", "error");
         } finally {
             setLoading(false);
         }

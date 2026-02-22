@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Volume2, VolumeX, Send, X, Maximize2, Trash2, Flag } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { Avatar } from '../components/ui/Avatar';
 import { timeAgo } from '../utils/date';
 import api from '../api/axios';
@@ -12,6 +13,7 @@ export default function PostDetail() {
     const navigate = useNavigate();
     const { themeColor } = useTheme();
     const { user: currentUser } = useAuth();
+    const { showToast } = useToast();
 
     const [post, setPost] = useState(null);
     const [isLiked, setIsLiked] = useState(false);
@@ -103,7 +105,7 @@ export default function PostDetail() {
             navigate(-1);
         } catch (err) {
             console.error("Error deleting post:", err);
-            alert("Error al eliminar la publicación");
+            showToast("Error al eliminar la publicación", "error");
         }
     };
 

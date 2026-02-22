@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import {
     ShieldCheck, Lock, CheckCircle, AlertTriangle, ArrowLeft,
     Clock, Wallet, MessageSquare
@@ -12,6 +13,7 @@ import api from '../api/axios';
 export default function ServiceCheckout() {
     const { themeColor } = useTheme();
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const location = useLocation();
 
     // Financial State
@@ -56,7 +58,7 @@ export default function ServiceCheckout() {
         setErrorMsg(null);
 
         if (balance.balance < totalAmount) {
-            alert("Saldo insuficiente. Por favor recarga tu billetera.");
+            showToast("Saldo insuficiente. Por favor recarga tu billetera.", "warning");
             navigate('/wallet');
             return;
         }

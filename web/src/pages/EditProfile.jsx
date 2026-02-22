@@ -6,12 +6,14 @@ import { ArrowLeft, Camera, Image as ImageIcon, Loader } from 'lucide-react';
 import { Avatar } from '../components/ui/Avatar';
 import { SocialLinkEditor } from '../components/profile/SocialLinkEditor';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 
 function EditProfile() {
     const { user, login } = useAuth(); // login used to update context if needed, though usually profile fetch is separate
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const { showToast } = useToast();
 
     // Form State
     const [formData, setFormData] = useState({
@@ -89,7 +91,7 @@ function EditProfile() {
             }));
         } catch (error) {
             console.error(`Error uploading ${type}:`, error);
-            alert(`Error al subir imagen de ${type}`);
+            showToast(`Error al subir imagen de ${type}`, "error");
             // Revert preview? or just keep it and let user try again? 
             // For now, let's just alert.
         }
@@ -110,7 +112,7 @@ function EditProfile() {
             navigate(`/profile/${formData.username || user.username}`);
         } catch (error) {
             console.error("Error updating profile:", error);
-            alert("Error al actualizar el perfil");
+            showToast("Error al actualizar el perfil", "error");
         } finally {
             setSaving(false);
         }

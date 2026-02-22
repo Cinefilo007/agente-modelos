@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import { CheckCircle, XCircle, Search, Clock, ShieldAlert, Flag, UserCheck, AlertTriangle } from 'lucide-react';
 import { timeAgo } from '../utils/date';
 import NebulaBackground from '../components/ui/NebulaBackground';
@@ -10,6 +11,7 @@ const AdminDashboard = () => {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { showToast } = useToast();
 
     useEffect(() => {
         fetchData();
@@ -41,8 +43,9 @@ const AdminDashboard = () => {
         try {
             await api.post(`/admin/verify/${modelId}`, { action });
             setVerifications(prev => prev.filter(v => v.id !== modelId));
+            showToast(`Usuario ${action === 'approve' ? 'aprobado' : 'rechazado'}`, "success");
         } catch (err) {
-            alert("Error al procesar la acción.");
+            showToast("Error al procesar la acción.", "error");
         }
     };
 
@@ -61,7 +64,7 @@ const AdminDashboard = () => {
             }
         } catch (err) {
             console.error(err);
-            alert("Error procesando reporte");
+            showToast("Error procesando reporte", "error");
         }
     };
 

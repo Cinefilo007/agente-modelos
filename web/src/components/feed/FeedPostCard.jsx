@@ -11,9 +11,11 @@ import { useAuth } from '../../context/AuthContext';
 import { Coins, Gift } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../../context/ToastContext';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
     const { user, updateUser } = useAuth();
+    const { showToast } = useToast();
     const { themeColor } = useTheme();
 
     // State
@@ -151,7 +153,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
             console.error("Tip failed", error);
             // Revert on failure
             setTipsCount(prev => prev - 1);
-            alert(error.response?.data?.detail || "Error al enviar moneda. Revisa tu saldo.");
+            showToast(error.response?.data?.detail || "Error al enviar moneda. Revisa tu saldo.", "error");
         }
     };
 

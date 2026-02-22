@@ -5,6 +5,7 @@ import { FeedFilter } from '../components/feed/FeedFilter';
 import { StoryCarousel } from '../components/profile/StoryCarousel';
 import StoryViewer from '../components/profile/StoryViewer';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import { Loader } from 'lucide-react';
 
 function Feed() {
@@ -13,6 +14,7 @@ function Feed() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedStoryIndex, setSelectedStoryIndex] = useState(null);
+    const { showToast } = useToast();
 
     // Fetch Stories
     useEffect(() => {
@@ -95,9 +97,10 @@ function Feed() {
             await api.delete(`/content/posts/${postId}`, { data: { reason } });
             // Remove from state
             setPosts(prev => prev.filter(p => p.id !== postId));
+            showToast("Post eliminado", "success");
         } catch (err) {
             console.error("Error deleting post:", err);
-            alert("Error al eliminar el post.");
+            showToast("Error al eliminar el post.", "error");
         }
     };
 

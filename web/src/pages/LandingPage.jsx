@@ -3,10 +3,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import { Shield, Zap, Heart, Globe, Lock, Star, ChevronRight, TrendingUp, Users, DollarSign, Bot, X, Check } from 'lucide-react';
 
 const LandingPage = () => {
     const { loginWithTelegram } = useAuth();
+    const { showToast } = useToast();
     const navigate = useNavigate();
     const telegramWrapperRef = useRef(null);
     const [activeTab, setActiveTab] = useState('creators'); // 'creators' (priority) or 'fans'
@@ -54,7 +56,7 @@ const LandingPage = () => {
 
         window.onTelegramAuth = async (user) => {
             try { await loginWithTelegram(user); navigate('/'); }
-            catch (error) { alert(error.response?.data?.detail || "Login failed"); }
+            catch (error) { showToast(error.response?.data?.detail || "Login failed", "error"); }
         };
         // Clean global only on unmount
         return () => { window.onTelegramAuth = undefined; }
