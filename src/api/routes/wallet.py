@@ -202,7 +202,7 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
                     db.service_client.table("notifications") \
                         .update({
                             "content": str(current_count + 1),
-                            "created_at": "now()" # Let DB handle the timestamp update
+                            "created_at": datetime.now().isoformat()
                         }) \
                         .eq("id", notif['id']) \
                         .execute()
