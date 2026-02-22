@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import api from '../api/axios';
 import { Shield, Zap, Heart, Globe, Lock, Star, ChevronRight, TrendingUp, Users, DollarSign, Bot, X, Check } from 'lucide-react';
 
 const LandingPage = () => {
