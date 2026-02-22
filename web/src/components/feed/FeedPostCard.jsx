@@ -327,46 +327,49 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                 {/* Bottom Actions Area - Liquid glass style */}
                 <div className="p-4 bg-white/5 backdrop-blur-xl border-t border-white/5">
                     <div className="flex items-center gap-4 mb-3">
-                        {user?.role !== 'model' && (
-                            <div className="relative">
-                                <motion.button
-                                    whileTap={{ scale: 1.5 }}
-                                    onClick={handleFastTip}
-                                    className={clsx(
-                                        "flex items-center gap-1.5 transition-all text-white hover:text-yellow-400 group/tip"
-                                    )}
-                                    title="Enviar Moneda ($0.05)"
-                                >
-                                    <div className="relative">
-                                        <CircleDollarSign size={24} className="group-hover/tip:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
+                        <div className="relative">
+                            <motion.button
+                                whileTap={user?.role !== 'model' && user?.role !== 'admin' ? { scale: 1.5 } : {}}
+                                onClick={handleFastTip}
+                                className={clsx(
+                                    "flex items-center gap-1.5 transition-all text-white group/tip",
+                                    (user?.role !== 'model' && user?.role !== 'admin') && "hover:text-yellow-400"
+                                )}
+                                title={user?.role === 'model' ? "Monedas recibidas" : "Enviar Moneda ($0.05)"}
+                                disabled={user?.role === 'model'}
+                            >
+                                <div className="relative">
+                                    <CircleDollarSign size={24} className={clsx(
+                                        user?.role !== 'model' && "group-hover/tip:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]",
+                                        "text-yellow-400"
+                                    )} />
 
-                                        {/* Flying Coins Container */}
-                                        <AnimatePresence>
-                                            {animations.map(id => (
-                                                <motion.div
-                                                    key={id}
-                                                    initial={{ y: 0, x: 0, opacity: 1, scale: 1 }}
-                                                    animate={{ y: -60, x: (Math.random() - 0.5) * 40, opacity: 0, scale: 1.5 }}
-                                                    exit={{ opacity: 0 }}
-                                                    transition={{ duration: 0.8, ease: "easeOut" }}
-                                                    className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 overflow-visible"
-                                                >
-                                                    <span className="text-xl">🪙</span>
-                                                </motion.div>
-                                            ))}
-                                        </AnimatePresence>
-                                    </div>
-                                    <motion.span
-                                        key={tipsCount}
-                                        initial={{ scale: 1 }}
-                                        animate={{ scale: [1, 1.4, 1] }}
-                                        className="text-sm font-bold"
-                                    >
-                                        {tipsCount}
-                                    </motion.span>
-                                </motion.button>
-                            </div>
-                        )}
+                                    {/* Flying Coins Container */}
+                                    <AnimatePresence>
+                                        {animations.map(id => (
+                                            <motion.div
+                                                key={id}
+                                                initial={{ y: 0, x: 0, opacity: 1, scale: 1 }}
+                                                animate={{ y: -60, x: (Math.random() - 0.5) * 40, opacity: 0, scale: 1.5 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                                className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 overflow-visible"
+                                            >
+                                                <span className="text-xl">🪙</span>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+                                <motion.span
+                                    key={tipsCount}
+                                    initial={{ scale: 1 }}
+                                    animate={animations.length > 0 ? { scale: [1, 1.4, 1] } : {}}
+                                    className="text-sm font-bold"
+                                >
+                                    {tipsCount}
+                                </motion.span>
+                            </motion.button>
+                        </div>
 
                         <button
                             onClick={handleLike}
@@ -384,16 +387,20 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             <span className="text-sm font-bold">{commentCount}</span>
                         </button>
 
-                        {user?.role !== 'model' && (
-                            <button
-                                onClick={() => setShowGiftSelector(true)}
-                                className="flex items-center gap-1.5 text-white transition-all active:scale-110 hover:text-purple-400"
-                                title="Enviar Regalo"
-                            >
-                                <Gift size={24} />
-                                <span className="text-sm font-bold">{post.gifts_count || 0}</span>
-                            </button>
-                        )}
+                        <button
+                            onClick={() => user?.role !== 'model' && setShowGiftSelector(true)}
+                            className={clsx(
+                                "flex items-center gap-1.5 text-white transition-all group",
+                                user?.role !== 'model' && "active:scale-110 hover:text-purple-400"
+                            )}
+                            title={user?.role === 'model' ? "Regalos recibidos" : "Enviar Regalo"}
+                        >
+                            <Gift size={24} className={clsx(
+                                "text-purple-400",
+                                user?.role !== 'model' && "group-hover:drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]"
+                            )} />
+                            <span className="text-sm font-bold">{post.gifts_count || 0}</span>
+                        </button>
                     </div>
 
                     <p className="text-sm text-gray-200 mb-3 line-clamp-3">

@@ -324,12 +324,16 @@ export default function PostDetail() {
 
                         <div className="flex items-center gap-2 relative">
                             <motion.button
-                                whileTap={{ scale: 1.4 }}
+                                whileTap={currentUser?.role !== 'model' && currentUser?.role !== 'admin' ? { scale: 1.4 } : {}}
                                 onClick={handleFastTip}
                                 className="flex items-center gap-2 group/tip"
+                                disabled={currentUser?.role === 'model'}
                             >
                                 <div className="relative">
-                                    <CircleDollarSign size={22} className="text-yellow-400 group-hover/tip:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
+                                    <CircleDollarSign size={22} className={clsx(
+                                        "text-yellow-400",
+                                        (currentUser?.role !== 'model' && currentUser?.role !== 'admin') && "group-hover/tip:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]"
+                                    )} />
                                     <AnimatePresence>
                                         {animations.map(animId => (
                                             <motion.div
@@ -349,16 +353,20 @@ export default function PostDetail() {
                             </motion.button>
                         </div>
 
-                        {currentUser?.role !== 'model' && (
-                            <button
-                                onClick={() => setShowGiftSelector(true)}
-                                className="flex items-center gap-2 text-[var(--text-primary)] transition-all active:scale-110 hover:text-purple-400 group"
-                                title="Enviar Regalo"
-                            >
-                                <Gift size={22} className="group-hover:drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]" />
-                                <span className="text-sm font-bold opacity-90">{giftsCount}</span>
-                            </button>
-                        )}
+                        <button
+                            onClick={() => currentUser?.role !== 'model' && setShowGiftSelector(true)}
+                            className={clsx(
+                                "flex items-center gap-2 text-[var(--text-primary)] transition-all group",
+                                currentUser?.role !== 'model' && "active:scale-110 hover:text-purple-400"
+                            )}
+                            title={currentUser?.role === 'model' ? "Regalos recibidos" : "Enviar Regalo"}
+                        >
+                            <Gift size={22} className={clsx(
+                                "text-purple-400",
+                                (currentUser?.role !== 'model' && currentUser?.role !== 'admin') && "group-hover:drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]"
+                            )} />
+                            <span className="text-sm font-bold opacity-90">{giftsCount}</span>
+                        </button>
                         <div className="flex-1"></div>
                         {/* Share button removed */}
                     </div>
