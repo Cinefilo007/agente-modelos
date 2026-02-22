@@ -168,7 +168,7 @@ export default function PostDetail() {
     };
 
     const user = post.models || {}; // Joined model data
-    const isOwner = currentUser?.user_id === post.model_id;
+    const isOwner = currentUser?.id === post.model_id || currentUser?.user_id === post.model_id;
 
     const toggleFullscreen = (e) => {
         e?.stopPropagation();
@@ -195,46 +195,43 @@ export default function PostDetail() {
             )}
 
             {/* Header de Navegación */}
-            <div className="flex-none flex items-center justify-between p-4 bg-transparent z-10 relative">
+            <div className="flex-none flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent z-10 relative">
                 <button
                     onClick={() => navigate(-1)}
-                    className="p-2 rounded-full bg-[var(--card-bg)]/50 backdrop-blur-md border border-[var(--glass-border)] text-[var(--text-primary)] hover:bg-[var(--card-bg)] transition-colors"
+                    className="p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white hover:bg-black/60 transition-colors shadow-lg"
                 >
                     <ArrowLeft size={24} />
                 </button>
-                <span className="text-[var(--text-primary)] font-bold text-xs tracking-[0.2em] uppercase opacity-80">Publicación</span>
+                <span className="text-white font-bold text-xs tracking-[0.2em] uppercase drop-shadow-md">Publicación</span>
 
-                {/* Actions: Delete (Standalone) or Menu (Images only) */}
+                {/* Actions: Delete (Standalone) or Menu */}
                 <div className="flex items-center gap-2">
-                    {(isOwner || currentUser?.role === 'admin') && (
-                        <button
-                            onClick={handleDelete}
-                            className="p-2 rounded-full bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all shadow-lg"
-                            title="Eliminar Publicación"
-                        >
-                            <Trash2 size={20} />
+                    {/* 3-dot menu trigger */}
+                    <div className="relative group">
+                        <button className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-colors border border-white/20 shadow-lg">
+                            <MoreVertical size={24} />
                         </button>
-                    )}
 
-                    {/* Only show menu if NOT a video (as requested) */}
-                    {post.media_type !== 'video' && (
-                        <div className="relative group">
-                            <button className="p-2 rounded-full bg-[var(--card-bg)]/50 backdrop-blur-md text-white hover:bg-white/20 transition-colors border border-[var(--glass-border)]">
-                                <MoreVertical size={24} />
-                            </button>
-                            {/* Dropdown can stay for report etc if not owner, or just leave as is */}
-                            {!isOwner && (
-                                <div className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                    <button
-                                        className="w-full text-left px-4 py-3 text-white/70 hover:bg-white/5 text-sm font-medium flex items-center gap-2"
-                                    >
-                                        <Flag size={16} />
-                                        Reportar
-                                    </button>
-                                </div>
+                        {/* Dropdown Menu - Fixed positioning and visibility */}
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                            {isOwner || currentUser?.role === 'admin' ? (
+                                <button
+                                    onClick={handleDelete}
+                                    className="w-full text-left px-4 py-3 text-red-500 hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
+                                >
+                                    <Trash2 size={16} />
+                                    Eliminar Post
+                                </button>
+                            ) : (
+                                <button
+                                    className="w-full text-left px-4 py-3 text-white/70 hover:bg-white/5 hover:text-white text-sm font-bold flex items-center gap-2"
+                                >
+                                    <Flag size={16} />
+                                    Reportar
+                                </button>
                             )}
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
 
