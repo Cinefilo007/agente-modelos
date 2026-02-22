@@ -26,7 +26,7 @@ export function ModelGrid({ models }) {
             {models.map((model) => (
                 <Link
                     key={model.id}
-                    to={`/profile/${model.username || model.id}`}
+                    to={`/${model.username || model.id}`}
                     className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg group block bg-[#1a1a1a]"
                 >
                     <img
@@ -44,7 +44,7 @@ export function ModelGrid({ models }) {
                     )}>
                         <span className={cn(
                             "w-1.5 h-1.5 rounded-full",
-                            (model.last_seen && (new Date() - new Date(model.last_seen)) < 300000) ? "bg-green-500 animate-pulse" : "bg-gray-500"
+                            (model.last_seen && (new Date() - new Date(model.last_seen.replace(' ', 'T'))) < 300000) ? "bg-green-500 animate-pulse" : "bg-gray-500"
                         )}></span>
                         <span className="text-[10px] uppercase font-bold tracking-wider leading-none">
                             {(model.last_seen && (new Date() - new Date(model.last_seen)) < 300000) ? 'Online' : 'Offline'}

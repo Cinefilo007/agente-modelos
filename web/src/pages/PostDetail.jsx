@@ -303,14 +303,14 @@ export default function PostDetail() {
                             src={user.avatar_url || user.avatar}
                             name={user.full_name || user.username}
                             size="md"
-                            isOnline={post.is_online}
+                            isOnline={(user.last_seen && (new Date() - new Date(user.last_seen.replace(' ', 'T'))) < 300000)}
                         />
                         <div className="flex-1">
                             <h3 className="text-[var(--text-primary)] font-bold text-base">{user.full_name || user.username}</h3>
                             <p className="text-[var(--text-secondary)] text-xs">{timeAgo(post.created_at)}</p>
                         </div>
                         <button
-                            onClick={() => navigate(`/profile/${user.username}`)}
+                            onClick={() => navigate(`/${user.username}`)}
                             className="px-4 py-1 rounded-full bg-[var(--card-bg)] border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:opacity-80 transition-colors"
                         >
                             Ver Perfil

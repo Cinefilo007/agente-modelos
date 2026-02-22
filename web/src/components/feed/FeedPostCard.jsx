@@ -203,7 +203,6 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                     </div>
                     <div className="p-4 space-y-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase">Motivo</label>
                             {reasons.map(r => (
                                 <button
                                     key={r}
@@ -242,7 +241,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                 {/* Header - Thinner and Faded */}
                 <div className="flex items-center justify-between p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent absolute top-0 w-full z-20">
                     <div className="flex items-center gap-3">
-                        <Link to={`/profile/${post.user.id}`}>
+                        <Link to={`/${post.user.username || post.user.id}`}>
                             <Avatar
                                 src={post.user.avatar_url || post.user.avatar}
                                 name={post.user.artistic_name || post.user.full_name || post.user.username}

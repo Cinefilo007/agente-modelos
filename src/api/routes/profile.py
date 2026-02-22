@@ -18,7 +18,8 @@ async def heartbeat(user: TelegramUser = Depends(get_current_user)):
     """Update user's last_seen timestamp."""
     if user.role == "model":
         try:
-            now = datetime.utcnow().isoformat()
+            # Use UTC and Z suffix to avoid confusion
+            now = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
             db.client.table("models").update({"last_seen": now}).eq("telegram_id", user.id).execute()
             return {"status": "online"}
         except Exception as e:
@@ -276,7 +277,7 @@ async def get_public_profile(identifier: str):
         is_uuid = False
         
     query = db.client.table("models") \
-        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links")
+        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links, last_seen")
         
     if is_uuid:
         query = query.eq("id", identifier)

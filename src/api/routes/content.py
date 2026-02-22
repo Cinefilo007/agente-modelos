@@ -17,9 +17,13 @@ def calculate_is_online(last_seen_str: Optional[str]) -> bool:
         return False
     try:
         threshold = datetime.utcnow() - timedelta(minutes=5)
-        ls_dt = datetime.fromisoformat(last_seen_str.replace('Z', '+00:00'))
-        return ls_dt.replace(tzinfo=None) > threshold
-    except:
+        # Handle 'Z' or '+00:00' suffix
+        clean_ts = last_seen_str.replace('Z', '+00:00')
+        ls_dt = datetime.fromisoformat(clean_ts)
+        # Convert to naive UTC for comparison with datetime.utcnow()
+        return ls_dt.astimezone(None).replace(tzinfo=None) > threshold
+    except Exception as e:
+        print(f"[OnlineCheck] Error: {e}")
         return False
 
 router = APIRouter()

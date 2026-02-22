@@ -157,7 +157,6 @@ function App() {
                 }>
                   <Route index element={<Feed />} />
                   <Route path="explore" element={<Explore />} />
-                  <Route path="profile/:username?" element={<Profile />} />
                   <Route path="reviews" element={<Reviews />} />
                   <Route path="notifications" element={<Notifications />} />
                   <Route path="edit-profile" element={<EditProfile />} />
@@ -167,6 +166,8 @@ function App() {
                   <Route path="service/:serviceId" element={<ServiceInvoicePage />} />
                   <Route path="checkout" element={<ServiceCheckout />} />
                   <Route path="shop-manager" element={<ShopManager />} />
+                  {/* Catch-all for usernames at the root level within the layout */}
+                  <Route path=":username?" element={<Profile />} />
                 </Route>
 
                 {/* Onboarding Route */}
