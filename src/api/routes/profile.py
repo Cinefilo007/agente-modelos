@@ -288,10 +288,16 @@ async def get_public_profile(identifier: str):
         # Let's try exact match first.
         query = query.eq("username", identifier)
         
-    model = query.single().execute()
+    try:
+        model = query.maybe_single().execute()
         
-    if not model.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        if not model.data:
+            raise HTTPException(status_code=404, detail="Profile not found")
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        print(f"[Profile] Error fetching {identifier}: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching profile")
 
     user_data = model.data
     model_id = user_data['id'] # Ensure we have the ID for subsequent queries

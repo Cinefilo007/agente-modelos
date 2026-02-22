@@ -26,6 +26,7 @@ function Profile() {
     // 1. Determine if we are viewing "me" or another user
     const isMe = !username ||
         username === 'me' ||
+        username === 'profile' ||
         (currentUser && (
             username === currentUser.username ||
             String(username) === String(currentUser.id) ||

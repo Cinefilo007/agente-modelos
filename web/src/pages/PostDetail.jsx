@@ -303,7 +303,7 @@ export default function PostDetail() {
                             src={user.avatar_url || user.avatar}
                             name={user.full_name || user.username}
                             size="md"
-                            isOnline={(user.last_seen && (new Date() - new Date(user.last_seen.replace(' ', 'T'))) < 300000)}
+                            isOnline={post.is_online}
                         />
                         <div className="flex-1">
                             <h3 className="text-[var(--text-primary)] font-bold text-base">{user.full_name || user.username}</h3>

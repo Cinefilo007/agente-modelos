@@ -138,9 +138,8 @@ export default function Layout() {
                             />
                         )}
 
-                        {/* Profile redirects to Admin Dashboard if admin */}
                         <NavItem
-                            to={user?.role === 'admin' ? "/admin" : "/profile"}
+                            to={user?.role === 'admin' ? "/admin" : "/me"}
                             icon={User}
                             label={user?.role === 'admin' ? "Admin" : "Perfil"}
                         />

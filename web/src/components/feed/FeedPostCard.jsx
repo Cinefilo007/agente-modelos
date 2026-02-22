@@ -32,6 +32,8 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
     const [tipsCount, setTipsCount] = useState(Number(post.tips_count) || 0);
     const [animations, setAnimations] = useState([]); // Track flying coins
 
+    const isOnline = (post.user.last_seen && (new Date() - new Date(post.user.last_seen.replace(' ', 'T'))) < 300000);
+
     // Refs
     const videoRef = useRef(null);
     const containerRef = useRef(null);
@@ -238,7 +240,6 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
     return (
         <>
             <div ref={containerRef} className="mb-6 bg-white/5 backdrop-blur-xl rounded-xl overflow-hidden border border-white/10 shadow-2xl mx-1 relative group">
-                {/* Header - Thinner and Faded */}
                 <div className="flex items-center justify-between p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent absolute top-0 w-full z-20">
                     <div className="flex items-center gap-3">
                         <Link to={`/${post.user.username || post.user.id}`}>
@@ -246,7 +247,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                                 src={post.user.avatar_url || post.user.avatar}
                                 name={post.user.artistic_name || post.user.full_name || post.user.username}
                                 size="md"
-                                isOnline={post.user.is_online}
+                                isOnline={isOnline}
                             />
                         </Link>
                         <div>
@@ -431,7 +432,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
             {/* Modals */}
             {showReportModal && <ReportModal />}
