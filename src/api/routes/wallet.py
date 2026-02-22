@@ -176,46 +176,47 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
 
         # 4. Create or update grouped notification
         try:
-            from datetime import timedelta
-            one_hour_ago = (datetime.now() - timedelta(hours=1)).isoformat()
-            
-            # Find recent unread tip notification for this post from same actor
-            existing_notif = db.service_client.table("notifications") \
-                .select("*") \
-                .eq("user_id", request.model_id) \
-                .eq("actor_id", user.user_id) \
-                .eq("type", "tip") \
-                .eq("target_id", request.post_id) \
-                .eq("is_read", False) \
-                .gt("created_at", one_hour_ago) \
-                .order("created_at", desc=True) \
-                .limit(1) \
-                .execute()
-            
-            if existing_notif.data:
-                notif = existing_notif.data[0]
-                try:
-                    current_count = int(notif.get('content') or 1)
-                except:
-                    current_count = 1
-                
-                db.service_client.table("notifications") \
-                    .update({
-                        "content": str(current_count + 1),
-                        "created_at": datetime.now().isoformat()
-                    }) \
-                    .eq("id", notif['id']) \
+            # Don't notify if the model is tipping themselves (though unlikely)
+            if str(request.model_id) != str(user.user_id):
+                # Search for recent unread tip notification for this post from same actor
+                # We look at any unread tip notification from this actor to this model for this post
+                notif_res = db.service_client.table("notifications") \
+                    .select("*") \
+                    .eq("user_id", request.model_id) \
+                    .eq("actor_id", user.user_id) \
+                    .eq("type", "tip") \
+                    .eq("target_id", request.post_id) \
+                    .eq("is_read", False) \
+                    .order("created_at", desc=True) \
+                    .limit(1) \
                     .execute()
-            else:
-                db.service_client.table("notifications").insert({
-                    "user_id": request.model_id,
-                    "actor_id": user.user_id,
-                    "type": "tip",
-                    "target_id": request.post_id,
-                    "content": "1"
-                }).execute()
+                
+                if notif_res.data:
+                    notif = notif_res.data[0]
+                    # Update count
+                    try:
+                        current_count = int(notif.get('content') or 1)
+                    except:
+                        current_count = 1
+                    
+                    db.service_client.table("notifications") \
+                        .update({
+                            "content": str(current_count + 1),
+                            "created_at": "now()" # Let DB handle the timestamp update
+                        }) \
+                        .eq("id", notif['id']) \
+                        .execute()
+                else:
+                    # New notification
+                    db.service_client.table("notifications").insert({
+                        "user_id": request.model_id,
+                        "actor_id": user.user_id,
+                        "type": "tip",
+                        "target_id": request.post_id,
+                        "content": "1"
+                    }).execute()
         except Exception as notif_err:
-            print(f"Error creating tip notification: {notif_err}")
+            logger.error(f"[Notifications] Error in tip notif: {notif_err}")
 
         return {"success": True, "new_balance": balance - request.amount}
 
@@ -282,15 +283,16 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
 
         # 5. Create notification
         try:
-            db.service_client.table("notifications").insert({
-                "user_id": request.model_id,
-                "actor_id": user.user_id,
-                "type": "gift",
-                "target_id": request.post_id,
-                "content": gift["name"]
-            }).execute()
+            if str(request.model_id) != str(user.user_id):
+                db.service_client.table("notifications").insert({
+                    "user_id": request.model_id,
+                    "actor_id": user.user_id,
+                    "type": "gift",
+                    "target_id": request.post_id,
+                    "content": gift["name"]
+                }).execute()
         except Exception as notif_err:
-            print(f"Error creating gift notification: {notif_err}")
+            logger.error(f"[Notifications] Error in gift notif: {notif_err}")
 
         return {"success": True, "new_balance": balance - amount}
 

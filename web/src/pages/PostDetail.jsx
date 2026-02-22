@@ -121,28 +121,42 @@ export default function PostDetail() {
     };
 
     const handleComment = async () => {
-        if (!newComment.trim()) return;
+        if (!newComment.trim() || submitting) return;
         setSubmitting(true);
         try {
-            await api.post('/interactions/interact', {
+            const res = await api.post('/interactions/interact', {
                 target_id: id,
                 target_type: 'post',
                 action: 'comment',
                 content: newComment
             });
-
-            // Re-fetch comments to match format
-            const { data: commentsData } = await api.get(`/interactions/comments/${id}`);
-            setComments(commentsData || []);
+            // Opimistic update
+            setComments([{
+                ...res.data, // Assuming res.data contains the new comment object
+                username: currentUser?.username || 'Yo',
+                avatar_url: currentUser?.avatar_url,
+                created_at: new Date().toISOString(), // Add created_at for optimistic display
+                user_id: currentUser?.id // Add user_id for owner check
+            }, ...comments]);
             setNewComment("");
-
-            // Increment count locally
-            setPost(prev => ({ ...prev, comments_count: (prev.comments_count || 0) + 1 }));
-
+            setPost(prev => ({ ...prev, comments_count: (prev.comments_count || 0) + 1 })); // Increment count locally
         } catch (err) {
-            console.error("Error commenting:", err);
+            console.error("Error posting comment:", err);
+            showToast(err.response?.data?.detail || "Error al comentar", "error");
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleDeleteComment = async (commentId) => {
+        try {
+            await api.delete(`/interactions/comments/${commentId}`);
+            setComments(comments.filter(c => c.id !== commentId));
+            setPost(prev => ({ ...prev, comments_count: Math.max(0, (prev.comments_count || 0) - 1) })); // Decrement count locally
+            showToast("Comentario eliminado", "success");
+        } catch (err) {
+            console.error("Error deleting comment:", err);
+            showToast("Error al eliminar comentario", "error");
         }
     };
 
@@ -379,7 +393,7 @@ export default function PostDetail() {
                             <p className="text-sm text-[var(--text-secondary)] text-center py-4">Sé el primero en comentar.</p>
                         ) : (
                             comments.map((comment, i) => (
-                                <div key={comment.id || i} className="flex gap-3">
+                                <div key={comment.id || i} className="flex gap-3 group/comment">
                                     <Avatar
                                         src={comment.avatar_url}
                                         name={comment.username}
@@ -388,9 +402,20 @@ export default function PostDetail() {
                                     <div className="flex-1 space-y-1">
                                         <div className="flex items-baseline justify-between">
                                             <span className="text-sm font-semibold text-[var(--text-primary)]">{comment.username}</span>
-                                            <span className="text-[10px] text-[var(--text-secondary)]">
-                                                {timeAgo(comment.created_at)}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] text-[var(--text-secondary)]">
+                                                    {timeAgo(comment.created_at)}
+                                                </span>
+                                                {(isOwner || currentUser?.role === 'admin' || currentUser?.user_id === comment.actor_id) && (
+                                                    <button
+                                                        onClick={() => handleDeleteComment(comment.id)}
+                                                        className="opacity-0 group-hover/comment:opacity-100 p-1 text-red-500 hover:bg-red-500/10 rounded-full transition-all"
+                                                        title="Eliminar comentario"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                         <p className="text-sm text-[var(--text-primary)] opacity-70 font-light">
                                             {comment.content}

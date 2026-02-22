@@ -5,6 +5,7 @@ from typing import Literal
 import logging
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,13 @@ async def create_interaction(
     user: TelegramUser = Depends(get_current_user)
 ):
     """Record a like or view."""
-    """Record a like or view."""
+    
+    # 1. Security: Block links in comments
+    if interaction.action == 'comment' and interaction.content:
+        # Simple regex for links
+        link_pattern = r'(https?://[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/[^\s]*)'
+        if re.search(link_pattern, interaction.content, re.IGNORECASE):
+            raise HTTPException(status_code=400, detail="No se permiten links en los comentarios por seguridad")
     
     actor_id = user.user_id
     actor_type = user.role
@@ -282,3 +289,48 @@ async def get_post_comments(post_id: str):
     except Exception as e:
         print(f"Error fetching comments: {e}")
         return []
+
+@router.delete("/comments/{comment_id}")
+async def delete_comment(
+    comment_id: str,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Delete a comment. Only the author, the post owner, or an admin can delete it."""
+    try:
+        # 1. Fetch the comment to check ownership
+        comment_res = db.service_client.table("interactions") \
+            .select("*, posts(model_id)") \
+            .eq("id", comment_id) \
+            .eq("action", "comment") \
+            .maybe_single() \
+            .execute()
+        
+        if not comment_res.data:
+            raise HTTPException(status_code=404, detail="Comentario no encontrado")
+        
+        comment = comment_res.data
+        post_owner_id = comment.get('posts', {}).get('model_id')
+        
+        # 2. Check permissions
+        is_author = str(comment['actor_id']) == str(user.user_id)
+        is_post_owner = str(post_owner_id) == str(user.user_id)
+        is_admin = user.role == 'admin'
+        
+        if not (is_author or is_post_owner or is_admin):
+            raise HTTPException(status_code=403, detail="No tienes permiso para eliminar este comentario")
+        
+        # 3. Delete
+        db.service_client.table("interactions").delete().eq("id", comment_id).execute()
+        
+        # 4. Decrement count in posts
+        db.service_client.table("posts").update({
+            "comments_count": db.client.table("posts").select("comments_count").eq("id", comment['target_id']).single().execute().data['comments_count'] - 1
+        }).eq("id", comment['target_id']).execute()
+        
+        return {"status": "ok", "message": "Comentario eliminado"}
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Error deleting comment: {e}")
+        raise HTTPException(status_code=500, detail="Error interno al eliminar el comentario")
