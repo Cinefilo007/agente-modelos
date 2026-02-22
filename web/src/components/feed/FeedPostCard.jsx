@@ -4,12 +4,12 @@ import { Avatar } from '../ui/Avatar';
 import EliteAvatar from '../common/EliteAvatar';
 import GiftSelector from '../posts/GiftSelector';
 import { useTheme } from '../../context/ThemeContext';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
 import { timeAgo } from '../../utils/date';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { CircleDollarSign, Gift } from 'lucide-react';
-import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../context/ToastContext';
 
