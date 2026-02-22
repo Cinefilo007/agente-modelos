@@ -145,7 +145,16 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
         
         # Add to model
         model_wallet = db.client.table("wallets").select("balance").eq("user_id", request.model_id).execute()
-        if model_wallet.data:
+        if not model_wallet.data:
+            # Create wallet for model if it doesn't exist
+            memo = f"user_{request.model_id.split('-')[0]}"
+            db.client.table("wallets").insert({
+                "user_id": request.model_id,
+                "balance": request.amount,
+                "locked_balance": 0.0,
+                "deposit_memo": memo
+            }).execute()
+        else:
             new_model_balance = float(model_wallet.data[0]["balance"]) + request.amount
             db.client.table("wallets").update({"balance": new_model_balance}).eq("user_id", request.model_id).execute()
         
@@ -155,6 +164,7 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
             "user_id": user.user_id,
             "type": "TIP",
             "amount": request.amount,
+            "currency": "USDT",
             "status": "COMPLETED",
             "details": {"to_model": request.model_id, "post_id": request.post_id}
         }).execute()
@@ -199,7 +209,16 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
         db.client.table("wallets").update({"balance": balance - amount}).eq("user_id", user.user_id).execute()
         
         model_wallet = db.client.table("wallets").select("balance").eq("user_id", request.model_id).execute()
-        if model_wallet.data:
+        if not model_wallet.data:
+            # Create wallet for model if it doesn't exist
+            memo = f"user_{request.model_id.split('-')[0]}"
+            db.client.table("wallets").insert({
+                "user_id": request.model_id,
+                "balance": amount,
+                "locked_balance": 0.0,
+                "deposit_memo": memo
+            }).execute()
+        else:
             new_model_balance = float(model_wallet.data[0]["balance"]) + amount
             db.client.table("wallets").update({"balance": new_model_balance}).eq("user_id", request.model_id).execute()
 
@@ -208,6 +227,7 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
             "user_id": user.user_id,
             "type": "GIFT",
             "amount": amount,
+            "currency": "USDT",
             "status": "COMPLETED",
             "details": {"gift_name": gift["name"], "to_model": request.model_id}
         }).execute()
@@ -266,6 +286,7 @@ async def withdraw_funds(request: WithdrawRequest, user: TelegramUser = Depends(
             "details": {"destination": request.wallet_address},
             "tx_hash": None
         }
+        db.client.table("crypto_transactions").insert(tx_data).execute()
         # 4. Notify Admin via Telegram
         try:
             # We'll use a direct HTTP request to avoid dependency loops or thread issues

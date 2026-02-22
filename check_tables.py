@@ -17,8 +17,11 @@ for table in tables_to_check:
     try:
         res = supabase.table(table).select("*").limit(1).execute()
         if res.data:
-            print(f"\nTable '{table}' ROW SAMPLE:")
-            print(json.dumps(res.data[0], indent=2, default=str))
+            print(f"\nTable '{table}' COLUMNS:")
+            print(list(res.data[0].keys()))
+            print("Sample Row Keys/Values:")
+            for k, v in res.data[0].items():
+                print(f"  {k}: {type(v).__name__}")
         else:
             print(f"\nTable '{table}' exists but is EMPTY.")
     except Exception as e:
