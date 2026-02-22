@@ -4,7 +4,7 @@ import { Avatar } from '../ui/Avatar';
 import EliteAvatar from '../common/EliteAvatar';
 import GiftSelector from '../posts/GiftSelector';
 import { useTheme } from '../../context/ThemeContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { timeAgo } from '../../utils/date';
 import api from '../../api/axios';
