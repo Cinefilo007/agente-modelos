@@ -121,7 +121,7 @@ async def get_transaction_history(user: TelegramUser = Depends(get_current_user)
 
 class TipRequest(BaseModel):
     model_id: str
-    amount: float = 0.25 # Fixed value as per user request
+    amount: float = 0.05 # Lowered from 0.25 for testing
     post_id: Optional[str] = None
 
 @router.post("/tip")

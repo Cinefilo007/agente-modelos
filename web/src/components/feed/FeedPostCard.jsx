@@ -335,7 +335,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                                     className={clsx(
                                         "flex items-center gap-1.5 transition-all text-white hover:text-yellow-400 group/tip"
                                     )}
-                                    title="Enviar Moneda ($0.25)"
+                                    title="Enviar Moneda ($0.05)"
                                 >
                                     <div className="relative">
                                         <Coins size={24} className="group-hover/tip:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
