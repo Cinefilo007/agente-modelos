@@ -308,18 +308,20 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                 {/* Bottom Actions Area - Liquid glass style */}
                 <div className="p-4 bg-white/5 backdrop-blur-xl border-t border-white/5">
                     <div className="flex items-center gap-4 mb-3">
-                        <button
-                            onClick={handleFastTip}
-                            disabled={isTipping}
-                            className={clsx(
-                                "flex items-center gap-1.5 transition-all active:scale-125 hover:text-yellow-400",
-                                isTipping ? "text-yellow-500 animate-bounce" : "text-white"
-                            )}
-                            title="Enviar Moneda ($0.25)"
-                        >
-                            <Coins size={24} className={isTipping ? "fill-yellow-500" : ""} />
-                            <span className="text-sm font-bold">{post.tips_count || 0}</span>
-                        </button>
+                        {user?.role !== 'model' && (
+                            <button
+                                onClick={handleFastTip}
+                                disabled={isTipping}
+                                className={clsx(
+                                    "flex items-center gap-1.5 transition-all active:scale-125 hover:text-yellow-400",
+                                    isTipping ? "text-yellow-500 animate-bounce" : "text-white"
+                                )}
+                                title="Enviar Moneda ($0.25)"
+                            >
+                                <Coins size={24} className={isTipping ? "fill-yellow-500" : ""} />
+                                <span className="text-sm font-bold">{post.tips_count || 0}</span>
+                            </button>
+                        )}
 
                         <button
                             onClick={handleLike}
@@ -337,14 +339,16 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             <span className="text-sm font-bold">{commentCount}</span>
                         </button>
 
-                        <button
-                            onClick={() => setShowGiftSelector(true)}
-                            className="flex items-center gap-1.5 text-white transition-all active:scale-110 hover:text-purple-400"
-                            title="Enviar Regalo"
-                        >
-                            <Gift size={24} />
-                            <span className="text-sm font-bold">{post.gifts_count || 0}</span>
-                        </button>
+                        {user?.role !== 'model' && (
+                            <button
+                                onClick={() => setShowGiftSelector(true)}
+                                className="flex items-center gap-1.5 text-white transition-all active:scale-110 hover:text-purple-400"
+                                title="Enviar Regalo"
+                            >
+                                <Gift size={24} />
+                                <span className="text-sm font-bold">{post.gifts_count || 0}</span>
+                            </button>
+                        )}
                     </div>
 
                     <p className="text-sm text-gray-200 mb-3 line-clamp-3">
