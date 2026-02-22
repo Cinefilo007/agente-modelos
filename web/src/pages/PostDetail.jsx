@@ -8,6 +8,8 @@ import { Avatar } from '../components/ui/Avatar';
 import { timeAgo } from '../utils/date';
 import api from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import GiftSelector from '../components/posts/GiftSelector';
+import { Gift } from 'lucide-react';
 
 export default function PostDetail() {
     const { id } = useParams();
@@ -27,6 +29,8 @@ export default function PostDetail() {
     const [submitting, setSubmitting] = useState(false);
     const [isMuted, setIsMuted] = useState(true);
     const [isTipping, setIsTipping] = useState(false);
+    const [showGiftSelector, setShowGiftSelector] = useState(false);
+    const [giftsCount, setGiftsCount] = useState(0);
 
     const videoRef = React.useRef(null);
 
@@ -38,6 +42,7 @@ export default function PostDetail() {
                 setPost(postData);
                 setIsLiked(postData.is_liked || false);
                 setTipsCount(postData.tips_count || 0);
+                setGiftsCount(postData.gifts_count || 0);
 
                 // Fetch Comments
                 const { data: commentsData } = await api.get(`/interactions/comments/${id}`);
@@ -343,6 +348,17 @@ export default function PostDetail() {
                                 <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{tipsCount}</span>
                             </motion.button>
                         </div>
+
+                        {currentUser?.role !== 'model' && (
+                            <button
+                                onClick={() => setShowGiftSelector(true)}
+                                className="flex items-center gap-2 text-[var(--text-primary)] transition-all active:scale-110 hover:text-purple-400 group"
+                                title="Enviar Regalo"
+                            >
+                                <Gift size={22} className="group-hover:drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]" />
+                                <span className="text-sm font-bold opacity-90">{giftsCount}</span>
+                            </button>
+                        )}
                         <div className="flex-1"></div>
                         {/* Share button removed */}
                     </div>
@@ -408,6 +424,15 @@ export default function PostDetail() {
                     </div>
                 </div>
             </div>
+            <GiftSelector
+                isOpen={showGiftSelector}
+                onClose={() => setShowGiftSelector(false)}
+                modelId={post.model_id}
+                postId={id}
+                onGiftSent={(gift) => {
+                    setGiftsCount(prev => prev + 1);
+                }}
+            />
         </div>
     );
 }

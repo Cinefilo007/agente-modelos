@@ -272,7 +272,7 @@ async def get_post_detail(
     """Get a single post by ID."""
     try:
         response = db.client.table("posts") \
-            .select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)") \
+            .select("*, models(id, username, full_name, artistic_name, avatar_url, is_verified, last_seen)") \
             .eq("id", post_id) \
             .single() \
             .execute()
