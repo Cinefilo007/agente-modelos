@@ -9,12 +9,14 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 
 function Profile() {
     const { username } = useParams(); // username or ID if we change routing
     const { user: currentUser } = useAuth();
     const navigate = useNavigate();
     const { themeColor } = useTheme();
+    const { showToast } = useToast();
 
     const [profileUser, setProfileUser] = useState(null);
     const [posts, setPosts] = useState([]);
@@ -103,22 +105,33 @@ function Profile() {
         }
     }, [isMe, profileUser?.id]);
 
-    const handleSubscribe = async () => {
-        if (!profileUser?.id) return;
-        setLoadingFollow(true);
-        try {
-            if (isFollowing) {
-                await api.delete(`/interactions/followers/${profileUser.id}`);
-                setIsFollowing(false);
-            } else {
-                await api.post('/interactions/followers', { model_id: profileUser.id });
-                setIsFollowing(true);
-            }
-        } catch (err) {
-            console.error("Error toggling follow:", err);
-        } finally {
-            setLoadingFollow(false);
+    const requireAuth = (callback) => {
+        if (!currentUser) {
+            showToast("¡Únete a nuestra comunidad para interactuar!", "info");
+            setTimeout(() => navigate('/onboarding'), 2000);
+            return;
         }
+        callback();
+    };
+
+    const handleSubscribe = async () => {
+        requireAuth(async () => {
+            if (!profileUser?.id) return;
+            setLoadingFollow(true);
+            try {
+                if (isFollowing) {
+                    await api.delete(`/interactions/followers/${profileUser.id}`);
+                    setIsFollowing(false);
+                } else {
+                    await api.post('/interactions/followers', { model_id: profileUser.id });
+                    setIsFollowing(true);
+                }
+            } catch (err) {
+                console.error("Error toggling follow:", err);
+            } finally {
+                setLoadingFollow(false);
+            }
+        });
     };
 
     const handleTelegramChat = () => {
@@ -151,7 +164,7 @@ function Profile() {
                 )}
             </button>
             <button
-                onClick={handleTelegramChat}
+                onClick={() => requireAuth(handleTelegramChat)}
                 className="w-full h-full bg-card/60 border border-white/10 text-foreground hover:bg-white/10 gap-2 rounded-2xl py-4 shadow-lg backdrop-blur-md transition-all hover:border-white/20 flex items-center justify-center group"
             >
                 <Send size={18} className="text-blue-400 group-hover:scale-110 transition-transform" />
@@ -218,7 +231,7 @@ function Profile() {
                 modelId={profileUser.id}
                 username={profileUser.username}
                 isOwnProfile={isOwnProfile}
-                onPostClick={(id) => navigate(`/post/${id}`)}
+                onPostClick={(id) => requireAuth(() => navigate(`/post/${id}`))}
             />
 
             {/* Story Viewer Modal */}

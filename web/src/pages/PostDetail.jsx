@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Avatar } from '../components/ui/Avatar';
-import { timeAgo } from '../utils/date';
+import { timeAgo, isOnline as checkOnline } from '../utils/date';
 import api from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import GiftSelector from '../components/posts/GiftSelector';
@@ -62,90 +62,106 @@ export default function PostDetail() {
             }
         };
         fetchPostData();
+        fetchPostData();
     }, [id]);
 
-    const handleLike = async () => {
-        if (currentUser?.role === 'admin') return;
-
-        // Optimistic UI
-        const oldLiked = isLiked;
-        const oldLikes = post.likes_count;
-
-        setIsLiked(!isLiked);
-        setPost(prev => ({ ...prev, likes_count: (prev.likes_count || 0) + (isLiked ? -1 : 1) }));
-
-        try {
-            await api.post('/interactions/interact', {
-                target_id: id,
-                target_type: 'post',
-                action: 'like'
-            });
-        } catch (err) {
-            console.error("Error liking:", err);
-            // Revert
-            setIsLiked(oldLiked);
-            setPost(prev => ({ ...prev, likes_count: oldLikes }));
+    const requireAuth = (callback) => {
+        if (!currentUser) {
+            showToast("¡Únete a nuestra comunidad para interactuar!", "info");
+            setTimeout(() => navigate('/onboarding'), 2000);
+            return;
         }
+        if (callback) callback();
+    };
+
+    const handleLike = async () => {
+        requireAuth(async () => {
+            if (currentUser?.role === 'admin') return;
+
+            // Optimistic UI
+            const oldLiked = isLiked;
+            const oldLikes = post.likes_count;
+
+            setIsLiked(!isLiked);
+            setPost(prev => ({ ...prev, likes_count: (prev.likes_count || 0) + (isLiked ? -1 : 1) }));
+
+            try {
+                await api.post('/interactions/interact', {
+                    target_id: id,
+                    target_type: 'post',
+                    action: 'like'
+                });
+            } catch (err) {
+                console.error("Error liking:", err);
+                // Revert
+                setIsLiked(oldLiked);
+                setPost(prev => ({ ...prev, likes_count: oldLikes }));
+            }
+        });
     };
 
     const handleFastTip = async (e) => {
-        if (currentUser?.role === 'admin' || isTipping || currentUser?.role === 'model') return;
+        requireAuth(async () => {
+            if (currentUser?.role === 'admin' || isTipping || currentUser?.role === 'model') return;
 
-        e?.preventDefault();
-        e?.stopPropagation();
+            e?.preventDefault();
+            e?.stopPropagation();
 
-        setIsTipping(true);
-        // 1. Optimistic Update
-        setTipsCount(prev => prev + 1);
+            setIsTipping(true);
+            // 1. Optimistic Update
+            setTipsCount(prev => prev + 1);
 
-        // 2. Trigger Animation
-        const animId = Date.now();
-        setAnimations(prev => [...prev, animId]);
-        setTimeout(() => {
-            setAnimations(prev => prev.filter(a => a !== animId));
-        }, 1000);
+            // 2. Trigger Animation
+            const animId = Date.now();
+            setAnimations(prev => [...prev, animId]);
+            setTimeout(() => {
+                setAnimations(prev => prev.filter(a => a !== animId));
+            }, 1000);
 
-        try {
-            await api.post('/wallet/tip', {
-                model_id: post.model_id,
-                post_id: id
-            });
-            // Update balance in context if possible (assuming api handles it or context provides refresh)
-        } catch (error) {
-            console.error("Tip failed", error);
-            setTipsCount(prev => prev - 1);
-            showToast(error.response?.data?.detail || "Error al enviar moneda.", "error");
-        } finally {
-            setIsTipping(false);
-        }
+            try {
+                await api.post('/wallet/tip', {
+                    model_id: post.model_id,
+                    post_id: id
+                });
+                // Update balance in context if possible (assuming api handles it or context provides refresh)
+            } catch (error) {
+                console.error("Tip failed", error);
+                setTipsCount(prev => prev - 1);
+                showToast(error.response?.data?.detail || "Error al enviar moneda.", "error");
+            } finally {
+                setIsTipping(false);
+            }
+        });
     };
 
     const handleComment = async () => {
-        if (!newComment.trim() || submitting) return;
-        setSubmitting(true);
-        try {
-            const res = await api.post('/interactions/interact', {
-                target_id: id,
-                target_type: 'post',
-                action: 'comment',
-                content: newComment
-            });
-            // Opimistic update
-            setComments([{
-                ...res.data, // Assuming res.data contains the new comment object
-                username: currentUser?.username || 'Yo',
-                avatar_url: currentUser?.avatar_url,
-                created_at: new Date().toISOString(), // Add created_at for optimistic display
-                user_id: currentUser?.id // Add user_id for owner check
-            }, ...comments]);
-            setNewComment("");
-            setPost(prev => ({ ...prev, comments_count: (prev.comments_count || 0) + 1 })); // Increment count locally
-        } catch (err) {
-            console.error("Error posting comment:", err);
-            showToast(err.response?.data?.detail || "Error al comentar", "error");
-        } finally {
-            setSubmitting(false);
-        }
+        requireAuth(async () => {
+            if (!newComment.trim() || submitting) return;
+            setSubmitting(true);
+            try {
+                const res = await api.post('/interactions/interact', {
+                    target_id: id,
+                    target_type: 'post',
+                    action: 'comment',
+                    content: newComment
+                });
+                // Opimistic update
+                setComments([{
+                    ...res.data, // Assuming res.data contains the new comment object
+                    username: currentUser?.username || 'Yo',
+                    avatar_url: currentUser?.avatar_url,
+                    created_at: new Date().toISOString(), // Add created_at for optimistic display
+                    user_id: currentUser?.id // Add user_id for owner check
+                }, ...comments]);
+                setNewComment("");
+                setPost(prev => ({ ...prev, comments_count: (prev.comments_count || 0) + 1 })); // Increment count locally
+            } catch (err) {
+                console.error("Error posting comment:", err);
+                showToast(err.response?.data?.detail || "Error al comentar", "error");
+            } finally {
+                setSubmitting(false);
+            }
+        });
     };
 
     const handleDeleteComment = async (commentId) => {
@@ -303,7 +319,7 @@ export default function PostDetail() {
                             src={user.avatar_url || user.avatar}
                             name={user.full_name || user.username}
                             size="md"
-                            isOnline={post.is_online}
+                            isOnline={checkOnline(post.user?.last_seen || user.last_seen)}
                         />
                         <div className="flex-1">
                             <h3 className="text-[var(--text-primary)] font-bold text-base">{user.full_name || user.username}</h3>
@@ -369,7 +385,7 @@ export default function PostDetail() {
                         </div>
 
                         <button
-                            onClick={() => currentUser?.role !== 'model' && setShowGiftSelector(true)}
+                            onClick={() => requireAuth(() => { if (currentUser?.role !== 'model') setShowGiftSelector(true); })}
                             className={clsx(
                                 "flex items-center gap-2 text-[var(--text-primary)] transition-all group",
                                 currentUser?.role !== 'model' && "active:scale-110 hover:text-purple-400"

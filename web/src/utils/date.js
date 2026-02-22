@@ -39,3 +39,13 @@ export function formatFullDate(dateString) {
         day: 'numeric'
     });
 }
+
+export function isOnline(lastSeen) {
+    if (!lastSeen) return false;
+    // Robust parsing for ISO strings that might have space instead of T
+    const cleanDate = typeof lastSeen === 'string' ? lastSeen.replace(' ', 'T') : lastSeen;
+    const date = new Date(cleanDate);
+    const now = new Date();
+    // 5 minutes threshold (300,000 ms)
+    return (now - date) < 300000;
+}

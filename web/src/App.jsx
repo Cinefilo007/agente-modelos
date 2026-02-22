@@ -166,8 +166,9 @@ function App() {
                   <Route path="service/:serviceId" element={<ServiceInvoicePage />} />
                   <Route path="checkout" element={<ServiceCheckout />} />
                   <Route path="shop-manager" element={<ShopManager />} />
-                  {/* Catch-all for usernames at the root level within the layout */}
-                  <Route path=":username?" element={<Profile />} />
+                  <Route path="profile" element={<Navigate to="/me" replace />} />
+                  <Route path="me" element={<Profile />} />
+                  <Route path=":username" element={<Profile />} />
                 </Route>
 
                 {/* Onboarding Route */}

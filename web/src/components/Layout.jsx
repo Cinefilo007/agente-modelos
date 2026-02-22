@@ -45,8 +45,8 @@ export default function Layout() {
         );
     };
 
-    const mainTabs = ['/', '/explore', '/notifications', '/profile'];
-    const showNav = mainTabs.some(tab =>
+    const mainTabs = ['/', '/explore', '/notifications', '/me'];
+    const showNav = !!user && mainTabs.some(tab =>
         location.pathname === tab || (tab !== '/' && location.pathname.startsWith(tab))
     );
 

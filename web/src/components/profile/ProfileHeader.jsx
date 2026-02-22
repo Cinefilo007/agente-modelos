@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../api/axios';
+import { isOnline as checkOnline } from '../../utils/date';
 
 export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const { themeColor } = useTheme();
@@ -131,7 +132,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                             name={user.artistic_name || user.full_name || user.name}
                             alt={user.full_name || user.name}
                             size="xl"
-                            isOnline={(user.last_seen && (new Date() - new Date(user.last_seen.replace(' ', 'T'))) < 300000)}
+                            isOnline={checkOnline(user.last_seen)}
                             className="w-28 h-28 relative z-10"
                             style={{ border: `3px solid ${themeColor}` }}
                         />

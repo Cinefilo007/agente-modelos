@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, MapPin, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
+import { isOnline as checkOnline } from '../../utils/date';
 
 export function ModelGrid({ models }) {
     const { themeColor } = useTheme();
@@ -24,7 +25,7 @@ export function ModelGrid({ models }) {
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-3">
             {models.map((model) => {
-                const isOnline = (model.last_seen && (new Date() - new Date(model.last_seen.replace(' ', 'T'))) < 300000);
+                const isOnline = checkOnline(model.last_seen);
                 return (
                     <Link
                         key={model.id}

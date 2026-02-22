@@ -12,11 +12,22 @@ import { useAuth } from '../../context/AuthContext';
 import { CircleDollarSign, Gift } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../context/ToastContext';
+import { isOnline as checkOnline } from '../../utils/date';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
     const { user, updateUser } = useAuth();
     const { showToast } = useToast();
     const { themeColor } = useTheme();
+    const navigate = useNavigate();
+
+    const requireAuth = (callback) => {
+        if (!user) {
+            showToast("¡Únete a nuestra comunidad para interactuar!", "info");
+            setTimeout(() => navigate('/onboarding'), 2000);
+            return;
+        }
+        if (callback) callback();
+    };
 
     // State
     const [isLiked, setIsLiked] = useState(post.is_liked || false);
@@ -32,7 +43,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
     const [tipsCount, setTipsCount] = useState(Number(post.tips_count) || 0);
     const [animations, setAnimations] = useState([]); // Track flying coins
 
-    const isOnline = (post.user.last_seen && (new Date() - new Date(post.user.last_seen.replace(' ', 'T'))) < 300000);
+    const isOnline = checkOnline(post.user.last_seen);
 
     // Refs
     const videoRef = useRef(null);
@@ -85,78 +96,84 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
 
     // Interactions
     const handleLike = async () => {
-        if (isAdmin) return;
+        requireAuth(async () => {
+            if (isAdmin) return;
 
-        // Optimistic Update
-        const newStatus = !isLiked;
-        setIsLiked(newStatus);
-        setLikeCount(prev => newStatus ? prev + 1 : prev - 1);
+            // Optimistic Update
+            const newStatus = !isLiked;
+            setIsLiked(newStatus);
+            setLikeCount(prev => newStatus ? prev + 1 : prev - 1);
 
-        try {
-            await api.post('/interactions/interact', {
-                target_id: post.id,
-                target_type: 'post',
-                action: 'like'
-            });
-        } catch (error) {
-            console.error("Like failed", error);
-            // Revert
-            setIsLiked(!newStatus);
-            setLikeCount(prev => !newStatus ? prev + 1 : prev - 1);
-        }
+            try {
+                await api.post('/interactions/interact', {
+                    target_id: post.id,
+                    target_type: 'post',
+                    action: 'like'
+                });
+            } catch (error) {
+                console.error("Like failed", error);
+                // Revert
+                setIsLiked(!newStatus);
+                setLikeCount(prev => !newStatus ? prev + 1 : prev - 1);
+            }
+        });
     };
 
     const handleComment = async () => {
-        if (!commentText.trim()) return;
+        requireAuth(async () => {
+            if (!commentText.trim()) return;
 
-        try {
-            await api.post('/interactions/interact', {
-                target_id: post.id,
-                target_type: 'post',
-                action: 'comment',
-                content: commentText
-            });
-            setCommentCount(prev => prev + 1);
-            setCommentText("");
-            setShowCommentInput(false); // Close or keep open?
-        } catch (error) {
-            console.error("Comment failed", error);
-        }
+            try {
+                await api.post('/interactions/interact', {
+                    target_id: post.id,
+                    target_type: 'post',
+                    action: 'comment',
+                    content: commentText
+                });
+                setCommentCount(prev => prev + 1);
+                setCommentText("");
+                setShowCommentInput(false); // Close or keep open?
+            } catch (error) {
+                console.error("Comment failed", error);
+            }
+        });
     };
 
     const handleFastTip = async (e) => {
-        if (isAdmin || isTipping || user?.role === 'model') return;
+        requireAuth(async () => {
+            if (isAdmin || isTipping || user?.role === 'model') return;
 
-        // Prevent event bubbling if needed
-        e?.preventDefault();
-        e?.stopPropagation();
+            // Prevent event bubbling if needed
+            e?.preventDefault();
+            e?.stopPropagation();
 
-        // 1. Optimistic Update
-        setTipsCount(prev => prev + 1);
+            // 1. Optimistic Update
+            setTipsCount(prev => prev + 1);
 
-        // 2. Trigger Animation
-        const id = Date.now();
-        setAnimations(prev => [...prev, id]);
-        setTimeout(() => {
-            setAnimations(prev => prev.filter(a => a !== id));
-        }, 1000);
+            // 2. Trigger Animation
+            const id = Date.now();
+            setAnimations(prev => [...prev, id]);
+            setTimeout(() => {
+                setAnimations(prev => prev.filter(a => a !== id));
+            }, 1000);
 
-        try {
-            const res = await api.post('/wallet/tip', {
-                model_id: post.user.id,
-                post_id: post.id
-            });
-            // Update local user balance in context
-            if (res.data.new_balance !== undefined) {
-                const updatedUser = { ...user, balance: res.data.new_balance };
-                updateUser?.(updatedUser);
+            try {
+                const res = await api.post('/wallet/tip', {
+                    model_id: post.user.id,
+                    post_id: post.id
+                });
+                // Update local user balance in context
+                if (res.data.new_balance !== undefined) {
+                    const updatedUser = { ...user, balance: res.data.new_balance };
+                    updateUser?.(updatedUser);
+                }
+            } catch (error) {
+                console.error("Tip failed", error);
+                // Revert on failure
+                setTipsCount(prev => prev - 1);
+                showToast(error.response?.data?.detail || "Error al enviar moneda. Revisa tu saldo.", "error");
             }
-        } catch (error) {
-            console.error("Tip failed", error);
-            // Revert on failure
-            setTipsCount(prev => prev - 1);
-            showToast(error.response?.data?.detail || "Error al enviar moneda. Revisa tu saldo.", "error");
-        }
+        });
     };
 
     // Report Logic
@@ -380,7 +397,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         </button>
 
                         <button
-                            onClick={() => setShowCommentInput(true)}
+                            onClick={() => requireAuth(() => setShowCommentInput(true))}
                             className="flex items-center gap-1.5 text-white transition-all active:scale-90"
                         >
                             <MessageCircle size={24} />
@@ -388,7 +405,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         </button>
 
                         <button
-                            onClick={() => user?.role !== 'model' && setShowGiftSelector(true)}
+                            onClick={() => requireAuth(() => { if (user?.role !== 'model') setShowGiftSelector(true); })}
                             className={clsx(
                                 "flex items-center gap-1.5 text-white transition-all group",
                                 user?.role !== 'model' && "active:scale-110 hover:text-purple-400"
