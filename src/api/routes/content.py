@@ -253,7 +253,8 @@ async def get_feed(
                 "is_liked": p['id'] in liked_posts,
                 "is_online": is_online,
                 "likes_count": p.get("likes_count", 0),
-                "comments_count": p.get("comments_count", 0)
+                "comments_count": p.get("comments_count", 0),
+                "tips_count": p.get("tips_count", 0)
             })
 
         return enriched_posts

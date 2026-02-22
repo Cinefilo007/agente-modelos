@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Volume2, VolumeX, Send, X, Maximize2, Trash2, Flag } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Volume2, VolumeX, Send, X, Maximize2, Trash2, Flag, Coins } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -270,6 +270,10 @@ export default function PostDetail() {
                         <div className="flex items-center gap-2">
                             <MessageCircle size={22} className="text-[var(--text-primary)]" />
                             <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{post.comments_count || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Coins size={22} className="text-yellow-400" />
+                            <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{post.tips_count || 0}</span>
                         </div>
                         <div className="flex-1"></div>
                         {/* Share button removed */}
