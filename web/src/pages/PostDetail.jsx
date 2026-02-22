@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Volume2, VolumeX, Send, X, Maximize2, Trash2, Flag, Coins } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical, Play, Pause, Volume2, VolumeX, Send, X, Maximize2, Trash2, Flag, CircleDollarSign } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Avatar } from '../components/ui/Avatar';
 import { timeAgo } from '../utils/date';
 import api from '../api/axios';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PostDetail() {
     const { id } = useParams();
@@ -17,12 +18,15 @@ export default function PostDetail() {
 
     const [post, setPost] = useState(null);
     const [isLiked, setIsLiked] = useState(false);
+    const [tipsCount, setTipsCount] = useState(0);
+    const [animations, setAnimations] = useState([]); // Flying coins
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [isMuted, setIsMuted] = useState(true);
+    const [isTipping, setIsTipping] = useState(false);
 
     const videoRef = React.useRef(null);
 
@@ -32,6 +36,8 @@ export default function PostDetail() {
                 // Fetch Post
                 const { data: postData } = await api.get(`/content/post/${id}`);
                 setPost(postData);
+                setIsLiked(postData.is_liked || false);
+                setTipsCount(postData.tips_count || 0);
 
                 // Fetch Comments
                 const { data: commentsData } = await api.get(`/interactions/comments/${id}`);
@@ -51,6 +57,8 @@ export default function PostDetail() {
     }, [id]);
 
     const handleLike = async () => {
+        if (currentUser?.role === 'admin') return;
+
         // Optimistic UI
         const oldLiked = isLiked;
         const oldLikes = post.likes_count;
@@ -69,6 +77,38 @@ export default function PostDetail() {
             // Revert
             setIsLiked(oldLiked);
             setPost(prev => ({ ...prev, likes_count: oldLikes }));
+        }
+    };
+
+    const handleFastTip = async (e) => {
+        if (currentUser?.role === 'admin' || isTipping || currentUser?.role === 'model') return;
+
+        e?.preventDefault();
+        e?.stopPropagation();
+
+        setIsTipping(true);
+        // 1. Optimistic Update
+        setTipsCount(prev => prev + 1);
+
+        // 2. Trigger Animation
+        const animId = Date.now();
+        setAnimations(prev => [...prev, animId]);
+        setTimeout(() => {
+            setAnimations(prev => prev.filter(a => a !== animId));
+        }, 1000);
+
+        try {
+            await api.post('/wallet/tip', {
+                model_id: post.model_id,
+                post_id: id
+            });
+            // Update balance in context if possible (assuming api handles it or context provides refresh)
+        } catch (error) {
+            console.error("Tip failed", error);
+            setTipsCount(prev => prev - 1);
+            showToast(error.response?.data?.detail || "Error al enviar moneda.", "error");
+        } finally {
+            setIsTipping(false);
         }
     };
 
@@ -263,17 +303,45 @@ export default function PostDetail() {
 
                     {/* Stats Bar */}
                     <div className="flex items-center gap-6 py-3 border-y border-[var(--glass-border)]">
-                        <button onClick={handleLike} className="flex items-center gap-2 group">
-                            <Heart size={22} className={`transition-all ${isLiked ? 'fill-pink-500 text-pink-500 scale-110' : 'text-[var(--text-primary)] group-active:scale-95'}`} />
-                            <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{post.likes_count || 0}</span>
-                        </button>
+                        <motion.button
+                            whileTap={{ scale: 1.2 }}
+                            onClick={handleLike}
+                            className="flex items-center gap-2 group"
+                        >
+                            <Heart size={22} className={`transition-all ${isLiked ? 'fill-red-500 text-red-500 scale-110 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'text-[var(--text-primary)] group-active:scale-95'}`} />
+                            <span className={`text-sm font-medium transition-colors ${isLiked ? 'text-red-500' : 'text-[var(--text-primary)] opacity-90'}`}>{post.likes_count || 0}</span>
+                        </motion.button>
+
                         <div className="flex items-center gap-2">
                             <MessageCircle size={22} className="text-[var(--text-primary)]" />
                             <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{post.comments_count || 0}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Coins size={22} className="text-yellow-400" />
-                            <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{post.tips_count || 0}</span>
+
+                        <div className="flex items-center gap-2 relative">
+                            <motion.button
+                                whileTap={{ scale: 1.4 }}
+                                onClick={handleFastTip}
+                                className="flex items-center gap-2 group/tip"
+                            >
+                                <div className="relative">
+                                    <CircleDollarSign size={22} className="text-yellow-400 group-hover/tip:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
+                                    <AnimatePresence>
+                                        {animations.map(animId => (
+                                            <motion.div
+                                                key={animId}
+                                                initial={{ y: 0, x: 0, opacity: 1, scale: 1 }}
+                                                animate={{ y: -50, x: (Math.random() - 0.5) * 30, opacity: 0, scale: 1.5 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.8 }}
+                                                className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 overflow-visible"
+                                            >
+                                                <span className="text-lg">🪙</span>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+                                <span className="text-sm font-medium text-[var(--text-primary)] opacity-90">{tipsCount}</span>
+                            </motion.button>
                         </div>
                         <div className="flex-1"></div>
                         {/* Share button removed */}

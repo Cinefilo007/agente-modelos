@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { timeAgo } from '../../utils/date';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
-import { Coins, Gift } from 'lucide-react';
+import { CircleDollarSign, Gift } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../context/ToastContext';
@@ -338,7 +338,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                                     title="Enviar Moneda ($0.05)"
                                 >
                                     <div className="relative">
-                                        <Coins size={24} className="group-hover/tip:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
+                                        <CircleDollarSign size={24} className="group-hover/tip:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
 
                                         {/* Flying Coins Container */}
                                         <AnimatePresence>

@@ -49,3 +49,28 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TelegramUser:
         )
     except JWTError:
         raise credentials_exception
+
+async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[TelegramUser]:
+    """
+    Optional version of get_current_user - returns None instead of raising if token is missing/invalid.
+    """
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
+        telegram_id: str = payload.get("sub")
+        user_id: str = payload.get("user_id")
+        role: str = payload.get("role")
+        username: str = payload.get("username")
+        
+        if telegram_id is None or user_id is None:
+            return None
+            
+        return TelegramUser(
+            id=int(telegram_id), 
+            user_id=user_id, 
+            username=username, 
+            role=role
+        )
+    except:
+        return None

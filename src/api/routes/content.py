@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Body
 from typing import List, Optional
 from pydantic import BaseModel
-from src.api.dependencies import get_current_user, TelegramUser
+from src.api.dependencies import get_current_user, get_current_user_optional, TelegramUser
 from src.services.database import db
 from src.services.storage import upload_file
 from datetime import datetime, timedelta
@@ -265,7 +265,10 @@ async def get_feed(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/post/{post_id}")
-async def get_post_detail(post_id: str):
+async def get_post_detail(
+    post_id: str,
+    user: Optional[TelegramUser] = Depends(get_current_user_optional)
+):
     """Get a single post by ID."""
     try:
         response = db.client.table("posts") \
@@ -280,8 +283,19 @@ async def get_post_detail(post_id: str):
         post = response.data
 
         # Enrich with is_online
-        model = post.get('models') or {}
-        post['is_online'] = calculate_is_online(model.get('last_seen')) if model else False
+        model_data = post.get('models') or {}
+        post['is_online'] = calculate_is_online(model_data.get('last_seen')) if model_data else False
+        
+        # Check if current user liked it
+        post['is_liked'] = False
+        if user:
+            like_res = db.client.table("interactions") \
+                .select("id") \
+                .eq("actor_id", user.user_id) \
+                .eq("target_id", post_id) \
+                .eq("action", "like") \
+                .execute()
+            post['is_liked'] = bool(like_res.data)
             
         return post
     except Exception as e:
