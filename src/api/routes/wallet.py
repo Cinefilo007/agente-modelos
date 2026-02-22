@@ -174,6 +174,8 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
 
         return {"success": True, "new_balance": balance - request.amount}
 
+    except HTTPException as he:
+        raise he
     except Exception as e:
         print(f"Error sending tip: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -234,7 +236,10 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
 
         return {"success": True, "new_balance": balance - amount}
 
+    except HTTPException as he:
+        raise he
     except Exception as e:
+        print(f"Error purchasing gift: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 class WithdrawRequest(BaseModel):

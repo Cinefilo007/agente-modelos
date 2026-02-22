@@ -98,6 +98,19 @@ async def process_verification(model_id: str, body: VerificationAction):
         # 1. Update DB
         if body.action == "approve":
             db.client.table("models").update({"status": "active", "is_verified": True}).eq("id", model_id).execute()
+            
+            # --- CREATE WALLET FOR APPROVED MODEL ---
+            # Check if wallet already exists
+            w_res = db.client.table("wallets").select("user_id").eq("user_id", model_id).execute()
+            if not w_res.data:
+                memo = f"user_{model_id.split('-')[0]}"
+                db.client.table("wallets").insert({
+                    "user_id": model_id,
+                    "balance": 0.0,
+                    "locked_balance": 0.0,
+                    "deposit_memo": memo
+                }).execute()
+                print(f"Billetera creada para modelo aprobado: {model_id}")
         else:
              db.client.table("models").update({"status": "rejected"}).eq("id", model_id).execute()
 
