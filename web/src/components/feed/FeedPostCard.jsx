@@ -10,6 +10,7 @@ import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { Coins, Gift } from 'lucide-react';
 import clsx from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
     const { user, updateUser } = useAuth();
@@ -26,6 +27,8 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
     const [showCommentInput, setShowCommentInput] = useState(false);
     const [showGiftSelector, setShowGiftSelector] = useState(false);
     const [isTipping, setIsTipping] = useState(false);
+    const [tipsCount, setTipsCount] = useState(Number(post.tips_count) || 0);
+    const [animations, setAnimations] = useState([]); // Track flying coins
 
     // Refs
     const videoRef = useRef(null);
@@ -117,9 +120,23 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
         }
     };
 
-    const handleFastTip = async () => {
-        if (isAdmin || isTipping) return;
-        setIsTipping(true);
+    const handleFastTip = async (e) => {
+        if (isAdmin || isTipping || user?.role === 'model') return;
+
+        // Prevent event bubbling if needed
+        e?.preventDefault();
+        e?.stopPropagation();
+
+        // 1. Optimistic Update
+        setTipsCount(prev => prev + 1);
+
+        // 2. Trigger Animation
+        const id = Date.now();
+        setAnimations(prev => [...prev, id]);
+        setTimeout(() => {
+            setAnimations(prev => prev.filter(a => a !== id));
+        }, 1000);
+
         try {
             const res = await api.post('/wallet/tip', {
                 model_id: post.user.id,
@@ -127,14 +144,14 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
             });
             // Update local user balance in context
             if (res.data.new_balance !== undefined) {
-                // Assuming updateUser can take partial updates or we re-fetch
-                const userRes = await api.get('/auth/me');
-                updateUser?.(userRes.data);
+                const updatedUser = { ...user, balance: res.data.new_balance };
+                updateUser?.(updatedUser);
             }
         } catch (error) {
             console.error("Tip failed", error);
-        } finally {
-            setIsTipping(false);
+            // Revert on failure
+            setTipsCount(prev => prev - 1);
+            alert(error.response?.data?.detail || "Error al enviar moneda. Revisa tu saldo.");
         }
     };
 
@@ -309,18 +326,44 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                 <div className="p-4 bg-white/5 backdrop-blur-xl border-t border-white/5">
                     <div className="flex items-center gap-4 mb-3">
                         {user?.role !== 'model' && (
-                            <button
-                                onClick={handleFastTip}
-                                disabled={isTipping}
-                                className={clsx(
-                                    "flex items-center gap-1.5 transition-all active:scale-125 hover:text-yellow-400",
-                                    isTipping ? "text-yellow-500 animate-bounce" : "text-white"
-                                )}
-                                title="Enviar Moneda ($0.25)"
-                            >
-                                <Coins size={24} className={isTipping ? "fill-yellow-500" : ""} />
-                                <span className="text-sm font-bold">{post.tips_count || 0}</span>
-                            </button>
+                            <div className="relative">
+                                <motion.button
+                                    whileTap={{ scale: 1.5 }}
+                                    onClick={handleFastTip}
+                                    className={clsx(
+                                        "flex items-center gap-1.5 transition-all text-white hover:text-yellow-400 group/tip"
+                                    )}
+                                    title="Enviar Moneda ($0.25)"
+                                >
+                                    <div className="relative">
+                                        <Coins size={24} className="group-hover/tip:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
+
+                                        {/* Flying Coins Container */}
+                                        <AnimatePresence>
+                                            {animations.map(id => (
+                                                <motion.div
+                                                    key={id}
+                                                    initial={{ y: 0, x: 0, opacity: 1, scale: 1 }}
+                                                    animate={{ y: -60, x: (Math.random() - 0.5) * 40, opacity: 0, scale: 1.5 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.8, ease: "easeOut" }}
+                                                    className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 overflow-visible"
+                                                >
+                                                    <span className="text-xl">🪙</span>
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
+                                    <motion.span
+                                        key={tipsCount}
+                                        initial={{ scale: 1 }}
+                                        animate={{ scale: [1, 1.4, 1] }}
+                                        className="text-sm font-bold"
+                                    >
+                                        {tipsCount}
+                                    </motion.span>
+                                </motion.button>
+                            </div>
                         )}
 
                         <button
