@@ -18,12 +18,31 @@ const LandingPage = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // State for dynamic bot name
+    const [botUsername, setBotUsername] = useState(null);
+
+    // Fetch bot config
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const res = await api.get('/config/bot-username');
+                setBotUsername(res.data.username);
+            } catch (err) {
+                console.error("Failed to fetch bot name, using fallback", err);
+                setBotUsername('AgenteNebulaIA_bot');
+            }
+        };
+        fetchConfig();
+    }, []);
+
     // Telegram Widget
     useEffect(() => {
+        if (!botUsername) return; // Wait for config
         if (telegramWrapperRef.current && telegramWrapperRef.current.innerHTML !== "") return;
+
         const script = document.createElement('script');
         script.src = "https://telegram.org/js/telegram-widget.js?22";
-        script.setAttribute('data-telegram-login', 'AgenteNebulaIA_bot');
+        script.setAttribute('data-telegram-login', botUsername);
         script.setAttribute('data-size', 'large');
         script.setAttribute('data-radius', '12');
         script.setAttribute('data-request-access', 'write');
@@ -38,7 +57,7 @@ const LandingPage = () => {
         };
         // Clean global only on unmount
         return () => { window.onTelegramAuth = undefined; }
-    }, [loginWithTelegram, navigate]);
+    }, [loginWithTelegram, navigate, botUsername]);
 
     const scrollToLogin = () => {
         telegramWrapperRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });

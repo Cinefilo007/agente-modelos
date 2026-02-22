@@ -50,11 +50,7 @@ def verify_telegram_data(data: TelegramAuthData):
     hash_check = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
     
     if hash_check != data.hash:
-        # DEBUG MODE: Expose details to frontend for diagnosis
-        clean_token_id = BOT_TOKEN.split(':')[0] if BOT_TOKEN else 'None'
-        debug_msg = f"Invalid Hash. Expected: {hash_check}, Got: {data.hash}. Check: {data_check_string}. TokenID: {clean_token_id}"
-        print(f"[AUTH DEBUG] {debug_msg}")
-        raise HTTPException(status_code=403, detail=debug_msg)
+        raise HTTPException(status_code=403, detail="Invalid Telegram hash")
     return True
 
 def verify_webapp_data(init_data: str):
