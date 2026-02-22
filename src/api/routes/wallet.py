@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime
 from typing import List, Optional
@@ -6,6 +7,8 @@ from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
 import os
 import requests
+
+logger = logging.getLogger(__name__)
 
 # For sending notifications to admin
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
