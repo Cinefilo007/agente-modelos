@@ -306,10 +306,10 @@ export default function PostDetail() {
                         <motion.button
                             whileTap={{ scale: 1.2 }}
                             onClick={handleLike}
-                            className="flex items-center gap-2 group"
+                            className="flex items-center gap-2 group outline-none"
                         >
-                            <Heart size={22} className={`transition-all ${isLiked ? 'fill-red-500 text-red-500 scale-110 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'text-[var(--text-primary)] group-active:scale-95'}`} />
-                            <span className={`text-sm font-medium transition-colors ${isLiked ? 'text-red-500' : 'text-[var(--text-primary)] opacity-90'}`}>{post.likes_count || 0}</span>
+                            <Heart size={22} className={`transition-all duration-300 ${isLiked ? 'fill-red-500 text-red-500 scale-110 [filter:drop-shadow(0_0_8px_rgba(239,68,68,0.6))]' : 'text-[var(--text-primary)] group-active:scale-95'}`} />
+                            <span className={`text-sm font-bold transition-colors ${isLiked ? 'text-red-500' : 'text-[var(--text-primary)] opacity-90'}`}>{post.likes_count || 0}</span>
                         </motion.button>
 
                         <div className="flex items-center gap-2">

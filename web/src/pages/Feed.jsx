@@ -59,6 +59,7 @@ function Feed() {
                     comments_count: p.comments_count || 0,
                     tips_count: p.tips_count || 0,
                     gifts_count: p.gifts_count || 0,
+                    is_liked: p.is_liked || false,
                     type: p.media_type,
                     timestamp: p.created_at, // Pass raw ISO string for timeAgo
                     created_at: p.created_at,

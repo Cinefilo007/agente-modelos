@@ -370,9 +370,9 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
 
                         <button
                             onClick={handleLike}
-                            className={`flex items-center gap-1.5 transition-all active:scale-90 ${isLiked ? 'text-pink-500' : 'text-white'}`}
+                            className={`flex items-center gap-1.5 transition-all active:scale-90 outline-none ${isLiked ? 'text-red-500' : 'text-white'}`}
                         >
-                            <Heart size={24} className={isLiked ? 'fill-pink-500' : ''} />
+                            <Heart size={24} className={isLiked ? 'fill-red-500 [filter:drop-shadow(0_0_8px_rgba(239,68,68,0.4))]' : ''} />
                             <span className="text-sm font-bold">{likeCount}</span>
                         </button>
 
