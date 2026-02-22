@@ -11,7 +11,7 @@ BEGIN
         IF (TG_OP = 'INSERT') OR (TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM 'COMPLETED') THEN
             UPDATE clients 
             SET total_spent = total_spent + NEW.amount
-            WHERE user_id = NEW.user_id;
+            WHERE id = NEW.user_id;
         END IF;
     END IF;
     RETURN NEW;

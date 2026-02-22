@@ -166,6 +166,7 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
             "amount": request.amount,
             "currency": "USDT",
             "status": "COMPLETED",
+            "reference_id": request.post_id,
             "details": {"to_model": request.model_id, "post_id": request.post_id}
         }).execute()
         
@@ -231,6 +232,7 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
             "amount": amount,
             "currency": "USDT",
             "status": "COMPLETED",
+            "reference_id": request.post_id,
             "details": {"gift_name": gift["name"], "to_model": request.model_id}
         }).execute()
 
