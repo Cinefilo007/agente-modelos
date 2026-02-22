@@ -31,6 +31,8 @@ export default function PostDetail() {
     const [isTipping, setIsTipping] = useState(false);
     const [showGiftSelector, setShowGiftSelector] = useState(false);
     const [giftsCount, setGiftsCount] = useState(0);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const videoRef = React.useRef(null);
 
@@ -144,10 +146,10 @@ export default function PostDetail() {
     };
 
     const handleDelete = async () => {
-        if (!window.confirm("¿Estás seguro de que quieres eliminar esta publicación?")) return;
         try {
             await api.delete(`/content/posts/${id}`);
             navigate(-1);
+            showToast("Publicación eliminada correctamente", "success");
         } catch (err) {
             console.error("Error deleting post:", err);
             showToast("Error al eliminar la publicación", "error");
@@ -216,7 +218,7 @@ export default function PostDetail() {
                         <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
                             {isOwner || currentUser?.role === 'admin' ? (
                                 <button
-                                    onClick={handleDelete}
+                                    onClick={() => setShowDeleteModal(true)}
                                     className="w-full text-left px-4 py-3 text-red-500 hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
                                 >
                                     <Trash2 size={16} />
@@ -224,6 +226,7 @@ export default function PostDetail() {
                                 </button>
                             ) : (
                                 <button
+                                    onClick={() => setShowReportModal(true)}
                                     className="w-full text-left px-4 py-3 text-white/70 hover:bg-white/5 hover:text-white text-sm font-bold flex items-center gap-2"
                                 >
                                     <Flag size={16} />
@@ -430,6 +433,141 @@ export default function PostDetail() {
                     setGiftsCount(prev => prev + 1);
                 }}
             />
+
+            {/* Custom Delete Confirmation Modal */}
+            <AnimatePresence>
+                {showDeleteModal && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl"
+                        >
+                            <div className="p-6 text-center">
+                                <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/30">
+                                    <Trash2 size={32} className="text-red-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">¿Eliminar publicación?</h3>
+                                <p className="text-gray-400 text-sm mb-6">Esta acción es permanente y no se podrá deshacer.</p>
+
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={handleDelete}
+                                        className="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-500 transition-colors shadow-lg shadow-red-600/20"
+                                    >
+                                        Sí, Eliminar
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDeleteModal(false)}
+                                        className="w-full py-3 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Custom Report Modal */}
+            <AnimatePresence>
+                {showReportModal && (
+                    <ReportModal
+                        postId={id}
+                        onClose={() => setShowReportModal(false)}
+                        onSuccess={() => {
+                            setShowReportModal(false);
+                            showToast("Reporte enviado correctamente", "success");
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+// Internal Report Modal Component for PostDetail
+function ReportModal({ postId, onClose, onSuccess }) {
+    const [reason, setReason] = useState("");
+    const [desc, setDesc] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    const reasons = [
+        "Contenido Inapropiado",
+        "Spam / Estafa",
+        "Suplantación de Identidad",
+        "Lenguaje de Odio",
+        "Otro"
+    ];
+
+    const submitReport = async () => {
+        if (!reason) return;
+        setSubmitting(true);
+        try {
+            await api.post('/content/report', {
+                post_id: postId,
+                reason,
+                description: desc
+            });
+            onSuccess();
+        } catch (err) {
+            console.error("Report failed", err);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 40 }}
+                className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl"
+            >
+                <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                    <h3 className="font-bold text-white flex items-center gap-2">
+                        <AlertTriangle size={18} className="text-yellow-500" /> Reportar Publicación
+                    </h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white">
+                        <X size={20} />
+                    </button>
+                </div>
+                <div className="p-4 space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Motivo</label>
+                        <div className="grid grid-cols-1 gap-2">
+                            {reasons.map(r => (
+                                <button
+                                    key={r}
+                                    onClick={() => setReason(r)}
+                                    className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all border ${reason === r ? 'bg-pink-600/20 border-pink-500 text-white font-bold' : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10'}`}
+                                >
+                                    {r}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    {reason === 'Otro' && (
+                        <textarea
+                            className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                            placeholder="Describe el problema..."
+                            rows={3}
+                            value={desc}
+                            onChange={e => setDesc(e.target.value)}
+                        />
+                    )}
+                    <button
+                        onClick={submitReport}
+                        disabled={submitting || !reason}
+                        className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 shadow-xl"
+                    >
+                        {submitting ? "Enviando..." : "Enviar Reporte"}
+                    </button>
+                </div>
+            </motion.div>
         </div>
     );
 }
