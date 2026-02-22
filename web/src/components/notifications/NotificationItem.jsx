@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, UserPlus, MessageCircle, Star } from 'lucide-react';
+import { Heart, UserPlus, MessageCircle, Star, CircleDollarSign, Gift } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -34,6 +34,10 @@ export function NotificationItem({ notification, onRead }) {
                 return <MessageCircle className="w-3 h-3 text-white fill-green-500" />;
             case 'review':
                 return <Star className="w-3 h-3 text-white fill-yellow-500" />;
+            case 'tip':
+                return <CircleDollarSign className="w-3 h-3 text-white fill-yellow-500" />;
+            case 'gift':
+                return <Gift className="w-3 h-3 text-white fill-purple-500" />;
             default:
                 return <Star className="w-3 h-3 text-white" />;
         }
@@ -45,6 +49,8 @@ export function NotificationItem({ notification, onRead }) {
             case 'follow': return 'bg-blue-500';
             case 'comment': return 'bg-green-500';
             case 'review': return 'bg-yellow-500';
+            case 'tip': return 'bg-yellow-500';
+            case 'gift': return 'bg-purple-500';
             default: return 'bg-gray-500';
         }
     };
@@ -55,6 +61,11 @@ export function NotificationItem({ notification, onRead }) {
             case 'follow': return 'comenzó a seguirte';
             case 'comment': return `comentó: "${notification.content}"`;
             case 'review': return `dejó una reseña`;
+            case 'tip':
+                const count = parseInt(notification.content) || 1;
+                return `te ha enviado ${count} ${count === 1 ? 'moneda' : 'monedas'}`;
+            case 'gift':
+                return `te ha enviado un regalo: ${notification.content}`;
             default: return 'interactuó contigo';
         }
     };

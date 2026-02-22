@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel
 from src.api.dependencies import get_current_user, TelegramUser
@@ -173,6 +174,49 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
         # Note: The trigger 'trg_update_client_spending' will automatically 
         # update 'total_spent' in 'clients' table for the elite status.
 
+        # 4. Create or update grouped notification
+        try:
+            from datetime import timedelta
+            one_hour_ago = (datetime.now() - timedelta(hours=1)).isoformat()
+            
+            # Find recent unread tip notification for this post from same actor
+            existing_notif = db.service_client.table("notifications") \
+                .select("*") \
+                .eq("user_id", request.model_id) \
+                .eq("actor_id", user.user_id) \
+                .eq("type", "tip") \
+                .eq("target_id", request.post_id) \
+                .eq("is_read", False) \
+                .gt("created_at", one_hour_ago) \
+                .order("created_at", desc=True) \
+                .limit(1) \
+                .execute()
+            
+            if existing_notif.data:
+                notif = existing_notif.data[0]
+                try:
+                    current_count = int(notif.get('content') or 1)
+                except:
+                    current_count = 1
+                
+                db.service_client.table("notifications") \
+                    .update({
+                        "content": str(current_count + 1),
+                        "created_at": datetime.now().isoformat()
+                    }) \
+                    .eq("id", notif['id']) \
+                    .execute()
+            else:
+                db.service_client.table("notifications").insert({
+                    "user_id": request.model_id,
+                    "actor_id": user.user_id,
+                    "type": "tip",
+                    "target_id": request.post_id,
+                    "content": "1"
+                }).execute()
+        except Exception as notif_err:
+            print(f"Error creating tip notification: {notif_err}")
+
         return {"success": True, "new_balance": balance - request.amount}
 
     except HTTPException as he:
@@ -235,6 +279,18 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
             "reference_id": request.post_id,
             "details": {"gift_name": gift["name"], "to_model": request.model_id}
         }).execute()
+
+        # 5. Create notification
+        try:
+            db.service_client.table("notifications").insert({
+                "user_id": request.model_id,
+                "actor_id": user.user_id,
+                "type": "gift",
+                "target_id": request.post_id,
+                "content": gift["name"]
+            }).execute()
+        except Exception as notif_err:
+            print(f"Error creating gift notification: {notif_err}")
 
         return {"success": True, "new_balance": balance - amount}
 
