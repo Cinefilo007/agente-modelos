@@ -186,8 +186,15 @@ function Feed() {
                         <Loader className="animate-spin text-purple-500" />
                     </div>
                 ) : posts.length === 0 ? (
-                    <div className="text-center py-10 text-gray-400">
-                        No hay publicaciones para mostrar.
+                    <div className="flex flex-col items-center justify-center text-center py-20 px-8 text-white/50">
+                        {filter === 'following' ? (
+                            <>
+                                <h3 className="font-bold text-lg mb-2 text-white/80">Sin publicaciones</h3>
+                                <p className="text-sm">Aún no sigues a ninguna modelo o no han publicado contenido reciente.</p>
+                            </>
+                        ) : (
+                            <p className="text-sm">No hay publicaciones para mostrar.</p>
+                        )}
                     </div>
                 ) : (
                     posts.map((post) => (

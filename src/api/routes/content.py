@@ -201,9 +201,9 @@ async def get_feed(
         # Filter by following (if strictly requested)
         if filter_type == "following":
             client = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
-            if client.data:
+            if client and hasattr(client, 'data') and client.data:
                 following = db.client.table("followers").select("model_id").eq("client_id", client.data['id']).execute()
-                model_ids = [f['model_id'] for f in following.data]
+                model_ids = [f['model_id'] for f in following.data] if following and hasattr(following, 'data') else []
                 if model_ids:
                     query = query.in_("model_id", model_ids)
                 else:
