@@ -224,6 +224,23 @@ async def get_model_reviews(model_id: str):
         
     return response.data
 
+@router.get("/following/me")
+async def get_my_followed_models(user: TelegramUser = Depends(get_current_user)):
+    """Get the models that the current user (client) is following."""
+    # 1. Get client ID
+    client_res = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
+    if not client_res or not hasattr(client_res, "data") or not client_res.data:
+         return []
+    
+    # 2. Get following list
+    following_res = db.client.table("followers") \
+        .select("model_id, created_at, models(username, full_name, artistic_name, avatar_url, last_seen)") \
+        .eq("client_id", client_res.data['id']) \
+        .order("created_at", desc=True) \
+        .execute()
+        
+    return following_res.data if following_res and hasattr(following_res, "data") else []
+
 @router.get("/followers/status/{model_id}")
 async def check_follow_status(
     model_id: str,

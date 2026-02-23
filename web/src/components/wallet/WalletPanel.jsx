@@ -15,6 +15,8 @@ const WalletPanel = () => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingTx, setLoadingTx] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     // Withdraw State
     const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -54,16 +56,34 @@ const WalletPanel = () => {
         }
     };
 
-    const fetchTransactions = async () => {
+    const fetchTransactions = async (currentPage = 1) => {
         setLoadingTx(true);
         try {
-            const res = await api.get('/wallet/history');
-            setTransactions(res.data);
+            const res = await api.get(`/wallet/history?page=${currentPage}&limit=20`);
+            // The backend now returns { transactions, total, page, limit, total_pages }
+            if (res.data && res.data.transactions !== undefined) {
+                if (currentPage === 1) {
+                    setTransactions(res.data.transactions);
+                } else {
+                    setTransactions(prev => [...prev, ...res.data.transactions]);
+                }
+                setTotalPages(res.data.total_pages);
+                setPage(currentPage);
+            } else {
+                // Fallback for older non-paginated format if any
+                setTransactions(res.data);
+            }
         } catch (e) {
             console.error("Error fetching history:", e);
         } finally {
             setLoadingTx(false);
             setLoading(false);
+        }
+    };
+
+    const handleLoadMore = () => {
+        if (page < totalPages && !loadingTx) {
+            fetchTransactions(page + 1);
         }
     };
 
@@ -276,7 +296,20 @@ const WalletPanel = () => {
                     {activeTab === 'history' && (
                         <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                             <h3 className="text-lg font-bold text-white mb-6">Historial</h3>
-                            <TransactionList transactions={transactions} loading={loadingTx} />
+                            <TransactionList transactions={transactions} loading={loadingTx && page === 1} />
+
+                            {page < totalPages && (
+                                <div className="mt-6 flex justify-center">
+                                    <button
+                                        onClick={handleLoadMore}
+                                        disabled={loadingTx}
+                                        className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {loadingTx ? <RefreshCw className="animate-spin" size={16} /> : <Layers size={16} />}
+                                        {loadingTx ? 'Cargando...' : 'Cargar más transacciones'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

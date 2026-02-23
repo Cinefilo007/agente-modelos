@@ -9,179 +9,214 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../api/axios';
 import { useEffect } from 'react';
+import { isOnline as checkOnline } from '../utils/date';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function ClientProfile() {
     const { themeColor } = useTheme();
     const { user, logout } = useAuth();
     const [balance, setBalance] = useState({ balance: 0, currency: 'USDT' });
+    const [following, setFollowing] = useState([]);
+    const [recentActivity, setRecentActivity] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchBalance = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.get('/wallet/balance');
-                setBalance(res.data);
+                const [balRes, followRes, txRes] = await Promise.all([
+                    api.get('/wallet/balance').catch(() => ({ data: { balance: 0, currency: 'USDT' } })),
+                    api.get('/interactions/following/me').catch(() => ({ data: [] })),
+                    api.get('/wallet/history?page=1&limit=3').catch(() => ({ data: { transactions: [] } }))
+                ]);
+                setBalance(balRes.data);
+
+                // Parse following models
+                const formattedFollowing = (followRes.data || []).map(f => ({
+                    id: f.model_id,
+                    name: f.models?.artistic_name || f.models?.full_name || f.models?.username || "Modelo",
+                    avatar: f.models?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.model_id}`,
+                    is_online: f.models?.last_seen ? checkOnline(f.models.last_seen) : false,
+                    username: f.models?.username
+                }));
+                setFollowing(formattedFollowing);
+
+                // Parse transactions for activity
+                const transactions = txRes.data?.transactions || (Array.isArray(txRes.data) ? txRes.data : []);
+                setRecentActivity(transactions.slice(0, 3));
+
             } catch (e) {
-                console.error("Error fetching balance", e);
+                console.error("Error fetching client data", e);
             }
         };
-        fetchBalance();
+        fetchData();
     }, []);
 
     if (!user) return null;
 
-    const name = user.artistic_name || user.full_name || user.username || "Usuario";
-    const avatarUrl = user.avatar_url || user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}`;
-
-    // Mock Data
-    const reviews = [
-        { id: 1, model: "Valentina Rose", rating: 5, comment: "Muy amable y respetuoso. Pago inmediato.", date: "2d ago", tags: ["Generoso", "Rápido"] },
-        { id: 2, model: "Sarah Miller", rating: 4, comment: "Buena comunicación.", date: "1w ago", tags: ["Comunicativo"] },
-    ];
-
-    const following = [
-        { id: 1, name: "Valentina Rose", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330", status: "online" },
-        { id: 2, name: "Jessica Jones", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9", status: "offline" },
-        { id: 3, name: "Emily Blunt", avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1", status: "online" },
-    ];
-
     return (
-        <div className="min-h-screen pb-24 pt-6 px-4 font-sans bg-background text-foreground">
+        <div className="min-h-screen pb-24 bg-background text-foreground font-sans relative">
 
-            {/* Header / Identity */}
-            <div className="flex flex-col items-center mb-8 relative">
-                <div className="relative mb-3 group">
-                    <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl transform group-hover:scale-110 transition-transform duration-500"></div>
-                    <Avatar
-                        src={user.avatar_url || user.avatar}
-                        name={name}
-                        size="xl"
-                        className="w-24 h-24 border-4 border-background relative z-10"
-                    />
-                    <button className="absolute bottom-0 right-0 p-1.5 bg-card border border-white/10 rounded-full text-foreground hover:bg-white/10 transition-colors z-20">
-                        <Edit3 size={12} />
+            {/* Elegant Header Background */}
+            <div className="absolute top-0 left-0 right-0 h-64 overflow-hidden pointer-events-none z-0">
+                <div
+                    className="w-full h-full bg-gradient-to-br from-blue-900 via-purple-900 to-black opacity-80"
+                    style={{
+                        maskImage: 'linear-gradient(to bottom, black 20%, transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(to bottom, black 20%, transparent 100%)'
+                    }}
+                />
+            </div>
+
+            <div className="px-4 pt-16 relative z-10 w-full max-w-lg mx-auto">
+                {/* Header / Identity with Glass Card */}
+                <div className="flex flex-col items-center mb-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 shadow-2xl relative mt-4">
+                    <div className="relative -mt-16 mb-4 group">
+                        <div className="absolute inset-0 bg-blue-500/30 rounded-full blur-2xl transform group-hover:scale-110 transition-transform duration-500"></div>
+                        <Avatar
+                            src={user.avatar_url || user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}`}
+                            name={name}
+                            size="xl"
+                            className="w-28 h-28 border-[3px] border-[#0f0f13] relative z-10 shadow-2xl"
+                        />
+                        <button className="absolute bottom-1 right-1 p-2 bg-gradient-to-r from-blue-600 to-purple-600 border border-white/20 rounded-full text-white hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all z-20">
+                            <Edit3 size={14} />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <div className="flex items-center gap-2 mb-1">
+                            <h2 className="text-2xl font-bold tracking-tight text-white">{name}</h2>
+                            <ShieldCheck size={18} className="text-blue-400" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 shadow-sm">
+                            <Star size={12} className="text-blue-400" />
+                            <span className="font-bold text-xs text-blue-200 uppercase tracking-widest">CUENTA CLIENTE</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* WALLET CARD (Telegram Native Style) */}
+                <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-700 rounded-3xl p-6 text-white shadow-[0_10px_40px_rgba(59,130,246,0.3)] mb-10 relative overflow-hidden border border-white/10">
+                    <div className="absolute top-0 right-0 p-6 opacity-5 transform translate-x-4 -translate-y-4">
+                        <Wallet size={120} />
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest mb-2 opacity-80">Saldo de Billetera</p>
+                        <div className="flex items-baseline gap-2 mb-6">
+                            <h1 className="text-4xl font-black tracking-tighter">${Number(balance.balance).toFixed(2)}</h1>
+                            <span className="text-lg font-medium opacity-70">{balance.currency}</span>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={() => navigate('/wallet')} className="flex-1 bg-white border-transparent text-blue-900 hover:bg-gray-100 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">
+                                <ArrowUpRight size={18} /> Recargar
+                            </button>
+                            <button onClick={() => navigate('/wallet')} className="flex-1 bg-black/30 hover:bg-black/40 backdrop-blur-md border border-white/10 text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95">
+                                <History size={18} /> Historial
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Following Models */}
+                <div className="mb-10">
+                    <div className="flex justify-between items-center mb-5 px-1">
+                        <h3 className="font-bold text-lg text-white tracking-tight">Siguiendo</h3>
+                        <Link to="/explore" className="text-xs text-blue-400 hover:text-blue-300 font-semibold">Ver todas</Link>
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                        {following.map((model) => (
+                            <div key={model.id} className="flex flex-col items-center min-w-[70px]">
+                                <div className="relative mb-2 cursor-pointer" onClick={() => navigate(`/${model.username}`)}>
+                                    <Avatar
+                                        src={model.avatar}
+                                        name={model.name}
+                                        size="lg"
+                                        className="border-2 border-card"
+                                    />
+                                    {model.is_online && (
+                                        <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-card rounded-full"></div>
+                                    )}
+                                </div>
+                                <span className="text-xs font-medium truncate w-full text-center">{model.name.split(' ')[0]}</span>
+                            </div>
+                        ))}
+                        <Link to="/explore" className="flex flex-col items-center justify-center min-w-[70px]">
+                            <div className="w-16 h-16 rounded-full bg-card/50 border border-white/10 flex items-center justify-center text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors mb-2">
+                                <ChevronRight size={24} />
+                            </div>
+                            <span className="text-xs font-medium">Explorar</span>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Recent Activity */}
+                <div className="bg-card/40 border border-white/5 rounded-3xl p-5 mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-lg flex items-center gap-2">
+                            <History size={20} className="text-purple-400" /> Actividad Reciente
+                        </h3>
+                        <Link to="/wallet" className="text-xs text-blue-400 hover:text-blue-300 font-semibold">Ver historial</Link>
+                    </div>
+                    <div className="space-y-4">
+                        {recentActivity.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-2 italic text-center">No hay transacciones recientes.</p>
+                        ) : (
+                            recentActivity.map((tx) => (
+                                <div key={tx.id} className="border-b border-white/5 pb-3 last:border-0 last:pb-0 flex justify-between items-center">
+                                    <div>
+                                        <div className="font-semibold text-sm text-foreground">
+                                            {tx.type === 'TIP_SENT' ? 'Tip enviado a ' + (tx.details?.to_name || 'Modelo')
+                                                : tx.type === 'GIFT_SENT' ? `Regalo enviado a ${tx.details?.to_name || 'Modelo'}`
+                                                    : tx.type === 'DEPOSIT' ? 'Depósito'
+                                                        : tx.type}
+                                        </div>
+                                        <span className="text-[10px] text-muted-foreground">{format(new Date(tx.created_at), "d MMM, HH:mm", { locale: es })}</span>
+                                    </div>
+                                    <div className={`font-bold text-sm ${['DEPOSIT'].includes(tx.type) ? 'text-green-400' : 'text-white'}`}>
+                                        {['DEPOSIT'].includes(tx.type) ? '+' : '-'}${parseFloat(tx.amount).toFixed(2)}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* Menu Links */}
+                <div className="bg-card/30 backdrop-blur-md border border-white/5 rounded-[1.5rem] overflow-hidden shadow-xl">
+                    <button className="w-full flex items-center justify-between p-4.5 hover:bg-white/5 transition-colors border-b border-white/5 group">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-white/5 rounded-xl group-hover:bg-blue-500/20 group-hover:text-blue-400 transition-colors">
+                                <CreditCard size={18} className="text-muted-foreground group-hover:text-blue-400 transition-colors" />
+                            </div>
+                            <span className="text-sm font-semibold text-white/90">Métodos de Pago</span>
+                        </div>
+                        <ChevronRight size={16} className="text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-4.5 hover:bg-white/5 transition-colors border-b border-white/5 group">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-white/5 rounded-xl group-hover:bg-white/10 transition-colors">
+                                <Settings size={18} className="text-muted-foreground group-hover:text-white transition-colors" />
+                            </div>
+                            <span className="text-sm font-semibold text-white/90">Configuración</span>
+                        </div>
+                        <ChevronRight size={16} className="text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                    </button>
+                    <button
+                        onClick={logout}
+                        className="w-full flex items-center justify-between p-4.5 hover:bg-red-500/10 transition-colors group"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-red-500/10 rounded-xl group-hover:bg-red-500/20 transition-colors">
+                                <LogOut size={18} className="text-red-400" />
+                            </div>
+                            <span className="text-sm font-semibold text-red-400">Cerrar Sesión</span>
+                        </div>
                     </button>
                 </div>
-                <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold">{name}</h2>
-                    <Edit3 size={14} className="text-muted-foreground cursor-pointer hover:text-foreground" />
-                </div>
-                <div className="flex items-center gap-1.5 mt-1">
-                    <Star size={14} className="fill-amber-400 text-amber-400" />
-                    <span className="font-bold text-sm">4.8</span>
-                    <span className="text-xs text-muted-foreground">(12 reviews)</span>
-                </div>
+
             </div>
-
-            {/* WALLET CARD (Telegram Native Style) */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 text-white shadow-2xl shadow-blue-900/40 mb-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-10">
-                    <Wallet size={80} />
-                </div>
-                <div className="relative z-10">
-                    <p className="text-blue-200 text-xs font-semibold uppercase tracking-wider mb-2">Telegram Wallet Balance</p>
-                    <h1 className="text-4xl font-bold mb-6">${Number(balance.balance).toFixed(2)} <span className="text-lg opacity-70">{balance.currency}</span></h1>
-
-                    <div className="flex gap-3">
-                        <button onClick={() => navigate('/wallet')} className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/10 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer">
-                            <ArrowUpRight size={18} /> Recargar
-                        </button>
-                        <button onClick={() => navigate('/wallet')} className="flex-1 bg-black/20 hover:bg-black/30 backdrop-blur-md border border-white/5 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer">
-                            <History size={18} /> Historial
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Following Models */}
-            <div className="mb-8">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold text-lg">Siguiendo</h3>
-                    <Link to="/explore" className="text-xs text-blue-400 hover:text-blue-300 font-semibold">Ver todas</Link>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-                    {following.map((model) => (
-                        <div key={model.id} className="flex flex-col items-center min-w-[70px]">
-                            <div className="relative mb-2">
-                                <Avatar
-                                    src={model.avatar}
-                                    name={model.name}
-                                    size="lg"
-                                    className="border-2 border-card"
-                                />
-                                {model.status === 'online' && (
-                                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-card rounded-full"></div>
-                                )}
-                            </div>
-                            <span className="text-xs font-medium truncate w-full text-center">{model.name.split(' ')[0]}</span>
-                        </div>
-                    ))}
-                    <Link to="/explore" className="flex flex-col items-center justify-center min-w-[70px]">
-                        <div className="w-16 h-16 rounded-full bg-card/50 border border-white/10 flex items-center justify-center text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors mb-2">
-                            <ChevronRight size={24} />
-                        </div>
-                        <span className="text-xs font-medium">Explorar</span>
-                    </Link>
-                </div>
-            </div>
-
-            {/* Reputation / Reviews */}
-            <div className="bg-card/40 border border-white/5 rounded-3xl p-5 mb-8">
-                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                    <ShieldCheck size={20} className="text-green-400" /> Tu Reputación
-                </h3>
-                <div className="space-y-4">
-                    {reviews.map((review) => (
-                        <div key={review.id} className="border-b border-white/5 pb-4 last:border-0 last:pb-0">
-                            <div className="flex justify-between items-start mb-2">
-                                <span className="font-semibold text-sm text-foreground">{review.model}</span>
-                                <span className="text-[10px] text-muted-foreground">{review.date}</span>
-                            </div>
-                            <div className="flex items-center gap-1 mb-2">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star key={i} size={10} className={i < review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"} />
-                                ))}
-                            </div>
-                            <p className="text-xs text-muted-foreground italic">"{review.comment}"</p>
-                            <div className="flex gap-2 mt-2">
-                                {review.tags.map((tag, i) => (
-                                    <span key={i} className="text-[9px] px-1.5 py-0.5 bg-white/5 rounded text-muted-foreground border border-white/5">
-                                        #{tag}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Menu Links */}
-            <div className="bg-card/40 border border-white/5 rounded-2xl overflow-hidden">
-                <button className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors border-b border-white/5">
-                    <div className="flex items-center gap-3">
-                        <CreditCard size={18} className="text-muted-foreground" />
-                        <span className="text-sm font-medium">Métodos de Pago</span>
-                    </div>
-                    <ChevronRight size={16} className="text-muted-foreground" />
-                </button>
-                <button className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors border-b border-white/5">
-                    <div className="flex items-center gap-3">
-                        <Settings size={18} className="text-muted-foreground" />
-                        <span className="text-sm font-medium">Configuración</span>
-                    </div>
-                    <ChevronRight size={16} className="text-muted-foreground" />
-                </button>
-                <button
-                    onClick={logout}
-                    className="w-full flex items-center justify-between p-4 hover:bg-red-500/10 transition-colors text-red-400"
-                >
-                    <div className="flex items-center gap-3">
-                        <LogOut size={18} />
-                        <span className="text-sm font-medium">Cerrar Sesión</span>
-                    </div>
-                </button>
-            </div>
-
         </div>
     );
 }

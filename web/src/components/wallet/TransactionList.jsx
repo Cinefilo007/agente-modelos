@@ -38,17 +38,23 @@ const TransactionList = ({ transactions, loading }) => {
             case 'DEPOSIT':
             case 'ESCROW_RELEASE':
             case 'ESCROW_REFUND':
+            case 'TIP_RECEIVED':
+            case 'GIFT_RECEIVED':
                 return <ArrowDownLeft className="text-green-400" />;
             case 'WITHDRAWAL':
             case 'ESCROW_LOCK':
             case 'FEE':
+            case 'TIP_SENT':
+            case 'GIFT_SENT':
                 return <ArrowUpRight className="text-red-400" />;
             default:
                 return <Clock className="text-gray-400" />;
         }
     };
 
-    const getLabel = (type) => {
+    const getLabel = (tx) => {
+        const type = tx.type;
+        const details = tx.details || {};
         switch (type) {
             case 'DEPOSIT': return 'Depósito Recibido';
             case 'WITHDRAWAL': return 'Retiro de Fondos';
@@ -56,12 +62,16 @@ const TransactionList = ({ transactions, loading }) => {
             case 'ESCROW_RELEASE': return 'Pago Liberado (Ganancia)';
             case 'ESCROW_REFUND': return 'Reembolso';
             case 'FEE': return 'Comisión de Plataforma';
+            case 'TIP_SENT': return `Tip enviado a ${details.to_name || 'Modelo'}`;
+            case 'TIP_RECEIVED': return `Tip recibido de ${details.from_name || 'Usuario'}`;
+            case 'GIFT_SENT': return `Regalo (${details.gift_name}) enviado a ${details.to_name || 'Modelo'}`;
+            case 'GIFT_RECEIVED': return `Regalo (${details.gift_name}) recibido de ${details.from_name || 'Usuario'}`;
             default: return type;
         }
     };
 
     const isPositive = (type) => {
-        return ['DEPOSIT', 'ESCROW_RELEASE', 'ESCROW_REFUND'].includes(type);
+        return ['DEPOSIT', 'ESCROW_RELEASE', 'ESCROW_REFUND', 'TIP_RECEIVED', 'GIFT_RECEIVED'].includes(type);
     };
 
     return (
@@ -80,7 +90,7 @@ const TransactionList = ({ transactions, loading }) => {
                         </div>
 
                         <div>
-                            <p className="font-medium text-white">{getLabel(tx.type)}</p>
+                            <p className="font-medium text-white">{getLabel(tx)}</p>
                             <div className="flex items-center gap-2 text-xs text-white/50">
                                 <span>{format(new Date(tx.created_at), "d MMM yyyy, HH:mm", { locale: es })}</span>
                                 {tx.status === 'PENDING' && <span className="text-yellow-400 flex items-center gap-1"><Clock size={10} /> Pendiente</span>}

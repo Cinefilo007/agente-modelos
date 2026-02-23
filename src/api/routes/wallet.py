@@ -42,6 +42,18 @@ class TransactionResponse(BaseModel):
     status: str
     created_at: str
     tx_hash: Optional[str] = None
+    details: Optional[dict] = None
+
+def _get_user_display_name(db_client, user_id: str) -> str:
+    try:
+        res = db_client.table("models").select("full_name, artistic_name, username").eq("id", user_id).maybe_single().execute()
+        data = res.data if res and hasattr(res, 'data') else None
+        if not data:
+            return "Usuario Anónimo"
+        return data.get('artistic_name') or data.get('full_name') or data.get('username') or "Usuario Anónimo"
+    except Exception as e:
+        logger.error(f"[Wallet] Error getting name for {user_id}: {e}")
+        return "Usuario"
 
 @router.get("/balance", response_model=WalletBalanceResponse)
 async def get_wallet_balance(user: TelegramUser = Depends(get_current_user)):
@@ -104,20 +116,38 @@ async def get_deposit_info(user: TelegramUser = Depends(get_current_user)):
         print(f"Error fetching deposit info: {e}")
         raise HTTPException(status_code=500, detail=f"Debug Error: {str(e)}")
 
-@router.get("/history", response_model=List[TransactionResponse])
-async def get_transaction_history(user: TelegramUser = Depends(get_current_user)):
+@router.get("/history")
+async def get_transaction_history(
+    page: int = 1,
+    limit: int = 20,
+    user: TelegramUser = Depends(get_current_user)
+):
     """
-    Get the transaction history for the user.
+    Get the paginated transaction history for the user.
     """
     try:
+        # Get count
+        count_res = db.client.table("crypto_transactions").select("id", count="exact").eq("user_id", user.user_id).execute()
+        total_count = count_res.count if count_res and hasattr(count_res, 'count') and count_res.count is not None else 0
+        
+        offset = (page - 1) * limit
+        
         res = db.client.table("crypto_transactions")\
             .select("*")\
             .eq("user_id", user.user_id)\
             .order("created_at", desc=True)\
-            .limit(50)\
+            .range(offset, offset + limit - 1)\
             .execute()
             
-        return res.data
+        total_pages = (total_count + limit - 1) // limit if total_count > 0 else 0
+        
+        return {
+            "transactions": res.data if res and hasattr(res, 'data') else [],
+            "total": total_count,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages
+        }
         
     except Exception as e:
         print(f"Error fetching history: {e}")
@@ -163,15 +193,29 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
             db.client.table("wallets").update({"balance": new_model_balance}).eq("user_id", request.model_id).execute()
         
         # 3. Record Transactions (Client and Model)
-        # For the client (Debit)
+        sender_name = _get_user_display_name(db.client, user.user_id)
+        receiver_name = _get_user_display_name(db.client, request.model_id)
+        
+        # For the client (Debit/Sent)
         db.client.table("crypto_transactions").insert({
             "user_id": user.user_id,
-            "type": "TIP",
+            "type": "TIP_SENT",
             "amount": request.amount,
             "currency": "USDT",
             "status": "COMPLETED",
             "reference_id": request.post_id,
-            "details": {"to_model": request.model_id, "post_id": request.post_id}
+            "details": {"to_model": request.model_id, "to_name": receiver_name, "post_id": request.post_id}
+        }).execute()
+
+        # For the model (Credit/Received)
+        db.client.table("crypto_transactions").insert({
+            "user_id": request.model_id,
+            "type": "TIP_RECEIVED",
+            "amount": request.amount,
+            "currency": "USDT",
+            "status": "COMPLETED",
+            "reference_id": request.post_id,
+            "details": {"from_user": user.user_id, "from_name": sender_name, "post_id": request.post_id}
         }).execute()
         
         # Note: The trigger 'trg_update_client_spending' will automatically 
@@ -274,14 +318,29 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
             db.client.table("wallets").update({"balance": new_model_balance}).eq("user_id", request.model_id).execute()
 
         # 4. Record
+        sender_name = _get_user_display_name(db.client, user.user_id)
+        receiver_name = _get_user_display_name(db.client, request.model_id)
+
+        # Record for client (Sent)
         db.client.table("crypto_transactions").insert({
             "user_id": user.user_id,
-            "type": "GIFT",
+            "type": "GIFT_SENT",
             "amount": amount,
             "currency": "USDT",
             "status": "COMPLETED",
             "reference_id": request.post_id,
-            "details": {"gift_name": gift["name"], "to_model": request.model_id}
+            "details": {"gift_name": gift["name"], "to_model": request.model_id, "to_name": receiver_name}
+        }).execute()
+
+        # Record for model (Received)
+        db.client.table("crypto_transactions").insert({
+            "user_id": request.model_id,
+            "type": "GIFT_RECEIVED",
+            "amount": amount,
+            "currency": "USDT",
+            "status": "COMPLETED",
+            "reference_id": request.post_id,
+            "details": {"gift_name": gift["name"], "from_user": user.user_id, "from_name": sender_name}
         }).execute()
 
         # 5. Create notification
