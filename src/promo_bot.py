@@ -36,20 +36,20 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_type = update.effective_chat.type
     
     if chat_type == 'private':
-        user_id = update.effective_user.id
         await update.message.reply_text(
-            "🚀 Bienvenido al **Promo Bot SFS**.\n\n"
-            "Soy el encargado de gestionar tus acuerdos de visualizaciones y protegerte contra fraudes.\n\n"
+            "🚀 Bienvenida a **@Nebula\_sfs\_bot**.\n\n"
+            "Soy el gestor oficial de acuerdos SFS de la agencia. Protejo tus acuerdos y automatizo la publicación.\n\n"
             "**Instrucciones:**\n"
             "1. Añádeme como Administrador a los canales que desees registrar.\n"
-            "2. Envíame o reenvíame aquí mismo el post que deseas usar para tus campañas SFS (puedes incluir imágenes y emojis premium).\n"
-            "3. Ve a tu panel en la Mini App para crear propuestas.",
+            "2. Envíam e o reenvíame aquí mismo el post que quieres usar para tus campañas SFS.\n"
+            "3. Ve a tu panel en el portal para crear propuestas.",
             parse_mode='Markdown'
         )
 
 async def handle_forwarded_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Captura los mensajes reenviados (o enviados) en el chat privado para guardarlos como Templates.
+    Solo acepta modelos verificadas (status='active').
     """
     if update.effective_chat.type != 'private':
         return
@@ -57,15 +57,31 @@ async def handle_forwarded_post(update: Update, context: ContextTypes.DEFAULT_TY
     message = update.message
     telegram_id = update.effective_user.id
 
+    # URL de la landing para modelos no registradas
+    LANDING_URL = os.getenv("LANDING_URL", "https://agente-modelos-production.up.railway.app/landing")
+
     try:
-        # Buscar la modelo en la BD
-        model_data = db.client.table('models').select('id, username').eq('telegram_id', telegram_id).execute()
+        # Buscar la modelo en la BD y verificar que esté activa
+        model_data = db.client.table('models').select('id, username, status').eq('telegram_id', telegram_id).execute()
+        
         if not model_data.data:
-            await update.message.reply_text("❌ No estás registrada como modelo en nuestro sistema. Por favor, regístrate a través de nuestro bot principal primero.")
+            await update.message.reply_text(
+                "❌ No estás registrada en nuestro sistema.\n\n"
+                f"Visita nuestra plataforma para registrarte: {LANDING_URL}"
+            )
+            return
+        
+        model = model_data.data[0]
+        
+        if model['status'] != 'active':
+            await update.message.reply_text(
+                "⏳ Tu cuenta aun no ha sido aprobada por nuestro equipo.\n\n"
+                "Cuando tu verificación sea completada podrás usar este servicio."
+            )
             return
             
-        model_id = model_data.data[0]['id']
-        username = model_data.data[0]['username']
+        model_id = model['id']
+        username = model['username']
 
         # Extraer data completa del mensaje (text, caption, entities, media_group_id...)
         content_data = message.to_dict()

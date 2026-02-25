@@ -16,6 +16,10 @@ router = APIRouter()
 BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
 JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-me")
 ALGORITHM = "HS256"
+# ID de Telegram del administrador principal. Si el usuario que inicia sesión
+# coincide con este ID, se le asigna automáticamente role='admin' sin importar
+# qué rol tenga en la base de datos.
+ADMIN_TELEGRAM_ID = os.getenv("ADMIN_TELEGRAM_ID")
 
 class TelegramAuthData(BaseModel):
     id: int
@@ -171,17 +175,21 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
     except:
         pass
 
-    # 4. Check if Admin (Role Assignment via DB)
-    try:
-        admin_record = db.client.table("admins").select("role").eq("telegram_id", telegram_id).maybe_single().execute()
-        if admin_record and admin_record.data:
-            final_role = "admin" # General admin role for frontend app
-            # We could store specific role in metadata if needed: admin_record.data['role']
-        else:
-            final_role = user_role # 'client' or 'model'
-    except Exception as e:
-        print(f"[Auth] Error checking admin role: {e}")
-        final_role = user_role
+    # 4. Verificar si es Admin — la variable de entorno tiene máxima prioridad
+    final_role = user_role  # Parte de 'client' o 'model'
+    
+    if ADMIN_TELEGRAM_ID and str(telegram_id) == str(ADMIN_TELEGRAM_ID):
+        # El ID de Telegram coincide con el admin configurado en el servidor
+        final_role = "admin"
+        print(f"[Auth] Admin reconocido por ADMIN_TELEGRAM_ID: {telegram_id}")
+    else:
+        # Fallback: verificar tabla 'admins' en la BD
+        try:
+            admin_record = db.client.table("admins").select("role").eq("telegram_id", telegram_id).maybe_single().execute()
+            if admin_record and admin_record.data:
+                final_role = "admin"
+        except Exception as e:
+            print(f"[Auth] Error checking admin role: {e}")
 
     token_data = {
         "sub": str(telegram_id),
