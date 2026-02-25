@@ -4,10 +4,9 @@ import asyncio
 from datetime import datetime
 from telegram.error import TelegramError
 
-from src.services.database import SupabaseClient
+from src.services.database import db
 
 logger = logging.getLogger(__name__)
-db = SupabaseClient()
 
 async def evaluate_channels_quality(bot):
     """

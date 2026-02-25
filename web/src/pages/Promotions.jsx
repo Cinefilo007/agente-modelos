@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users, BarChart2, Star, Send, ShieldCheck, Clock, CheckCircle, Plus, ChevronLeft, ChevronRight, X, AlertCircle, Loader } from 'lucide-react';
+import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare } from 'lucide-react';
 import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 const Promotions = () => {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('catalog');
     const [runTour, setRunTour] = useState(false);
-    const [showAddChannelModal, setShowAddChannelModal] = useState(false);
+    const [addChannelModalOpen, setAddChannelModalOpen] = useState(false);
     const [addChannelStep, setAddChannelStep] = useState(1);
-    const [channelInput, setChannelInput] = useState('');
     const [verifyStatus, setVerifyStatus] = useState(null); // null | 'loading' | 'success' | 'error'
     const [verifyMessage, setVerifyMessage] = useState('');
 
@@ -80,28 +80,10 @@ const Promotions = () => {
         }
     };
 
-    // ---- Verificación de canal ----
-    const handleVerifyChannel = async () => {
-        if (!channelInput.trim() || !user?.id) return;
-        setVerifyStatus('loading');
-        try {
-            const res = await api.post('/promo/channels/verify', {
-                model_id: user.id,
-                channel_identifier: channelInput.trim(),
-            });
-            setVerifyStatus('success');
-            setVerifyMessage(res.data.message);
-            setAddChannelStep(3);
-        } catch (err) {
-            setVerifyStatus('error');
-            setVerifyMessage(err.response?.data?.detail || 'No se pudo verificar el canal. Asegúrate que el bot sea administrador.');
-            setAddChannelStep(3);
-        }
-    };
+    // handleVerifyChannel remoto ya no es necesario dado el sistema de códigos únicos
 
     const resetModal = () => {
         setAddChannelStep(1);
-        setChannelInput('');
         setVerifyStatus(null);
         setVerifyMessage('');
     };
@@ -115,7 +97,7 @@ const Promotions = () => {
 
     // ----------- MODAL AÑADIR CANAL -----------
     const renderAddChannelModal = () => (
-        <Modal isOpen={showAddChannelModal} onClose={() => { setShowAddChannelModal(false); resetModal(); }}>
+        <Modal isOpen={addChannelModalOpen} onClose={() => { setAddChannelModalOpen(false); resetModal(); }}>
             <div className="p-6">
                 <h2 className="text-lg font-bold text-foreground mb-1">Añadir mi Canal</h2>
                 <p className="text-xs text-muted-foreground mb-5">Paso {addChannelStep} de 3</p>
@@ -128,51 +110,48 @@ const Promotions = () => {
                 {addChannelStep === 1 && (
                     <div className="space-y-4">
                         <div className="bg-card/40 border border-white/10 rounded-xl p-4 space-y-3">
-                            <h3 className="text-sm font-bold text-foreground mb-4">¿Cómo registrar mi canal?</h3>
+                            <h3 className="text-sm font-bold text-foreground mb-4">Verificación Rápida y Segura</h3>
                             {[
-                                ['1', 'Abre Telegram y busca', '@Nebula_sfs_bot'],
-                                ['2', 'Ve a tu canal → Configuración → Administradores →', 'Añadir administrador'],
-                                ['3', 'Dale permisos exclusivos para', 'Publicar y Borrar mensajes'],
-                                ['4', 'Ve a tu canal, busca cualquier post que hayas publicado y', 'Reenvíaselo al bot al privado.'],
-                            ].map(([num, text, bold]) => (
+                                ['1', 'Añade a', '@Nebula_sfs_bot', 'como Administrador de tu canal.'],
+                                ['2', 'Dale', 'permisos exclusivos', 'para Publicar y Borrar mensajes.'],
+                                ['3', 'Copia el siguiente código dando click y', 'envíalo como mensaje', 'en tu canal.'],
+                            ].map(([num, text, bold, suffix]) => (
                                 <div key={num} className="flex items-start gap-3">
                                     <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">{num}</span>
-                                    <p className="text-sm text-muted-foreground">{text} {bold && <span className="font-bold text-foreground">{bold}</span>}</p>
+                                    <p className="text-sm text-muted-foreground">{text} <span className="font-bold text-foreground">{bold}</span> {suffix}</p>
                                 </div>
                             ))}
                         </div>
+
+                        <div className="bg-black/50 border border-purple-500/30 rounded-xl p-4 flex flex-col items-center justify-center gap-2 relative group cursor-pointer"
+                            onClick={() => {
+                                const code = `/link_${user?.id?.replace(/-/g, '') || 'vincular'}`;
+                                navigator.clipboard.writeText(code);
+                                toast.success("¡Código copiado al portapapeles!");
+                            }}>
+                            <span className="text-xs text-purple-400 font-bold uppercase tracking-wider">Tu código secreto</span>
+                            <code className="text-xl font-mono text-white tracking-widest bg-white/5 py-1 px-3 rounded-lg border border-white/10">
+                                /link_{user?.id?.replace(/-/g, '').substring(0, 8)}...
+                            </code>
+                            <div className="absolute inset-0 bg-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center backdrop-blur-sm">
+                                <span className="text-sm font-bold text-white flex items-center gap-2"><Copy className="w-4 h-4" /> Copiar Código</span>
+                            </div>
+                        </div>
+
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex gap-2 items-start">
                             <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
-                            <p className="text-xs text-amber-300">¿Tu canal es <span className="font-bold text-amber-400">Privado</span>? No necesitas usar el verificador manual. Sigue los pasos y al reenviar el post, <span className="font-bold text-amber-400">el bot lo registrará automáticamente</span>.</p>
+                            <p className="text-xs text-amber-300">Este método es <span className="font-bold text-amber-400">100% privado</span>. El bot detectará tu código, guardará el canal a tu nombre y borrará el mensaje al instante para que nadie más lo vea.</p>
                         </div>
-                        <button onClick={() => setAddChannelStep(2)} className="w-full py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                            Mi canal es Público → Validar Manualmente
-                        </button>
+
+                        <div className="flex gap-3 pt-2">
+                            <button onClick={() => setAddChannelModalOpen(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                                Cancelar
+                            </button>
+                        </div>
                     </div>
                 )}
 
-                {addChannelStep === 2 && (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-xs text-muted-foreground mb-2 block">@username de tu canal público</label>
-                            <input
-                                type="text"
-                                value={channelInput}
-                                onChange={e => setChannelInput(e.target.value)}
-                                placeholder="@mi_canal_publico"
-                                className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-white/30 transition-all"
-                            />
-                        </div>
-                        <button
-                            onClick={handleVerifyChannel}
-                            disabled={!channelInput.trim() || verifyStatus === 'loading'}
-                            className="w-full py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                            {verifyStatus === 'loading' ? <><Loader className="w-4 h-4 animate-spin" /> Verificando...</> : 'Verificar Canal'}
-                        </button>
-                    </div>
-                )}
-
+                {/* Step 2 Removido - La validación manual ya no es necesaria */}
                 {addChannelStep === 3 && (
                     <div className="space-y-4 text-center py-2">
                         <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${verifyStatus === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
