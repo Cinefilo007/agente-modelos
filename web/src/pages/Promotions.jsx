@@ -128,23 +128,25 @@ const Promotions = () => {
                 {addChannelStep === 1 && (
                     <div className="space-y-4">
                         <div className="bg-card/40 border border-white/10 rounded-xl p-4 space-y-3">
+                            <h3 className="text-sm font-bold text-foreground mb-4">¿Cómo registrar mi canal?</h3>
                             {[
                                 ['1', 'Abre Telegram y busca', '@Nebula_sfs_bot'],
-                                ['2', 'Ve a tu canal → Configuración → Administradores → Añadir administrador', null],
-                                ['3', 'Activa los permisos de', 'Publicar mensajes y Borrar mensajes'],
+                                ['2', 'Ve a tu canal → Configuración → Administradores →', 'Añadir administrador'],
+                                ['3', 'Dale permisos exclusivos para', 'Publicar y Borrar mensajes'],
+                                ['4', 'Ve a tu canal, busca cualquier post que hayas publicado y', 'Reenvíaselo al bot al privado.'],
                             ].map(([num, text, bold]) => (
                                 <div key={num} className="flex items-start gap-3">
                                     <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">{num}</span>
-                                    <p className="text-sm text-foreground">{text} {bold && <span className="font-bold text-foreground">{bold}</span>}</p>
+                                    <p className="text-sm text-muted-foreground">{text} {bold && <span className="font-bold text-foreground">{bold}</span>}</p>
                                 </div>
                             ))}
                         </div>
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex gap-2 items-start">
                             <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
-                            <p className="text-xs text-amber-300">¿Tu canal es <span className="font-bold text-amber-400">Privado</span>? No uses este formulario. Simplemente añade a <span className="font-bold">@Nebula_sfs_bot</span> como administrador en tu canal y <span className="font-bold">lo registraremos automáticamente</span>.</p>
+                            <p className="text-xs text-amber-300">¿Tu canal es <span className="font-bold text-amber-400">Privado</span>? No necesitas usar el verificador manual. Sigue los pasos y al reenviar el post, <span className="font-bold text-amber-400">el bot lo registrará automáticamente</span>.</p>
                         </div>
                         <button onClick={() => setAddChannelStep(2)} className="w-full py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                            Ya lo añadí → Continuar
+                            Mi canal es Público → Validar Manualmente
                         </button>
                     </div>
                 )}

@@ -107,8 +107,100 @@ async def handle_forwarded_post(update: Update, context: ContextTypes.DEFAULT_TY
             parse_mode='Markdown'
         )
     except Exception as e:
-        logger.error(f"Error guardando template: {e}")
-        await update.message.reply_text("❌ Hubo un error al guardar tu post. Inténtalo de nuevo más tarde.")
+        logger.error(f"Error procesando mensaje: {e}")
+        await update.message.reply_text("❌ Hubo un error al procesar tu mensaje. Inténtalo de nuevo más tarde.")
+
+async def handle_forwarded_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Captura los mensajes reenviados (o enviados) en el chat privado.
+    1. Si es reenviado desde un canal, intenta registrar ese canal.
+    2. Si no es un canal, o si ya se registró, lo guarda como Template SFS.
+    """
+    if update.effective_chat.type != 'private':
+        return
+
+    message = update.message
+    telegram_id = update.effective_user.id
+    LANDING_URL = os.getenv("LANDING_URL", "https://agente-modelos-production.up.railway.app/landing")
+
+    try:
+        # Verificar modelo activa
+        model_data = db.client.table('models').select('id, username, status').eq('telegram_id', telegram_id).execute()
+        if not model_data.data:
+            await update.message.reply_text(f"❌ No estás registrada.\nRegístrate: {LANDING_URL}")
+            return
+        
+        model = model_data.data[0]
+        if model['status'] != 'active':
+            await update.message.reply_text("⏳ Tu cuenta aun no ha sido aprobada.")
+            return
+
+        model_id = model['id']
+        username = model['username']
+
+        # CASO 1: REGISTRO DE CANAL VÍA REENVÍO
+        # Si el mensaje fue reenviado desde un canal, validar si el bot es admin ahí
+        if message.forward_origin and getattr(message.forward_origin, 'type', '') == 'channel':
+            channel_chat = message.forward_origin.chat
+            chat_id = channel_chat.id
+            chat_title = channel_chat.title
+
+            try:
+                # Verificar si el bot realmente es administrador de ese canal
+                admins = await context.bot.get_chat_administrators(chat_id)
+                bot_user = await context.bot.get_me()
+                is_admin = any(a.user.id == bot_user.id for a in admins)
+
+                if is_admin:
+                    # Registrar/Actualizar canal
+                    db.client.table('channels').upsert({
+                        'model_id': model_id,
+                        'telegram_chat_id': str(chat_id),
+                        'name': chat_title,
+                        'status': 'pending_approval'
+                    }, on_conflict='model_id, telegram_chat_id').execute()
+
+                    await update.message.reply_text(
+                        f"📡 **¡Canal Privado Vinculado!** '{chat_title}'\n\n"
+                        "He registrado tu canal. Quedará en estado **Pendiente de Aprobación** hasta que nuestro equipo lo revise.",
+                        parse_mode='Markdown'
+                    )
+                    return # Si fue solo para registrar, no lo guardamos como template todavía
+                else:
+                    await update.message.reply_text(
+                        f"⚠️ Reenviaste un post de '{chat_title}', pero **no soy administrador** allí.\n"
+                        "Por favor, añádeme primero como admin en ese canal y vuelve a reenviarme este mensaje."
+                    )
+                    return
+            except Exception as e:
+                logger.error(f"No se pudo validar canal origen: {e}")
+                await update.message.reply_text("⚠️ No tengo acceso a ese canal para validarlo. Asegúrate de añadirme como administrador primero.")
+                return
+
+        # CASO 2: GUARDAR TEMPLATE PROMOCIONAL
+        content_data = message.to_dict()
+        if 'from' in content_data: del content_data['from']
+        if 'chat' in content_data: del content_data['chat']
+        if 'date' in content_data: del content_data['date']
+
+        db.client.table('promo_templates').insert({
+            'model_id': model_id,
+            'telegram_message_id_origin': message.message_id,
+            'content_data': content_data
+        }).execute()
+
+        link_portal = f"https://tuportal.com/{username}" if username else "https://tuportal.com"
+
+        await update.message.reply_text(
+            "✅ **¡Post guardado exitosamente!**\n\n"
+            "Este diseño ha sido guardado en tus Plantillas. Cuando aceptes o propongas un SFS desde la Mini App, este post se publicará exactamente así.\n\n"
+            f"ℹ️ *Nota:* Añadiremos al final un enlace hacia tu perfil ({link_portal}).",
+            parse_mode='Markdown'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error general en handler: {e}")
+        await update.message.reply_text("❌ Hubo un error al procesar tu solicitud.")
 
 async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
