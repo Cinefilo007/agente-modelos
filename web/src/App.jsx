@@ -28,6 +28,7 @@ import ShopManager from './pages/ShopManager';
 import Onboarding from './pages/Onboarding';
 import InstallPWA from './components/pwa/InstallPWA';
 import WalletPage from './pages/WalletPage';
+import Promotions from './pages/Promotions';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -166,6 +167,7 @@ function App() {
                   <Route path="service/:serviceId" element={<ServiceInvoicePage />} />
                   <Route path="checkout" element={<ServiceCheckout />} />
                   <Route path="shop-manager" element={<ShopManager />} />
+                  <Route path="promotions" element={<Promotions />} />
                   <Route path="profile" element={<Navigate to="/me" replace />} />
                   <Route path="me" element={<Profile />} />
                   <Route path=":username" element={<Profile />} />

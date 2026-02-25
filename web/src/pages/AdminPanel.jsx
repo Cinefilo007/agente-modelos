@@ -348,6 +348,28 @@ export default function AdminPanel() {
                             </div>
                         </div>
 
+                        {/* Promotions SFS */}
+                        <div className="mb-8">
+                            <div className="bg-gradient-to-r from-pink-500/20 to-purple-500/10 border border-pink-500/20 rounded-[32px] p-8 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-all duration-700">
+                                    <Sparkles size={120} className="text-pink-500" />
+                                </div>
+                                <div className="relative z-10 flex flex-col sm:flex-row gap-6 items-center justify-between">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                            SFS & Promociones <span className="text-[10px] bg-pink-500 text-white px-2 py-0.5 rounded-full font-black uppercase">Nuevo</span>
+                                        </h3>
+                                        <p className="text-sm text-white/70 max-w-[300px] leading-relaxed">
+                                            Intercambia publicidad con otras modelos, aumenta tus vistas y gana reputación en el ecosistema.
+                                        </p>
+                                    </div>
+                                    <Link to="/promotions" className="w-full sm:w-auto px-6 py-4 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold rounded-2xl hover:scale-105 transition-all active:scale-95 shadow-[0_10px_20px_rgba(236,72,153,0.3)] text-center whitespace-nowrap">
+                                        Ir al Catálogo SFS
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Security */}
                         <div className="bg-card/40 border border-white/5 rounded-[32px] p-8 mb-8">
                             <h3 className="font-bold text-amber-400 flex items-center gap-3 mb-6">
