@@ -135,18 +135,18 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
                 
             model_id = model_data.data[0]['id']
             
-            # Upsert del canal en la base de datos
+            # Cambiar a pending_approval para sincronizar con el Panel Admin
             db.client.table('channels').upsert({
                 'model_id': model_id,
                 'telegram_chat_id': chat.id,
                 'name': chat.title,
-                'status': 'verifying'
+                'status': 'pending_approval'
             }, on_conflict='model_id, telegram_chat_id').execute()
             
             # Enviar mensaje al usuario confirmando
             await context.bot.send_message(
                 chat_id=user_id,
-                text=f"📡 **Canal vinculado:** '{chat.title}'\n\nHe empezado a monitorear este canal. En 24 horas recolectaré las métricas de vistas (Engagement Rate) para asignarle una calificación de calidad e incluirlo en el catálogo.",
+                text=f"📡 **Canal vinculado:** '{chat.title}'\n\nHe registrado tu canal. Quedará en estado **Pendiente de Aprobación** hasta que nuestro equipo lo revise. Te notificaremos cuando esté activo en el catálogo.",
                 parse_mode='Markdown'
             )
             logger.info(f"Nuevo canal registrado: {chat.title} ({chat.id}) por la modelo {model_id}")

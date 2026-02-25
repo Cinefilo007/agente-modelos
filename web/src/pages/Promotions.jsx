@@ -140,8 +140,8 @@ const Promotions = () => {
                             ))}
                         </div>
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex gap-2 items-start">
-                            <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-                            <p className="text-xs text-amber-300">Para <span className="font-bold">canales privados</span> (sin @username), usa el link de invitación o el ID numérico obtenido con <span className="font-bold">@userinfobot</span>.</p>
+                            <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
+                            <p className="text-xs text-amber-300">¿Tu canal es <span className="font-bold text-amber-400">Privado</span>? No uses este formulario. Simplemente añade a <span className="font-bold">@Nebula_sfs_bot</span> como administrador en tu canal y <span className="font-bold">lo registraremos automáticamente</span>.</p>
                         </div>
                         <button onClick={() => setAddChannelStep(2)} className="w-full py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
                             Ya lo añadí → Continuar
@@ -152,12 +152,12 @@ const Promotions = () => {
                 {addChannelStep === 2 && (
                     <div className="space-y-4">
                         <div>
-                            <label className="text-xs text-muted-foreground mb-2 block">@username del canal, ID numérico o link de invitación</label>
+                            <label className="text-xs text-muted-foreground mb-2 block">@username de tu canal público</label>
                             <input
                                 type="text"
                                 value={channelInput}
                                 onChange={e => setChannelInput(e.target.value)}
-                                placeholder="@micanal | -1001234567890 | t.me/+xyz"
+                                placeholder="@mi_canal_publico"
                                 className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-white/30 transition-all"
                             />
                         </div>

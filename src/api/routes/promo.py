@@ -152,7 +152,16 @@ async def verify_and_register_channel(req: ChannelVerifyRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"No se pudo acceder al canal: {str(e)}. Verifica que el identificador sea correcto y que el bot sea administrador.")
+        error_str = str(e).lower()
+        if "chat not found" in error_str:
+            raise HTTPException(
+                status_code=400,
+                detail="No se encontró el canal público. Si tu canal es privado, no uses este formulario. Solo añade a @Nebula_sfs_bot como administrador en Telegram y lo registraremos automáticamente."
+            )
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No se pudo acceder al canal: {str(e)}. Verifica que el identificador sea correcto y que el bot sea administrador."
+        )
 
 
 @router.get("/channels/my")
