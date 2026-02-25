@@ -113,21 +113,40 @@ const PromoAdminSection = () => {
     const [fraudCampaigns, setFraudCampaigns] = useState([]);
 
     useEffect(() => {
-        // Mock data mientras conectamos al API real
-        setPendingChannels([
-            { id: 'c1', name: 'Canal VIP de Maria', followers: 12000, telegram_chat_id: '-100123456', model_username: '@mariavip', created_at: new Date().toISOString() },
-            { id: 'c2', name: 'Secretos de Luna (Privado)', followers: 5400, telegram_chat_id: '-100789012', model_username: '@lunasecrets', created_at: new Date().toISOString() },
-        ]);
-        setFraudCampaigns([
-            { id: 'f1', requester: '@mariavip', target: '@lunasecrets', reason: 'Post borrado antes de alcanzar 5,000 vistas' }
-        ]);
-        setLoadingChannels(false);
+        const fetchPromoData = async () => {
+            setLoadingChannels(true);
+            try {
+                const [channelsRes, fraudRes] = await Promise.all([
+                    api.get('/promo/admin/channels/pending'),
+                    api.get('/promo/admin/campaigns/fraud')
+                ]);
+                setPendingChannels(channelsRes.data || []);
+
+                const mappedFrauds = (fraudRes.data || []).map(f => ({
+                    id: f.id,
+                    requester: f.requester_model_id || 'Usuario A',
+                    target: f.target_model_id || 'Usuario B',
+                    reason: f.notes || 'Incumplimiento de acuerdo SFS'
+                }));
+                setFraudCampaigns(mappedFrauds);
+            } catch (err) {
+                console.error("Error cargando datos promo:", err);
+            } finally {
+                setLoadingChannels(false);
+            }
+        };
+        fetchPromoData();
     }, []);
 
     const handleChannelAction = async (channelId, action) => {
-        // TODO: Conectar a /api/admin/promo/channels/{id}/approve|reject
-        setPendingChannels(prev => prev.filter(c => c.id !== channelId));
-        showToast(`Canal ${action === 'approve' ? 'aprobado' : 'rechazado'}`, action === 'approve' ? 'success' : 'error');
+        try {
+            await api.post(`/promo/admin/channels/${channelId}/action`, { action });
+            setPendingChannels(prev => prev.filter(c => c.id !== channelId));
+            showToast(`Canal ${action === 'approve' ? 'aprobado' : 'rechazado'}`, action === 'approve' ? 'success' : 'error');
+        } catch (err) {
+            showToast("Error procesando canal.", "error");
+            console.error(err);
+        }
     };
 
     return (
