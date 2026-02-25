@@ -124,8 +124,8 @@ const PromoAdminSection = () => {
 
                 const mappedFrauds = (fraudRes.data || []).map(f => ({
                     id: f.id,
-                    requester: f.requester_model_id || 'Usuario A',
-                    target: f.target_model_id || 'Usuario B',
+                    requester: f.requester?.username || 'Usuario A',
+                    target: f.target?.username || 'Usuario B',
                     reason: f.notes || 'Incumplimiento de acuerdo SFS'
                 }));
                 setFraudCampaigns(mappedFrauds);

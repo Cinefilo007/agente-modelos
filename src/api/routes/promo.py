@@ -187,8 +187,8 @@ async def get_sent_campaigns(model_id: str = Query(...)):
     """Campañas enviadas por la modelo (como requester)."""
     try:
         res = db.client.table("promo_campaigns") \
-            .select("*, channels!requester_channel_id(name), channels!target_channel_id(name)") \
-            .eq("requester_model_id", model_id) \
+            .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
+            .eq("requester_id", model_id) \
             .order("created_at", desc=True) \
             .execute()
         return res.data or []
@@ -201,8 +201,8 @@ async def get_received_campaigns(model_id: str = Query(...)):
     """Campañas recibidas por la modelo (como target)."""
     try:
         res = db.client.table("promo_campaigns") \
-            .select("*, channels!requester_channel_id(name), channels!target_channel_id(name)") \
-            .eq("target_model_id", model_id) \
+            .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
+            .eq("target_id", model_id) \
             .order("created_at", desc=True) \
             .execute()
         return res.data or []
@@ -284,7 +284,7 @@ async def get_active_campaigns():
     """Campañas activas en tiempo real para el admin."""
     try:
         res = db.client.table("promo_campaigns") \
-            .select("*, models!requester_model_id(username), models!target_model_id(username)") \
+            .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
             .eq("status", "active") \
             .order("start_time", desc=True) \
             .execute()
@@ -298,7 +298,7 @@ async def get_fraud_campaigns():
     """Campañas marcadas como fraude."""
     try:
         res = db.client.table("promo_campaigns") \
-            .select("*, models!requester_model_id(username), models!target_model_id(username)") \
+            .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
             .eq("status", "cancelled_fraud") \
             .order("updated_at", desc=True) \
             .execute()
