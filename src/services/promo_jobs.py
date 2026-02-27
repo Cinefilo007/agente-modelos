@@ -10,36 +10,37 @@ logger = logging.getLogger(__name__)
 
 async def evaluate_channels_quality(bot):
     """
-    Job programado (ej. Cada 24 horas).
+    Job programado (cada 6 horas).
     - Busca canales en status 'verifying' o 'active'
     - Actualiza el 'followers' consultando la API de Telegram.
-    NOTA: Para calcular el ER real exacto con Vistas, se requiere que el bot almacene
-    el histórico de posts entrantes (channel_post handler). 
+    - Calcula ER base.
     """
-    logger.info("Executing Job: Evaluate Channels Quality")
+    logger.info("Executing Job: Evaluate Channels Quality (Actualizando métricas SFS)")
     try:
-        channels_res = db.client.table('channels').select('*').in_('status', ['verifying', 'active']).execute()
+        # Usamos service_client para asegurar lectura sin problemas de RLS
+        channels_res = db.service_client.table('channels').select('*').in_('status', ['verifying', 'active']).execute()
         for channel in channels_res.data:
             try:
-                # Obtener cantidad de suscriptores
+                # Obtener cantidad real de suscriptores
                 count = await bot.get_chat_member_count(chat_id=channel['telegram_chat_id'])
                 
-                # Simular cálculo ER simple basado en membresía para MVP (idealmente con histórico de channel_posts)
-                estimated_avg_views = int(count * 0.15) # Asumimos 15% de alcance base
+                # Simular cálculo ER simple basado en membresía para MVP 
+                # (15% alcance orgánico base en Telegram)
+                estimated_avg_views = int(count * 0.15) 
                 estimated_er = 15.00
                 
-                db.client.table('channels').update({
+                db.service_client.table('channels').update({
                     'followers': count,
                     'avg_views': estimated_avg_views,
-                    'engagement_rate': estimated_er,
-                    'status': 'active'
+                    'engagement_rate': estimated_er
+                    # IMPORTANTE: No modificar el status aquí, dejarlo igual (active o verifying)
                 }).eq('id', channel['id']).execute()
                 
             except TelegramError as e:
                 logger.warning(f"No se pudo acceder al canal {channel['telegram_chat_id']} ({channel['name']}): {e}")
-                # Posiblemente remover canal si el bot fue expulsado
-                if 'chat not found' in str(e).lower() or 'kicked' in str(e).lower():
-                    db.client.table('channels').update({'status': 'inactive'}).eq('id', channel['id']).execute()
+                # Remover canal si el bot fue expulsado o el canal no existe
+                if 'chat not found' in str(e).lower() or 'kicked' in str(e).lower() or 'not a member' in str(e).lower():
+                    db.service_client.table('channels').update({'status': 'inactive'}).eq('id', channel['id']).execute()
     except Exception as e:
         logger.error(f"Error evaluando calidad de canales: {e}")
 
@@ -173,7 +174,8 @@ async def monitor_sfs_views_and_fraud(bot):
 def init_scheduler(bot):
     scheduler = AsyncIOScheduler(timezone="UTC")
     
-    scheduler.add_job(evaluate_channels_quality, 'interval', hours=24, args=[bot])
+    # Revisión de métricas de canales cada 6 horas
+    scheduler.add_job(evaluate_channels_quality, 'interval', hours=6, args=[bot])
     scheduler.add_job(publish_sfs_campaigns, 'interval', minutes=1, args=[bot])
     scheduler.add_job(monitor_sfs_views_and_fraud, 'interval', minutes=5, args=[bot])
     
