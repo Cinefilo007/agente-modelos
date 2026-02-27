@@ -116,7 +116,7 @@ async def verify_and_register_channel(req: ChannelVerifyRequest):
                 detail="El bot @Nebula_sfs_bot no es administrador de ese canal. Añádelo primero con permisos de publicar y borrar mensajes."
             )
 
-        # Guardar el canal en la BD con status pending_approval
+        # Guardar el canal en la BD con status verifying
         existing = db.client.table("channels") \
             .select("id, status") \
             .eq("model_id", req.model_id) \
@@ -127,12 +127,12 @@ async def verify_and_register_channel(req: ChannelVerifyRequest):
             ch = existing.data[0]
             if ch["status"] == "active":
                 return {"status": "already_active", "message": "Este canal ya está aprobado en el catálogo."}
-            elif ch["status"] == "pending_approval":
+            elif ch["status"] == "verifying":
                 return {"status": "pending", "message": "Este canal ya está en revisión. Te notificaremos cuando sea aprobado."}
             else:
                 # Reactivar si fue rechazado
                 db.client.table("channels").update({
-                    "status": "pending_approval",
+                    "status": "verifying",
                     "name": chat_title
                 }).eq("id", ch["id"]).execute()
         else:
@@ -140,8 +140,8 @@ async def verify_and_register_channel(req: ChannelVerifyRequest):
                 "model_id": req.model_id,
                 "telegram_chat_id": str(chat_id),
                 "name": chat_title,
-                "status": "pending_approval",
-                "followers_count": chat.member_count or 0,
+                "status": "verifying",
+                "followers": chat.member_count or 0,
             }).execute()
 
         return {
@@ -216,11 +216,11 @@ async def get_received_campaigns(model_id: str = Query(...)):
 
 @router.get("/admin/channels/pending")
 async def get_pending_channels():
-    """Lista canales con status='pending_approval' para revisión del admin."""
+    """Lista canales con status='verifying' para revisión del admin."""
     try:
         res = db.client.table("channels") \
             .select("*, models(username, full_name, telegram_id)") \
-            .eq("status", "pending_approval") \
+            .eq("status", "verifying") \
             .order("created_at", desc=True) \
             .execute()
 
@@ -231,7 +231,7 @@ async def get_pending_channels():
                 "id": ch["id"],
                 "name": ch["name"],
                 "telegram_chat_id": ch["telegram_chat_id"],
-                "followers": ch.get("followers_count", 0),
+                "followers": ch.get("followers", 0),
                 "model_id": ch["model_id"],
                 "model_username": model_info.get("username", ""),
                 "model_full_name": model_info.get("full_name", ""),

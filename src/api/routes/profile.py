@@ -175,8 +175,18 @@ class StartProfileUpdate(BaseModel):
 @router.get("/me")
 async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
     """Get the current authenticated user's profile."""
+    if user.role == "admin":
+        # Admin might not have a profile, return basic info
+        return {
+            "id": "admin-id",
+            "telegram_id": user.id,
+            "username": "Admin",
+            "full_name": "Administrador",
+            "role": "admin"
+        }
+
     if user.role == "client":
-        client = db.client.table("clients").select("*").eq("telegram_id", user.id).single().execute()
+        client = db.client.table("clients").select("*").eq("telegram_id", user.id).maybe_single().execute()
         if not client.data:
              raise HTTPException(status_code=404, detail="Client profile not found.")
         user_data = client.data
@@ -184,7 +194,7 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
         return user_data
 
     # Default to Model
-    model = db.client.table("models").select("*").eq("telegram_id", user.id).single().execute()
+    model = db.client.table("models").select("*").eq("telegram_id", user.id).maybe_single().execute()
     
     if not model.data:
         raise HTTPException(status_code=404, detail="Model profile not found. Please register via the bot first.")
