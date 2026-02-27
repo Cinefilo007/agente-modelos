@@ -2,6 +2,7 @@ import asyncio
 import uvicorn
 import logging
 from src.bot import main as start_bot_polling
+from src.promo_bot import main as start_promo_bot_polling
 from src.api.main import app
 import os
 import threading
@@ -45,6 +46,13 @@ def main():
         logger.info("Starting Telegram Bot (with 2s delay)...")
         import time
         time.sleep(2)
+        
+        # Iniciar bot SFS en hilo separado
+        logger.info("Starting Promo Bot thread...")
+        tp = threading.Thread(target=start_promo_bot_polling, daemon=True)
+        tp.start()
+        
+        # El bot principal bloquea el hilo principal
         start_bot_polling()
     else:
         logger.info("Bot is disabled (ENABLE_BOT=false)")

@@ -35,78 +35,17 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if chat_type == 'private':
         await update.message.reply_text(
+            "✅ **Conexión Exitosa con el SFS Bot.**\n\n"
             "🚀 Bienvenida a **@Nebula\_sfs\_bot**.\n\n"
             "Soy el gestor oficial de acuerdos SFS de la agencia. Protejo tus acuerdos y automatizo la publicación.\n\n"
             "**Instrucciones:**\n"
             "1. Añádeme como Administrador a los canales que desees registrar.\n"
-            "2. Envíam e o reenvíame aquí mismo el post que quieres usar para tus campañas SFS.\n"
+            "2. Envíame o reenvíame aquí mismo el post que quieres usar para tus campañas SFS.\n"
             "3. Ve a tu panel en el portal para crear propuestas.",
             parse_mode='Markdown'
         )
 
-async def handle_forwarded_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Captura los mensajes reenviados (o enviados) en el chat privado para guardarlos como Templates.
-    Solo acepta modelos verificadas (status='active').
-    """
-    if update.effective_chat.type != 'private':
-        return
 
-    message = update.message
-    telegram_id = update.effective_user.id
-
-    # URL de la landing para modelos no registradas
-    LANDING_URL = os.getenv("LANDING_URL", "https://agente-modelos-production.up.railway.app/landing")
-
-    try:
-        # Buscar la modelo en la BD y verificar que esté activa
-        model_data = db.client.table('models').select('id, username, status').eq('telegram_id', telegram_id).execute()
-        
-        if not model_data.data:
-            await update.message.reply_text(
-                "❌ No estás registrada en nuestro sistema.\n\n"
-                f"Visita nuestra plataforma para registrarte: {LANDING_URL}"
-            )
-            return
-        
-        model = model_data.data[0]
-        
-        if model['status'] != 'active':
-            await update.message.reply_text(
-                "⏳ Tu cuenta aun no ha sido aprobada por nuestro equipo.\n\n"
-                "Cuando tu verificación sea completada podrás usar este servicio."
-            )
-            return
-            
-        model_id = model['id']
-        username = model['username']
-
-        # Extraer data completa del mensaje (text, caption, entities, media_group_id...)
-        content_data = message.to_dict()
-        
-        # Eliminar info sensible o innecesaria antes de guardar
-        if 'from' in content_data: del content_data['from']
-        if 'chat' in content_data: del content_data['chat']
-        if 'date' in content_data: del content_data['date']
-
-        # Guardar en base de datos
-        db.client.table('promo_templates').insert({
-            'model_id': model_id,
-            'telegram_message_id_origin': message.message_id,
-            'content_data': content_data
-        }).execute()
-
-        link_portal = f"https://tuportal.com/{username}" if username else "https://tuportal.com"
-
-        await update.message.reply_text(
-            "✅ **¡Post guardado exitosamente!**\n\n"
-            "Este diseño ha sido guardado en tus Plantillas. Cuando aceptes o propongas un SFS desde la Mini App, este post se publicará exactamente así, incluyendo tus emojis premium.\n\n"
-            f"ℹ️ *Nota:* Al momento de publicarse, automáticamente añadiremos al final un enlace hacia tu perfil en la agencia ({link_portal}) para ayudarte a conseguir más clientes cautivos.",
-            parse_mode='Markdown'
-        )
-    except Exception as e:
-        logger.error(f"Error procesando mensaje: {e}")
-        await update.message.reply_text("❌ Hubo un error al procesar tu mensaje. Inténtalo de nuevo más tarde.")
 
 async def handle_forwarded_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
