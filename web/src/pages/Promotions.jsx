@@ -4,10 +4,11 @@ import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, Chev
 import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
 import api from '../api/axios';
-import toast from 'react-hot-toast';
+import { useToast } from '../context/ToastContext';
 
 const Promotions = () => {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState('catalog');
     const [runTour, setRunTour] = useState(false);
     const [addChannelModalOpen, setAddChannelModalOpen] = useState(false);
@@ -127,7 +128,7 @@ const Promotions = () => {
                             onClick={() => {
                                 const code = `/link_${user?.id?.replace(/-/g, '') || 'vincular'}`;
                                 navigator.clipboard.writeText(code);
-                                toast.success("¡Código copiado al portapapeles!");
+                                showToast("¡Código copiado al portapapeles!", "success");
                             }}>
                             <span className="text-xs text-purple-400 font-bold uppercase tracking-wider">Tu código secreto</span>
                             <code className="text-xl font-mono text-white tracking-widest bg-white/5 py-1 px-3 rounded-lg border border-white/10">
