@@ -33,20 +33,22 @@ const TransactionList = ({ transactions, loading }) => {
         );
     }
 
-    const getIcon = (type) => {
+    const getIcon = (tx) => {
+        const type = tx.type;
+        const isIncoming = (type === 'TIP' || type === 'GIFT') ? !!tx.details?.from_user : false;
+
         switch (type) {
             case 'DEPOSIT':
             case 'ESCROW_RELEASE':
             case 'ESCROW_REFUND':
-            case 'TIP_RECEIVED':
-            case 'GIFT_RECEIVED':
                 return <ArrowDownLeft className="text-green-400" />;
             case 'WITHDRAWAL':
             case 'ESCROW_LOCK':
             case 'FEE':
-            case 'TIP_SENT':
-            case 'GIFT_SENT':
                 return <ArrowUpRight className="text-red-400" />;
+            case 'TIP':
+            case 'GIFT':
+                return isIncoming ? <ArrowDownLeft className="text-green-400" /> : <ArrowUpRight className="text-red-400" />;
             default:
                 return <Clock className="text-gray-400" />;
         }
@@ -55,6 +57,8 @@ const TransactionList = ({ transactions, loading }) => {
     const getLabel = (tx) => {
         const type = tx.type;
         const details = tx.details || {};
+        const isIncoming = !!details.from_user;
+
         switch (type) {
             case 'DEPOSIT': return 'Depósito Recibido';
             case 'WITHDRAWAL': return 'Retiro de Fondos';
@@ -62,16 +66,17 @@ const TransactionList = ({ transactions, loading }) => {
             case 'ESCROW_RELEASE': return 'Pago Liberado (Ganancia)';
             case 'ESCROW_REFUND': return 'Reembolso';
             case 'FEE': return 'Comisión de Plataforma';
-            case 'TIP_SENT': return `Tip enviado a ${details.to_name || 'Modelo'}`;
-            case 'TIP_RECEIVED': return `Tip recibido de ${details.from_name || 'Usuario'}`;
-            case 'GIFT_SENT': return `Regalo (${details.gift_name}) enviado a ${details.to_name || 'Modelo'}`;
-            case 'GIFT_RECEIVED': return `Regalo (${details.gift_name}) recibido de ${details.from_name || 'Usuario'}`;
+            case 'TIP': return isIncoming ? `Tip recibido de ${details.from_name || 'Usuario'}` : `Tip enviado a ${details.to_name || 'Modelo'}`;
+            case 'GIFT': return isIncoming ? `Regalo (${details.gift_name}) recibido de ${details.from_name || 'Usuario'}` : `Regalo (${details.gift_name}) enviado a ${details.to_name || 'Modelo'}`;
             default: return type;
         }
     };
 
-    const isPositive = (type) => {
-        return ['DEPOSIT', 'ESCROW_RELEASE', 'ESCROW_REFUND', 'TIP_RECEIVED', 'GIFT_RECEIVED'].includes(type);
+    const isPositive = (tx) => {
+        const type = tx.type;
+        const isIncoming = (type === 'TIP' || type === 'GIFT') ? !!tx.details?.from_user : false;
+        if (type === 'TIP' || type === 'GIFT') return isIncoming;
+        return ['DEPOSIT', 'ESCROW_RELEASE', 'ESCROW_REFUND'].includes(type);
     };
 
     return (
@@ -84,9 +89,9 @@ const TransactionList = ({ transactions, loading }) => {
                     <div className="flex items-center gap-4">
                         <div className={clsx(
                             "w-10 h-10 rounded-full flex items-center justify-center bg-white/5",
-                            isPositive(tx.type) ? "text-green-400" : "text-red-400"
+                            isPositive(tx) ? "text-green-400" : "text-red-400"
                         )}>
-                            {getIcon(tx.type)}
+                            {getIcon(tx)}
                         </div>
 
                         <div>
@@ -112,9 +117,9 @@ const TransactionList = ({ transactions, loading }) => {
                     <div className="text-right">
                         <p className={clsx(
                             "font-bold text-lg",
-                            isPositive(tx.type) ? "text-green-400" : "text-white"
+                            isPositive(tx) ? "text-green-400" : "text-white"
                         )}>
-                            {isPositive(tx.type) ? '+' : '-'}${parseFloat(tx.amount).toFixed(2)}
+                            {isPositive(tx) ? '+' : '-'}${parseFloat(tx.amount).toFixed(2)}
                         </p>
                         <p className="text-xs text-white/40">{tx.currency}</p>
                     </div>

@@ -199,7 +199,7 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
         # For the client (Debit/Sent)
         db.client.table("crypto_transactions").insert({
             "user_id": user.user_id,
-            "type": "TIP_SENT",
+            "type": "TIP",
             "amount": request.amount,
             "currency": "USDT",
             "status": "COMPLETED",
@@ -210,7 +210,7 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
         # For the model (Credit/Received)
         db.client.table("crypto_transactions").insert({
             "user_id": request.model_id,
-            "type": "TIP_RECEIVED",
+            "type": "TIP",
             "amount": request.amount,
             "currency": "USDT",
             "status": "COMPLETED",
@@ -324,7 +324,7 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
         # Record for client (Sent)
         db.client.table("crypto_transactions").insert({
             "user_id": user.user_id,
-            "type": "GIFT_SENT",
+            "type": "GIFT",
             "amount": amount,
             "currency": "USDT",
             "status": "COMPLETED",
@@ -335,7 +335,7 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
         # Record for model (Received)
         db.client.table("crypto_transactions").insert({
             "user_id": request.model_id,
-            "type": "GIFT_RECEIVED",
+            "type": "GIFT",
             "amount": amount,
             "currency": "USDT",
             "status": "COMPLETED",

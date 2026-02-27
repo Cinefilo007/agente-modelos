@@ -167,8 +167,8 @@ export default function ClientProfile() {
                                 <div key={tx.id} className="border-b border-white/5 pb-3 last:border-0 last:pb-0 flex justify-between items-center">
                                     <div>
                                         <div className="font-semibold text-sm text-foreground">
-                                            {tx.type === 'TIP_SENT' ? 'Tip enviado a ' + (tx.details?.to_name || 'Modelo')
-                                                : tx.type === 'GIFT_SENT' ? `Regalo enviado a ${tx.details?.to_name || 'Modelo'}`
+                                            {tx.type === 'TIP' ? 'Tip enviado a ' + (tx.details?.to_name || 'Modelo')
+                                                : tx.type === 'GIFT' ? `Regalo enviado a ${tx.details?.to_name || 'Modelo'}`
                                                     : tx.type === 'DEPOSIT' ? 'Depósito'
                                                         : tx.type}
                                         </div>
