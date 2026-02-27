@@ -212,13 +212,13 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception as e:
         logger.error(f"Error procesando my_chat_member: {e}")
 
-def main():
+def build_app():
     token = os.getenv("PROMO_TELEGRAM_TOKEN")
     if not token:
         logger.error("PROMO_TELEGRAM_TOKEN not found in .env")
-        return
+        return None
 
-    logger.info("Iniciando Promo Bot...")
+    logger.info("Construyendo Promo Bot...")
     
     async def post_init(application: Application):
         init_scheduler(application.bot)
@@ -243,8 +243,13 @@ def main():
 
     # Iniciar Cron Jobs de Promociones (SFS, Métricas) a través de post_init
 
-    logger.info("Promo Bot Iniciado. Escuchando...")
-    app.run_polling(drop_pending_updates=True)
+    return app
+
+def main():
+    app = build_app()
+    if app:
+        logger.info("Promo Bot Iniciado. Escuchando...")
+        app.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':
     main()

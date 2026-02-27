@@ -21,14 +21,14 @@ load_dotenv()
 # Instancia global para acceso externo
 bot_app: Application = None
 
-def main():
+def build_app():
     global bot_app
     token = os.getenv("TELEGRAM_TOKEN")
     if not token:
         logger.error("TELEGRAM_TOKEN not found in .env")
-        return
+        return None
 
-    logger.info("Iniciando Bot...")
+    logger.info("Construyendo Bot Principal...")
     
     # Construir App
     bot_app = ApplicationBuilder().token(token).build()
@@ -87,8 +87,13 @@ def main():
     
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, help_handler))
     
-    logger.info("Bot Iniciado. Escuchando...")
-    app.run_polling(drop_pending_updates=True)
+    return app
+
+def main():
+    app = build_app()
+    if app:
+        logger.info("Bot Iniciado. Escuchando...")
+        app.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':
     main()

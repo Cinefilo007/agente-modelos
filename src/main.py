@@ -1,11 +1,12 @@
 import asyncio
 import uvicorn
 import logging
-from src.bot import main as start_bot_polling
-from src.promo_bot import main as start_promo_bot_polling
-from src.api.main import app
 import os
 import threading
+from src.bot import build_app as build_main_bot
+from src.promo_bot import build_app as build_promo_bot
+from src.api.main import app as fastapi_app
+from src.services.ton_monitor import start_monitor
 
 # Config logging
 logging.basicConfig(level=logging.INFO)
@@ -19,15 +20,51 @@ logging.getLogger("telegram.ext.Application").setLevel(logging.WARNING)
 def run_api():
     port = int(os.getenv("PORT", 8000))
     logger.info(f"Starting API on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=port)
 
-from src.services.ton_monitor import start_monitor
+async def _run_bots_concurrently():
+    """Ejecuta los dos bots (Principal y SFS) en el mismo loop de eventos principal"""
+    apps_running = []
+    
+    # 1. Bot Principal
+    main_bot = build_main_bot()
+    if main_bot:
+        await main_bot.initialize()
+        await main_bot.start()
+        await main_bot.updater.start_polling(drop_pending_updates=True)
+        apps_running.append(main_bot)
+        logger.info("Bot Principal iniciado correctamente.")
+        
+    # 2. Promo Bot (SFS)
+    promo_bot = build_promo_bot()
+    if promo_bot:
+        await promo_bot.initialize()
+        await promo_bot.start()
+        await promo_bot.updater.start_polling(drop_pending_updates=True)
+        apps_running.append(promo_bot)
+        logger.info("Promo Bot (SFS) iniciado correctamente.")
+        
+    # Mantener el loop vivo indefinidamente si hay apps corriendo
+    if apps_running:
+        logger.info("Todos los bots en ejecución. Manteniendo el loop...")
+        stop_event = asyncio.Event()
+        await stop_event.wait()
+    else:
+        logger.error("No se pudo iniciar ningún bot. Deteniendo loop.")
+
+def run_bots():
+    """Entry point síncrono para iniciar el loop de bots"""
+    try:
+        asyncio.run(_run_bots_concurrently())
+    except KeyboardInterrupt:
+        logger.info("Bots detenidos mediante interrupción de teclado.")
 
 def main():
     enable_api = os.getenv("ENABLE_API", "true").lower() == "true"
     enable_bot = os.getenv("ENABLE_BOT", "true").lower() == "true"
     enable_monitor = os.getenv("ENABLE_MONITOR", "true").lower() == "true"
 
+    # API en hilo secundario (Uvicorn crea su propio loop internamente)
     if enable_api:
         logger.info("Starting API thread...")
         t = threading.Thread(target=run_api, daemon=True)
@@ -35,6 +72,7 @@ def main():
     else:
         logger.info("API is disabled (ENABLE_API=false)")
     
+    # Monitor de TON en hilo secundario
     if enable_monitor:
         logger.info("Starting TON Monitor thread...")
         tm = threading.Thread(target=start_monitor, daemon=True)
@@ -42,28 +80,19 @@ def main():
     else:
         logger.info("TON Monitor is disabled (ENABLE_MONITOR=false)")
 
+    # Bots Telegram en el hilo principal (requieren control del event loop)
     if enable_bot:
-        logger.info("Starting Telegram Bot (with 2s delay)...")
+        logger.info("Starting Telegram Bots orchestration...")
         import time
-        time.sleep(2)
-        
-        # Iniciar bot SFS en hilo separado
-        logger.info("Starting Promo Bot thread...")
-        tp = threading.Thread(target=start_promo_bot_polling, daemon=True)
-        tp.start()
-        
-        # El bot principal bloquea el hilo principal
-        start_bot_polling()
+        time.sleep(2) # Dar margen de unos segs a API y BD para conectar
+        run_bots()
     else:
-        logger.info("Bot is disabled (ENABLE_BOT=false)")
-        # If API is running, we need to keep the main thread alive.
+        logger.info("Bots are disabled (ENABLE_BOT=false)")
+        # Bloquear hilo principal si solo corre la API
         if enable_api:
-            # Keep main thread alive while API thread runs
             while True:
                 import time
                 time.sleep(10)
-        else:
-            logger.info("Nothing to run. Exiting.")
 
 if __name__ == "__main__":
     main()
