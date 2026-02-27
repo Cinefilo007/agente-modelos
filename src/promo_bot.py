@@ -132,8 +132,8 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
                 if model_data.data:
                     logger.info(f"Modelo encontrada en BD: {model_data.data[0]}")
                     model = model_data.data[0]
-                    # Registrar canal
-                    db.client.table('channels').upsert({
+                    # Registrar canal usando service_role para saltar RLS
+                    db.service_client.table('channels').upsert({
                         'model_id': model['id'],
                         'telegram_chat_id': str(chat.id),
                         'name': chat.title,
@@ -188,7 +188,8 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
             model_id = model_data.data[0]['id']
             
             # Cambiar a pending_approval para sincronizar con el Panel Admin
-            db.client.table('channels').upsert({
+            # Usar service_role para saltar RLS
+            db.service_client.table('channels').upsert({
                 'model_id': model_id,
                 'telegram_chat_id': chat.id,
                 'name': chat.title,
@@ -205,8 +206,8 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
             
         elif new_status in ['kicked', 'left']:
             # El bot fue eliminado del canal
-            # Marcar el canal como inactivo
-            db.client.table('channels').update({'status': 'inactive'}).eq('telegram_chat_id', chat.id).execute()
+            # Marcar el canal como inactivo usando service_role
+            db.service_client.table('channels').update({'status': 'inactive'}).eq('telegram_chat_id', chat.id).execute()
             logger.info(f"Bot removido del canal {chat.id}")
             
     except Exception as e:
