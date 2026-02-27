@@ -104,10 +104,16 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
     try:
         model_res = db.client.table("models").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
         if model_res is not None and hasattr(model_res, 'data') and model_res.data:
-            user_role = "model"
-            user_data = model_res.data
-            if user_data.get('status') == 'rejected':
+            model_data = model_res.data
+            if model_data.get('status') == 'rejected':
                  raise HTTPException(status_code=403, detail="Tu cuenta de modelo ha sido rechazada.")
+            elif model_data.get('status') == 'verifying':
+                 # Treat them as a simple client until their model account is approved
+                 user_role = "unknown"
+                 user_data = None
+            else:
+                 user_role = "model"
+                 user_data = model_data
     except HTTPException:
         raise
     except Exception as e:
