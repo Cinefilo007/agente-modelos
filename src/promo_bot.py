@@ -132,11 +132,19 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
                 if model_data.data:
                     logger.info(f"Modelo encontrada en BD: {model_data.data[0]}")
                     model = model_data.data[0]
+                    # Extraer conteo de seguidores
+                    followers = 0
+                    try:
+                        followers = await context.bot.get_chat_member_count(chat.id)
+                    except Exception as metric_err:
+                        logger.warning(f"Error obteniendo subs para {chat.id}: {metric_err}")
+                        
                     # Registrar canal usando service_role para saltar RLS
                     db.service_client.table('channels').upsert({
                         'model_id': model['id'],
                         'telegram_chat_id': str(chat.id),
                         'name': chat.title,
+                        'followers': followers,
                         'status': 'verifying' # Enviarlo directo a revision
                     }, on_conflict='model_id, telegram_chat_id').execute()
                     
@@ -187,12 +195,20 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
                 
             model_id = model_data.data[0]['id']
             
+            # Extraer conteo de seguidores
+            followers = 0
+            try:
+                followers = await context.bot.get_chat_member_count(chat.id)
+            except Exception as metric_err:
+                logger.warning(f"Error obteniendo subs para {chat.id}: {metric_err}")
+                
             # Cambiar a verifying para sincronizar con el Panel Admin
             # Usar service_role para saltar RLS
             db.service_client.table('channels').upsert({
                 'model_id': model_id,
                 'telegram_chat_id': chat.id,
                 'name': chat.title,
+                'followers': followers,
                 'status': 'verifying'
             }, on_conflict='model_id, telegram_chat_id').execute()
             

@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import Optional, List
 from src.services.database import db
+from src.api.dependencies import get_current_user, TelegramUser
 import os
 from telegram import Bot
 
@@ -215,8 +216,10 @@ async def get_received_campaigns(model_id: str = Query(...)):
 # ─────────────────────────────────────────────
 
 @router.get("/admin/channels/pending")
-async def get_pending_channels():
+async def get_pending_channels(user: TelegramUser = Depends(get_current_user)):
     """Lista canales con status='verifying' para revisión del admin."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de administrador.")
     try:
         res = db.service_client.table("channels") \
             .select("*, models(username, full_name, telegram_id)") \
@@ -244,8 +247,10 @@ async def get_pending_channels():
 
 
 @router.post("/admin/channels/{channel_id}/action")
-async def admin_channel_action(channel_id: str, req: ChannelActionRequest):
+async def admin_channel_action(channel_id: str, req: ChannelActionRequest, user: TelegramUser = Depends(get_current_user)):
     """Aprobar o rechazar un canal. Notifica a la modelo por Telegram."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de administrador.")
     try:
         new_status = "active" if req.action == "approve" else "rejected"
         db.service_client.table("channels").update({"status": new_status}).eq("id", channel_id).execute()
@@ -280,8 +285,10 @@ async def admin_channel_action(channel_id: str, req: ChannelActionRequest):
 
 
 @router.get("/admin/campaigns/active")
-async def get_active_campaigns():
+async def get_active_campaigns(user: TelegramUser = Depends(get_current_user)):
     """Campañas activas en tiempo real para el admin."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de administrador.")
     try:
         res = db.client.table("promo_campaigns") \
             .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
@@ -294,8 +301,10 @@ async def get_active_campaigns():
 
 
 @router.get("/admin/campaigns/fraud")
-async def get_fraud_campaigns():
+async def get_fraud_campaigns(user: TelegramUser = Depends(get_current_user)):
     """Lista campañas denunciadas o canceladas por fraude."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de administrador.")
     try:
         res = db.service_client.table("promo_campaigns") \
             .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
