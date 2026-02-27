@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare } from 'lucide-react';
+import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X } from 'lucide-react';
 import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
 import api from '../api/axios';
