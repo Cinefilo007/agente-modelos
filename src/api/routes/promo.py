@@ -218,7 +218,7 @@ async def get_received_campaigns(model_id: str = Query(...)):
 async def get_pending_channels():
     """Lista canales con status='verifying' para revisión del admin."""
     try:
-        res = db.client.table("channels") \
+        res = db.service_client.table("channels") \
             .select("*, models(username, full_name, telegram_id)") \
             .eq("status", "verifying") \
             .order("created_at", desc=True) \
@@ -248,7 +248,7 @@ async def admin_channel_action(channel_id: str, req: ChannelActionRequest):
     """Aprobar o rechazar un canal. Notifica a la modelo por Telegram."""
     try:
         new_status = "active" if req.action == "approve" else "rejected"
-        db.client.table("channels").update({"status": new_status}).eq("id", channel_id).execute()
+        db.service_client.table("channels").update({"status": new_status}).eq("id", channel_id).execute()
 
         # Obtener datos del canal y la modelo para notificar
         ch_res = db.client.table("channels") \
@@ -295,9 +295,9 @@ async def get_active_campaigns():
 
 @router.get("/admin/campaigns/fraud")
 async def get_fraud_campaigns():
-    """Campañas marcadas como fraude."""
+    """Lista campañas denunciadas o canceladas por fraude."""
     try:
-        res = db.client.table("promo_campaigns") \
+        res = db.service_client.table("promo_campaigns") \
             .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
             .eq("status", "cancelled_fraud") \
             .order("updated_at", desc=True) \
