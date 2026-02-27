@@ -176,7 +176,9 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
     chat = update.channel_post.chat
     
     if text.startswith("/link_"):
+        logger.info(f"Recibido posible código de vinculación: {text} en chat {chat.id}")
         code = text.split("_")[1] # El codigo, que sería el UUID del modelo sin guiones
+        logger.info(f"Código extraído: {code}")
         
         try:
             # Buscar a la modelo usando el campo ID (que es formato UUID).
@@ -185,9 +187,11 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
             # Reconstruir UUID: 8-4-4-4-12
             if len(code) == 32:
                 formatted_uuid = f"{code[:8]}-{code[8:12]}-{code[12:16]}-{code[16:20]}-{code[20:]}"
+                logger.info(f"UUID formateado para búsqueda: {formatted_uuid}")
                 
                 model_data = db.client.table('models').select('id, telegram_id, status').eq('id', formatted_uuid).execute()
                 if model_data.data:
+                    logger.info(f"Modelo encontrada en BD: {model_data.data[0]}")
                     model = model_data.data[0]
                     # Registrar canal
                     db.client.table('channels').upsert({
@@ -209,8 +213,15 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
                         parse_mode='Markdown'
                     )
                     return
+                else:
+                    logger.warning(f"No se encontró ninguna modelo con el ID: {formatted_uuid}")
+            else:
+                logger.warning(f"El código recibido ({code}) no tiene 32 caracteres (length: {len(code)})")
+
         except Exception as e:
             logger.error(f"Error procesando linking de canal (código {text}): {e}")
+    else:
+        logger.debug(f"Mensaje ignorado en canal (no es /link_): {text[:20]}...")
 
 async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
