@@ -137,7 +137,7 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
                         'model_id': model['id'],
                         'telegram_chat_id': str(chat.id),
                         'name': chat.title,
-                        'status': 'pending_approval' # Enviarlo directo a revision
+                        'status': 'verifying' # Enviarlo directo a revision
                     }, on_conflict='model_id, telegram_chat_id').execute()
                     
                     logger.info(f"Canal vinculado vía código: {chat.title} ({chat.id}) por modelo_id {model['id']}")
@@ -148,7 +148,7 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
                     # Notificar a la modelo que fue un exito (usando su telegram_id)
                     await context.bot.send_message(
                         chat_id=model['telegram_id'],
-                        text=f"📡 **¡Canal Vinculado Exitosamente!** '{chat.title}'\n\nEl sistema validó tu código secreto. El canal quedará en estado **Pendiente de Aprobación** hasta revisión manual de los administradores.",
+                        text=f"📡 **¡Canal Vinculado Exitosamente!** '{chat.title}'\n\nEl sistema validó tu código secreto. El canal quedará en estado **En Verificación** hasta revisión manual de los administradores.",
                         parse_mode='Markdown'
                     )
                     return
@@ -187,19 +187,19 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
                 
             model_id = model_data.data[0]['id']
             
-            # Cambiar a pending_approval para sincronizar con el Panel Admin
+            # Cambiar a verifying para sincronizar con el Panel Admin
             # Usar service_role para saltar RLS
             db.service_client.table('channels').upsert({
                 'model_id': model_id,
                 'telegram_chat_id': chat.id,
                 'name': chat.title,
-                'status': 'pending_approval'
+                'status': 'verifying'
             }, on_conflict='model_id, telegram_chat_id').execute()
             
             # Enviar mensaje al usuario confirmando
             await context.bot.send_message(
                 chat_id=user_id,
-                text=f"📡 **Canal vinculado:** '{chat.title}'\n\nHe registrado tu canal. Quedará en estado **Pendiente de Aprobación** hasta que nuestro equipo lo revise. Te notificaremos cuando esté activo en el catálogo.",
+                text=f"📡 **Canal vinculado:** '{chat.title}'\n\nHe registrado tu canal. Quedará en estado **En Verificación** hasta que nuestro equipo lo revise. Te notificaremos cuando esté activo en el catálogo.",
                 parse_mode='Markdown'
             )
             logger.info(f"Nuevo canal registrado: {chat.title} ({chat.id}) por la modelo {model_id}")
