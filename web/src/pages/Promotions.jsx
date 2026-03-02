@@ -188,7 +188,13 @@ const Promotions = () => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                        {channel.name}
+                                        {channel.invite_link ? (
+                                            <a href={channel.invite_link} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 hover:underline flex items-center gap-1 transition-colors">
+                                                {channel.name} <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        ) : (
+                                            channel.name
+                                        )}
                                         {channel.trust_score >= 90 && <ShieldCheck className="w-4 h-4 text-green-400" />}
                                     </h3>
                                     <div className="flex items-center gap-2 mt-1">

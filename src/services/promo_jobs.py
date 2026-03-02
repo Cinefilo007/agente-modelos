@@ -3,10 +3,42 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
 from datetime import datetime
 from telegram.error import TelegramError
+import httpx
+import re
 
 from src.services.database import db
 
 logger = logging.getLogger(__name__)
+
+async def get_recent_channel_views(username: str) -> int:
+    """Extrae las vistas promedio de las últimas 10 publicaciones de un canal público vía HTTPS."""
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"https://t.me/s/{username}", follow_redirects=True, timeout=10.0)
+            if resp.status_code == 200:
+                html = resp.text
+                matches = re.findall(r'<span class="tgme_widget_message_views">(.*?)</span>', html)
+                if not matches:
+                    return 0
+                
+                total_views = 0
+                count = 0
+                for m in matches[-10:]: # Últimos 10 mensajes
+                    v_str = m.strip().replace(',', '')
+                    if 'K' in v_str:
+                        views = int(float(v_str.replace('K', '')) * 1000)
+                    elif 'M' in v_str:
+                        views = int(float(v_str.replace('M', '')) * 1000000)
+                    else:
+                        views = int(v_str)
+                    total_views += views
+                    count += 1
+                
+                if count > 0:
+                    return int(total_views / count)
+    except Exception as e:
+        logger.warning(f"Error scraping views for {username}: {e}")
+    return 0
 
 async def evaluate_channels_quality(bot):
     """
@@ -21,18 +53,35 @@ async def evaluate_channels_quality(bot):
         channels_res = db.service_client.table('channels').select('*').in_('status', ['verifying', 'active']).execute()
         for channel in channels_res.data:
             try:
-                # Obtener cantidad real de suscriptores
+                # Obtener detalles completos del chat
+                chat = await bot.get_chat(chat_id=channel['telegram_chat_id'])
                 count = await bot.get_chat_member_count(chat_id=channel['telegram_chat_id'])
                 
-                # Simular cálculo ER simple basado en membresía para MVP 
-                # (15% alcance orgánico base en Telegram)
+                # 1. Definir link de invitación
+                invite_link = channel.get('invite_link')
+                if chat.username:
+                    invite_link = f"https://t.me/{chat.username}"
+                else:
+                    try:
+                        # Para privados extraemos un enlace temporal si es posible
+                        invite_link = chat.invite_link or await chat.export_invite_link()
+                    except:
+                        pass
+                
+                # 2. Calcular ER usando scraping real si es público, o base de 15% si es privado
                 estimated_avg_views = int(count * 0.15) 
-                estimated_er = 15.00
+                if chat.username:
+                    scraped_views = await get_recent_channel_views(chat.username)
+                    if scraped_views > 0:
+                        estimated_avg_views = scraped_views
+                        
+                estimated_er = round((estimated_avg_views / max(count, 1)) * 100, 2)
                 
                 db.service_client.table('channels').update({
                     'followers': count,
                     'avg_views': estimated_avg_views,
-                    'engagement_rate': estimated_er
+                    'engagement_rate': estimated_er,
+                    'invite_link': invite_link
                     # IMPORTANTE: No modificar el status aquí, dejarlo igual (active o verifying)
                 }).eq('id', channel['id']).execute()
                 

@@ -75,6 +75,7 @@ async def get_channel_catalog(
                 "trust_score": model_info.get("trust_score", 50),
                 "badges": model_info.get("badges") or [],
                 "model_username": model_info.get("username", ""),
+                "invite_link": ch.get("invite_link"),
             })
 
         return {
@@ -240,6 +241,7 @@ async def get_pending_channels(user: TelegramUser = Depends(get_current_user)):
                 "model_full_name": model_info.get("full_name", ""),
                 "model_telegram_id": model_info.get("telegram_id"),
                 "created_at": ch["created_at"],
+                "invite_link": ch.get("invite_link"),
             })
         return channels
     except Exception as e:

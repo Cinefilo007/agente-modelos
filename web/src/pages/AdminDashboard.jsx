@@ -167,10 +167,18 @@ const PromoAdminSection = () => {
                             <div key={ch.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <h3 className="font-bold text-foreground">{ch.name}</h3>
-                                        <p className="text-xs text-muted-foreground">Solicitado por {ch.model_username}</p>
+                                        <h3 className="font-bold text-foreground flex items-center gap-2">
+                                            {ch.invite_link ? (
+                                                <a href={ch.invite_link} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 hover:underline flex items-center gap-1 transition-colors">
+                                                    {ch.name} <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            ) : (
+                                                ch.name
+                                            )}
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground mt-1">Solicitado por {ch.model_username}</p>
                                     </div>
-                                    <span className="text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/20 px-2 py-0.5 rounded-full">Pendiente</span>
+                                    <span className="text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/20 px-2 py-0.5 rounded-full mt-1">Pendiente</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs">
                                     <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full flex items-center gap-1">
