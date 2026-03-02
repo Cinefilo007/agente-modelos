@@ -21,11 +21,13 @@ function CreatePost() {
     const [filmstrip, setFilmstrip] = useState([]);
     const [isGeneratingFrames, setIsGeneratingFrames] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [isDragging, setIsDragging] = useState(null); // 'start', 'end', or null
 
     const fileInputRef = useRef(null);
     const videoRef = useRef(null);
+    const mainVideoRef = useRef(null);
     const canvasRef = useRef(null);
 
     const getVideoDuration = (file) => {
@@ -257,7 +259,55 @@ function CreatePost() {
                         {file ? (
                             <>
                                 {file.type.startsWith('video/') ? (
-                                    <video src={previewUrl} className="w-full h-full object-contain" controls />
+                                    <div className="relative w-full h-full flex items-center justify-center bg-black">
+                                        <video
+                                            ref={mainVideoRef}
+                                            src={`${previewUrl}#t=${trimStart},${trimEnd}`}
+                                            className="w-full h-full object-contain"
+                                            playsInline
+                                            disablePictureInPicture
+                                            controlsList="nodownload nofullscreen"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (mainVideoRef.current.paused) {
+                                                    mainVideoRef.current.play();
+                                                    setIsPreviewPlaying(true);
+                                                } else {
+                                                    mainVideoRef.current.pause();
+                                                    setIsPreviewPlaying(false);
+                                                }
+                                            }}
+                                            onTimeUpdate={(e) => {
+                                                if (e.target.currentTime >= trimEnd) {
+                                                    e.target.currentTime = trimStart;
+                                                    e.target.pause();
+                                                    setIsPreviewPlaying(false);
+                                                }
+                                            }}
+                                            onLoadedMetadata={(e) => {
+                                                if (e.target.duration && !isNaN(e.target.duration)) {
+                                                    e.target.currentTime = trimStart;
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (mainVideoRef.current.paused) {
+                                                    mainVideoRef.current.play();
+                                                    setIsPreviewPlaying(true);
+                                                } else {
+                                                    mainVideoRef.current.pause();
+                                                    setIsPreviewPlaying(false);
+                                                }
+                                            }}
+                                            className={`absolute inset-0 flex items-center justify-center bg-black/10 transition-opacity z-40 ${isPreviewPlaying ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}
+                                        >
+                                            <div className="p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
+                                                {isPreviewPlaying ? <Pause size={24} className="text-white fill-white" /> : <Play size={24} className="text-white fill-white ml-1" />}
+                                            </div>
+                                        </button>
+                                    </div>
                                 ) : (
                                     <img src={previewUrl} alt="Preview" className="w-full h-full object-contain" />
                                 )}
@@ -333,7 +383,6 @@ function CreatePost() {
                                 className="max-w-full max-h-full rounded-lg shadow-2xl"
                                 playsInline
                                 webkit-playsinline="true"
-                                muted
                                 autoPlay
                                 loop
                                 preload="auto"
@@ -377,21 +426,55 @@ function CreatePost() {
                             <div className="relative pt-4">
                                 <span className="absolute -top-4 left-1 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Recortar Video</span>
 
-                                <div className="relative h-16 w-full bg-black/40 rounded-lg overflow-hidden flex select-none">
+                                <div
+                                    className="relative h-16 w-full bg-black/40 rounded-lg overflow-hidden flex select-none touch-none"
+                                    onMouseMove={(e) => {
+                                        if (!isDragging || !videoDuration || videoDuration <= 0) return;
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const pos = (e.clientX - rect.left) / rect.width;
+                                        const time = Math.max(0, Math.min(videoDuration, pos * videoDuration));
+
+                                        if (isDragging === 'start') {
+                                            setTrimStart(Math.min(time, trimEnd - 0.5));
+                                            if (videoRef.current) videoRef.current.currentTime = time;
+                                        } else if (isDragging === 'end') {
+                                            setTrimEnd(Math.max(time, trimStart + 0.5));
+                                            if (videoRef.current) videoRef.current.currentTime = time;
+                                        }
+                                    }}
+                                    onMouseUp={() => setIsDragging(null)}
+                                    onMouseLeave={() => setIsDragging(null)}
+                                    onTouchMove={(e) => {
+                                        if (!isDragging || !videoDuration || videoDuration <= 0) return;
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const touch = e.touches[0];
+                                        const pos = (touch.clientX - rect.left) / rect.width;
+                                        const time = Math.max(0, Math.min(videoDuration, pos * videoDuration));
+
+                                        if (isDragging === 'start') {
+                                            setTrimStart(Math.min(time, trimEnd - 0.5));
+                                            if (videoRef.current) videoRef.current.currentTime = time;
+                                        } else if (isDragging === 'end') {
+                                            setTrimEnd(Math.max(time, trimStart + 0.5));
+                                            if (videoRef.current) videoRef.current.currentTime = time;
+                                        }
+                                    }}
+                                    onTouchEnd={() => setIsDragging(null)}
+                                >
                                     {/* Filmstrip Background */}
                                     {filmstrip.length > 0 ? (
                                         filmstrip.map((src, i) => (
                                             <img key={i} src={src} className="h-full flex-1 object-cover opacity-60 grayscale-[0.5] pointer-events-none" />
                                         ))
                                     ) : (
-                                        <div className="flex-1 h-full bg-white/5 flex items-center justify-center">
+                                        <div className="flex-1 h-full bg-white/5 flex items-center justify-center pointer-events-none">
                                             {isGeneratingFrames ? <Loader size={20} className="animate-spin text-white/20" /> : <div className="h-full w-full" />}
                                         </div>
                                     )}
 
                                     {/* Draggable Shrouds (Darkened areas outside selection) */}
-                                    <div className="absolute top-0 left-0 h-full bg-black/70 z-10" style={{ width: `${videoDuration > 0 ? (trimStart / videoDuration) * 100 : 0}%` }} />
-                                    <div className="absolute top-0 right-0 h-full bg-black/70 z-10" style={{ width: `${videoDuration > 0 ? Math.max(0, (1 - trimEnd / videoDuration) * 100) : 0}%` }} />
+                                    <div className="absolute top-0 left-0 h-full bg-black/70 z-10 pointer-events-none" style={{ width: `${videoDuration > 0 ? (trimStart / videoDuration) * 100 : 0}%` }} />
+                                    <div className="absolute top-0 right-0 h-full bg-black/70 z-10 pointer-events-none" style={{ width: `${videoDuration > 0 ? Math.max(0, (1 - trimEnd / videoDuration) * 100) : 0}%` }} />
 
                                     {/* Trim Box with Handles */}
                                     <div
@@ -404,8 +487,8 @@ function CreatePost() {
                                         {/* Start Handle */}
                                         <div
                                             className="absolute -left-3 top-[-4px] bottom-[-4px] w-6 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-l-md flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.4)] z-30 touch-none"
-                                            onMouseDown={() => setIsDragging('start')}
-                                            onTouchStart={(e) => { e.preventDefault(); setIsDragging('start'); }}
+                                            onMouseDown={(e) => { e.stopPropagation(); setIsDragging('start'); }}
+                                            onTouchStart={(e) => { e.stopPropagation(); setIsDragging('start'); }}
                                         >
                                             <div className="w-[3px] h-6 bg-black/40 rounded-full" />
                                         </div>
@@ -413,49 +496,12 @@ function CreatePost() {
                                         {/* End Handle */}
                                         <div
                                             className="absolute -right-3 top-[-4px] bottom-[-4px] w-6 bg-yellow-500 cursor-ew-resize pointer-events-auto rounded-r-md flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.4)] z-30 touch-none"
-                                            onMouseDown={() => setIsDragging('end')}
-                                            onTouchStart={(e) => { e.preventDefault(); setIsDragging('end'); }}
+                                            onMouseDown={(e) => { e.stopPropagation(); setIsDragging('end'); }}
+                                            onTouchStart={(e) => { e.stopPropagation(); setIsDragging('end'); }}
                                         >
                                             <div className="w-[3px] h-6 bg-black/40 rounded-full" />
                                         </div>
                                     </div>
-
-                                    {/* Interaction Overlay */}
-                                    <div
-                                        className="absolute inset-0 z-30 touch-none"
-                                        onMouseMove={(e) => {
-                                            if (!isDragging || !videoDuration || videoDuration <= 0) return;
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const pos = (e.clientX - rect.left) / rect.width;
-                                            const time = Math.max(0, Math.min(videoDuration, pos * videoDuration));
-
-                                            if (isDragging === 'start') {
-                                                setTrimStart(Math.min(time, trimEnd - 0.5));
-                                                if (videoRef.current) videoRef.current.currentTime = time;
-                                            } else if (isDragging === 'end') {
-                                                setTrimEnd(Math.max(time, trimStart + 0.5));
-                                                if (videoRef.current) videoRef.current.currentTime = time;
-                                            }
-                                        }}
-                                        onMouseUp={() => setIsDragging(null)}
-                                        onMouseLeave={() => setIsDragging(null)}
-                                        onTouchMove={(e) => {
-                                            if (!isDragging || !videoDuration || videoDuration <= 0) return;
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const touch = e.touches[0];
-                                            const pos = (touch.clientX - rect.left) / rect.width;
-                                            const time = Math.max(0, Math.min(videoDuration, pos * videoDuration));
-
-                                            if (isDragging === 'start') {
-                                                setTrimStart(Math.min(time, trimEnd - 0.5));
-                                                if (videoRef.current) videoRef.current.currentTime = time;
-                                            } else if (isDragging === 'end') {
-                                                setTrimEnd(Math.max(time, trimStart + 0.5));
-                                                if (videoRef.current) videoRef.current.currentTime = time;
-                                            }
-                                        }}
-                                        onTouchEnd={() => setIsDragging(null)}
-                                    />
                                 </div>
                                 <div className="flex justify-between mt-2 text-[10px] text-gray-500 font-mono">
                                     <span>{trimStart.toFixed(1)}s</span>
