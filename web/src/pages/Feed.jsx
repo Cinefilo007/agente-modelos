@@ -112,8 +112,10 @@ function Feed() {
     const latestPostIdRef = useRef(null);
 
     useEffect(() => {
-        if (posts.length > 0 && !latestPostIdRef.current) {
+        if (posts.length > 0) {
             latestPostIdRef.current = posts[0].id;
+            localStorage.setItem('latest_seen_post_id', posts[0].id);
+            window.dispatchEvent(new Event('feed_read'));
         }
     }, [posts]);
 
@@ -154,13 +156,13 @@ function Feed() {
 
             {/* New Posts Alert */}
             {newPostsCount > 0 && (
-                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 animate-bounce">
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-top-4 fade-in duration-300">
                     <button
                         onClick={reloadFeed}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+                        className="bg-[#1a1a1a]/90 backdrop-blur-md border border-white/20 text-white text-xs px-4 py-1.5 rounded-full font-medium shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center gap-2 hover:bg-white/10 transition-colors"
                     >
-                        <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-                        Nuevas Publicaciones
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
+                        Nuevos posts
                     </button>
                 </div>
             )}

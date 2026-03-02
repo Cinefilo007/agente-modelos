@@ -41,6 +41,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
     const [showGiftSelector, setShowGiftSelector] = useState(false);
     const [isTipping, setIsTipping] = useState(false);
     const [tipsCount, setTipsCount] = useState(Number(post.tips_count) || 0);
+    const [animations, setAnimations] = useState([]); // Track flying coins
     const isOnline = post.user?.is_online || post.is_online || false;
 
     // Refs

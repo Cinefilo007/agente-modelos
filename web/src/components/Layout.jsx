@@ -89,6 +89,43 @@ export default function Layout() {
         return () => clearInterval(interval);
     }, [user, location.pathname]);
 
+    // Polling for new feed posts (red dot indicator)
+    const [hasNewPosts, setHasNewPosts] = React.useState(false);
+
+    React.useEffect(() => {
+        if (!user || user.role === 'admin') return;
+
+        const checkNewPosts = async () => {
+            try {
+                if (location.pathname === '/') {
+                    setHasNewPosts(false);
+                    return;
+                }
+                const res = await api.get('/content/feed?sort=recent&limit=1');
+                if (res.data && res.data.length > 0) {
+                    const newestId = String(res.data[0].id);
+                    const latestSeen = localStorage.getItem('latest_seen_post_id');
+                    if (latestSeen && newestId !== latestSeen) {
+                        setHasNewPosts(true);
+                    }
+                }
+            } catch (e) {
+                console.error("Feed poll error:", e);
+            }
+        };
+
+        checkNewPosts();
+        const interval = setInterval(checkNewPosts, 20000);
+
+        const handleFeedRead = () => setHasNewPosts(false);
+        window.addEventListener('feed_read', handleFeedRead);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('feed_read', handleFeedRead);
+        };
+    }, [user, location.pathname]);
+
     return (
         // Background is now handled by body with var(--bg-gradient) and var(--background)
         <div className="min-h-screen w-full flex justify-center transition-colors duration-700 font-sans">
@@ -108,7 +145,7 @@ export default function Layout() {
                 {/* Bottom Navigation Bar */}
                 {showNav && (
                     <nav className="absolute bottom-0 left-0 right-0 h-[60px] bg-background/80 backdrop-blur-xl border-t border-border flex items-center justify-between px-2 z-50 pb-safe">
-                        <NavItem to="/" icon={Home} label="Inicio" />
+                        <NavItem to="/" icon={Home} label="Inicio" badge={hasNewPosts ? 1 : 0} />
                         <NavItem to="/explore" icon={Compass} label="Explorar" />
 
                         {/* Central Action Button (Models only, NOT Admin) */}
