@@ -201,27 +201,55 @@ function Profile() {
             />
 
             {/* Stories Section */}
+            {/* Stories Section */}
             {(stories.length > 0 || isOwnProfile) && (
                 <>
                     <div className="mt-4 text-[var(--text-secondary)] text-xs px-4 uppercase tracking-wider font-semibold">
                         Historias {isOwnProfile && <span className="text-purple-400 text-[10px] ml-2">(+ Crear)</span>}
                     </div>
-                    {stories.length === 0 && isOwnProfile ? (
-                        <div className="px-4 py-4">
-                            <button
-                                onClick={() => navigate('/create-story')}
-                                className="flex flex-col items-center justify-center w-20 h-20 rounded-full border-2 border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors"
-                            >
-                                <span className="text-2xl text-white/50">+</span>
-                                <span className="text-[10px] text-white/40 mt-1">Crear</span>
-                            </button>
-                        </div>
-                    ) : (
-                        <StoryCarousel stories={stories} onOpenStory={(story) => {
-                            const idx = stories.findIndex(s => s.id === story.id);
-                            if (idx >= 0) setSelectedStory(idx);
-                        }} />
-                    )}
+                    {/* Separar las historias activas (últimas 24h) de las destacadas (guardadas por la modelo) */}
+                    {(() => {
+                        const now = new Date();
+                        const activeStories = stories.filter(s => new Date(s.expires_at) > now);
+                        const savedStories = stories.filter(s => s.is_saved).slice(0, 10); // Límite de 10 historias guardadas
+
+                        if (stories.length === 0 && isOwnProfile) {
+                            return (
+                                <div className="px-4 py-4">
+                                    <button
+                                        onClick={() => navigate('/create-story')}
+                                        className="flex flex-col items-center justify-center w-20 h-20 rounded-full border-2 border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors"
+                                    >
+                                        <span className="text-2xl text-white/50">+</span>
+                                        <span className="text-[10px] text-white/40 mt-1">Crear</span>
+                                    </button>
+                                </div>
+                            );
+                        }
+
+                        return (
+                            <div className="flex flex-col gap-2">
+                                <StoryCarousel
+                                    stories={activeStories}
+                                    onOpenStory={(story) => {
+                                        const index = activeStories.findIndex(s => s.id === story.id);
+                                        setSelectedStory({ list: activeStories, activeIndex: index === -1 ? 0 : index });
+                                    }}
+                                    title="Historias de hoy"
+                                />
+                                {savedStories.length > 0 && (
+                                    <StoryCarousel
+                                        stories={savedStories}
+                                        onOpenStory={(story) => {
+                                            const index = savedStories.findIndex(s => s.id === story.id);
+                                            setSelectedStory({ list: savedStories, activeIndex: index === -1 ? 0 : index });
+                                        }}
+                                        title="Destacados"
+                                    />
+                                )}
+                            </div>
+                        );
+                    })()}
                 </>
             )}
 
@@ -237,10 +265,14 @@ function Profile() {
             {/* Story Viewer Modal */}
             {selectedStory !== null && (
                 <StoryViewer
-                    stories={stories}
-                    initialStoryIndex={selectedStory}
+                    stories={selectedStory.list}
+                    initialStoryIndex={selectedStory.activeIndex}
                     onClose={() => setSelectedStory(null)}
                     user={profileUser}
+                    onStoryDeleted={(id) => {
+                        setStories(prev => prev.filter(s => s.id !== id));
+                        setSelectedStory(null);
+                    }}
                 />
             )}
         </div>

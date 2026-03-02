@@ -46,6 +46,6 @@ export function isOnline(lastSeen) {
     const cleanDate = typeof lastSeen === 'string' ? lastSeen.replace(' ', 'T') : lastSeen;
     const date = new Date(cleanDate);
     const now = new Date();
-    // 5 minutes threshold (300,000 ms)
-    return (now - date) < 300000;
+    // 1 minutes threshold (60,000 ms)
+    return (now - date) < 60000;
 }

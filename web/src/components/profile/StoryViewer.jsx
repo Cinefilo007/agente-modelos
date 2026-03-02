@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Heart, Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Heart, Send, ChevronLeft, ChevronRight, Trash2, Bookmark, BookmarkCheck } from 'lucide-react';
 import { timeAgo } from '../../utils/date';
+import api from '../../api/axios';
 
-const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
+const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user, onStoryDeleted }) => {
     const [currentIndex, setCurrentIndex] = useState(initialStoryIndex);
     const [progress, setProgress] = useState(0);
     const videoRef = useRef(null);
@@ -78,7 +79,34 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
         handleNext();
     };
 
+    const handleDelete = async () => {
+        if (!window.confirm("¿Seguro que deseas eliminar esta historia?")) return;
+        try {
+            await api.delete(`/content/stories/${currentStory.id}`);
+            if (onStoryDeleted) onStoryDeleted(currentStory.id);
+            if (stories.length <= 1) onClose();
+            else handleNext();
+        } catch (e) {
+            console.error("Error deleting story", e);
+            alert("No se pudo eliminar la historia.");
+        }
+    };
+
+    const handleToggleSave = async () => {
+        try {
+            const res = await api.put(`/content/stories/${currentStory.id}/toggle-saved`);
+            currentStory.is_saved = res.data.is_saved;
+            // Force re-render slightly by updating state if needed, or just relying on prop mutation.
+            // Using spread to trigger effect isn't needed here if we just update the UI locally.
+            setProgress(p => p + 0.001); // hack to force re-render for the icon
+        } catch (e) {
+            console.error("Error toggling save status", e);
+        }
+    };
+
     if (!currentStory) return null;
+
+    const isAuthor = user?.role === 'model' && String(currentStory.model_id) === String(user.user_id || user.id);
 
     return (
         <div className="fixed inset-0 z-[60] bg-black flex items-center justify-center">
@@ -134,37 +162,57 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user }) => {
                 )}
 
                 {/* User Info Overlay */}
-                <div className="absolute top-8 left-4 z-30 flex items-center gap-2">
-                    <img
-                        src={avatarUrl}
-                        alt={username}
-                        className="w-8 h-8 rounded-full border border-white/50 object-cover"
-                    />
-                    <div className="flex flex-col">
-                        <span className="text-white font-semibold text-sm drop-shadow-md">
-                            {username}
-                        </span>
-                        <span className="text-white/60 text-xs shadow-black">
-                            {timeAgo(currentStory.created_at)}
-                        </span>
+                <div className="absolute top-8 left-4 z-40 flex items-center justify-between w-[calc(100%-48px)] pr-8">
+                    <div className="flex items-center gap-2">
+                        <img
+                            src={avatarUrl}
+                            alt={username}
+                            className="w-8 h-8 rounded-full border border-white/50 object-cover pointer-events-auto"
+                        />
+                        <div className="flex flex-col">
+                            <span className="text-white font-semibold text-sm drop-shadow-md">
+                                {username}
+                            </span>
+                            <span className="text-white/60 text-xs shadow-black">
+                                {timeAgo(currentStory.created_at)}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Footer / Action */}
-                <div className="absolute bottom-0 w-full p-8 flex justify-center pb-12 z-40 bg-gradient-to-t from-black/90 to-transparent">
-                    <button
-                        onClick={() => {
-                            onClose();
-                            // Navigate logic would be here, but simpler to use an anchor/Link if possible or just window.location for now if hook not passed
-                            // Let's assume passed user object might help or parent handles.
-                            // Better: Just use a styled link if router context exists.
-                            window.location.href = `/profile/${storyUser.username || storyUser.id}`;
-                        }}
-                        className="px-6 py-2 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-white/90 text-sm font-medium hover:bg-white/20 transition-all"
-                    >
-                        Ver Perfil
-                    </button>
-                </div>
+                {/* Author Actions (Right side) */}
+                {isAuthor && (
+                    <div className="absolute top-8 right-16 z-50 flex items-center gap-3">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleToggleSave(); }}
+                            className="p-1.5 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-md transition-colors pointer-events-auto"
+                        >
+                            {currentStory.is_saved ? <BookmarkCheck size={20} className="text-yellow-400" /> : <Bookmark size={20} />}
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+                            className="p-1.5 bg-black/40 hover:bg-red-500/80 rounded-full text-white backdrop-blur-md transition-colors pointer-events-auto"
+                        >
+                            <Trash2 size={20} />
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* Footer / Action */}
+            <div className="absolute bottom-0 w-full p-8 flex justify-center pb-12 z-40 bg-gradient-to-t from-black/90 to-transparent">
+                <button
+                    onClick={() => {
+                        onClose();
+                        // Navigate logic would be here, but simpler to use an anchor/Link if possible or just window.location for now if hook not passed
+                        // Let's assume passed user object might help or parent handles.
+                        // Better: Just use a styled link if router context exists.
+                        window.location.href = `/profile/${storyUser.username || storyUser.id}`;
+                    }}
+                    className="px-6 py-2 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-white/90 text-sm font-medium hover:bg-white/20 transition-all"
+                >
+                    Ver Perfil
+                </button>
             </div>
         </div>
     );

@@ -16,7 +16,7 @@ def calculate_is_online(last_seen_str: Optional[str]) -> bool:
     if not last_seen_str:
         return False
     try:
-        threshold = datetime.utcnow() - timedelta(minutes=5)
+        threshold = datetime.utcnow() - timedelta(minutes=1)
         # Handle 'Z' or '+00:00' suffix
         clean_ts = last_seen_str.replace('Z', '+00:00')
         ls_dt = datetime.fromisoformat(clean_ts)
@@ -156,6 +156,57 @@ async def create_story(
     
     response = db.client.table("stories").insert(data).execute()
     return response.data[0]
+
+@router.delete("/stories/{story_id}")
+async def delete_story(
+    story_id: str,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Delete a story (author or admin) and its media."""
+    story = db.client.table("stories").select("model_id, media_url").eq("id", story_id).single().execute()
+    if not story.data:
+        raise HTTPException(status_code=404, detail="Story not found")
+        
+    is_author = str(story.data['model_id']) == str(user.user_id)
+    is_admin = user.role == "admin"
+
+    if not is_author and not is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this story")
+        
+    try:
+        if story.data.get('media_url'):
+            url_parts = story.data['media_url'].split('/')
+            if 'stories' in url_parts:
+                idx = url_parts.index('stories')
+                relative_path = "/".join(url_parts[idx+1:])
+                from src.services.storage import delete_file
+                delete_file("stories", relative_path)
+    except Exception as e:
+        print(f"Error attempting to delete storage media for story {story_id}: {e}")
+
+    db.client.table("stories").delete().eq("id", story_id).execute()
+    return {"message": "Story deleted successfully"}
+
+@router.put("/stories/{story_id}/toggle-saved")
+async def toggle_story_saved(
+    story_id: str,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Toggle the is_saved status of a story (author only)."""
+    if user.role != "model":
+        raise HTTPException(status_code=403, detail="Only models can save stories")
+
+    story = db.client.table("stories").select("model_id, is_saved").eq("id", story_id).single().execute()
+    if not story.data:
+        raise HTTPException(status_code=404, detail="Story not found")
+        
+    if str(story.data['model_id']) != str(user.user_id):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this story")
+        
+    new_status = not story.data.get('is_saved', False)
+    response = db.client.table("stories").update({"is_saved": new_status}).eq("id", story_id).execute()
+    
+    return {"is_saved": new_status}
 
 @router.get("/stories/feed")
 async def get_stories_feed(user: TelegramUser = Depends(get_current_user)):
@@ -318,7 +369,7 @@ async def delete_post(
 ):
     """Delete a post (author or admin)."""
     # 1. Check ownership or admin role
-    post = db.client.table("posts").select("model_id").eq("id", post_id).single().execute()
+    post = db.client.table("posts").select("model_id, media_url").eq("id", post_id).single().execute()
     if not post.data:
         raise HTTPException(status_code=404, detail="Post not found")
     
@@ -336,7 +387,19 @@ async def delete_post(
     # 3. Delete associated interactions first (to trigger total_likes decrement in models table)
     db.client.table("interactions").delete().eq("target_id", post_id).execute()
 
-    # 4. Delete the post
+    # 4. Delete associated media from Supabase Storage
+    try:
+        if post.data.get('media_url'):
+            url_parts = post.data['media_url'].split('/')
+            if 'posts' in url_parts:
+                idx = url_parts.index('posts')
+                relative_path = "/".join(url_parts[idx+1:])
+                from src.services.storage import delete_file
+                delete_file("posts", relative_path)
+    except Exception as e:
+        print(f"Error attempting to delete storage media for post {post_id}: {e}")
+
+    # 5. Delete the post
     db.client.table("posts").delete().eq("id", post_id).execute()
     
     return {"message": "Post deleted successfully"}

@@ -5,8 +5,11 @@ from datetime import datetime
 from telegram.error import TelegramError
 import httpx
 import re
+from apscheduler.triggers.interval import IntervalTrigger
+from telegram import Bot
 
 from src.services.database import db
+from src.services.storage import delete_file
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +51,51 @@ async def extract_views_from_html(url: str, is_single: bool) -> int:
     except Exception as e:
         logger.warning(f"Error scraping views from {url}: {e}")
     return 0
+
+async def cleanup_expired_stories(bot: Bot):
+    """
+    Busca historias que expiraron hace más de su fecha límite y que
+    no están marcadas como guardadas (is_saved = false). 
+    Las borra de la DB y elimina su multimedia en Storage.
+    """
+    logger.info("Iniciando tarea de limpieza de Historias Expiradas...")
+    try:
+        now_utc = datetime.utcnow().isoformat()
+        
+        # En Supabase no podemos hacer Delete con Returning directamente en un query tan fácil a veces.
+        # Primero las consultamos:
+        # expires_at < now Y is_saved IS NOT TRUE
+        response = db.service_client.table('stories').select('id, media_url, is_saved') \
+            .lt('expires_at', now_utc) \
+            .execute()
+            
+        expired_stories = [s for s in response.data if not s.get('is_saved', False)]
+        
+        if not expired_stories:
+            logger.info("No hay historias no guardadas y expiradas que limpiar.")
+            return
+
+        deleted_count = 0
+        for story in expired_stories:
+            story_id = story['id']
+            media_url = story.get('media_url')
+            
+            # 1. Delete Storage File
+            if media_url:
+                url_parts = media_url.split('/')
+                if 'stories' in url_parts:
+                    idx = url_parts.index('stories')
+                    relative_path = "/".join(url_parts[idx+1:])
+                    delete_file("stories", relative_path)
+            
+            # 2. Delete DB Entry
+            db.service_client.table('stories').delete().eq('id', story_id).execute()
+            deleted_count += 1
+            
+        logger.info(f"Limpieza finalizada. Eliminadas {deleted_count} historias caducadas (Storage + DB).")
+        
+    except Exception as e:
+        logger.error(f"Error procesando cleanup_expired_stories: {e}")
 
 async def evaluate_channels_quality(bot):
     """
@@ -307,6 +355,7 @@ def init_scheduler(bot):
     scheduler.add_job(evaluate_channels_quality, 'interval', hours=6, args=[bot])
     scheduler.add_job(publish_sfs_campaigns, 'interval', minutes=1, args=[bot])
     scheduler.add_job(monitor_sfs_views_and_fraud, 'interval', minutes=5, args=[bot])
+    scheduler.add_job(cleanup_expired_stories, 'interval', minutes=15, args=[bot])
     
     scheduler.start()
     logger.info("APScheduler for Promo Bot started")

@@ -102,5 +102,18 @@ async def upload_file(file: UploadFile, bucket_name: str, folder: str = "uploads
         
         return public_url
     except Exception as e:
-        print(f"Error de subida: {e}")
-        raise HTTPException(status_code=500, detail=f"Error al subir archivo: {str(e)}")
+        print(f"Error uploading file: {e}")
+        raise HTTPException(status_code=500, detail="Error uploading file")
+
+def delete_file(bucket_name: str, file_path: str) -> bool:
+    """
+    Elimina un archivo de Supabase Storage. (Síncrono/Wrappable)
+    file_path debe ser la ruta relativa dentro del bucket (ej. 'uploads/xyz.jpg').
+    Retorna True si fue exitoso o False si hubo un error (ya estaba borrado, etc).
+    """
+    try:
+        db.service_client.storage.from_(bucket_name).remove([file_path])
+        return True
+    except Exception as e:
+        print(f"[Storage] Error deleting {file_path} from {bucket_name}: {e}")
+        return False
