@@ -58,6 +58,8 @@ async def create_post(
         if end_time is not None and end_time > start_time:
             print(f"[Video Editor] Trimming video: {start_time}s to {end_time}s")
             file_content = await trim_video(file_content, start_time, end_time)
+            # The video is now smaller; adapt the thumbnail_time to be within the new shorter video
+            thumbnail_time = max(0.1, min(thumbnail_time - start_time, (end_time - start_time) / 2))
         
         # Upload Video (Standard or Trimmed)
         import uuid

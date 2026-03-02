@@ -92,18 +92,9 @@ function CreatePost() {
         video.preload = 'auto';
 
         await new Promise(resolve => {
-            video.onloadedmetadata = () => {
-                if (video.duration === Infinity || isNaN(video.duration)) {
-                    video.currentTime = 1e101; // Safari workaround
-                    video.ontimeupdate = () => {
-                        video.ontimeupdate = null;
-                        resolve();
-                    };
-                } else {
-                    resolve();
-                }
-            };
+            video.onloadeddata = () => resolve();
             video.onerror = () => resolve();
+            video.load();
         });
 
         const duration = knownDuration || video.duration || 0;
@@ -262,11 +253,14 @@ function CreatePost() {
                                     <div className="relative w-full h-full flex items-center justify-center bg-black">
                                         <video
                                             ref={mainVideoRef}
-                                            src={`${previewUrl}#t=${trimStart},${trimEnd}`}
+                                            src={previewUrl}
                                             className="w-full h-full object-contain"
                                             playsInline
                                             disablePictureInPicture
                                             controlsList="nodownload nofullscreen"
+                                            onLoadedData={(e) => {
+                                                e.target.currentTime = trimStart;
+                                            }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (mainVideoRef.current.paused) {
@@ -282,11 +276,6 @@ function CreatePost() {
                                                     e.target.currentTime = trimStart;
                                                     e.target.pause();
                                                     setIsPreviewPlaying(false);
-                                                }
-                                            }}
-                                            onLoadedMetadata={(e) => {
-                                                if (e.target.duration && !isNaN(e.target.duration)) {
-                                                    e.target.currentTime = trimStart;
                                                 }
                                             }}
                                         />
