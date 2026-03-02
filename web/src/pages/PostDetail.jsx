@@ -219,11 +219,22 @@ export default function PostDetail() {
                     >
                         <X size={28} />
                     </button>
-                    <img
-                        src={post.media_url}
-                        className="w-full h-full object-contain pointer-events-none select-none"
-                        alt="Full Content"
-                    />
+                    {post.media_type === 'video' ? (
+                        <video
+                            src={post.media_url}
+                            className="w-full h-full object-contain pointer-events-auto"
+                            controls
+                            autoPlay
+                            playsInline
+                            loop
+                        />
+                    ) : (
+                        <img
+                            src={post.media_url}
+                            className="w-full h-full object-contain pointer-events-none select-none"
+                            alt="Full Content"
+                        />
+                    )}
                 </div>
             )}
 
@@ -319,7 +330,7 @@ export default function PostDetail() {
                             src={user.avatar_url || user.avatar}
                             name={user.full_name || user.username}
                             size="md"
-                            isOnline={checkOnline(post.user?.last_seen || user.last_seen)}
+                            isOnline={post.is_online}
                         />
                         <div className="flex-1">
                             <h3 className="text-[var(--text-primary)] font-bold text-base">{user.full_name || user.username}</h3>

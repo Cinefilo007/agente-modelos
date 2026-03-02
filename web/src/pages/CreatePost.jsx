@@ -159,7 +159,14 @@ function CreatePost() {
             return prev;
         });
 
-        setTrimEnd(prev => (prev === 20 || prev === 0 || prev > duration) ? Math.min(duration, 20) : prev);
+        setTrimEnd(prev => {
+            if (prev === 20 || prev === 0 || prev > duration) return Math.min(duration, 20);
+            // Fix iOS clamp bug: if trim was clamped to the old incorrect short duration, expand it now
+            if (videoDuration > 0 && Math.abs(prev - videoDuration) < 0.5 && duration > videoDuration) {
+                return Math.min(duration, 20);
+            }
+            return prev;
+        });
 
         if (previewUrl && filmstrip.length === 0 && !isGeneratingFrames) {
             generateFilmstrip(previewUrl, duration);
