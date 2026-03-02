@@ -5,6 +5,9 @@ import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const Promotions = () => {
     const { user } = useAuth();
@@ -30,6 +33,16 @@ const Promotions = () => {
     // Mis Canales
     const [myChannels, setMyChannels] = useState([]);
     const [loadingMyChannels, setLoadingMyChannels] = useState(false);
+
+    // Modales de UI
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [channelToDelete, setChannelToDelete] = useState(null);
+
+    // Gráficos e Historial
+    const [statsModalOpen, setStatsModalOpen] = useState(false);
+    const [selectedChannel, setSelectedChannel] = useState(null);
+    const [channelHistory, setChannelHistory] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     const LIMIT = 5;
 
@@ -80,15 +93,41 @@ const Promotions = () => {
         }
     }, [user?.id]);
 
-    const handleDeleteChannel = async (channelId) => {
-        if (!window.confirm("¿Segurísima que deseas eliminar tu canal y borrar todo su historial de métricas SFS?")) return;
+    const openDeleteModal = (channel) => {
+        setChannelToDelete(channel);
+        setDeleteModalOpen(true);
+    };
+
+    const confirmDeleteChannel = async () => {
+        if (!channelToDelete) return;
         try {
-            await api.delete(`/promo/channels/my/${channelId}?model_id=${user.id}`);
+            await api.delete(`/promo/channels/my/${channelToDelete.id}?model_id=${user.id}`);
             showToast("Canal eliminado", "success");
+            setDeleteModalOpen(false);
+            setChannelToDelete(null);
             fetchMyChannels();
             fetchCatalog(1);
         } catch (err) {
             showToast("Error eliminando canal", "error");
+        }
+    };
+
+    const openStatsModal = async (channel) => {
+        setSelectedChannel(channel);
+        setStatsModalOpen(true);
+        setLoadingHistory(true);
+        try {
+            const res = await api.get(`/promo/channels/my/${channel.id}/history?model_id=${user.id}`);
+            const formatted = (res.data || []).map(row => ({
+                ...row,
+                formattedDate: format(new Date(row.created_at), "d MMM, HH:mm", { locale: es })
+            }));
+            setChannelHistory(formatted);
+        } catch (err) {
+            console.error("Error fetching history", err);
+            showToast("No se pudo cargar el historial", "error");
+        } finally {
+            setLoadingHistory(false);
         }
     };
 
@@ -201,6 +240,81 @@ const Promotions = () => {
         </Modal>
     );
 
+    // ----------- MODAL ELIMINAR -----------
+    const renderDeleteModal = () => (
+        <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)}>
+            <div className="p-6 text-center">
+                <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+                    <Trash2 className="w-8 h-8 text-red-500" />
+                </div>
+                <h2 className="text-xl font-black text-foreground mb-2">Eliminar Canal</h2>
+                <p className="text-sm text-muted-foreground mb-6">
+                    ¿Estás segurísima que deseas eliminar el canal <span className="text-foreground font-bold">{channelToDelete?.name}</span>?<br /><br />
+                    Esto borrará permanentemente todo su historial de métricas y ya no recibirás propuestas de publicidad SFS.
+                </p>
+                <div className="flex gap-3">
+                    <button onClick={() => setDeleteModalOpen(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                        Cancelar
+                    </button>
+                    <button onClick={confirmDeleteChannel} className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-all shadow-lg shadow-red-500/25">
+                        Sí, eliminar
+                    </button>
+                </div>
+            </div>
+        </Modal>
+    );
+
+    // ----------- MODAL ESTADÍSTICAS -----------
+    const renderStatsModal = () => (
+        <Modal isOpen={statsModalOpen} onClose={() => setStatsModalOpen(false)}>
+            <div className="p-6">
+                <h2 className="text-xl font-black text-foreground mb-1">{selectedChannel?.name}</h2>
+                <p className="text-xs text-muted-foreground mb-6 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-purple-400" /> Rendimiento histórico (cada 6h)
+                </p>
+
+                {loadingHistory ? (
+                    <div className="flex justify-center items-center h-48">
+                        <Loader className="w-8 h-8 animate-spin text-purple-400" />
+                    </div>
+                ) : channelHistory.length === 0 ? (
+                    <div className="flex flex-col justify-center items-center h-48 text-muted-foreground">
+                        <BarChart2 className="w-10 h-10 mb-2 opacity-20" />
+                        <p className="text-sm">No hay datos históricos suficientes aún.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        <div className="h-48 w-full bg-card/20 rounded-xl p-2 border border-white/5">
+                            <h3 className="text-xs font-bold text-muted-foreground mb-2 pl-2">Vistas por Post (Avg)</h3>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={channelHistory}>
+                                    <defs>
+                                        <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#c026d3" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#c026d3" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                    <XAxis dataKey="formattedDate" stroke="#ffffff50" fontSize={10} tickMargin={10} minTickGap={20} />
+                                    <YAxis stroke="#ffffff50" fontSize={10} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v} width={35} />
+                                    <RechartsTooltip
+                                        contentStyle={{ backgroundColor: '#18181b', border: '1px solid #ffffff10', borderRadius: '8px', fontSize: '12px' }}
+                                        itemStyle={{ color: '#fff' }}
+                                    />
+                                    <Area type="monotone" dataKey="avg_views" name="Vistas Promedio" stroke="#c026d3" strokeWidth={2} fillOpacity={1} fill="url(#colorViews)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                <button onClick={() => setStatsModalOpen(false)} className="w-full mt-6 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                    Cerrar
+                </button>
+            </div>
+        </Modal>
+    );
+
     // ----------- RENDER CATÁLOGO -----------
     const renderCatalog = () => (
         <div className="space-y-4">
@@ -216,12 +330,14 @@ const Promotions = () => {
             ) : (
                 <>
                     {catalog.map((channel, index) => (
-                        <div key={channel.id} className={`bg-card/40 border border-white/5 rounded-2xl p-4 flex flex-col space-y-4 transition-all hover:bg-card/60 ${index === 0 ? 'tour-step-2' : ''}`}>
+                        <div key={channel.id}
+                            onClick={() => openStatsModal(channel)}
+                            className={`bg-card/40 border border-white/5 rounded-2xl p-4 flex flex-col space-y-4 transition-all hover:bg-card/60 cursor-pointer ${index === 0 ? 'tour-step-2' : ''}`}>
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                                         {channel.invite_link ? (
-                                            <a href={channel.invite_link} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 hover:underline flex items-center gap-1 transition-colors">
+                                            <a href={channel.invite_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-purple-400 hover:underline flex items-center gap-1 transition-colors">
                                                 {channel.name} <ExternalLink className="w-3 h-3" />
                                             </a>
                                         ) : (
@@ -260,7 +376,7 @@ const Promotions = () => {
                                     </span>
                                     <span className="text-[10px] text-muted-foreground/60">(últimos 10 posts)</span>
                                 </div>
-                                <button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95">
+                                <button onClick={(e) => e.stopPropagation()} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95">
                                     <Send className="w-3.5 h-3.5" /> Proponer SFS
                                 </button>
                             </div>
@@ -329,11 +445,13 @@ const Promotions = () => {
         return (
             <div className="space-y-3">
                 {myChannels.map(ch => (
-                    <div key={ch.id} className="bg-card/40 border border-white/5 rounded-xl p-4 flex justify-between items-center group">
+                    <div key={ch.id}
+                        onClick={() => openStatsModal(ch)}
+                        className="bg-card/40 border border-white/5 rounded-xl p-4 flex justify-between items-center group cursor-pointer hover:bg-card/60 transition-all">
                         <div>
                             <h3 className="font-bold text-foreground flex items-center gap-2">
                                 {ch.invite_link ? (
-                                    <a href={ch.invite_link} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 hover:underline flex items-center gap-1 transition-colors">
+                                    <a href={ch.invite_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-purple-400 hover:underline flex items-center gap-1 transition-colors">
                                         {ch.name} <ExternalLink className="w-3 h-3" />
                                     </a>
                                 ) : (
@@ -350,7 +468,7 @@ const Promotions = () => {
                             </div>
                         </div>
                         <button
-                            onClick={() => handleDeleteChannel(ch.id)}
+                            onClick={(e) => { e.stopPropagation(); openDeleteModal(ch); }}
                             className="p-2 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                             title="Eliminar Canal"
                         >
@@ -373,6 +491,8 @@ const Promotions = () => {
                 styles={{ options: { arrowColor: 'hsl(240 10% 5%)', backgroundColor: 'hsl(240 10% 5%)', overlayColor: 'rgba(0,0,0,0.75)', primaryColor: '#c026d3', textColor: 'hsl(0 0% 98%)', zIndex: 1000 }, buttonNext: { borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }, buttonBack: { marginRight: 10, color: '#a1a1aa' }, buttonSkip: { color: '#a1a1aa' } }} />
 
             {renderAddChannelModal()}
+            {renderDeleteModal()}
+            {renderStatsModal()}
 
             {/* Header */}
             <div className="flex items-start justify-between mb-6">

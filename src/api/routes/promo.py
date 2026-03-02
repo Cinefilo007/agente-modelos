@@ -195,6 +195,27 @@ async def delete_my_channel(channel_id: str, model_id: str = Query(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/channels/my/{channel_id}/history")
+async def get_channel_history(channel_id: str, model_id: str = Query(...)):
+    """Retorna el historial de métricas de un canal para la gráfica."""
+    try:
+        # Verificar que el canal pertenece a la modelo
+        existing = db.service_client.table("channels").select("id").eq("id", channel_id).eq("model_id", model_id).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Canal no encontrado o no te pertenece.")
+            
+        res = db.service_client.table("channel_metrics_history") \
+            .select("followers, avg_views, engagement_rate, created_at") \
+            .eq("channel_id", channel_id) \
+            .order("created_at", asc=True) \
+            .limit(30) \
+            .execute()
+        return res.data or []
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ─────────────────────────────────────────────
 # CAMPAÑAS — MODELO

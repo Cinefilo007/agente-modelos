@@ -156,6 +156,14 @@ async def evaluate_channels_quality(bot):
                         'invite_link': invite_link
                         # IMPORTANTE: No modificar el status aquí, dejarlo igual (active o verifying)
                     }).eq('id', channel['id']).execute()
+                    
+                    # Registrar historial de métricas
+                    db.service_client.table('channel_metrics_history').insert({
+                        'channel_id': channel['id'],
+                        'followers': count,
+                        'avg_views': estimated_avg_views,
+                        'engagement_rate': estimated_er
+                    }).execute()
                 
             except TelegramError as e:
                 logger.warning(f"No se pudo acceder al canal {channel['telegram_chat_id']} ({channel['name']}): {e}")
