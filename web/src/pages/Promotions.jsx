@@ -254,9 +254,12 @@ const Promotions = () => {
                             )}
 
                             <div className="pt-3 border-t border-white/5 flex justify-between items-center">
-                                <span className="text-xs text-muted-foreground">
-                                    ~<span className="text-foreground font-medium">{(channel.avg_views || 0).toLocaleString()}</span> vistas/post
-                                </span>
+                                <div className="flex flex-col">
+                                    <span className="text-xs text-muted-foreground">
+                                        ~<span className="text-foreground font-medium">{(channel.avg_views || 0).toLocaleString()}</span> vistas/post
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground/60">(últimos 10 posts)</span>
+                                </div>
                                 <button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95">
                                     <Send className="w-3.5 h-3.5" /> Proponer SFS
                                 </button>
