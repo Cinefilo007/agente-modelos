@@ -28,7 +28,34 @@ function CreatePost() {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
-    const handleFileChange = (e) => {
+    const getVideoDuration = (file) => {
+        return new Promise((resolve) => {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+
+            const handleResolved = (duration) => {
+                resolve(duration);
+                URL.revokeObjectURL(video.src);
+            };
+
+            video.onloadedmetadata = () => {
+                if (video.duration === Math.pow(10, 1000) || video.duration === Infinity || isNaN(video.duration)) {
+                    video.currentTime = 1e101;
+                    video.ontimeupdate = () => {
+                        video.ontimeupdate = null;
+                        handleResolved(video.duration);
+                    };
+                } else {
+                    handleResolved(video.duration);
+                }
+            };
+            video.onerror = () => handleResolved(0);
+
+            video.src = URL.createObjectURL(file);
+        });
+    };
+
+    const handleFileChange = async (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
             setFile(selectedFile);
@@ -36,14 +63,21 @@ function CreatePost() {
 
             if (selectedFile.type.startsWith('video/')) {
                 setIsEditingVideo(true);
-                // Reset trim
                 setTrimStart(0);
                 setTrimEnd(20);
+                setVideoDuration(0);
+
+                // Forzar lectura de la duración exacta para arreglar bugs de Safari/iOS
+                const duration = await getVideoDuration(selectedFile);
+                if (duration > 0 && duration !== Infinity && !isNaN(duration)) {
+                    setVideoDuration(duration);
+                    setTrimEnd(Math.min(duration, 20));
+                }
             }
         }
     };
 
-    const generateFilmstrip = async (videoSrc) => {
+    const generateFilmstrip = async (videoSrc, knownDuration) => {
         setIsGeneratingFrames(true);
         const frames = [];
         const count = 10;
@@ -56,12 +90,22 @@ function CreatePost() {
         video.preload = 'auto';
 
         await new Promise(resolve => {
-            video.onloadedmetadata = () => resolve();
+            video.onloadedmetadata = () => {
+                if (video.duration === Infinity || isNaN(video.duration)) {
+                    video.currentTime = 1e101; // Safari workaround
+                    video.ontimeupdate = () => {
+                        video.ontimeupdate = null;
+                        resolve();
+                    };
+                } else {
+                    resolve();
+                }
+            };
             video.onerror = () => resolve();
         });
 
-        const duration = video.duration || 0;
-        if (duration === 0) {
+        const duration = knownDuration || video.duration || 0;
+        if (duration === 0 || duration === Infinity || isNaN(duration)) {
             setIsGeneratingFrames(false);
             return;
         }
@@ -110,15 +154,22 @@ function CreatePost() {
         const video = e.target;
         const duration = video.duration;
 
-        if (!duration || isNaN(duration) || duration === Infinity || duration < 0.1) return;
+        if (!duration || isNaN(duration) || duration === Infinity || duration < 0.1) {
+            if (video.duration === Infinity || isNaN(video.duration)) {
+                video.currentTime = 1e101; // Workaround Safari
+            }
+            return;
+        }
 
-        setVideoDuration(duration);
+        setVideoDuration(prev => {
+            if (!prev || Math.abs(prev - duration) > 0.5) return duration;
+            return prev;
+        });
 
-        // Only initialized trim ends if duration is greater than current defaults
         setTrimEnd(prev => (prev === 20 || prev === 0 || prev > duration) ? Math.min(duration, 20) : prev);
 
         if (previewUrl && filmstrip.length === 0 && !isGeneratingFrames) {
-            generateFilmstrip(previewUrl);
+            generateFilmstrip(previewUrl, duration);
         }
     };
 
@@ -373,7 +424,7 @@ function CreatePost() {
                                     <div
                                         className="absolute inset-0 z-30 touch-none"
                                         onMouseMove={(e) => {
-                                            if (!isDragging || !videoDuration) return;
+                                            if (!isDragging || !videoDuration || videoDuration <= 0) return;
                                             const rect = e.currentTarget.getBoundingClientRect();
                                             const pos = (e.clientX - rect.left) / rect.width;
                                             const time = Math.max(0, Math.min(videoDuration, pos * videoDuration));
@@ -389,7 +440,7 @@ function CreatePost() {
                                         onMouseUp={() => setIsDragging(null)}
                                         onMouseLeave={() => setIsDragging(null)}
                                         onTouchMove={(e) => {
-                                            if (!isDragging || !videoDuration) return;
+                                            if (!isDragging || !videoDuration || videoDuration <= 0) return;
                                             const rect = e.currentTarget.getBoundingClientRect();
                                             const touch = e.touches[0];
                                             const pos = (touch.clientX - rect.left) / rect.width;
