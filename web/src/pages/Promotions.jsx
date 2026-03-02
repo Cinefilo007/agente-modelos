@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X, Clock } from 'lucide-react';
+import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X, Clock, Trash2 } from 'lucide-react';
 import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
 import api from '../api/axios';
@@ -26,6 +26,10 @@ const Promotions = () => {
     const [sentCampaigns, setSentCampaigns] = useState([]);
     const [receivedCampaigns, setReceivedCampaigns] = useState([]);
     const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+
+    // Mis Canales
+    const [myChannels, setMyChannels] = useState([]);
+    const [loadingMyChannels, setLoadingMyChannels] = useState(false);
 
     const LIMIT = 5;
 
@@ -62,6 +66,32 @@ const Promotions = () => {
         }
     }, [user?.id]);
 
+    // ---- Carga de mis canales ----
+    const fetchMyChannels = useCallback(async () => {
+        if (!user?.id) return;
+        setLoadingMyChannels(true);
+        try {
+            const res = await api.get(`/promo/channels/my?model_id=${user.id}`);
+            setMyChannels(res.data || []);
+        } catch (err) {
+            console.error('[Promo] Error cargando mis canales:', err);
+        } finally {
+            setLoadingMyChannels(false);
+        }
+    }, [user?.id]);
+
+    const handleDeleteChannel = async (channelId) => {
+        if (!window.confirm("¿Segurísima que deseas eliminar tu canal y borrar todo su historial de métricas SFS?")) return;
+        try {
+            await api.delete(`/promo/channels/my/${channelId}?model_id=${user.id}`);
+            showToast("Canal eliminado", "success");
+            fetchMyChannels();
+            fetchCatalog(1);
+        } catch (err) {
+            showToast("Error eliminando canal", "error");
+        }
+    };
+
     useEffect(() => {
         fetchCatalog(1);
         const hasSeenTour = localStorage.getItem('sfs_tour_seen');
@@ -71,8 +101,10 @@ const Promotions = () => {
     useEffect(() => {
         if (activeTab === 'sent' || activeTab === 'received') {
             fetchCampaigns();
+        } else if (activeTab === 'my_channels') {
+            fetchMyChannels();
         }
-    }, [activeTab, fetchCampaigns]);
+    }, [activeTab, fetchCampaigns, fetchMyChannels]);
 
     const handleJoyrideCallback = (data) => {
         if ([STATUS.FINISHED, STATUS.SKIPPED].includes(data.status)) {
@@ -282,6 +314,51 @@ const Promotions = () => {
         );
     };
 
+    const renderMyChannels = () => {
+        if (loadingMyChannels) return <div className="flex justify-center py-10"><Loader className="w-6 h-6 animate-spin text-purple-400" /></div>;
+        if (!myChannels.length) return (
+            <div className="text-center py-12 text-muted-foreground">
+                <Users className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">No has añadido ningún canal todavía.</p>
+                <button onClick={() => setAddChannelModalOpen(true)} className="mt-4 text-xs font-bold text-purple-400 hover:text-purple-300">Añadir uno ahora</button>
+            </div>
+        );
+        return (
+            <div className="space-y-3">
+                {myChannels.map(ch => (
+                    <div key={ch.id} className="bg-card/40 border border-white/5 rounded-xl p-4 flex justify-between items-center group">
+                        <div>
+                            <h3 className="font-bold text-foreground flex items-center gap-2">
+                                {ch.invite_link ? (
+                                    <a href={ch.invite_link} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 hover:underline flex items-center gap-1 transition-colors">
+                                        {ch.name} <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                ) : (
+                                    ch.name
+                                )}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${ch.status === 'active' ? 'bg-green-500/20 text-green-400' : ch.status === 'verifying' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-400'}`}>
+                                    {ch.status}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    {(ch.followers || 0).toLocaleString()} subs
+                                </span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => handleDeleteChannel(ch.id)}
+                            className="p-2 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                            title="Eliminar Canal"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
     return (
         <div className="pb-24 pt-4 px-4 max-w-2xl mx-auto min-h-screen tour-step-1">
             <Joyride steps={[
@@ -322,7 +399,7 @@ const Promotions = () => {
 
             {/* Tabs */}
             <div className="flex bg-card/40 border border-white/5 p-1 rounded-xl mb-5">
-                {[['catalog', 'Catálogo'], ['sent', 'Enviadas'], ['received', 'Recibidas']].map(([tab, label]) => (
+                {[['catalog', 'Catálogo'], ['sent', 'Enviadas'], ['received', 'Recibidas'], ['my_channels', 'Mis Canales']].map(([tab, label]) => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
                         className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === tab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
                         {label}
@@ -338,6 +415,7 @@ const Promotions = () => {
                 {activeTab === 'catalog' && renderCatalog()}
                 {activeTab === 'sent' && renderCampaignList(sentCampaigns)}
                 {activeTab === 'received' && renderCampaignList(receivedCampaigns)}
+                {activeTab === 'my_channels' && renderMyChannels()}
             </div>
         </div>
     );

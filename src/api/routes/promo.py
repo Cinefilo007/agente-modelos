@@ -179,6 +179,22 @@ async def get_my_channels(model_id: str = Query(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete("/channels/my/{channel_id}")
+async def delete_my_channel(channel_id: str, model_id: str = Query(...)):
+    """Elimina un canal registrado por una modelo específica."""
+    try:
+        # Verificar que el canal pertenece a la modelo
+        existing = db.client.table("channels").select("id").eq("id", channel_id).eq("model_id", model_id).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Canal no encontrado o no te pertenece.")
+            
+        res = db.client.table("channels").delete().eq("id", channel_id).eq("model_id", model_id).execute()
+        return {"status": "success", "message": "Canal eliminado correctamente."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ─────────────────────────────────────────────
 # CAMPAÑAS — MODELO
