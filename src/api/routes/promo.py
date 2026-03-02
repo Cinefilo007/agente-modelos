@@ -207,7 +207,7 @@ async def get_channel_history(channel_id: str, model_id: str = Query(...)):
         res = db.service_client.table("channel_metrics_history") \
             .select("followers, avg_views, engagement_rate, created_at") \
             .eq("channel_id", channel_id) \
-            .order("created_at", asc=True) \
+            .order("created_at", desc=False) \
             .limit(30) \
             .execute()
         return res.data or []
