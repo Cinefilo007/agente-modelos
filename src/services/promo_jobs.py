@@ -12,9 +12,16 @@ logger = logging.getLogger(__name__)
 
 async def get_recent_channel_views(username: str) -> int:
     """Extrae las vistas promedio de las últimas 10 publicaciones de un canal público vía HTTPS."""
+    return await extract_views_from_html(f"https://t.me/s/{username}", is_single=False)
+
+async def get_single_message_views(username: str, message_id: int) -> int:
+    """Extrae las vistas de un solo mensaje reenviado usando su widget embed."""
+    return await extract_views_from_html(f"https://t.me/{username}/{message_id}?embed=1", is_single=True)
+
+async def extract_views_from_html(url: str, is_single: bool) -> int:
     try:
         async with httpx.AsyncClient() as client:
-            resp = await client.get(f"https://t.me/s/{username}", follow_redirects=True, timeout=10.0)
+            resp = await client.get(url, follow_redirects=True, timeout=10.0)
             if resp.status_code == 200:
                 html = resp.text
                 matches = re.findall(r'<span class="tgme_widget_message_views">(.*?)</span>', html)
@@ -23,7 +30,9 @@ async def get_recent_channel_views(username: str) -> int:
                 
                 total_views = 0
                 count = 0
-                for m in matches[-10:]: # Últimos 10 mensajes
+                target_matches = [matches[-1]] if is_single else matches[-10:]
+                
+                for m in target_matches:
                     v_str = m.strip().replace(',', '')
                     if 'K' in v_str:
                         views = int(float(v_str.replace('K', '')) * 1000)
@@ -37,7 +46,7 @@ async def get_recent_channel_views(username: str) -> int:
                 if count > 0:
                     return int(total_views / count)
     except Exception as e:
-        logger.warning(f"Error scraping views for {username}: {e}")
+        logger.warning(f"Error scraping views from {url}: {e}")
     return 0
 
 async def evaluate_channels_quality(bot):
@@ -74,16 +83,79 @@ async def evaluate_channels_quality(bot):
                     scraped_views = await get_recent_channel_views(chat.username)
                     if scraped_views > 0:
                         estimated_avg_views = scraped_views
+                else:
+                    # Canal Privado -> Usar Dump Channel Scraper
+                    recent_posts = db.service_client.table('channel_metrics_tracker') \
+                        .select('telegram_message_id, id') \
+                        .eq('channel_id', channel['id']) \
+                        .order('created_at', desc=True) \
+                        .limit(10) \
+                        .execute()
+                    
+                    if recent_posts.data:
+                        total_private_views = 0
+                        valid_posts_count = 0
                         
+                        dump_channel = "@nebula_dumper"
+                        for post in recent_posts.data:
+                            try:
+                                fwd = await bot.forward_message(
+                                    chat_id=dump_channel, 
+                                    from_chat_id=chat.id, 
+                                    message_id=post['telegram_message_id']
+                                )
+                                # Scrapear views del dump
+                                views = await get_single_message_views("nebula_dumper", fwd.message_id)
+                                if views > 0:
+                                    total_private_views += views
+                                    valid_posts_count += 1
+                                    
+                                # Borrar del dump
+                                await bot.delete_message(chat_id=dump_channel, message_id=fwd.message_id)
+                                
+                            except Exception as fwd_err:
+                                error_str = str(fwd_err).lower()
+                                if "protected content" in error_str or "can't be forwarded" in error_str:
+                                    # CANAL RESTRINGIDO
+                                    logger.warning(f"Cierre por privacidad: Canal {chat.title} restringe envíos.")
+                                    # Desactivar canal
+                                    db.service_client.table('channels').update({'status': 'inactive'}).eq('id', channel['id']).execute()
+                                    
+                                    # Obtener telegram_id de la modelo para notificarla
+                                    model_data = db.service_client.table('models').select('telegram_id').eq('id', channel['model_id']).execute()
+                                    if model_data.data:
+                                        await bot.send_message(
+                                            chat_id=model_data.data[0]['telegram_id'],
+                                            text=f"⚠️ **Atención sobre tu canal '{chat.title}'**\n\n"
+                                                 "Tu canal ha sido ocultado del catálogo SFS porque tiene habilitada la opción **'Restringir guardar contenido'**.\n"
+                                                 "Esto le impide al bot medir el impacto y vistas reales de tus posts privados.\n\n"
+                                                 "**Para arreglarlo:**\n"
+                                                 "1. Ve a los Ajustes de tu Canal -> Tipo de Canal -> **Desactiva** 'Restringir guardar contenido'.\n"
+                                                 "2. Vuelve a registrar tu canal enviando el código `/link_...`\n"
+                                                 "3. ¡El bot confirmará y tu canal volverá a estar activo!",
+                                            parse_mode='Markdown'
+                                        )
+                                    # Evitar seguir procesando este canal
+                                    break
+                                elif "message to forward not found" in error_str or "message not found" in error_str:
+                                    # Msj borrado, simplemente ignorar
+                                    pass
+                        
+                        if valid_posts_count > 0:
+                            estimated_avg_views = int(total_private_views / valid_posts_count)
+                            
                 estimated_er = round((estimated_avg_views / max(count, 1)) * 100, 2)
                 
-                db.service_client.table('channels').update({
-                    'followers': count,
-                    'avg_views': estimated_avg_views,
-                    'engagement_rate': estimated_er,
-                    'invite_link': invite_link
-                    # IMPORTANTE: No modificar el status aquí, dejarlo igual (active o verifying)
-                }).eq('id', channel['id']).execute()
+                # Si el canal fue desactivado en el bloque `except`, saltamos la actualización.
+                ch_check = db.service_client.table('channels').select('status').eq('id', channel['id']).execute()
+                if ch_check.data and ch_check.data[0]['status'] != 'inactive':
+                    db.service_client.table('channels').update({
+                        'followers': count,
+                        'avg_views': estimated_avg_views,
+                        'engagement_rate': estimated_er,
+                        'invite_link': invite_link
+                        # IMPORTANTE: No modificar el status aquí, dejarlo igual (active o verifying)
+                    }).eq('id', channel['id']).execute()
                 
             except TelegramError as e:
                 logger.warning(f"No se pudo acceder al canal {channel['telegram_chat_id']} ({channel['name']}): {e}")

@@ -111,7 +111,7 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not update.channel_post or not update.channel_post.text:
         return
         
-    text = update.channel_post.text.strip()
+    text = update.channel_post.text.strip() if update.channel_post.text else ""
     chat = update.channel_post.chat
     
     if text.startswith("/link_"):
@@ -168,7 +168,18 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
         except Exception as e:
             logger.error(f"Error procesando linking de canal (código {text}): {e}")
     else:
-        logger.debug(f"Mensaje ignorado en canal (no es /link_): {text[:20]}...")
+        # No es un link, es un post normal.
+        # Si el canal está registrado y activo, guardamos el ID para rastrear views.
+        try:
+            channel_data = db.client.table('channels').select('id, status').eq('telegram_chat_id', str(chat.id)).in_('status', ['active', 'verifying']).execute()
+            if channel_data.data:
+                channel_id = channel_data.data[0]['id']
+                db.service_client.table('channel_metrics_tracker').insert({
+                    'channel_id': channel_id,
+                    'telegram_message_id': update.channel_post.message_id
+                }).execute()
+        except Exception as e:
+            logger.error(f"Error guardando tracker de views en {chat.title}: {e}")
 
 async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
