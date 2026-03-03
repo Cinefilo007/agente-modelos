@@ -29,6 +29,7 @@ import Onboarding from './pages/Onboarding';
 import InstallPWA from './components/pwa/InstallPWA';
 import WalletPage from './pages/WalletPage';
 import Promotions from './pages/Promotions';
+import AdvertiserProfile from './pages/AdvertiserProfile';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -152,6 +153,7 @@ function App() {
 
                 {/* Rutas Públicas e Independientes (MiniApps) */}
                 <Route path="/promotions" element={<Promotions />} />
+                <Route path="/promotions/advertiser/:userId" element={<AdvertiserProfile />} />
 
                 {/* Protected Routes */}
                 <Route path="/" element={

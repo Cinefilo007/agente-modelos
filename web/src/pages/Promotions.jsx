@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X, Clock, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
 import BannerCarousel from '../components/BannerCarousel';
@@ -12,6 +13,7 @@ import { es } from 'date-fns/locale';
 
 const Promotions = () => {
     // Auth independiente para miniapp
+    const navigate = useNavigate();
     const [sfsUser, setSfsUser] = useState(null);
     const [limits, setLimits] = useState(null);
     const [globalAuthLoading, setGlobalAuthLoading] = useState(true);
@@ -57,13 +59,33 @@ const Promotions = () => {
 
     const LIMIT = 5;
 
-    // ---- Auth Init (3 niveles) ----
+    // ---- Auth Init (3 niveles + persistencia de sesión) ----
     const telegramLoginRef = useRef(null);
     const [needsLogin, setNeedsLogin] = useState(false);
+
+    // Helper para persistir sesión
+    const SFS_SESSION_KEY = 'sfs_session';
+    const saveSession = (userDoc) => {
+        sessionStorage.setItem(SFS_SESSION_KEY, JSON.stringify(userDoc));
+    };
+    const clearSession = () => sessionStorage.removeItem(SFS_SESSION_KEY);
 
     useEffect(() => {
         const initSfsUser = async () => {
             try {
+                // NIVEL 0: Sesión SFS persistida (recarga de página)
+                const cached = sessionStorage.getItem(SFS_SESSION_KEY);
+                if (cached) {
+                    const cachedUser = JSON.parse(cached);
+                    if (cachedUser?.id) {
+                        setSfsUser(cachedUser);
+                        const lims = await sfsService.getUserLimits(cachedUser.id);
+                        setLimits(lims);
+                        setGlobalAuthLoading(false);
+                        return;
+                    }
+                }
+
                 // NIVEL 1: Telegram WebApp (MiniApp abierta desde el bot)
                 const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
                 if (tgUser) {
@@ -74,6 +96,7 @@ const Promotions = () => {
                     };
                     const userDoc = await sfsService.authenticateUser(userPayload);
                     setSfsUser(userDoc);
+                    saveSession(userDoc);
                     const lims = await sfsService.getUserLimits(userDoc.id);
                     setLimits(lims);
                     setGlobalAuthLoading(false);
@@ -93,6 +116,7 @@ const Promotions = () => {
                         };
                         const userDoc = await sfsService.authenticateUser(userPayload);
                         setSfsUser(userDoc);
+                        saveSession(userDoc);
                         const lims = await sfsService.getUserLimits(userDoc.id);
                         setLimits(lims);
                         setGlobalAuthLoading(false);
@@ -140,6 +164,7 @@ const Promotions = () => {
                 };
                 const userDoc = await sfsService.authenticateUser(userPayload);
                 setSfsUser(userDoc);
+                saveSession(userDoc);
                 const lims = await sfsService.getUserLimits(userDoc.id);
                 setLimits(lims);
             } catch (err) {
@@ -537,7 +562,14 @@ const Promotions = () => {
                                     <span className="text-xs text-muted-foreground">
                                         ~<span className="text-foreground font-medium">{(channel.avg_views || 0).toLocaleString()}</span> vistas/post
                                     </span>
-                                    <span className="text-[10px] text-muted-foreground/60">(últimos 10 posts)</span>
+                                    {channel.sfs_user_id && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); navigate(`/promotions/advertiser/${channel.sfs_user_id}`); }}
+                                            className="text-[10px] text-purple-400 hover:text-purple-300 underline text-left mt-0.5 transition-colors"
+                                        >
+                                            Ver perfil del anunciante →
+                                        </button>
+                                    )}
                                 </div>
                                 <button onClick={(e) => e.stopPropagation()} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95">
                                     <Send className="w-3.5 h-3.5" /> Proponer SFS
@@ -650,6 +682,14 @@ const Promotions = () => {
         );
     };
 
+    // ---- Estado y autoplay del carrusel de login (DEBE estar fuera de ifs) ----
+    const [loginSlide, setLoginSlide] = useState(0);
+    useEffect(() => {
+        if (!needsLogin) return;
+        const iv = setInterval(() => setLoginSlide(s => (s + 1) % 4), 4000);
+        return () => clearInterval(iv);
+    }, [needsLogin]);
+
     if (globalAuthLoading) {
         return (
             <div className="flex items-center justify-center h-screen w-full bg-black">
@@ -659,34 +699,119 @@ const Promotions = () => {
     }
 
     // ---- Pantalla de Login (Sin Sesión) ----
-    if (needsLogin) {
-        return (
-            <div className="min-h-screen bg-[#030014] flex flex-col items-center justify-center px-6 text-center relative overflow-hidden">
-                {/* Efectos de fondo */}
-                <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-900/30 rounded-full blur-[100px] animate-pulse" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[400px] h-[400px] bg-pink-900/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+    const loginFeatures = [
+        {
+            emoji: '🤝',
+            gradient: 'from-purple-600 to-fuchsia-600',
+            title: 'SFS Automatizado',
+            desc: 'Propone acuerdos de publicidad cruzada con otras creadoras de contenido. Selecciona canales verificados del catálogo y gana nuevos suscriptores.',
+            stat: '+500 canales activos',
+            statColor: 'text-purple-300',
+        },
+        {
+            emoji: '📊',
+            gradient: 'from-fuchsia-600 to-pink-600',
+            title: 'Métricas Reales',
+            desc: 'Cada canal muestra suscriptores reales, vistas promedio por post y tasa de engagement. Sin datos falsos, sin sorpresas.',
+            stat: 'ER • Vistas • Subs',
+            statColor: 'text-pink-300',
+        },
+        {
+            emoji: '🛡️',
+            gradient: 'from-pink-600 to-rose-600',
+            title: 'Trust Score P2P',
+            desc: 'Cada anunciante tiene una puntuación de confianza basada en reviews reales de creadoras. Colabora tranquila, solo con socias de confianza.',
+            stat: 'Sistema de reviews verificadas',
+            statColor: 'text-rose-300',
+        },
+        {
+            emoji: '💸',
+            gradient: 'from-amber-500 to-orange-600',
+            title: 'Publicidad PxP',
+            desc: 'Además del SFS gratuito, puedes vender o comprar posts en canales seleccionados y monetizar tu audiencia directamente.',
+            stat: 'Gana dinero en piloto automático',
+            statColor: 'text-amber-300',
+        },
+    ];
 
-                <div className="relative z-10 max-w-sm w-full">
-                    {/* Logo */}
-                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(168,85,247,0.4)]">
-                        <Send className="w-10 h-10 text-white" />
+    if (needsLogin) {
+        const feat = loginFeatures[loginSlide];
+        return (
+            <div className="min-h-screen bg-[#030014] flex flex-col justify-between px-5 pt-10 pb-8 relative overflow-hidden">
+                {/* Efectos de fondo */}
+                <div className="absolute top-[-15%] left-[-15%] w-[450px] h-[450px] bg-purple-900/25 rounded-full blur-[100px] pointer-events-none" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[350px] h-[350px] bg-pink-900/20 rounded-full blur-[100px] pointer-events-none" style={{ animationDelay: '2s' }} />
+
+                <div className="relative z-10 max-w-sm w-full mx-auto flex flex-col gap-6">
+                    {/* Header compacto */}
+                    <div className="flex items-center gap-3 justify-center">
+                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-[0_0_24px_rgba(168,85,247,0.4)]">
+                            <Send className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="text-left">
+                            <h1 className="text-xl font-black text-white leading-none">Promo Center</h1>
+                            <p className="text-[11px] text-purple-300 mt-0.5">by Nebula Agency</p>
+                        </div>
                     </div>
 
-                    <h1 className="text-3xl font-black text-white mb-2">Promo Center</h1>
-                    <p className="text-sm text-gray-400 mb-8 leading-relaxed">
-                        Acuerdos SFS automatizados con métricas reales. <br />
-                        Inicia sesión con Telegram para continuar.
-                    </p>
+                    {/* Carrusel de features */}
+                    <div className="relative">
+                        <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${feat.gradient} p-6 min-h-[180px] transition-all duration-500`}
+                            style={{ background: 'linear-gradient(135deg, rgba(88,28,135,0.6) 0%, rgba(126,34,206,0.4) 100%)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}>
 
-                    {/* Widget de Telegram */}
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
-                        <div ref={telegramLoginRef} className="flex items-center justify-center transform hover:scale-105 transition-transform" />
-                        <p className="text-[10px] text-gray-500 mt-4 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                            {/* Patrón de fondo */}
+                            <div className="absolute inset-0 opacity-10"
+                                style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
+
+                            {/* Emoji grande */}
+                            <div className="text-5xl mb-4 select-none">{feat.emoji}</div>
+
+                            <h2 className="text-lg font-black text-white mb-2">{feat.title}</h2>
+                            <p className="text-sm text-white/75 leading-relaxed mb-4">{feat.desc}</p>
+
+                            <div className={`text-xs font-bold ${feat.statColor} uppercase tracking-wide`}>
+                                ✦ {feat.stat}
+                            </div>
+                        </div>
+
+                        {/* Botones prev/next */}
+                        <button
+                            onClick={() => setLoginSlide(s => (s - 1 + loginFeatures.length) % loginFeatures.length)}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 border border-white/15 text-white flex items-center justify-center hover:bg-black/60 transition-all backdrop-blur-sm"
+                            aria-label="Anterior"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setLoginSlide(s => (s + 1) % loginFeatures.length)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 border border-white/15 text-white flex items-center justify-center hover:bg-black/60 transition-all backdrop-blur-sm"
+                            aria-label="Siguiente"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {/* Dots */}
+                    <div className="flex justify-center gap-1.5">
+                        {loginFeatures.map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setLoginSlide(i)}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${i === loginSlide ? 'w-6 bg-purple-400' : 'w-1.5 bg-white/20'}`}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Widget de login */}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+                        <p className="text-xs text-gray-400 text-center mb-4">Inicia sesión para acceder al catálogo completo</p>
+                        <div ref={telegramLoginRef} className="flex items-center justify-center" />
+                        <p className="text-[10px] text-gray-600 mt-4 uppercase tracking-widest flex items-center justify-center gap-1.5">
                             <ShieldCheck className="w-3 h-3" /> Acceso seguro vía Telegram
                         </p>
                     </div>
 
-                    <p className="text-xs text-gray-600 mt-6">
+                    <p className="text-[11px] text-gray-700 text-center">
                         Al iniciar sesión, aceptas los términos del ecosistema.
                     </p>
                 </div>

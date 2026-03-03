@@ -163,3 +163,50 @@ async def submit_review(req: ReviewReq, sfs_user_id: str = Query(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/advertiser/{user_id}")
+async def get_advertiser_profile(user_id: str):
+    """
+    Perfil público de un anunciante SFS.
+    Retorna sus datos básicos, canales activos y reviews recibidas.
+    """
+    try:
+        # Datos del usuario SFS
+        user_res = db.client.table("sfs_users").select(
+            "id, username, full_name, trust_score, is_agency_model, created_at"
+        ).eq("id", user_id).execute()
+
+        if not user_res.data:
+            raise HTTPException(status_code=404, detail="Anunciante no encontrado")
+
+        user = user_res.data[0]
+
+        # Canales activos del anunciante
+        channels_res = db.client.table("channels").select(
+            "id, name, followers, avg_views, engagement_rate, category, is_verified, status"
+        ).eq("sfs_user_id", user_id).eq("status", "active").order("followers", desc=True).execute()
+
+        # Reviews recibidas (como target)
+        reviews_res = db.service_client.table("sfs_reviews").select(
+            "id, rating, comment, created_at, reviewer_id"
+        ).eq("target_id", user_id).order("created_at", desc=True).limit(20).execute()
+
+        reviews = reviews_res.data or []
+
+        # Enriquecer reviews con username del reviewer
+        for review in reviews:
+            reviewer_res = db.client.table("sfs_users").select("username").eq("id", review["reviewer_id"]).execute()
+            review["reviewer_username"] = reviewer_res.data[0]["username"] if reviewer_res.data else "Anónimo"
+
+        return {
+            **user,
+            "channels": channels_res.data or [],
+            "reviews": reviews
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
