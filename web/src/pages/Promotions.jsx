@@ -303,22 +303,17 @@ const Promotions = () => {
     const renderAddChannelModal = () => (
         <Modal isOpen={addChannelModalOpen} onClose={() => { setAddChannelModalOpen(false); resetModal(); }}>
             <div className="p-6">
-                <h2 className="text-lg font-bold text-foreground mb-1">Añadir mi Canal</h2>
-                <p className="text-xs text-muted-foreground mb-5">Paso {addChannelStep} de 3</p>
-                <div className="flex gap-1 mb-6">
-                    {[1, 2, 3].map(s => (
-                        <div key={s} className={`h-1 flex-1 rounded-full transition-all duration-500 ${addChannelStep >= s ? 'bg-purple-500' : 'bg-white/10'}`} />
-                    ))}
-                </div>
-
                 {addChannelStep === 1 && (
                     <div className="space-y-4">
+                        <h2 className="text-lg font-bold text-foreground mb-1">Añadir mi Canal</h2>
+                        <p className="text-xs text-muted-foreground">Sigue estos pasos para vincular tu canal al ecosistema SFS.</p>
+
                         <div className="bg-card/40 border border-white/10 rounded-xl p-4 space-y-3">
                             <h3 className="text-sm font-bold text-foreground mb-4">Verificación Automática</h3>
                             {[
                                 ['1', 'Añade a', '@Nebula_sfs_bot', 'como Administrador de tu canal.'],
                                 ['2', 'Asegúrate de darle todos los', 'permisos', '(enviar, editar, borrar e invitar).'],
-                                ['3', 'El bot registrará tu canal', 'automáticamente', 'en tu perfil.'],
+                                ['3', 'El bot registrará tu canal', 'automáticamente', 'y notificará al admin.'],
                             ].map(([num, text, bold, suffix]) => (
                                 <div key={num} className="flex items-start gap-3">
                                     <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">{num}</span>
@@ -329,31 +324,37 @@ const Promotions = () => {
 
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex gap-2 items-start">
                             <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
-                            <p className="text-xs text-amber-300">Este método es instantáneo. Una vez añadido y confirmado, cierra esta ventana y tu canal aparecerá en estado pendiente.</p>
+                            <p className="text-xs text-amber-300">Una vez añadido el bot, recibirás una notificación en Telegram confirmando el registro. El canal quedará pendiente de aprobación.</p>
                         </div>
 
                         <div className="flex gap-3 pt-2">
-                            <button onClick={() => setAddChannelModalOpen(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                                Cerrar Ventana
-                            </button>
                             <a href="https://t.me/Nebula_sfs_bot" target="_blank" rel="noreferrer" className="flex-1 text-center py-3 rounded-xl text-sm font-bold text-white bg-purple-500 hover:bg-purple-600 transition-all shadow-lg shadow-purple-500/25">
                                 Ir al Bot
                             </a>
+                            <button onClick={() => setAddChannelStep(2)} className="flex-1 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                                Ya lo añadí ✓
+                            </button>
                         </div>
                     </div>
                 )}
 
-                {/* Step 2 Removido - La validación manual ya no es necesaria */}
-                {addChannelStep === 3 && (
+                {addChannelStep === 2 && (
                     <div className="space-y-4 text-center py-2">
-                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${verifyStatus === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                            {verifyStatus === 'success' ? <CheckCircle className="w-8 h-8 text-green-400" /> : <X className="w-8 h-8 text-red-400" />}
+                        <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
+                            <CheckCircle className="w-8 h-8 text-green-400" />
                         </div>
-                        <p className="font-bold text-foreground">{verifyStatus === 'success' ? '¡Solicitud enviada!' : 'Verificación fallida'}</p>
-                        <p className="text-sm text-muted-foreground">{verifyMessage}</p>
-                        {verifyStatus === 'error' && (
-                            <button onClick={() => setAddChannelStep(2)} className="w-full py-3 rounded-xl text-sm font-bold bg-white/5 border border-white/10">Intentar de nuevo</button>
-                        )}
+                        <h3 className="font-bold text-foreground text-lg">¡Excelente!</h3>
+                        <p className="text-sm text-muted-foreground">Si el bot fue añadido correctamente como admin con todos los permisos, tu canal ya debería estar registrado.</p>
+                        <p className="text-xs text-muted-foreground">Revisa tu chat con <span className="font-bold text-foreground">@Nebula_sfs_bot</span> en Telegram para confirmar.</p>
+
+                        <div className="flex gap-3 pt-3">
+                            <button onClick={() => setAddChannelStep(1)} className="flex-1 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                                ← Volver
+                            </button>
+                            <button onClick={async () => { if (sfsUser) { const ch = await sfsService.getMyChannels(sfsUser.id); setMyChannels(ch); } setAddChannelModalOpen(false); resetModal(); setActiveTab('my_channels'); }} className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-purple-500 hover:bg-purple-600 transition-all shadow-lg shadow-purple-500/25">
+                                Ver Mis Canales
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

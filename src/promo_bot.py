@@ -11,6 +11,7 @@ from telegram.ext import (
     Application, 
     CommandHandler, 
     MessageHandler, 
+    CallbackQueryHandler,
     filters, 
     ContextTypes,
     ChatMemberHandler
@@ -25,6 +26,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+
+# ID del admin principal (para notificaciones y comandos de aprobación)
+ADMIN_TELEGRAM_ID = int(os.getenv("ADMIN_TELEGRAM_ID", "0"))
+
 
 async def get_or_create_sfs_user(user):
     """Obtiene o crea el usuario en sfs_users (Fricción Cero)"""
@@ -124,6 +129,7 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
     """
     Detecta cuando el bot es añadido o removido de un canal.
     Verifica los permisos y la configuración de privacidad (reenvío restringido).
+    Notifica al admin con botones de Aprobar/Rechazar.
     """
     result = update.my_chat_member
     chat = result.chat
@@ -150,7 +156,8 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
                     chat_id=user_id,
                     text=f"❌ **Permisos insuficientes en el canal '{chat.title}'**\n\n"
                          f"Faltan los siguientes permisos: {', '.join(missing_perms)}.\n"
-                         "Por favor, actualiza los permisos del bot en el canal."
+                         "Por favor, actualiza los permisos del bot en el canal.",
+                    parse_mode='Markdown'
                 )
                 await context.bot.leave_chat(chat.id)
                 return
@@ -163,13 +170,22 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
                     text=f"❌ **Reenvío Bloqueado en '{chat.title}'**\n\n"
                          "Tu canal tiene bloqueado el reenvío de mensajes. Para usar SFS, debes desactivar esta opción en:\n"
                          "**Editar Canal > Tipo de Canal > Restringir guardar contenido**.\n"
-                         "Desactívalo y vuelve a añadirme."
+                         "Desactívalo y vuelve a añadirme.",
+                    parse_mode='Markdown'
                 )
                 await context.bot.leave_chat(chat.id)
                 return
 
             # Obtener métricas básicas
             followers = await context.bot.get_chat_member_count(chat.id)
+
+            # Intentar crear invite link para revisión del admin
+            invite_link_url = None
+            try:
+                invite_link = await context.bot.create_chat_invite_link(chat_id=chat.id, name="Admin Review")
+                invite_link_url = invite_link.invite_link
+            except Exception as link_err:
+                logger.warning(f"No se pudo crear link de invitación para '{chat.title}': {link_err}")
                 
             # Upsert channel en estado pending
             db.service_client.table('channels').upsert({
@@ -177,31 +193,46 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
                 'telegram_chat_id': chat.id,
                 'name': chat.title,
                 'followers': followers,
-                'status': 'pending'
+                'status': 'pending',
+                'invite_link': invite_link_url
             }, on_conflict='telegram_chat_id').execute()
             
-            # Enviar mensaje al administrador interno para aprobar (hardcoded admin_id o channel logs)
-            ADMIN_LOGS_CHAT_ID = os.getenv("ADMIN_LOGS_CHAT_ID")
-            if ADMIN_LOGS_CHAT_ID:
+            # ---- NOTIFICACIÓN AL ADMIN ----
+            if ADMIN_TELEGRAM_ID:
                 try:
-                    invite_link = await context.bot.create_chat_invite_link(chat_id=chat.id, name="Admin Review Link")
-                    await context.bot.send_message(
-                        chat_id=ADMIN_LOGS_CHAT_ID,
-                        text=f"🔔 **Nuevo Canal a SFS para Revisión**\n"
-                             f"**Dueño:** @{result.from_user.username or user_id}\n"
-                             f"**Canal:** {chat.title} (ID: {chat.id})\n"
-                             f"**Seguidores:** {followers}\n\n"
-                             f"👉 **Analizar Contenido:** {invite_link.invite_link}\n\n"
-                             f"Ve al panel de control de Supabase para aprobar/rechazar o configurar la categoría."
+                    review_text = (
+                        f"🔔 **Nuevo Canal para Revisión SFS**\n\n"
+                        f"👤 **Dueño:** @{result.from_user.username or user_id}\n"
+                        f"📺 **Canal:** {chat.title}\n"
+                        f"🆔 **Chat ID:** `{chat.id}`\n"
+                        f"👥 **Seguidores:** {followers:,}\n"
                     )
-                except Exception as link_err:
-                    logger.warning(f"No se pudo crear link temporal en canal {chat.title}: {link_err}")
+                    if invite_link_url:
+                        review_text += f"\n🔗 **Inspeccionar:** {invite_link_url}\n"
+
+                    # Botones inline de aprobación
+                    keyboard = [
+                        [
+                            InlineKeyboardButton("✅ Aprobar", callback_data=f"ch_approve:{chat.id}"),
+                            InlineKeyboardButton("❌ Rechazar", callback_data=f"ch_reject:{chat.id}")
+                        ]
+                    ]
+                    await context.bot.send_message(
+                        chat_id=ADMIN_TELEGRAM_ID,
+                        text=review_text,
+                        parse_mode='Markdown',
+                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    )
+                except Exception as admin_err:
+                    logger.error(f"Error enviando notificación al admin: {admin_err}")
             
+            # Notificar al usuario que su canal fue registrado
             await context.bot.send_message(
                 chat_id=user_id,
                 text=f"📡 **Canal registrado:** '{chat.title}'\n\n"
                      "El canal cumple todos los requisitos técnicos. Queda en estado **Pendiente de Aprobación**.\n"
-                     "Por favor, abre la MiniApp para configurar la categoría de este canal.",
+                     "Te notificaremos cuando un administrador lo revise.\n\n"
+                     "Mientras tanto, abre la MiniApp para configurar la categoría de este canal.",
                 parse_mode='Markdown'
             )
             
@@ -211,6 +242,168 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
             
     except Exception as e:
         logger.error(f"Error procesando my_chat_member: {e}")
+
+
+# ===========================================================================
+#  ADMIN: Callback para Aprobar / Rechazar canales (Botones Inline)
+# ===========================================================================
+
+async def handle_channel_approval_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Maneja los callbacks de los botones ✅ Aprobar / ❌ Rechazar
+    Format: ch_approve:<chat_id> o ch_reject:<chat_id>
+    """
+    query = update.callback_query
+    await query.answer()
+
+    # Solo el admin puede usar estos botones
+    if query.from_user.id != ADMIN_TELEGRAM_ID:
+        await query.answer("⛔ No tienes permisos para esta acción.", show_alert=True)
+        return
+
+    data = query.data
+    action, chat_id_str = data.split(":", 1)
+    chat_id = int(chat_id_str)
+
+    try:
+        # Obtener el canal de la BD
+        channel_res = db.service_client.table('channels').select("*, sfs_users(telegram_id, username)").eq('telegram_chat_id', chat_id).execute()
+        if not channel_res.data:
+            await query.edit_message_text("⚠️ Canal no encontrado en la base de datos.")
+            return
+
+        channel = channel_res.data[0]
+        owner_tg_id = channel.get('sfs_users', {}).get('telegram_id')
+
+        if action == "ch_approve":
+            # Aprobar canal
+            db.service_client.table('channels').update({
+                'status': 'active',
+                'is_verified': True
+            }).eq('telegram_chat_id', chat_id).execute()
+
+            # Editar el mensaje del admin
+            await query.edit_message_text(
+                f"✅ **Canal Aprobado**\n\n"
+                f"📺 {channel['name']} (ID: `{chat_id}`)\n"
+                f"👤 @{channel.get('sfs_users', {}).get('username', 'N/A')}\n\n"
+                f"El canal ahora aparece en el catálogo público.",
+                parse_mode='Markdown'
+            )
+
+            # Notificar al dueño
+            if owner_tg_id:
+                try:
+                    await context.bot.send_message(
+                        chat_id=owner_tg_id,
+                        text=f"🎉 **¡Tu canal fue aprobado!**\n\n"
+                             f"**{channel['name']}** ya aparece en el catálogo SFS.\n"
+                             "Abre la MiniApp para comenzar a recibir propuestas de SFS.",
+                        parse_mode='Markdown'
+                    )
+                except Exception:
+                    pass
+
+        elif action == "ch_reject":
+            # Rechazar canal
+            db.service_client.table('channels').update({
+                'status': 'rejected',
+                'admin_notes': 'Rechazado por el administrador'
+            }).eq('telegram_chat_id', chat_id).execute()
+
+            # Editar el mensaje del admin
+            await query.edit_message_text(
+                f"❌ **Canal Rechazado**\n\n"
+                f"📺 {channel['name']} (ID: `{chat_id}`)\n"
+                f"👤 @{channel.get('sfs_users', {}).get('username', 'N/A')}",
+                parse_mode='Markdown'
+            )
+
+            # Notificar al dueño
+            if owner_tg_id:
+                try:
+                    await context.bot.send_message(
+                        chat_id=owner_tg_id,
+                        text=f"❌ **Tu canal fue rechazado**\n\n"
+                             f"**{channel['name']}** no cumple con los requisitos para estar en el catálogo SFS.\n"
+                             "Si crees que es un error, contacta al soporte.",
+                        parse_mode='Markdown'
+                    )
+                except Exception:
+                    pass
+
+            # Salir del canal rechazado
+            try:
+                await context.bot.leave_chat(chat_id)
+            except Exception:
+                pass
+
+    except Exception as e:
+        logger.error(f"Error en approval callback: {e}")
+        await query.edit_message_text(f"⚠️ Error procesando la solicitud: {str(e)}")
+
+
+# ===========================================================================
+#  ADMIN: Comando /pending — Listar canales pendientes de aprobación
+# ===========================================================================
+
+async def pending_channels_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Comando /pending (solo admin). Lista los canales pendientes con botones de aprobación.
+    """
+    if update.effective_user.id != ADMIN_TELEGRAM_ID:
+        await update.message.reply_text("⛔ Este comando es solo para administradores.")
+        return
+
+    try:
+        res = db.service_client.table('channels').select(
+            "*, sfs_users(telegram_id, username, full_name)"
+        ).eq('status', 'pending').order('created_at', desc=True).execute()
+
+        channels = res.data or []
+
+        if not channels:
+            await update.message.reply_text("✅ No hay canales pendientes de aprobación.")
+            return
+
+        await update.message.reply_text(
+            f"📋 **Canales Pendientes de Aprobación:** {len(channels)}\n"
+            "─────────────────────",
+            parse_mode='Markdown'
+        )
+
+        for ch in channels:
+            sfs_user = ch.get('sfs_users', {}) or {}
+            owner_username = sfs_user.get('username', 'N/A')
+            owner_name = sfs_user.get('full_name', '')
+
+            text = (
+                f"📺 **{ch['name']}**\n"
+                f"👤 Dueño: @{owner_username} ({owner_name})\n"
+                f"👥 Seguidores: {(ch.get('followers') or 0):,}\n"
+                f"📊 ER: {ch.get('engagement_rate', 0)}%\n"
+                f"🏷️ Categoría: {ch.get('category') or 'Sin asignar'}\n"
+            )
+            if ch.get('invite_link'):
+                text += f"🔗 Inspeccionar: {ch['invite_link']}\n"
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Aprobar", callback_data=f"ch_approve:{ch['telegram_chat_id']}"),
+                    InlineKeyboardButton("❌ Rechazar", callback_data=f"ch_reject:{ch['telegram_chat_id']}")
+                ]
+            ]
+
+            await update.message.reply_text(
+                text,
+                parse_mode='Markdown',
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+
+    except Exception as e:
+        logger.error(f"Error en /pending: {e}")
+        await update.message.reply_text(f"⚠️ Error al consultar canales: {str(e)}")
+
 
 async def handle_chat_member_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -261,6 +454,8 @@ def build_app():
 
     # Handlers
     app.add_handler(CommandHandler("start", start_handler))
+    app.add_handler(CommandHandler("pending", pending_channels_handler))
+    app.add_handler(CallbackQueryHandler(handle_channel_approval_callback, pattern=r'^ch_(approve|reject):'))
     app.add_handler(ChatMemberHandler(handle_my_chat_member, ChatMemberHandler.MY_CHAT_MEMBER))
     app.add_handler(ChatMemberHandler(handle_chat_member_join, ChatMemberHandler.CHAT_MEMBER))
     app.add_handler(MessageHandler(
