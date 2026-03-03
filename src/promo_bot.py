@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import (
     ApplicationBuilder, 
     Application, 
@@ -17,7 +17,6 @@ from telegram.ext import (
 )
 
 from src.services.database import db
-from src.services.promo_jobs import init_scheduler
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -27,218 +26,229 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
+async def get_or_create_sfs_user(user):
+    """Obtiene o crea el usuario en sfs_users (Fricción Cero)"""
+    telegram_id = user.id
+    username = user.username or ""
+    full_name = user.full_name or ""
+    
+    response = db.client.table('sfs_users').select("id").eq("telegram_id", telegram_id).execute()
+    if response.data:
+        return response.data[0]['id']
+    
+    # Check si es modelo activa
+    is_agency_model = False
+    model_response = db.client.table('models').select("id").eq("telegram_id", telegram_id).in_("status", ["active"]).execute()
+    if model_response.data:
+        is_agency_model = True
+
+    # Crear nuevo sfs_user
+    new_user = db.client.table('sfs_users').insert({
+        'telegram_id': telegram_id,
+        'username': username,
+        'full_name': full_name,
+        'is_agency_model': is_agency_model
+    }).execute()
+    
+    return new_user.data[0]['id'] if new_user.data else None
+
+
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Comando /start. Si es en un chat privado, da la bienvenida e instrucciones.
+    Comando /start. Registra al usuario en sfs_users y muestra la MiniApp.
     """
-    chat_type = update.effective_chat.type
+    if update.effective_chat.type != 'private':
+        return
+        
+    user = update.effective_user
+    sfs_user_id = await get_or_create_sfs_user(user)
     
-    if chat_type == 'private':
-        await update.message.reply_text(
-            "✅ **Conexión Exitosa con el SFS Bot.**\n\n"
-            "🚀 Bienvenida a **@Nebula\_sfs\_bot**.\n\n"
-            "Soy el gestor oficial de acuerdos SFS de la agencia. Protejo tus acuerdos y automatizo la publicación.\n\n"
-            "**Instrucciones:**\n"
-            "1. Añádeme como Administrador a los canales que desees registrar.\n"
-            "2. Envíame o reenvíame aquí mismo el post que quieres usar para tus campañas SFS.\n"
-            "3. Ve a tu panel en el portal para crear propuestas.",
-            parse_mode='Markdown'
-        )
+    if not sfs_user_id:
+        await update.message.reply_text("❌ Hubo un error al crear tu perfil temporal.")
+        return
 
+    LANDING_URL = os.getenv("LANDING_URL", "https://agente-modelos-production.up.railway.app/promotions")
 
+    keyboard = [
+        [InlineKeyboardButton("🚀 Abrir SFS MiniApp", web_app=WebAppInfo(url=LANDING_URL))]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        "✅ **Bienvenido al SFS / PXP Promo Bot.**\n\n"
+        "Este es tu perfil para hacer promoción cruzada o vender publicidad.\n\n"
+        "**Pasos para Empezar:**\n"
+        "1. Añádeme como **Administrador** a tu canal con todos los permisos (enviar, editar, borrar y **añadir usuarios vía enlace**).\n"
+        "2. Asegúrate de que tu canal NO tenga restringido el reenvío de mensajes.\n"
+        "3. Reenvíame el post publicitario que quieras usar.\n"
+        "4. ¡Abre la MiniApp para buscar acuerdos!",
+        parse_mode='Markdown',
+        reply_markup=reply_markup
+    )
 
 async def handle_forwarded_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Captura los mensajes reenviados (o enviados) en el chat privado.
-    1. Si es reenviado desde un canal, intenta registrar ese canal.
-    2. Si no es un canal, o si ya se registró, lo guarda como Template SFS.
+    Captura los mensajes reenviados y los guarda como Plantillas SFS vinculadas al sfs_user.
     """
     if update.effective_chat.type != 'private':
         return
 
     message = update.message
-    telegram_id = update.effective_user.id
-    LANDING_URL = os.getenv("LANDING_URL", "https://agente-modelos-production.up.railway.app/landing")
+    user = update.effective_user
+    
+    sfs_user_id = await get_or_create_sfs_user(user)
 
     try:
-        # Verificar modelo activa
-        model_data = db.client.table('models').select('id, username, status').eq('telegram_id', telegram_id).execute()
-        if not model_data.data:
-            await update.message.reply_text(f"❌ No estás registrada.\nRegístrate: {LANDING_URL}")
-            return
-        
-        model = model_data.data[0]
-        if model['status'] != 'active':
-            await update.message.reply_text("⏳ Tu cuenta aun no ha sido aprobada.")
-            return
-
-        model_id = model['id']
-        username = model['username']
-
-        # CASO 1: VERIFICAR SI VIENE DE UN CANAL Y EL BOTO ESTA DE ADMIN (Deprecado a favor de código)
-        # Ahora usamos el manejador de posts en el canal directamente.
-        
-        # CASO 2: GUARDAR TEMPLATE PROMOCIONAL
         content_data = message.to_dict()
         if 'from' in content_data: del content_data['from']
         if 'chat' in content_data: del content_data['chat']
         if 'date' in content_data: del content_data['date']
 
         db.client.table('promo_templates').insert({
-            'model_id': model_id,
+            'sfs_user_id': sfs_user_id,
             'telegram_message_id_origin': message.message_id,
             'content_data': content_data
         }).execute()
 
-        link_portal = f"https://tuportal.com/{username}" if username else "https://tuportal.com"
-
         await update.message.reply_text(
             "✅ **¡Post guardado exitosamente!**\n\n"
-            "Este diseño ha sido guardado en tus Plantillas. Cuando aceptes o propongas un SFS desde la Mini App, este post se publicará exactamente así.\n\n"
-            f"ℹ️ *Nota:* Añadiremos al final un enlace hacia tu perfil ({link_portal}).",
+            "Este diseño ha sido guardado en tus Plantillas. Cuando aceptes o propongas un SFS desde la Mini App, este post se publicará exactamente así.",
             parse_mode='Markdown'
         )
         
     except Exception as e:
-        logger.error(f"Error general en handler: {e}")
-        await update.message.reply_text("❌ Hubo un error al procesar tu solicitud.")
-
-async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Escucha todos los posts en los canales donde el bot es administrador.
-    Sirve para interceptar el código de vinculación /link_XXXX y registrar el canal.
-    """
-    if not update.channel_post or not update.channel_post.text:
-        return
-        
-    text = update.channel_post.text.strip() if update.channel_post.text else ""
-    chat = update.channel_post.chat
-    
-    if text.startswith("/link_"):
-        logger.info(f"Recibido posible código de vinculación: {text} en chat {chat.id}")
-        code = text.split("_")[1] # El codigo, que sería el UUID del modelo sin guiones
-        logger.info(f"Código extraído: {code}")
-        
-        try:
-            # Buscar a la modelo usando el campo ID (que es formato UUID).
-            # Para facilitar la bùsqueda dado q le quitamos los guiones en el front, 
-            # buscaremos todos y filtraremos en python, o lo reconstruiremos.
-            # Reconstruir UUID: 8-4-4-4-12
-            if len(code) == 32:
-                formatted_uuid = f"{code[:8]}-{code[8:12]}-{code[12:16]}-{code[16:20]}-{code[20:]}"
-                logger.info(f"UUID formateado para búsqueda: {formatted_uuid}")
-                
-                model_data = db.client.table('models').select('id, telegram_id, status').eq('id', formatted_uuid).execute()
-                if model_data.data:
-                    logger.info(f"Modelo encontrada en BD: {model_data.data[0]}")
-                    model = model_data.data[0]
-                    # Extraer conteo de seguidores
-                    followers = 0
-                    try:
-                        followers = await context.bot.get_chat_member_count(chat.id)
-                    except Exception as metric_err:
-                        logger.warning(f"Error obteniendo subs para {chat.id}: {metric_err}")
-                        
-                    # Registrar canal usando service_role para saltar RLS
-                    db.service_client.table('channels').upsert({
-                        'model_id': model['id'],
-                        'telegram_chat_id': str(chat.id),
-                        'name': chat.title,
-                        'followers': followers,
-                        'status': 'verifying' # Enviarlo directo a revision
-                    }, on_conflict='model_id, telegram_chat_id').execute()
-                    
-                    logger.info(f"Canal vinculado vía código: {chat.title} ({chat.id}) por modelo_id {model['id']}")
-                    
-                    # Eliminar el mensaje con el código para no dejar rastro
-                    await context.bot.delete_message(chat_id=chat.id, message_id=update.channel_post.message_id)
-                    
-                    # Notificar a la modelo que fue un exito (usando su telegram_id)
-                    await context.bot.send_message(
-                        chat_id=model['telegram_id'],
-                        text=f"📡 **¡Canal Vinculado Exitosamente!** '{chat.title}'\n\nEl sistema validó tu código secreto. El canal quedará en estado **En Verificación** hasta revisión manual de los administradores.",
-                        parse_mode='Markdown'
-                    )
-                    return
-                else:
-                    logger.warning(f"No se encontró ninguna modelo con el ID: {formatted_uuid}")
-            else:
-                logger.warning(f"El código recibido ({code}) no tiene 32 caracteres (length: {len(code)})")
-
-        except Exception as e:
-            logger.error(f"Error procesando linking de canal (código {text}): {e}")
-    else:
-        # No es un link, es un post normal.
-        # Si el canal está registrado y activo, guardamos el ID para rastrear views.
-        try:
-            channel_data = db.client.table('channels').select('id, status').eq('telegram_chat_id', str(chat.id)).in_('status', ['active', 'verifying']).execute()
-            if channel_data.data:
-                channel_id = channel_data.data[0]['id']
-                db.service_client.table('channel_metrics_tracker').insert({
-                    'channel_id': channel_id,
-                    'telegram_message_id': update.channel_post.message_id
-                }).execute()
-        except Exception as e:
-            logger.error(f"Error guardando tracker de views en {chat.title}: {e}")
+        logger.error(f"Error general en handler_forwarded: {e}")
+        await update.message.reply_text("❌ Hubo un error al guardar tu plantilla.")
 
 async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Detecta cuando el bot es añadido o removido como administrador de un canal o grupo.
+    Detecta cuando el bot es añadido o removido de un canal.
+    Verifica los permisos y la configuración de privacidad (reenvío restringido).
     """
     result = update.my_chat_member
     chat = result.chat
     new_status = result.new_chat_member.status
     
-    # Solo nos interesan los canales
     if chat.type != 'channel':
         return
 
     try:
+        user_id = result.from_user.id
+        sfs_user_id = await get_or_create_sfs_user(result.from_user)
+
         if new_status in ['administrator', 'creator']:
-            # El bot fue añadido como admin o es el creador
-            user_id = result.from_user.id
+            # Verificar si tiene todos los permisos requeridos
+            member = result.new_chat_member
+            missing_perms = []
+            if not getattr(member, 'can_post_messages', False): missing_perms.append('Publicar Mensajes')
+            if not getattr(member, 'can_edit_messages', False): missing_perms.append('Editar Mensajes')
+            if not getattr(member, 'can_delete_messages', False): missing_perms.append('Borrar Mensajes')
+            if not getattr(member, 'can_invite_users', False): missing_perms.append('Añadir Usuarios (invitar vía enlace)')
             
-            # Buscar la modelo
-            model_data = db.client.table('models').select('id').eq('telegram_id', user_id).execute()
-            if not model_data.data:
-                logger.warning(f"Usuario {user_id} intentó agregar el bot al canal {chat.id} pero no es modelo.")
+            if missing_perms:
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text=f"❌ **Permisos insuficientes en el canal '{chat.title}'**\n\n"
+                         f"Faltan los siguientes permisos: {', '.join(missing_perms)}.\n"
+                         "Por favor, actualiza los permisos del bot en el canal."
+                )
+                await context.bot.leave_chat(chat.id)
                 return
+
+            # Verificar si tiene 'has_protected_content' (restringir reenviar)
+            full_chat = await context.bot.get_chat(chat.id)
+            if full_chat.has_protected_content:
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text=f"❌ **Reenvío Bloqueado en '{chat.title}'**\n\n"
+                         "Tu canal tiene bloqueado el reenvío de mensajes. Para usar SFS, debes desactivar esta opción en:\n"
+                         "**Editar Canal > Tipo de Canal > Restringir guardar contenido**.\n"
+                         "Desactívalo y vuelve a añadirme."
+                )
+                await context.bot.leave_chat(chat.id)
+                return
+
+            # Obtener métricas básicas
+            followers = await context.bot.get_chat_member_count(chat.id)
                 
-            model_id = model_data.data[0]['id']
-            
-            # Extraer conteo de seguidores
-            followers = 0
-            try:
-                followers = await context.bot.get_chat_member_count(chat.id)
-            except Exception as metric_err:
-                logger.warning(f"Error obteniendo subs para {chat.id}: {metric_err}")
-                
-            # Cambiar a verifying para sincronizar con el Panel Admin
-            # Usar service_role para saltar RLS
+            # Upsert channel en estado pending
             db.service_client.table('channels').upsert({
-                'model_id': model_id,
+                'sfs_user_id': sfs_user_id,
                 'telegram_chat_id': chat.id,
                 'name': chat.title,
                 'followers': followers,
-                'status': 'verifying'
-            }, on_conflict='model_id, telegram_chat_id').execute()
+                'status': 'pending'
+            }, on_conflict='telegram_chat_id').execute()
             
-            # Enviar mensaje al usuario confirmando
+            # Enviar mensaje al administrador interno para aprobar (hardcoded admin_id o channel logs)
+            ADMIN_LOGS_CHAT_ID = os.getenv("ADMIN_LOGS_CHAT_ID")
+            if ADMIN_LOGS_CHAT_ID:
+                try:
+                    invite_link = await context.bot.create_chat_invite_link(chat_id=chat.id, name="Admin Review Link")
+                    await context.bot.send_message(
+                        chat_id=ADMIN_LOGS_CHAT_ID,
+                        text=f"🔔 **Nuevo Canal a SFS para Revisión**\n"
+                             f"**Dueño:** @{result.from_user.username or user_id}\n"
+                             f"**Canal:** {chat.title} (ID: {chat.id})\n"
+                             f"**Seguidores:** {followers}\n\n"
+                             f"👉 **Analizar Contenido:** {invite_link.invite_link}\n\n"
+                             f"Ve al panel de control de Supabase para aprobar/rechazar o configurar la categoría."
+                    )
+                except Exception as link_err:
+                    logger.warning(f"No se pudo crear link temporal en canal {chat.title}: {link_err}")
+            
             await context.bot.send_message(
                 chat_id=user_id,
-                text=f"📡 **Canal vinculado:** '{chat.title}'\n\nHe registrado tu canal. Quedará en estado **En Verificación** hasta que nuestro equipo lo revise. Te notificaremos cuando esté activo en el catálogo.",
+                text=f"📡 **Canal registrado:** '{chat.title}'\n\n"
+                     "El canal cumple todos los requisitos técnicos. Queda en estado **Pendiente de Aprobación**.\n"
+                     "Por favor, abre la MiniApp para configurar la categoría de este canal.",
                 parse_mode='Markdown'
             )
-            logger.info(f"Nuevo canal registrado: {chat.title} ({chat.id}) por la modelo {model_id}")
             
-        elif new_status in ['kicked', 'left']:
-            # El bot fue eliminado del canal
-            # Marcar el canal como inactivo usando service_role
+        elif new_status in ['kicked', 'left', 'restricted']:
             db.service_client.table('channels').update({'status': 'inactive'}).eq('telegram_chat_id', chat.id).execute()
             logger.info(f"Bot removido del canal {chat.id}")
             
     except Exception as e:
         logger.error(f"Error procesando my_chat_member: {e}")
+
+async def handle_chat_member_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Rastrea cuando un usuario se une a un canal vía un enlace de invitación Premium.
+    Incrementa el contador en promo_campaigns.
+    """
+    result = update.chat_member
+    if not result or not result.invite_link:
+        return
+        
+    old_status = result.old_chat_member.status
+    new_status = result.new_chat_member.status
+    
+    # Solo contar cuando la persona se une efectivamente
+    if old_status in ['left', 'kicked'] and new_status == 'member':
+        invite_link_url = result.invite_link.invite_link
+        
+        try:
+            # Buscar en db requester_invite_link
+            req_data = db.client.table('promo_campaigns').select('id, requester_joined_count').eq('requester_invite_link', invite_link_url).eq('status', 'active').execute()
+            if req_data.data:
+                campaign_id = req_data.data[0]['id']
+                count = req_data.data[0]['requester_joined_count'] + 1
+                db.service_client.table('promo_campaigns').update({'requester_joined_count': count}).eq('id', campaign_id).execute()
+                logger.info(f"Tracking: +1 (Total {count}) en campaña {campaign_id} (Requester)")
+                return
+                
+            # Buscar en db target_invite_link
+            tgt_data = db.client.table('promo_campaigns').select('id, target_joined_count').eq('target_invite_link', invite_link_url).eq('status', 'active').execute()
+            if tgt_data.data:
+                campaign_id = tgt_data.data[0]['id']
+                count = tgt_data.data[0]['target_joined_count'] + 1
+                db.service_client.table('promo_campaigns').update({'target_joined_count': count}).eq('id', campaign_id).execute()
+                logger.info(f"Tracking: +1 (Total {count}) en campaña {campaign_id} (Target)")
+                return
+                
+        except Exception as e:
+            logger.error(f"Error en Tracking Premium join: {e}")
 
 def build_app():
     token = os.getenv("PROMO_TELEGRAM_TOKEN")
@@ -246,37 +256,24 @@ def build_app():
         logger.error("PROMO_TELEGRAM_TOKEN not found in .env")
         return None
 
-    logger.info("Construyendo Promo Bot...")
-    
-    async def post_init(application: Application):
-        init_scheduler(application.bot)
-
-    app = ApplicationBuilder().token(token).post_init(post_init).build()
+    logger.info("Construyendo Promo Bot (SFS/PXP)...")
+    app = ApplicationBuilder().token(token).build()
 
     # Handlers
     app.add_handler(CommandHandler("start", start_handler))
-    
-    # Listener de administración (detectar cuando lo añaden a un canal - opcional ahora pero util)
     app.add_handler(ChatMemberHandler(handle_my_chat_member, ChatMemberHandler.MY_CHAT_MEMBER))
-    
-    # Listener para posts de canales (para el código de vinculación)
-    app.add_handler(MessageHandler(filters.ChatType.CHANNEL & filters.TEXT, handle_channel_post))
-    
-    # Listener de mensajes en privado (creación de templates)
-    # Filtro: cualquier texto o media, que esté en chat privado, que no sea comando
+    app.add_handler(ChatMemberHandler(handle_chat_member_join, ChatMemberHandler.CHAT_MEMBER))
     app.add_handler(MessageHandler(
         filters.ChatType.PRIVATE & ~filters.COMMAND, 
         handle_forwarded_post
     ))
-
-    # Iniciar Cron Jobs de Promociones (SFS, Métricas) a través de post_init
 
     return app
 
 def main():
     app = build_app()
     if app:
-        logger.info("Promo Bot Iniciado. Escuchando...")
+        logger.info("Promo Bot SFS Iniciado. Escuchando...")
         app.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':

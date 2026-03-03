@@ -1,370 +1,165 @@
-"""
-promo.py — Endpoints de la API para el sistema SFS/Promo.
-Cubre: Canales de modelos, plantillas, campañas y acciones de administrador.
-"""
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from pydantic import BaseModel
 from typing import Optional, List
 from src.services.database import db
-from src.api.dependencies import get_current_user, TelegramUser
 import os
 from telegram import Bot
 
 router = APIRouter()
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-PROMO_BOT_TOKEN = os.getenv("PROMO_TELEGRAM_TOKEN")
+class TelegramUserAuth(BaseModel):
+    telegram_id: int
+    username: Optional[str] = ""
+    full_name: Optional[str] = ""
 
+class UpdateChannelReq(BaseModel):
+    category: str
 
-# ─────────────────────────────────────────────
-# SCHEMAS
-# ─────────────────────────────────────────────
+class ReviewReq(BaseModel):
+    promo_campaign_id: str
+    target_id: str
+    rating: int
+    comment: Optional[str] = ""
 
-class ChannelVerifyRequest(BaseModel):
-    """El frontend envía el identificador del canal (username, ID o link)."""
-    model_id: str
-    channel_identifier: str  # @username | -1001234 | t.me/+xyz
-
-
-class ChannelActionRequest(BaseModel):
-    action: str  # 'approve' o 'reject'
-    reason: Optional[str] = None
-
-
-# ─────────────────────────────────────────────
-# CANALES — MODELO
-# ─────────────────────────────────────────────
+@router.post("/auth")
+async def authenticate_sfs_user(user: TelegramUserAuth):
+    """
+    Login desde la WebApp (Fricción cero). Retorna el usuario o lo crea si no existe.
+    """
+    try:
+        # Buscar en sfs_users
+        res = db.client.table("sfs_users").select("*").eq("telegram_id", user.telegram_id).execute()
+        if res.data:
+            sfs_user = res.data[0]
+            # Sincronizar info si cambió
+            if sfs_user['username'] != user.username or sfs_user['full_name'] != user.full_name:
+                updated = db.client.table("sfs_users").update({
+                    "username": user.username,
+                    "full_name": user.full_name
+                }).eq("id", sfs_user["id"]).execute()
+                return updated.data[0]
+            return sfs_user
+            
+        # Check si es modelo activa
+        is_agency_model = False
+        model_res = db.client.table("models").select("id").eq("telegram_id", user.telegram_id).eq("status", "active").execute()
+        if model_res.data:
+            is_agency_model = True
+            
+        # Crear
+        new_user = db.client.table("sfs_users").insert({
+            "telegram_id": user.telegram_id,
+            "username": user.username,
+            "full_name": user.full_name,
+            "is_agency_model": is_agency_model
+        }).execute()
+        
+        return new_user.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/channels/catalog")
 async def get_channel_catalog(
+    category: Optional[str] = None,
     page: int = Query(1, ge=1),
-    limit: int = Query(5, ge=1, le=20)
+    limit: int = Query(10, ge=1, le=50)
 ):
-    """
-    Catálogo público de canales activos con paginación.
-    Solo retorna canales con status='active'.
-    """
+    """Catálogo público de canales filtrado por categoría o ER"""
     try:
         offset = (page - 1) * limit
-
-        # Total para la paginación
-        count_res = db.client.table("channels") \
-            .select("id", count="exact") \
-            .eq("status", "active") \
-            .execute()
-        total = count_res.count or 0
-
-        # Datos paginados con join a models para obtener el trust_score y badges
-        res = db.client.table("channels") \
-            .select("*, models(trust_score, badges, username)") \
-            .eq("status", "active") \
-            .order("created_at", desc=True) \
-            .range(offset, offset + limit - 1) \
-            .execute()
-
-        channels = []
-        for ch in (res.data or []):
-            model_info = ch.get("models") or {}
-            channels.append({
-                "id": ch["id"],
-                "name": ch["name"],
-                "telegram_chat_id": ch["telegram_chat_id"],
-                "followers": ch.get("followers", 0),
-                "avg_views": ch.get("avg_views", 0),
-                "er": round(ch.get("avg_views", 0) / max(ch.get("followers", 1), 1) * 100, 1),
-                "trust_score": model_info.get("trust_score", 50),
-                "badges": model_info.get("badges") or [],
-                "model_username": model_info.get("username", ""),
-                "invite_link": ch.get("invite_link"),
-            })
-
-        return {
-            "data": channels,
-            "total": total,
-            "page": page,
-            "total_pages": max(1, -(-total // limit))  # ceil division
-        }
+        query = db.client.table("channels").select("*, sfs_users(username, trust_score)").eq("status", "active")
+        
+        if category:
+            query = query.eq("category", category)
+            
+        res = query.order("engagement_rate", desc=True).range(offset, offset + limit - 1).execute()
+        return res.data or []
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/channels/verify")
-async def verify_and_register_channel(req: ChannelVerifyRequest):
-    """
-    Verifica que el bot sea administrador del canal indicado.
-    Guarda el canal con status='pending_approval' si la verificación pasa.
-    Acepta @username, ID numérico (-100xxx) o link de invitación (t.me/+xxx).
-    """
-    if not PROMO_BOT_TOKEN:
-        raise HTTPException(status_code=500, detail="PROMO_TELEGRAM_TOKEN no configurado en el servidor.")
-
-    bot = Bot(token=PROMO_BOT_TOKEN)
-    identifier = req.channel_identifier.strip()
-
-    try:
-        # Resolver el chat
-        chat = await bot.get_chat(identifier)
-        chat_id = chat.id
-        chat_title = chat.title or identifier
-
-        # Verificar que el bot sea administrador
-        admins = await bot.get_chat_administrators(chat_id)
-        bot_user = await bot.get_me()
-        is_admin = any(a.user.id == bot_user.id for a in admins)
-
-        if not is_admin:
-            raise HTTPException(
-                status_code=400,
-                detail="El bot @Nebula_sfs_bot no es administrador de ese canal. Añádelo primero con permisos de publicar y borrar mensajes."
-            )
-
-        # Guardar el canal en la BD con status verifying
-        existing = db.client.table("channels") \
-            .select("id, status") \
-            .eq("model_id", req.model_id) \
-            .eq("telegram_chat_id", str(chat_id)) \
-            .execute()
-
-        if existing.data:
-            ch = existing.data[0]
-            if ch["status"] == "active":
-                return {"status": "already_active", "message": "Este canal ya está aprobado en el catálogo."}
-            elif ch["status"] == "verifying":
-                return {"status": "pending", "message": "Este canal ya está en revisión. Te notificaremos cuando sea aprobado."}
-            else:
-                # Reactivar si fue rechazado
-                db.client.table("channels").update({
-                    "status": "verifying",
-                    "name": chat_title
-                }).eq("id", ch["id"]).execute()
-        else:
-            db.client.table("channels").insert({
-                "model_id": req.model_id,
-                "telegram_chat_id": str(chat_id),
-                "name": chat_title,
-                "status": "verifying",
-                "followers": chat.member_count or 0,
-            }).execute()
-
-        return {
-            "status": "success",
-            "message": f"Canal '{chat_title}' registrado exitosamente. Quedará en revisión hasta que nuestro equipo lo apruebe."
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_str = str(e).lower()
-        if "chat not found" in error_str:
-            raise HTTPException(
-                status_code=400,
-                detail="No se encontró el canal público. Si tu canal es privado, no uses este formulario. Solo añade a @Nebula_sfs_bot como administrador en Telegram y lo registraremos automáticamente."
-            )
-        raise HTTPException(
-            status_code=400, 
-            detail=f"No se pudo acceder al canal: {str(e)}. Verifica que el identificador sea correcto y que el bot sea administrador."
-        )
-
 
 @router.get("/channels/my")
-async def get_my_channels(model_id: str = Query(...)):
-    """Retorna los canales registrados por una modelo específica."""
+async def get_my_channels(sfs_user_id: str = Query(...)):
+    """Canales registrados por el usuario"""
     try:
-        res = db.client.table("channels") \
-            .select("*") \
-            .eq("model_id", model_id) \
-            .order("created_at", desc=True) \
-            .execute()
+        res = db.client.table("channels").select("*").eq("sfs_user_id", sfs_user_id).order("created_at", desc=True).execute()
         return res.data or []
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/channels/my/{channel_id}")
-async def delete_my_channel(channel_id: str, model_id: str = Query(...)):
-    """Elimina un canal registrado por una modelo específica."""
+@router.put("/channels/{channel_id}")
+async def update_channel(channel_id: str, req: UpdateChannelReq, sfs_user_id: str = Query(...)):
+    """Permite al usuario actualizar la categoría de su canal"""
     try:
-        # Verificar que el canal pertenece a la modelo
-        existing = db.service_client.table("channels").select("id").eq("id", channel_id).eq("model_id", model_id).execute()
+        existing = db.client.table("channels").select("id").eq("id", channel_id).eq("sfs_user_id", sfs_user_id).execute()
         if not existing.data:
-            raise HTTPException(status_code=404, detail="Canal no encontrado o no te pertenece.")
+             raise HTTPException(status_code=404, detail="Canal no encontrado o no autorizado")
+             
+        res = db.client.table("channels").update({"category": req.category}).eq("id", channel_id).execute()
+        return res.data[0] if res.data else None
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/user/limits")
+async def check_user_limits(sfs_user_id: str = Query(...)):
+    """Devuelve cuántos SFS le quedan hoy al usuario, considerando si es modelo y sus misiones"""
+    try:
+        user_res = db.client.table("sfs_users").select("*").eq("id", sfs_user_id).execute()
+        if not user_res.data:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        user = user_res.data[0]
+        base_limit = 6 if user.get("is_agency_model") else 2
+        
+        # Misiones extras podrían calcularse aquí (ej. count en post, etc)
+        # Para simplificar ahora retornamos el base_limit
+        total_limit = base_limit 
+        
+        # Contar cuantas ha hecho hoy
+        # Supabase API for "today": where created_at >= hoy
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        
+        count_res = db.client.table("promo_campaigns").select("id", count="exact").eq("requester_id", sfs_user_id).gte("created_at", today).execute()
+        used = count_res.count or 0
+        
+        return {
+            "limit": total_limit,
+            "used": used,
+            "remaining": max(0, total_limit - used),
+            "is_pro": user.get("subscription_tier") != 'basic'
+        }
+    except Exception as e:
+         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/reviews")
+async def submit_review(req: ReviewReq, sfs_user_id: str = Query(...)):
+    """Permite enviar una calificación post-SFS a la otra parte"""
+    try:
+        # Validar si ya existe
+        existing = db.client.table("sfs_reviews").select("id").eq("promo_campaign_id", req.promo_campaign_id).eq("reviewer_id", sfs_user_id).execute()
+        if existing.data:
+            raise HTTPException(status_code=400, detail="Ya enviaste una calificación para esta campaña.")
             
-        res = db.service_client.table("channels").delete().eq("id", channel_id).eq("model_id", model_id).execute()
-        return {"status": "success", "message": "Canal eliminado correctamente."}
+        # Insertar
+        db.client.table("sfs_reviews").insert({
+            "promo_campaign_id": req.promo_campaign_id,
+            "reviewer_id": sfs_user_id,
+            "target_id": req.target_id,
+            "rating": req.rating,
+            "comment": req.comment
+        }).execute()
+        
+        # Ajustar trust score heurísticamente (+5 por 5 estrellas, -5 por 1 estrella)
+        target_res = db.client.table("sfs_users").select("trust_score").eq("id", req.target_id).execute()
+        if target_res.data:
+            current_score = target_res.data[0].get("trust_score", 100)
+            adjustment = (req.rating - 3) * 5
+            new_score = max(0, min(100, current_score + adjustment))
+            
+            db.service_client.table("sfs_users").update({"trust_score": new_score}).eq("id", req.target_id).execute()
+            
+        return {"status": "success", "message": "Calificación enviada correctamente."}
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/channels/my/{channel_id}/history")
-async def get_channel_history(channel_id: str, model_id: str = Query(...)):
-    """Retorna el historial de métricas de un canal para la gráfica."""
-    try:
-        # Verificar que el canal pertenece a la modelo
-        existing = db.service_client.table("channels").select("id").eq("id", channel_id).eq("model_id", model_id).execute()
-        if not existing.data:
-            raise HTTPException(status_code=404, detail="Canal no encontrado o no te pertenece.")
-            
-        res = db.service_client.table("channel_metrics_history") \
-            .select("followers, avg_views, engagement_rate, created_at") \
-            .eq("channel_id", channel_id) \
-            .order("created_at", desc=False) \
-            .limit(30) \
-            .execute()
-        return res.data or []
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ─────────────────────────────────────────────
-# CAMPAÑAS — MODELO
-# ─────────────────────────────────────────────
-
-@router.get("/campaigns/sent")
-async def get_sent_campaigns(model_id: str = Query(...)):
-    """Campañas enviadas por la modelo (como requester)."""
-    try:
-        res = db.client.table("promo_campaigns") \
-            .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
-            .eq("requester_id", model_id) \
-            .order("created_at", desc=True) \
-            .execute()
-        return res.data or []
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/campaigns/received")
-async def get_received_campaigns(model_id: str = Query(...)):
-    """Campañas recibidas por la modelo (como target)."""
-    try:
-        res = db.client.table("promo_campaigns") \
-            .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
-            .eq("target_id", model_id) \
-            .order("created_at", desc=True) \
-            .execute()
-        return res.data or []
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ─────────────────────────────────────────────
-# ADMIN — PANEL SFS
-# ─────────────────────────────────────────────
-
-@router.get("/admin/channels/pending")
-async def get_pending_channels(user: TelegramUser = Depends(get_current_user)):
-    """Lista canales con status='verifying' para revisión del admin."""
-    if user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de administrador.")
-    try:
-        res = db.service_client.table("channels") \
-            .select("*, models(username, full_name, telegram_id)") \
-            .eq("status", "verifying") \
-            .order("created_at", desc=True) \
-            .execute()
-
-        channels = []
-        for ch in (res.data or []):
-            model_info = ch.get("models") or {}
-            channels.append({
-                "id": ch["id"],
-                "name": ch["name"],
-                "telegram_chat_id": ch["telegram_chat_id"],
-                "followers": ch.get("followers", 0),
-                "model_id": ch["model_id"],
-                "model_username": model_info.get("username", ""),
-                "model_full_name": model_info.get("full_name", ""),
-                "model_telegram_id": model_info.get("telegram_id"),
-                "created_at": ch["created_at"],
-                "invite_link": ch.get("invite_link"),
-            })
-        return channels
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/admin/channels/{channel_id}/action")
-async def admin_channel_action(channel_id: str, req: ChannelActionRequest, user: TelegramUser = Depends(get_current_user)):
-    """Aprobar o rechazar un canal. Notifica a la modelo por Telegram."""
-    if user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de administrador.")
-    try:
-        new_status = "active" if req.action == "approve" else "rejected"
-        db.service_client.table("channels").update({"status": new_status}).eq("id", channel_id).execute()
-
-        # Obtener datos del canal y la modelo para notificar
-        ch_res = db.client.table("channels") \
-            .select("name, model_id, models(telegram_id, username)") \
-            .eq("id", channel_id) \
-            .single() \
-            .execute()
-
-        if ch_res.data and TELEGRAM_TOKEN:
-            model_info = ch_res.data.get("models") or {}
-            telegram_id = model_info.get("telegram_id")
-            ch_name = ch_res.data.get("name", "tu canal")
-
-            if telegram_id:
-                bot = Bot(token=TELEGRAM_TOKEN)
-                try:
-                    msg = (
-                        f"✅ *¡Tu canal '{ch_name}' ha sido aprobado!*\n\nYa aparece en el catálogo SFS. Ahora puedes recibir propuestas de colaboración."
-                        if req.action == "approve" else
-                        f"❌ *Canal rechazado*\n\nLamentablemente, el canal '{ch_name}' no fue aprobado. Motivo: {req.reason or 'No cumple los requisitos mínimos.'}"
-                    )
-                    await bot.send_message(chat_id=telegram_id, text=msg, parse_mode="Markdown")
-                except Exception as notify_err:
-                    print(f"[Promo Admin] Error notificando al modelo: {notify_err}")
-
-        return {"status": "success", "new_status": new_status}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/admin/campaigns/active")
-async def get_active_campaigns(user: TelegramUser = Depends(get_current_user)):
-    """Campañas activas en tiempo real para el admin."""
-    if user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de administrador.")
-    try:
-        res = db.client.table("promo_campaigns") \
-            .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
-            .eq("status", "active") \
-            .order("start_time", desc=True) \
-            .execute()
-        return res.data or []
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/admin/campaigns/fraud")
-async def get_fraud_campaigns(user: TelegramUser = Depends(get_current_user)):
-    """Lista campañas denunciadas o canceladas por fraude."""
-    if user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de administrador.")
-    try:
-        res = db.service_client.table("promo_campaigns") \
-            .select("*, requester:models!requester_id(username), target:models!target_id(username)") \
-            .eq("status", "cancelled_fraud") \
-            .order("updated_at", desc=True) \
-            .execute()
-        return res.data or []
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/admin/trust/ranking")
-async def get_trust_ranking():
-    """Ranking de modelos por Trust Score."""
-    try:
-        res = db.client.table("models") \
-            .select("id, username, full_name, trust_score, badges, status") \
-            .eq("status", "active") \
-            .order("trust_score", desc=True) \
-            .limit(50) \
-            .execute()
-        return res.data or []
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

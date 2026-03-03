@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X, Clock, Trash2 } from 'lucide-react';
 import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
+import { sfsService } from '../api/sfs';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
@@ -10,7 +11,11 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const Promotions = () => {
-    const { user } = useAuth();
+    // Auth independiente para miniapp
+    const [sfsUser, setSfsUser] = useState(null);
+    const [limits, setLimits] = useState(null);
+    const [globalAuthLoading, setGlobalAuthLoading] = useState(true);
+
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState('catalog');
     const [runTour, setRunTour] = useState(false);
@@ -44,15 +49,54 @@ const Promotions = () => {
     const [channelHistory, setChannelHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
+    // Sistema de Reviews
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [reviewCampaign, setReviewCampaign] = useState(null);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState('');
+
     const LIMIT = 5;
+
+    // ---- Auth Init ----
+    useEffect(() => {
+        const initSfsUser = async () => {
+            try {
+                // Fricción Cero con initDataUnsafe
+                let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+                if (!tgUser) {
+                    // Fallback para pruebas locales
+                    tgUser = { id: 11234567, username: 'demo_user', first_name: 'Demo', last_name: 'User' };
+                }
+
+                const userPayload = {
+                    telegram_id: tgUser.id,
+                    username: tgUser.username || "",
+                    full_name: `${tgUser.first_name || ""} ${tgUser.last_name || ""}`.trim()
+                };
+
+                const userDoc = await sfsService.authenticateUser(userPayload);
+                setSfsUser(userDoc);
+
+                // Fetch Limits
+                const lims = await sfsService.getUserLimits(userDoc.id);
+                setLimits(lims);
+            } catch (err) {
+                console.error("[Promo] Auth error", err);
+                showToast("Error de conexión", "error");
+            } finally {
+                setGlobalAuthLoading(false);
+            }
+        };
+        initSfsUser();
+    }, []);
 
     // ---- Carga del catálogo ----
     const fetchCatalog = useCallback(async (page = 1) => {
         setLoadingCatalog(true);
         try {
-            const res = await api.get(`/promo/channels/catalog?page=${page}&limit=${LIMIT}`);
-            setCatalog(res.data.data || []);
-            setTotalPages(res.data.total_pages || 1);
+            const resData = await sfsService.getCatalog(null, page, LIMIT);
+            setCatalog(resData || []);
+            setTotalPages(Math.max(1, Math.ceil((resData?.length || 0) / LIMIT)));
             setCurrentPage(page);
         } catch (err) {
             console.error('[Promo] Error cargando catálogo:', err);
@@ -63,12 +107,12 @@ const Promotions = () => {
 
     // ---- Carga de campañas ----
     const fetchCampaigns = useCallback(async () => {
-        if (!user?.id) return;
+        if (!sfsUser?.id) return;
         setLoadingCampaigns(true);
         try {
             const [sentRes, recvRes] = await Promise.all([
-                api.get(`/promo/campaigns/sent?model_id=${user.id}`),
-                api.get(`/promo/campaigns/received?model_id=${user.id}`),
+                api.get(`/promo/campaigns/sent?model_id=${sfsUser.id}`), // Actualizar endopoint posterior
+                api.get(`/promo/campaigns/received?model_id=${sfsUser.id}`),
             ]);
             setSentCampaigns(sentRes.data || []);
             setReceivedCampaigns(recvRes.data || []);
@@ -77,21 +121,21 @@ const Promotions = () => {
         } finally {
             setLoadingCampaigns(false);
         }
-    }, [user?.id]);
+    }, [sfsUser?.id]);
 
     // ---- Carga de mis canales ----
     const fetchMyChannels = useCallback(async () => {
-        if (!user?.id) return;
+        if (!sfsUser?.id) return;
         setLoadingMyChannels(true);
         try {
-            const res = await api.get(`/promo/channels/my?model_id=${user.id}`);
-            setMyChannels(res.data || []);
+            const resData = await sfsService.getMyChannels(sfsUser.id);
+            setMyChannels(resData || []);
         } catch (err) {
             console.error('[Promo] Error cargando mis canales:', err);
         } finally {
             setLoadingMyChannels(false);
         }
-    }, [user?.id]);
+    }, [sfsUser?.id]);
 
     const openDeleteModal = (channel) => {
         setChannelToDelete(channel);
@@ -99,9 +143,9 @@ const Promotions = () => {
     };
 
     const confirmDeleteChannel = async () => {
-        if (!channelToDelete) return;
+        if (!channelToDelete || !sfsUser?.id) return;
         try {
-            await api.delete(`/promo/channels/my/${channelToDelete.id}?model_id=${user.id}`);
+            await api.delete(`/promo/channels/my/${channelToDelete.id}?model_id=${sfsUser.id}`);
             showToast("Canal eliminado", "success");
             setDeleteModalOpen(false);
             setChannelToDelete(null);
@@ -117,7 +161,7 @@ const Promotions = () => {
         setStatsModalOpen(true);
         setLoadingHistory(true);
         try {
-            const res = await api.get(`/promo/channels/my/${channel.id}/history?model_id=${user.id}`);
+            const res = await api.get(`/promo/channels/my/${channel.id}/history?model_id=${sfsUser.id}`);
             const formatted = (res.data || []).map(row => ({
                 ...row,
                 formattedDate: format(new Date(row.created_at), "d MMM, HH:mm", { locale: es })
@@ -128,6 +172,30 @@ const Promotions = () => {
             showToast("No se pudo cargar el historial", "error");
         } finally {
             setLoadingHistory(false);
+        }
+    };
+
+    const openReviewModal = (campaign) => {
+        setReviewCampaign(campaign);
+        setReviewRating(5);
+        setReviewComment('');
+        setReviewModalOpen(true);
+    };
+
+    const submitReview = async () => {
+        if (!reviewCampaign || !sfsUser?.id) return;
+        try {
+            const targetId = reviewCampaign.requester_id === sfsUser.id ? reviewCampaign.target_id : reviewCampaign.requester_id;
+            await sfsService.submitReview(sfsUser.id, {
+                promo_campaign_id: reviewCampaign.id,
+                target_id: targetId,
+                rating: reviewRating,
+                comment: reviewComment
+            });
+            showToast("Calificación enviada correctamente", "success");
+            setReviewModalOpen(false);
+        } catch (err) {
+            showToast(err.response?.data?.detail || "Error enviando calificación", "error");
         }
     };
 
@@ -182,11 +250,11 @@ const Promotions = () => {
                 {addChannelStep === 1 && (
                     <div className="space-y-4">
                         <div className="bg-card/40 border border-white/10 rounded-xl p-4 space-y-3">
-                            <h3 className="text-sm font-bold text-foreground mb-4">Verificación Rápida y Segura</h3>
+                            <h3 className="text-sm font-bold text-foreground mb-4">Verificación Automática</h3>
                             {[
                                 ['1', 'Añade a', '@Nebula_sfs_bot', 'como Administrador de tu canal.'],
-                                ['2', 'Dale', 'permisos exclusivos', 'para Publicar y Borrar mensajes.'],
-                                ['3', 'Copia el siguiente código dando click y', 'envíalo como mensaje', 'en tu canal.'],
+                                ['2', 'Asegúrate de darle todos los', 'permisos', '(enviar, editar, borrar e invitar).'],
+                                ['3', 'El bot registrará tu canal', 'automáticamente', 'en tu perfil.'],
                             ].map(([num, text, bold, suffix]) => (
                                 <div key={num} className="flex items-start gap-3">
                                     <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">{num}</span>
@@ -195,30 +263,18 @@ const Promotions = () => {
                             ))}
                         </div>
 
-                        <div className="bg-black/50 border border-purple-500/30 rounded-xl p-4 flex flex-col items-center justify-center gap-2 relative group cursor-pointer"
-                            onClick={() => {
-                                const code = `/link_${user?.id?.replace(/-/g, '') || 'vincular'}`;
-                                navigator.clipboard.writeText(code);
-                                showToast("¡Código copiado al portapapeles!", "success");
-                            }}>
-                            <span className="text-xs text-purple-400 font-bold uppercase tracking-wider">Tu código secreto</span>
-                            <code className="text-xl font-mono text-white tracking-widest bg-white/5 py-1 px-3 rounded-lg border border-white/10">
-                                /link_{user?.id?.replace(/-/g, '').substring(0, 8)}...
-                            </code>
-                            <div className="absolute inset-0 bg-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center backdrop-blur-sm">
-                                <span className="text-sm font-bold text-white flex items-center gap-2"><Copy className="w-4 h-4" /> Copiar Código</span>
-                            </div>
-                        </div>
-
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex gap-2 items-start">
                             <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
-                            <p className="text-xs text-amber-300">Este método es <span className="font-bold text-amber-400">100% privado</span>. El bot detectará tu código, guardará el canal a tu nombre y borrará el mensaje al instante para que nadie más lo vea.</p>
+                            <p className="text-xs text-amber-300">Este método es instantáneo. Una vez añadido y confirmado, cierra esta ventana y tu canal aparecerá en estado pendiente.</p>
                         </div>
 
                         <div className="flex gap-3 pt-2">
                             <button onClick={() => setAddChannelModalOpen(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                                Cancelar
+                                Cerrar Ventana
                             </button>
+                            <a href="https://t.me/Nebula_sfs_bot" target="_blank" rel="noreferrer" className="flex-1 text-center py-3 rounded-xl text-sm font-bold text-white bg-purple-500 hover:bg-purple-600 transition-all shadow-lg shadow-purple-500/25">
+                                Ir al Bot
+                            </a>
                         </div>
                     </div>
                 )}
@@ -311,6 +367,48 @@ const Promotions = () => {
                 <button onClick={() => setStatsModalOpen(false)} className="w-full mt-6 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
                     Cerrar
                 </button>
+            </div>
+        </Modal>
+    );
+
+    // ----------- MODAL REVIEW -----------
+    const renderReviewModal = () => (
+        <Modal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)}>
+            <div className="p-6">
+                <h2 className="text-xl font-black text-foreground mb-1">Calificar SFS</h2>
+                <p className="text-sm text-muted-foreground mb-6">
+                    Evalúa tu experiencia con la campaña. Esto afecta el Trust Score.
+                </p>
+
+                <div className="flex justify-center gap-2 mb-6">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                        <button key={star} onClick={() => setReviewRating(star)} className="focus:outline-none transition-transform hover:scale-110 active:scale-95">
+                            <Star className={`w-10 h-10 ${reviewRating >= star ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground opacity-30'}`} />
+                        </button>
+                    ))}
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Cuentanos tu experiencia (Opcional)</label>
+                        <textarea
+                            className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none resize-none"
+                            placeholder="¿Cumplió con lo acordado? ¿Borró el post antes de tiempo?"
+                            rows={3}
+                            value={reviewComment}
+                            onChange={e => setReviewComment(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <button onClick={() => setReviewModalOpen(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                            Cancelar
+                        </button>
+                        <button onClick={submitReview} className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-purple-500 hover:bg-purple-600 transition-all shadow-lg shadow-purple-500/25">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
             </div>
         </Modal>
     );
@@ -425,7 +523,14 @@ const Promotions = () => {
                                     {c.duration_hours ? `${c.duration_hours}h` : `${c.target_views?.toLocaleString()} vistas`}
                                 </p>
                             </div>
-                            <span className="text-xs font-bold">{statusLabel[c.status] || c.status}</span>
+                            <div className="flex flex-col items-end gap-2">
+                                <span className="text-xs font-bold bg-white/5 px-2 py-1 rounded-md">{statusLabel[c.status] || c.status}</span>
+                                {c.status === 'completed' && (
+                                    <button onClick={() => openReviewModal(c)} className="text-[10px] bg-yellow-500/20 text-yellow-400 font-bold px-2 py-1 rounded shadow-sm hover:bg-yellow-500/30 transition-colors">
+                                        ⭐ Puntuar
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -480,6 +585,14 @@ const Promotions = () => {
         );
     };
 
+    if (globalAuthLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen w-full bg-black">
+                <Loader className="w-10 h-10 animate-spin text-purple-500" />
+            </div>
+        );
+    }
+
     return (
         <div className="pb-24 pt-4 px-4 max-w-2xl mx-auto min-h-screen tour-step-1">
             <Joyride steps={[
@@ -493,6 +606,7 @@ const Promotions = () => {
             {renderAddChannelModal()}
             {renderDeleteModal()}
             {renderStatsModal()}
+            {renderReviewModal()}
 
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
@@ -500,10 +614,17 @@ const Promotions = () => {
                     <h1 className="text-2xl font-black bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Promo Center</h1>
                     <p className="text-xs text-muted-foreground mt-0.5">Acuerdos seguros SFS y Publicidad PXP.</p>
                 </div>
-                <button onClick={() => setAddChannelModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-card/40 border border-white/10 text-foreground rounded-xl text-xs font-bold hover:bg-card/60 transition-all active:scale-95">
-                    <Plus className="w-3.5 h-3.5" /> Añadir Canal
-                </button>
+                <div className="flex flex-col items-end gap-2">
+                    <button onClick={() => setAddChannelModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-card/40 border border-white/10 text-foreground rounded-xl text-xs font-bold hover:bg-card/60 transition-all active:scale-95">
+                        <Plus className="w-3.5 h-3.5" /> Añadir Canal
+                    </button>
+                    {limits && (
+                        <div className="text-[10px] font-bold px-2 py-1 rounded-md bg-purple-500/20 text-purple-400">
+                            SFS Restantes Hoy: {limits.remaining}/{limits.limit}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Banner Bot */}

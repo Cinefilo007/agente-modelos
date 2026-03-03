@@ -150,6 +150,9 @@ function App() {
                   </ProtectedRoute>
                 } />
 
+                {/* Rutas Públicas e Independientes (MiniApps) */}
+                <Route path="/promotions" element={<Promotions />} />
+
                 {/* Protected Routes */}
                 <Route path="/" element={
                   <ProtectedRoute>
@@ -167,7 +170,6 @@ function App() {
                   <Route path="service/:serviceId" element={<ServiceInvoicePage />} />
                   <Route path="checkout" element={<ServiceCheckout />} />
                   <Route path="shop-manager" element={<ShopManager />} />
-                  <Route path="promotions" element={<Promotions />} />
                   <Route path="profile" element={<Navigate to="/me" replace />} />
                   <Route path="me" element={<Profile />} />
                   <Route path=":username" element={<Profile />} />

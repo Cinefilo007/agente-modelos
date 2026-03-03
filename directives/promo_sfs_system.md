@@ -22,10 +22,21 @@ Cuando una modelo añade el Promo Bot a su canal como Administrador:
 3. El sistema calcula el **Engagement Rate (ER)**: `(Vistas Reales Promedio / Número de Seguidores) * 100`.
 4. El canal recibe una "Calificación de Calidad" (Ej. A, B, C) visible en el panel.
 
-## 3.1. Sistema de Reputación de Modelos ("Trust Score")
-El cumplimiento de los acuerdos de SFS/PXP afecta directamente la reputación de la modelo dentro del ecosistema:
-- **Puntuación Positiva (Cumplimiento):** Se otorgan puntos y medallas virtuales (ej. "Top Partner", "Fast Reacher") a las modelos que mantienen el post el tiempo acordado o alcanzan las vistas pactadas consistentemente. Esto las posiciona mejor en el catálogo de promociones.
-- **Puntuación Negativa (Incumplimiento):** Si una modelo borra un post antes de tiempo o no alcanza artificialmente los números, su *Trust Score* disminuye. Las penalizaciones incluyen pérdida de medallas, menor visibilidad en el catálogo o suspensión temporal del programa de SFS.
+## 3.1. Sistema de Reputación P2P ("Trust Score" y Reseñas)
+
+El valor más grande de este ecosistema es la confianza. Para evitar estafadores o canales que no cumplen lo pactado (SFS o PXP), se implementa un **Sistema de Reseñas P2P (Peer-to-Peer)**:
+
+1. **Calificación Post-Campaña:**
+   - Una vez que el bot finaliza automáticamente una campaña SFS o PXP (por tiempo o vistas alcanzadas), se habilita un periodo de 48 horas para que ambos creadores se califiquen mutuamente.
+   - Si no se califican, el sistema asigna una calificación neutral por defecto (5 estrellas, sin comentario).
+2. **Escala de Reseñas (1 a 5 Estrellas):**
+   - El usuario califica la experiencia y el bot le pide un breve comentario obligatorio si la calificación es menor a 4 estrellas.
+   - *Ejemplo de uso:* "Me hizo borrar el post a los 10 minutos" (1 Estrella) o "Manda excelente tráfico, súper recomendado" (5 Estrellas).
+3. **Impacto en el Catálogo:**
+   - Estas reseñas alimentan el puntaje promedio visible en el Catálogo de Promociones (`trust_score`).
+   - Los usuarios con menos de 3.5 estrellas en sus últimas 5 campañas son **ocultados automáticamente** del catálogo público. Si llegan a 2.0, el sistema los banea permanentemente.
+4. **Reportes Automáticos de Incumplimiento:**
+   - Independiente a las reseñas humanas, si el bot detecta que una usuaria borró un post antes de tiempo para engañar a la otra, automáticamente crea una reseña negativa a nombre del sistema en la tabla `sfs_reviews` con un comentario: "⚠️ [Alerta Automatizada] Este usuario eliminó prematuramente la publicación de su campaña".
 
 ## 4. Flujo de Acuerdo y Publicación (SFS / PXP)
 
@@ -76,11 +87,11 @@ Para asegurar que las modelos usen la herramienta correctamente sin sentirse abr
 
 ## 7. Cambios Requeridos en Base de Datos (Supabase)
 
-Se requerirán las siguientes tablas/campos nuevos:
-- `models`: (Actualizar) Añadir campos `trust_score` (int, default 100), `badges` (array de strings), `subscription_tier` (string, default 'basic').
-- `channels`: Registro de canales integrados (`id`, `model_id`, `telegram_chat_id`, `name`, `followers`, `avg_views`, `engagement_rate`, `status`).
-- `promo_templates`: Textos/Media reenviados por la modelo listos para usar (`id`, `model_id`, `telegram_message_id_origin`, `content_data` [JSON]).
-- `promo_campaigns`: Registro de acuerdos (`id`, `requester_id`, `target_id`, `type`, `target_views`, `duration_hours`, `status`, `start_time`, `requester_template_id`, `target_template_id`).
+Se requerirán las siguientes tablas/campos nuevos (Ver `sfs_funnel_strategy.md` para la separación de usuarios):
+- `sfs_users`: (Nueva) Registro de Creadores o Modelos usando la app de promoción separada de la agencia. (`trust_score`, `badges`, `subscription_tier`).
+- `channels`: Registro de canales integrados (`id`, `sfs_user_id`, `telegram_chat_id`, `name`, `followers`, `avg_views`, `engagement_rate`, `status`).
+- `promo_templates`: Textos/Media reenviados listos para usar (`id`, `sfs_user_id`, `telegram_message_id_origin`, `content_data` [JSON]).
+- `promo_campaigns`: Registro de acuerdos (`id`, `requester_id`, `target_id`, `type`, `target_views`, `duration_hours`, `status`, `start_time`, `requester_template_id`, `target_template_id`) (Mismos IDs ligados a `sfs_users`).
 - `promo_posts`: Contenido individual a publicar relacionado a la campaña.
 
 ## 8. Siguientes Pasos
