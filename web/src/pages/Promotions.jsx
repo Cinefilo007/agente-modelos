@@ -641,6 +641,36 @@ const Promotions = () => {
                 </div>
             </div>
 
+            {/* Banner Upsell Agencia — Solo para NO modelos */}
+            {sfsUser && !sfsUser.is_agency_model && (
+                <div className="relative overflow-hidden rounded-2xl mb-5 group">
+                    {/* Fondo animado */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 opacity-90" />
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE4YzMuMzE0IDAgNi0yLjY4NiA2LTZzLTIuNjg2LTYtNi02LTYgMi42ODYtNiA2IDIuNjg2IDYgNiA2eiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+
+                    <div className="relative p-5 flex gap-4 items-center">
+                        <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/20">
+                            <span className="text-3xl">🔥</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="font-black text-white text-sm leading-tight">¿Eres Creadora de Contenido?</h4>
+                            <p className="text-[11px] text-white/80 mt-1 leading-relaxed">
+                                Automatiza tus ventas en DMs con nuestro <span className="font-bold text-white">Bot de IA</span>. Accede a SFS ilimitados, analíticas PRO y gana dinero en piloto automático.
+                            </p>
+                            <a
+                                href="https://t.me/ClubNebula_Bot"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-white text-purple-700 rounded-xl text-xs font-black hover:bg-white/90 transition-all active:scale-95 shadow-lg shadow-black/20"
+                            >
+                                Aplica Ahora — Es Gratis
+                                <ExternalLink className="w-3 h-3" />
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Tabs */}
             <div className="flex bg-card/40 border border-white/5 p-1 rounded-xl mb-5">
                 {[['catalog', 'Catálogo'], ['sent', 'Enviadas'], ['received', 'Recibidas'], ['my_channels', 'Mis Canales']].map(([tab, label]) => (
