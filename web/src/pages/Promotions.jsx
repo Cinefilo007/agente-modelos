@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X, Clock, Trash2 } from 'lucide-react';
 import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
+import BannerCarousel from '../components/BannerCarousel';
 import { sfsService } from '../api/sfs';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
@@ -57,38 +57,102 @@ const Promotions = () => {
 
     const LIMIT = 5;
 
-    // ---- Auth Init ----
+    // ---- Auth Init (3 niveles) ----
+    const telegramLoginRef = useRef(null);
+    const [needsLogin, setNeedsLogin] = useState(false);
+
     useEffect(() => {
         const initSfsUser = async () => {
             try {
-                // Fricción Cero con initDataUnsafe
-                let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-                if (!tgUser) {
-                    // Fallback para pruebas locales
-                    tgUser = { id: 11234567, username: 'demo_user', first_name: 'Demo', last_name: 'User' };
+                // NIVEL 1: Telegram WebApp (MiniApp abierta desde el bot)
+                const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+                if (tgUser) {
+                    const userPayload = {
+                        telegram_id: tgUser.id,
+                        username: tgUser.username || "",
+                        full_name: `${tgUser.first_name || ""} ${tgUser.last_name || ""}`.trim()
+                    };
+                    const userDoc = await sfsService.authenticateUser(userPayload);
+                    setSfsUser(userDoc);
+                    const lims = await sfsService.getUserLimits(userDoc.id);
+                    setLimits(lims);
+                    setGlobalAuthLoading(false);
+                    return;
                 }
 
-                const userPayload = {
-                    telegram_id: tgUser.id,
-                    username: tgUser.username || "",
-                    full_name: `${tgUser.first_name || ""} ${tgUser.last_name || ""}`.trim()
-                };
+                // NIVEL 2: Sesión existente en localStorage (usuario logueado en el portal principal)
+                const storedUser = localStorage.getItem('user');
+                const token = localStorage.getItem('token');
+                if (token && storedUser && storedUser !== "undefined" && storedUser !== "null") {
+                    const parsed = JSON.parse(storedUser);
+                    if (parsed?.telegram_id) {
+                        const userPayload = {
+                            telegram_id: parsed.telegram_id,
+                            username: parsed.username || "",
+                            full_name: parsed.full_name || parsed.artistic_name || ""
+                        };
+                        const userDoc = await sfsService.authenticateUser(userPayload);
+                        setSfsUser(userDoc);
+                        const lims = await sfsService.getUserLimits(userDoc.id);
+                        setLimits(lims);
+                        setGlobalAuthLoading(false);
+                        return;
+                    }
+                }
 
-                const userDoc = await sfsService.authenticateUser(userPayload);
-                setSfsUser(userDoc);
+                // NIVEL 3: Sin sesión → Mostrar pantalla de login
+                setNeedsLogin(true);
+                setGlobalAuthLoading(false);
 
-                // Fetch Limits
-                const lims = await sfsService.getUserLimits(userDoc.id);
-                setLimits(lims);
             } catch (err) {
                 console.error("[Promo] Auth error", err);
-                showToast("Error de conexión", "error");
-            } finally {
+                setNeedsLogin(true);
                 setGlobalAuthLoading(false);
             }
         };
         initSfsUser();
     }, []);
+
+    // Telegram Login Widget (solo se monta si needsLogin es true)
+    useEffect(() => {
+        if (!needsLogin || !telegramLoginRef.current) return;
+        if (telegramLoginRef.current.innerHTML !== "") return;
+
+        const script = document.createElement('script');
+        script.src = "https://telegram.org/js/telegram-widget.js?22";
+        script.setAttribute('data-telegram-login', 'ClubNebula_Bot');
+        script.setAttribute('data-size', 'large');
+        script.setAttribute('data-radius', '12');
+        script.setAttribute('data-request-access', 'write');
+        script.setAttribute('data-userpic', 'false');
+        script.setAttribute('data-onauth', 'onTelegramAuthPromo(user)');
+        script.async = true;
+        telegramLoginRef.current.appendChild(script);
+
+        window.onTelegramAuthPromo = async (user) => {
+            try {
+                setGlobalAuthLoading(true);
+                setNeedsLogin(false);
+                const userPayload = {
+                    telegram_id: user.id,
+                    username: user.username || "",
+                    full_name: `${user.first_name || ""} ${user.last_name || ""}`.trim()
+                };
+                const userDoc = await sfsService.authenticateUser(userPayload);
+                setSfsUser(userDoc);
+                const lims = await sfsService.getUserLimits(userDoc.id);
+                setLimits(lims);
+            } catch (err) {
+                console.error("[Promo] Login error", err);
+                showToast("Error al iniciar sesión", "error");
+                setNeedsLogin(true);
+            } finally {
+                setGlobalAuthLoading(false);
+            }
+        };
+
+        return () => { window.onTelegramAuthPromo = undefined; };
+    }, [needsLogin]);
 
     // ---- Carga del catálogo ----
     const fetchCatalog = useCallback(async (page = 1) => {
@@ -593,6 +657,42 @@ const Promotions = () => {
         );
     }
 
+    // ---- Pantalla de Login (Sin Sesión) ----
+    if (needsLogin) {
+        return (
+            <div className="min-h-screen bg-[#030014] flex flex-col items-center justify-center px-6 text-center relative overflow-hidden">
+                {/* Efectos de fondo */}
+                <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-900/30 rounded-full blur-[100px] animate-pulse" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[400px] h-[400px] bg-pink-900/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+
+                <div className="relative z-10 max-w-sm w-full">
+                    {/* Logo */}
+                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(168,85,247,0.4)]">
+                        <Send className="w-10 h-10 text-white" />
+                    </div>
+
+                    <h1 className="text-3xl font-black text-white mb-2">Promo Center</h1>
+                    <p className="text-sm text-gray-400 mb-8 leading-relaxed">
+                        Acuerdos SFS automatizados con métricas reales. <br />
+                        Inicia sesión con Telegram para continuar.
+                    </p>
+
+                    {/* Widget de Telegram */}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+                        <div ref={telegramLoginRef} className="flex items-center justify-center transform hover:scale-105 transition-transform" />
+                        <p className="text-[10px] text-gray-500 mt-4 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                            <ShieldCheck className="w-3 h-3" /> Acceso seguro vía Telegram
+                        </p>
+                    </div>
+
+                    <p className="text-xs text-gray-600 mt-6">
+                        Al iniciar sesión, aceptas los términos del ecosistema.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="pb-24 pt-4 px-4 max-w-2xl mx-auto min-h-screen tour-step-1">
             <Joyride steps={[
@@ -627,49 +727,8 @@ const Promotions = () => {
                 </div>
             </div>
 
-            {/* Banner Bot */}
-            <div className="bg-card/40 border border-white/5 rounded-2xl p-4 mb-5 flex gap-3 items-start tour-step-4">
-                <div className="p-2.5 bg-purple-500/20 rounded-xl text-purple-400 shrink-0">
-                    <Send className="w-5 h-5" />
-                </div>
-                <div>
-                    <h4 className="font-bold text-foreground text-sm">Prepara tu post primero</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5 mb-2">Reenvíale tu mejor foto/video con emojis a <span className="font-bold text-foreground">@Nebula_sfs_bot</span> en Telegram.</p>
-                    <a href="https://t.me/Nebula_sfs_bot" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-purple-400 hover:text-purple-300">
-                        Ir al Bot @Nebula_sfs_bot 👉
-                    </a>
-                </div>
-            </div>
-
-            {/* Banner Upsell Agencia — Solo para NO modelos */}
-            {sfsUser && !sfsUser.is_agency_model && (
-                <div className="relative overflow-hidden rounded-2xl mb-5 group">
-                    {/* Fondo animado */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 opacity-90" />
-                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE4YzMuMzE0IDAgNi0yLjY4NiA2LTZzLTIuNjg2LTYtNi02LTYgMi42ODYtNiA2IDIuNjg2IDYgNiA2eiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
-
-                    <div className="relative p-5 flex gap-4 items-center">
-                        <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/20">
-                            <span className="text-3xl">🔥</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <h4 className="font-black text-white text-sm leading-tight">¿Eres Creadora de Contenido?</h4>
-                            <p className="text-[11px] text-white/80 mt-1 leading-relaxed">
-                                Automatiza tus ventas en DMs con nuestro <span className="font-bold text-white">Bot de IA</span>. Accede a SFS ilimitados, analíticas PRO y gana dinero en piloto automático.
-                            </p>
-                            <a
-                                href="https://t.me/ClubNebula_Bot"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-white text-purple-700 rounded-xl text-xs font-black hover:bg-white/90 transition-all active:scale-95 shadow-lg shadow-black/20"
-                            >
-                                Aplica Ahora — Es Gratis
-                                <ExternalLink className="w-3 h-3" />
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Carrusel de Banners */}
+            <BannerCarousel sfsUser={sfsUser} />
 
             {/* Tabs */}
             <div className="flex bg-card/40 border border-white/5 p-1 rounded-xl mb-5">
