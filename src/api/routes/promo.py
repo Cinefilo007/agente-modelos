@@ -231,6 +231,22 @@ async def update_channel(channel_id: str, req: UpdateChannelReq, sfs_user_id: st
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@router.delete("/channels/my/{channel_id}")
+async def delete_channel(channel_id: str, model_id: str = Query(...)):
+    """Elimina un canal propio."""
+    try:
+        existing = db.client.table("channels").select("id").eq("id", channel_id).eq("sfs_user_id", model_id).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Canal no encontrado o no autorizado")
+        db.client.table("channels").delete().eq("id", channel_id).execute()
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/user/limits")
 async def check_user_limits(sfs_user_id: str = Query(...)):
     """Devuelve cuántos SFS le quedan hoy al usuario."""

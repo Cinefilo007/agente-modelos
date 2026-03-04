@@ -343,14 +343,15 @@ const Promotions = () => {
             showToast('Selecciona un canal y un post plantilla', 'error');
             return;
         }
-        if (!proposeTarget?.sfs_user_id) {
+        if (!proposeTarget?.sfs_user_id && !proposeTarget?.id) {
             showToast('No se pudo identificar al destinatario', 'error');
             return;
         }
+        const targetUserId = proposeTarget.sfs_user_id || proposeTarget.target_sfs_user_id;
         setProposeLoading(true);
         try {
             await sfsService.proposeSFS(sfsUser.id, {
-                target_sfs_user_id: proposeTarget.sfs_user_id,
+                target_sfs_user_id: targetUserId,
                 requester_channel_id: proposeSelectedChannel,
                 requester_template_id: proposeSelectedTemplate,
                 contract_type: proposeContractType,
@@ -998,33 +999,33 @@ const Promotions = () => {
             emoji: '🤝',
             gradient: 'from-purple-600 to-fuchsia-600',
             title: 'SFS Automatizado',
-            desc: 'Propone acuerdos de publicidad cruzada con otras creadoras de contenido. Selecciona canales verificados del catálogo y gana nuevos suscriptores.',
-            stat: '+500 canales activos',
+            desc: 'Propone acuerdos por vistas, tiempo o suscriptores nuevos. Elige canales verificados del catálogo y deja que el bot publique y monitore todo.',
+            stat: 'Por Vistas · Por Tiempo · Por Subs',
             statColor: 'text-purple-300',
         },
         {
             emoji: '📊',
             gradient: 'from-fuchsia-600 to-pink-600',
-            title: 'Métricas Reales',
-            desc: 'Cada canal muestra suscriptores reales, vistas promedio por post y tasa de engagement. Sin datos falsos, sin sorpresas.',
-            stat: 'ER • Vistas • Subs',
+            title: 'Métricas + Categorías',
+            desc: 'Cada canal muestra suscriptores reales, vistas/post y ER. Filtra por categoría: Modelaje, Memes, Cripto y más.',
+            stat: 'ER • Vistas • Subs • Categoría',
             statColor: 'text-pink-300',
         },
         {
             emoji: '🛡️',
             gradient: 'from-pink-600 to-rose-600',
             title: 'Trust Score P2P',
-            desc: 'Cada anunciante tiene una puntuación de confianza basada en reviews reales de creadoras. Colabora tranquila, solo con socias de confianza.',
-            stat: 'Sistema de reviews verificadas',
+            desc: 'Puntaje basado en reviews reales. El bot detecta fraudes automáticamente y penaliza a quienes borren posts antes de tiempo.',
+            stat: 'Reviews verificadas en tiempo real',
             statColor: 'text-rose-300',
         },
         {
-            emoji: '💸',
-            gradient: 'from-amber-500 to-orange-600',
-            title: 'Publicidad PxP',
-            desc: 'Además del SFS gratuito, puedes vender o comprar posts en canales seleccionados y monetizar tu audiencia directamente.',
-            stat: 'Gana dinero en piloto automático',
-            statColor: 'text-amber-300',
+            emoji: '⚡',
+            gradient: 'from-rose-600 to-orange-600',
+            title: 'Límites Diarios Justos',
+            desc: 'Plan Básico: 2 SFS/día · 1 canal. Modelos de agencia: 6 SFS/día. Planes Pro para mayor volumen próximamente.',
+            stat: 'Free: 2 SFS/día · Agencia: 6/día',
+            statColor: 'text-orange-300',
         },
     ];
 
@@ -1048,41 +1049,41 @@ const Promotions = () => {
                         </div>
                     </div>
 
-                    {/* Carrusel de features */}
-                    <div className="relative">
-                        <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${feat.gradient} p-6 min-h-[180px] transition-all duration-500`}
-                            style={{ background: 'linear-gradient(135deg, rgba(88,28,135,0.6) 0%, rgba(126,34,206,0.4) 100%)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}>
+                    {/* Carrusel de features — altura fija, swipe táctil */}
+                    <div className="relative"
+                        onTouchStart={e => {
+                            const touchStartX = e.touches[0].clientX;
+                            e.currentTarget.dataset.touchStartX = touchStartX;
+                        }}
+                        onTouchEnd={e => {
+                            const startX = parseFloat(e.currentTarget.dataset.touchStartX || 0);
+                            const endX = e.changedTouches[0].clientX;
+                            const diff = startX - endX;
+                            if (Math.abs(diff) > 40) {
+                                if (diff > 0) setLoginSlide(s => (s + 1) % loginFeatures.length);
+                                else setLoginSlide(s => (s - 1 + loginFeatures.length) % loginFeatures.length);
+                            }
+                        }}
+                    >
+                        <div className="overflow-hidden rounded-3xl border border-white/10"
+                            style={{ backdropFilter: 'blur(20px)' }}>
+                            <div className="h-[220px] flex flex-col justify-between p-6"
+                                style={{ background: 'linear-gradient(135deg, rgba(88,28,135,0.6) 0%, rgba(126,34,206,0.4) 100%)' }}>
 
-                            {/* Patrón de fondo */}
-                            <div className="absolute inset-0 opacity-10"
-                                style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
+                                {/* Patrón de fondo */}
+                                <div className="absolute inset-0 opacity-10 pointer-events-none rounded-3xl"
+                                    style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
 
-                            {/* Emoji grande */}
-                            <div className="text-5xl mb-4 select-none">{feat.emoji}</div>
-
-                            <h2 className="text-lg font-black text-white mb-2">{feat.title}</h2>
-                            <p className="text-sm text-white/75 leading-relaxed mb-4">{feat.desc}</p>
-
-                            <div className={`text-xs font-bold ${feat.statColor} uppercase tracking-wide`}>
-                                ✦ {feat.stat}
+                                <div className="relative z-10 flex flex-col h-full">
+                                    <div className="text-4xl mb-2 select-none">{feat.emoji}</div>
+                                    <h2 className="text-base font-black text-white mb-1 leading-tight">{feat.title}</h2>
+                                    <p className="text-xs text-white/75 leading-relaxed flex-1">{feat.desc}</p>
+                                    <div className={`text-[10px] font-bold ${feat.statColor} uppercase tracking-wide mt-2`}>
+                                        ✦ {feat.stat}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Botones prev/next */}
-                        <button
-                            onClick={() => setLoginSlide(s => (s - 1 + loginFeatures.length) % loginFeatures.length)}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 border border-white/15 text-white flex items-center justify-center hover:bg-black/60 transition-all backdrop-blur-sm"
-                            aria-label="Anterior"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => setLoginSlide(s => (s + 1) % loginFeatures.length)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 border border-white/15 text-white flex items-center justify-center hover:bg-black/60 transition-all backdrop-blur-sm"
-                            aria-label="Siguiente"
-                        >
-                            <ChevronRight className="w-4 h-4" />
-                        </button>
                     </div>
 
                     {/* Dots */}

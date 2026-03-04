@@ -6,8 +6,8 @@ import {
 import QRCode from 'react-qr-code';
 import api from '../../api/axios';
 
-// Dirección de depósito fija del sistema SFS
-const SFS_DEPOSIT_ADDRESS = import.meta.env.VITE_SFS_DEPOSIT_ADDRESS || 'UQD_SFS_WALLET_ADDRESS_PLACEHOLDER';
+// Dirección de depósito fija del sistema SFS — se configura en variable de entorno VITE_CENTRAL_WALLET_ADDRESS
+const SFS_DEPOSIT_ADDRESS = import.meta.env.VITE_CENTRAL_WALLET_ADDRESS || import.meta.env.VITE_SFS_DEPOSIT_ADDRESS || 'UQD_CENTRAL_WALLET_ADDRESS_PLACEHOLDER';
 
 const SfsWalletPanel = ({ sfsUser, onBalanceUpdate }) => {
     const [activeTab, setActiveTab] = useState('overview');
