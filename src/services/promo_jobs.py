@@ -297,12 +297,17 @@ async def monitor_sfs_views_and_fraud(bot):
     """
     logger.info("Executing Job: Monitor SFS Views & Fraud")
     try:
-        active_camps = db.service_client.table('promo_campaigns').select(
-            '*, promo_posts(*)'
+        # Query separado: NO usar join embebido (no hay FK registrada en schema cache)
+        active_camps_res = db.service_client.table('promo_campaigns').select(
+            '*'
         ).in_('status', ['active', 'pending_deletion']).execute()
 
-        for camp in active_camps.data or []:
-            posts = camp.get('promo_posts', [])
+        for camp in active_camps_res.data or []:
+            # Obtener posts de esta campaña en query separado
+            posts_res = db.service_client.table('promo_posts').select(
+                'id, channel_id, telegram_message_id'
+            ).eq('campaign_id', camp['id']).execute()
+            posts = posts_res.data or []
             camp_id = camp['id']
 
             # ----------------------------------------------------------------

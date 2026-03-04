@@ -1211,28 +1211,25 @@ const Promotions = () => {
                                 </>
                             );
                         })()}
-                        {proposeContractType === 'SFS_TIME' && (() => {
-                            return (
-                                <>
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Duración del Post</label>
-                                        <span className="text-lg font-black text-foreground">
-                                            {proposeDurationHours < 24 ? `${proposeDurationHours}h` : `${proposeDurationHours / 24}d`}
-                                        </span>
-                                    </div>
-                                    <input type="range"
-                                        className="sfs-slider"
-                                        min={1} max={96} step={1}
-                                        value={proposeDurationHours || 24}
-                                        onChange={e => setProposeDurationHours(parseInt(e.target.value))}
-                                    />
-                                    <div className="flex justify-between text-[10px] text-muted-foreground/60">
-                                        <span>1 hora</span>
-                                        <span>96 horas (4 días)</span>
-                                    </div>
-                                </>
-                            );
-                        })()}
+                        {proposeContractType === 'SFS_TIME' && (
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Duración del Post</label>
+                                    <span className="text-lg font-black text-foreground">
+                                        {proposeDurationHours < 24 ? `${proposeDurationHours}h` : `${proposeDurationHours / 24}d`}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[6, 12, 24, 48, 72, 96].map(h => (
+                                        <button key={h}
+                                            onClick={() => setProposeDurationHours(h)}
+                                            className={`py-2 rounded-xl text-xs font-bold border transition-all ${proposeDurationHours === h ? 'border-purple-500 bg-purple-500/20 text-purple-300' : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10'}`}>
+                                            {h < 24 ? `${h}h` : `${h / 24}d`}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         {proposeContractType === 'SFS_FOLLOWERS' && (() => {
                             const maxFollowers = Math.max(10, Math.round((proposeTarget?.followers || 1000) * 0.5));
                             const minFollowers = Math.min(5, Math.floor(maxFollowers * 0.02));
