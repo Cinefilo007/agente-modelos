@@ -11,6 +11,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import SfsWalletPanel from '../components/sfs/SfsWalletPanel';
+import SfsProfilePanel from '../components/sfs/SfsProfilePanel';
 
 const Promotions = () => {
     // Auth independiente para miniapp
@@ -79,6 +80,7 @@ const Promotions = () => {
     // ---- Estado perfil propio ----
     const [myProfile, setMyProfile] = useState(null);
     const [walletModalOpen, setWalletModalOpen] = useState(false);
+    const [profilePanelOpen, setProfilePanelOpen] = useState(false);
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewComment, setReviewComment] = useState('');
 
@@ -1183,36 +1185,78 @@ const Promotions = () => {
                         </div>
                     </div>
 
-                    {/* Selector según tipo */}
-                    <div className="space-y-1">
-                        {proposeContractType === 'SFS_VIEWS' && <>
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Meta de Vistas</label>
-                            <select value={proposeViewsTarget} onChange={e => setProposeViewsTarget(parseInt(e.target.value))}
-                                className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500">
-                                {[500, 1000, 2000, 5000, 10000].map(v => (
-                                    <option key={v} value={v}>{v.toLocaleString()} vistas</option>
-                                ))}
-                            </select>
-                        </>}
-                        {proposeContractType === 'SFS_TIME' && <>
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Duración del Post</label>
-                            <select value={proposeDurationHours} onChange={e => setProposeDurationHours(parseInt(e.target.value))}
-                                className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500">
-                                <option value={12}>12 horas</option>
-                                <option value={24}>24 horas</option>
-                                <option value={48}>48 horas</option>
-                                <option value={72}>72 horas</option>
-                            </select>
-                        </>}
-                        {proposeContractType === 'SFS_FOLLOWERS' && <>
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Meta de Nuevos Seguidores</label>
-                            <select value={proposeFollowersTarget} onChange={e => setProposeFollowersTarget(parseInt(e.target.value))}
-                                className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500">
-                                {[50, 100, 200, 500, 1000].map(v => (
-                                    <option key={v} value={v}>{v.toLocaleString()} seguidores</option>
-                                ))}
-                            </select>
-                        </>}
+                    {/* Selector dinámico según tipo */}
+                    <div className="space-y-3">
+                        {proposeContractType === 'SFS_VIEWS' && (() => {
+                            const maxViews = Math.max(500, Math.round(proposeTarget?.avg_views || 500));
+                            const minViews = Math.min(100, Math.floor(maxViews * 0.1));
+                            return (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Meta de Vistas</label>
+                                        <span className="text-lg font-black text-foreground">{(proposeViewsTarget || minViews).toLocaleString()}</span>
+                                    </div>
+                                    <input type="range"
+                                        className="sfs-slider"
+                                        min={minViews}
+                                        max={maxViews}
+                                        step={Math.max(50, Math.floor(maxViews / 20))}
+                                        value={proposeViewsTarget || minViews}
+                                        onChange={e => setProposeViewsTarget(parseInt(e.target.value))}
+                                    />
+                                    <div className="flex justify-between text-[10px] text-muted-foreground/60">
+                                        <span>{minViews.toLocaleString()}</span>
+                                        <span>máx. {maxViews.toLocaleString()} vistas</span>
+                                    </div>
+                                </>
+                            );
+                        })()}
+                        {proposeContractType === 'SFS_TIME' && (() => {
+                            return (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Duración del Post</label>
+                                        <span className="text-lg font-black text-foreground">
+                                            {proposeDurationHours < 24 ? `${proposeDurationHours}h` : `${proposeDurationHours / 24}d`}
+                                        </span>
+                                    </div>
+                                    <input type="range"
+                                        className="sfs-slider"
+                                        min={1} max={96} step={1}
+                                        value={proposeDurationHours || 24}
+                                        onChange={e => setProposeDurationHours(parseInt(e.target.value))}
+                                    />
+                                    <div className="flex justify-between text-[10px] text-muted-foreground/60">
+                                        <span>1 hora</span>
+                                        <span>96 horas (4 días)</span>
+                                    </div>
+                                </>
+                            );
+                        })()}
+                        {proposeContractType === 'SFS_FOLLOWERS' && (() => {
+                            const maxFollowers = Math.max(10, Math.round((proposeTarget?.followers || 1000) * 0.5));
+                            const minFollowers = Math.min(5, Math.floor(maxFollowers * 0.02));
+                            return (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Meta de Seguidores</label>
+                                        <span className="text-lg font-black text-foreground">{(proposeFollowersTarget || minFollowers).toLocaleString()}</span>
+                                    </div>
+                                    <input type="range"
+                                        className="sfs-slider"
+                                        min={minFollowers}
+                                        max={maxFollowers}
+                                        step={Math.max(1, Math.floor(maxFollowers / 20))}
+                                        value={proposeFollowersTarget || minFollowers}
+                                        onChange={e => setProposeFollowersTarget(parseInt(e.target.value))}
+                                    />
+                                    <div className="flex justify-between text-[10px] text-muted-foreground/60">
+                                        <span>{minFollowers.toLocaleString()}</span>
+                                        <span>máx. {maxFollowers.toLocaleString()} subs ({(proposeTarget?.followers || 0).toLocaleString()} total × 50%)</span>
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
 
                     {/* Tu canal */}
@@ -1382,7 +1426,7 @@ const Promotions = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">Acuerdos seguros SFS y Publicidad PXP.</p>
                 </div>
                 <button
-                    onClick={() => setActiveTab('profile')}
+                    onClick={() => setProfilePanelOpen(true)}
                     className="flex items-center gap-2 px-3 py-2 bg-card/50 border border-white/10 rounded-xl text-xs font-bold text-foreground hover:bg-card/70 transition-all active:scale-95"
                 >
                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white text-[10px] font-black">
@@ -1411,7 +1455,7 @@ const Promotions = () => {
 
             {/* Tabs */}
             <div className="flex bg-card/40 border border-white/5 p-1 rounded-xl mb-5 gap-0.5">
-                {[['catalog', 'Catálogo'], ['sent', 'Enviadas'], ['received', 'Recibidas'], ['profile', 'Perfil']].map(([tab, label]) => (
+                {[['catalog', 'Catálogo'], ['sent', 'Enviadas'], ['received', 'Recibidas']].map(([tab, label]) => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
                         className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === tab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
                         {label}
@@ -1427,8 +1471,20 @@ const Promotions = () => {
                 {activeTab === 'catalog' && renderCatalog()}
                 {activeTab === 'sent' && renderCampaignList(sentCampaigns)}
                 {activeTab === 'received' && renderCampaignList(receivedCampaigns)}
-                {activeTab === 'profile' && renderProfile()}
             </div>
+
+            {/* Panel de Perfil SFS */}
+            <SfsProfilePanel
+                isOpen={profilePanelOpen}
+                onClose={() => setProfilePanelOpen(false)}
+                sfsUser={sfsUser}
+                myProfile={myProfile}
+                onLoadProfile={() => api.get(`/promo/profile/me?sfs_user_id=${sfsUser?.id}`).then(r => setMyProfile(r.data)).catch(() => { })}
+                onLogout={handleLogout}
+                onOpenAddChannel={() => { setProfilePanelOpen(false); setAddChannelModalOpen(true); }}
+                onOpenChannelEdit={(ch) => { setProfilePanelOpen(false); openChannelEdit(ch); }}
+                onOpenDeleteChannel={(ch) => { setProfilePanelOpen(false); setChannelToDelete(ch); setDeleteModalOpen(true); }}
+            />
         </div>
     );
 };

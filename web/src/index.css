@@ -139,3 +139,58 @@ body {
 .video-control-btn {
   @apply p-2 rounded-full bg-black/40 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/60 transition-all border border-white/10;
 }
+
+/* Slide-in panel desde la derecha */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Range slider SFS — estilo purple */
+.sfs-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(168, 85, 247, 0.2);
+  outline: none;
+  cursor: pointer;
+}
+
+.sfs-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  border: 3px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+  transition: box-shadow 0.15s;
+}
+
+.sfs-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.9);
+}
+
+.sfs-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  border: 3px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+}

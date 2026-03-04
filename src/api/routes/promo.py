@@ -265,6 +265,32 @@ async def get_my_templates(sfs_user_id: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+class UpdateTemplateReq(BaseModel):
+    title: Optional[str] = None
+
+
+@router.put("/templates/{template_id}")
+async def update_template(template_id: str, req: UpdateTemplateReq, sfs_user_id: str = Query(...)):
+    """Actualiza el título de un template de post."""
+    try:
+        # Verificar propiedad
+        check = db.client.table("promo_templates").select("id").eq("id", template_id).eq("sfs_user_id", sfs_user_id).execute()
+        if not check.data:
+            raise HTTPException(status_code=404, detail="Template no encontrado")
+        update_data = {}
+        if req.title is not None:
+            update_data["title"] = req.title.strip() or None
+        if not update_data:
+            raise HTTPException(status_code=400, detail="Sin campos para actualizar")
+        db.client.table("promo_templates").update(update_data).eq("id", template_id).execute()
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/campaigns")
 async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
     """Crea una propuesta de campaña SFS."""
