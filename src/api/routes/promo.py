@@ -258,7 +258,7 @@ async def get_my_templates(sfs_user_id: str = Query(...)):
     """Templates de post guardados por el bot."""
     try:
         res = db.client.table("promo_templates").select(
-            "id, created_at, content_data, telegram_message_id_origin"
+            "id, created_at, title, content_data, telegram_message_id_origin"
         ).eq("sfs_user_id", sfs_user_id).order("created_at", desc=True).limit(10).execute()
         return res.data or []
     except Exception as e:
