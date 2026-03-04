@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X, Clock, Trash2 } from 'lucide-react';
+import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X, Clock, Trash2, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
@@ -74,17 +74,17 @@ const Promotions = () => {
     const [needsLogin, setNeedsLogin] = useState(false);
 
     // Helper para persistir sesión
-    const SFS_SESSION_KEY = 'sfs_session';
+    const SFS_SESSION_KEY = 'sfs_promo_user';
     const saveSession = (userDoc) => {
-        sessionStorage.setItem(SFS_SESSION_KEY, JSON.stringify(userDoc));
+        localStorage.setItem(SFS_SESSION_KEY, JSON.stringify(userDoc));
     };
-    const clearSession = () => sessionStorage.removeItem(SFS_SESSION_KEY);
+    const clearSession = () => localStorage.removeItem(SFS_SESSION_KEY);
 
     useEffect(() => {
         const initSfsUser = async () => {
             try {
                 // NIVEL 0: Sesión SFS persistida (recarga de página)
-                const cached = sessionStorage.getItem(SFS_SESSION_KEY);
+                const cached = localStorage.getItem(SFS_SESSION_KEY);
                 if (cached) {
                     const cachedUser = JSON.parse(cached);
                     if (cachedUser?.id) {
@@ -303,6 +303,16 @@ const Promotions = () => {
                 console.error('Error loading propose data', err);
             }
         }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem(SFS_SESSION_KEY);
+        setSfsUser(null);
+        setLimits(null);
+        setMyCatalogChannels([]);
+        setSentCampaigns([]);
+        setReceivedCampaigns([]);
+        setNeedsLogin(true);
     };
 
     const submitProposeSFS = async () => {
@@ -1006,10 +1016,21 @@ const Promotions = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">Acuerdos seguros SFS y Publicidad PXP.</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                    <button onClick={() => setAddChannelModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-card/40 border border-white/10 text-foreground rounded-xl text-xs font-bold hover:bg-card/60 transition-all active:scale-95">
-                        <Plus className="w-3.5 h-3.5" /> Añadir Canal
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setAddChannelModalOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-card/40 border border-white/10 text-foreground rounded-xl text-xs font-bold hover:bg-card/60 transition-all active:scale-95">
+                            <Plus className="w-3.5 h-3.5" /> Añadir Canal
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            title="Cerrar sesión"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold hover:bg-red-500/20 transition-all active:scale-95">
+                            <LogOut className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                    {sfsUser && (
+                        <p className="text-[10px] text-muted-foreground/70">@{sfsUser.username || sfsUser.full_name || 'usuario'}</p>
+                    )}
                     {limits && (
                         <div className="text-[10px] font-bold px-2 py-1 rounded-md bg-purple-500/20 text-purple-400">
                             SFS Restantes Hoy: {limits.remaining}/{limits.limit}
