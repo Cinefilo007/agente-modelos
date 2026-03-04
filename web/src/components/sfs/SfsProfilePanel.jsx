@@ -273,7 +273,7 @@ const SfsProfilePanel = ({
 
                 {/* Footer: Cerrar Sesión */}
                 <div className="p-4 border-t border-white/5">
-                    <button onClick={onLogout}
+                    <button onClick={() => { onClose(); setTimeout(() => onLogout?.(), 50); }}
                         className="w-full py-3 rounded-xl text-sm font-bold text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2">
                         <LogOut className="w-4 h-4" /> Cerrar Sesión
                     </button>

@@ -100,11 +100,21 @@ const Promotions = () => {
     useEffect(() => {
         const initSfsUser = async () => {
             try {
-                // NIVEL 0: Sesión SFS persistida (recarga de página)
+                // Detectar usuario de Telegram WebApp primero (fuente de verdad)
+                const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+                const tgTelegramId = tgUser?.id ? Number(tgUser.id) : null;
+
+                // NIVEL 0: Sesión SFS persistida (válida solo si coincide con el usuario actual)
                 const cached = localStorage.getItem(SFS_SESSION_KEY);
                 if (cached) {
                     const cachedUser = JSON.parse(cached);
-                    if (cachedUser?.id) {
+                    const cachedTelegramId = cachedUser?.telegram_id ? Number(cachedUser.telegram_id) : null;
+
+                    // Si hay un usuario de Telegram y NO coincide con la caché → limpiar
+                    if (cachedUser?.id && tgTelegramId && cachedTelegramId !== tgTelegramId) {
+                        localStorage.removeItem(SFS_SESSION_KEY);
+                    } else if (cachedUser?.id) {
+                        // Coincide (o no hay Telegram WebApp) → usar caché
                         setSfsUser(cachedUser);
                         const lims = await sfsService.getUserLimits(cachedUser.id);
                         setLimits(lims);
@@ -114,7 +124,6 @@ const Promotions = () => {
                 }
 
                 // NIVEL 1: Telegram WebApp (MiniApp abierta desde el bot)
-                const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
                 if (tgUser) {
                     const userPayload = {
                         telegram_id: tgUser.id,
@@ -329,12 +338,17 @@ const Promotions = () => {
     };
 
     const handleLogout = () => {
+        // Limpiar sesión SFS
         localStorage.removeItem(SFS_SESSION_KEY);
+        // También limpiar sesión del portal principal para evitar re-login automático (NIVEL 2)
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
         setSfsUser(null);
         setLimits(null);
         setMyCatalogChannels([]);
         setSentCampaigns([]);
         setReceivedCampaigns([]);
+        setMyProfile(null);
         setNeedsLogin(true);
     };
 
