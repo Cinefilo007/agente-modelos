@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X, Clock, Trash2, LogOut } from 'lucide-react';
+import { Users, Eye, TrendingUp, ShieldCheck, ExternalLink, Filter, Search, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, Info, MessageSquare, Loader, BarChart2, Star, Send, CheckCircle, X, Clock, Trash2, LogOut, Pencil, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Joyride, { STATUS } from 'react-joyride';
 import { Modal } from '../components/ui/Modal';
@@ -10,6 +10,7 @@ import { useToast } from '../context/ToastContext';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import SfsWalletPanel from '../components/sfs/SfsWalletPanel';
 
 const Promotions = () => {
     // Auth independiente para miniapp
@@ -57,13 +58,26 @@ const Promotions = () => {
 
     // ---- Estado modal Proponer SFS ----
     const [proposeModalOpen, setProposeModalOpen] = useState(false);
-    const [proposeTarget, setProposeTarget] = useState(null); // canal del catálogo
+    const [proposeTarget, setProposeTarget] = useState(null);
     const [proposeMyChannels, setProposeMyChannels] = useState([]);
     const [proposeMyTemplates, setProposeMyTemplates] = useState([]);
     const [proposeSelectedChannel, setProposeSelectedChannel] = useState('');
     const [proposeSelectedTemplate, setProposeSelectedTemplate] = useState('');
-    const [proposeDuration, setProposeDuration] = useState(24);
+    const [proposeContractType, setProposeContractType] = useState('SFS_VIEWS');
+    const [proposeViewsTarget, setProposeViewsTarget] = useState(1000);
+    const [proposeDurationHours, setProposeDurationHours] = useState(24);
+    const [proposeFollowersTarget, setProposeFollowersTarget] = useState(100);
     const [proposeLoading, setProposeLoading] = useState(false);
+
+    // ---- Estado editor de canal ----
+    const [channelEditModalOpen, setChannelEditModalOpen] = useState(false);
+    const [channelToEdit, setChannelToEdit] = useState(null);
+    const [channelEditData, setChannelEditData] = useState({});
+    const [channelEditLoading, setChannelEditLoading] = useState(false);
+
+    // ---- Estado perfil propio ----
+    const [myProfile, setMyProfile] = useState(null);
+    const [walletModalOpen, setWalletModalOpen] = useState(false);
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewComment, setReviewComment] = useState('');
 
@@ -289,7 +303,10 @@ const Promotions = () => {
         setProposeTarget(channel);
         setProposeSelectedChannel('');
         setProposeSelectedTemplate('');
-        setProposeDuration(24);
+        setProposeContractType('SFS_VIEWS');
+        setProposeViewsTarget(1000);
+        setProposeDurationHours(24);
+        setProposeFollowersTarget(100);
         setProposeModalOpen(true);
         if (sfsUser) {
             try {
@@ -330,7 +347,10 @@ const Promotions = () => {
                 target_sfs_user_id: proposeTarget.sfs_user_id,
                 requester_channel_id: proposeSelectedChannel,
                 requester_template_id: proposeSelectedTemplate,
-                duration_hours: proposeDuration,
+                contract_type: proposeContractType,
+                views_target: proposeContractType === 'SFS_VIEWS' ? proposeViewsTarget : undefined,
+                duration_hours: proposeContractType === 'SFS_TIME' ? proposeDurationHours : undefined,
+                followers_target: proposeContractType === 'SFS_FOLLOWERS' ? proposeFollowersTarget : undefined,
             });
             showToast('¡Propuesta enviada! El anunciante debe aceptarla.', 'success');
             setProposeModalOpen(false);
@@ -378,8 +398,10 @@ const Promotions = () => {
             fetchCampaigns();
         } else if (activeTab === 'my_channels') {
             fetchMyChannels();
+        } else if (activeTab === 'profile' && sfsUser && !myProfile) {
+            api.get(`/promo/profile/me?sfs_user_id=${sfsUser.id}`).then(r => setMyProfile(r.data)).catch(() => { });
         }
-    }, [activeTab, fetchCampaigns, fetchMyChannels]);
+    }, [activeTab, fetchCampaigns, fetchMyChannels, sfsUser, myProfile]);
 
     const handleJoyrideCallback = (data) => {
         if ([STATUS.FINISHED, STATUS.SKIPPED].includes(data.status)) {
@@ -736,6 +758,45 @@ const Promotions = () => {
         );
     };
 
+    const openChannelEdit = (ch) => {
+        setChannelToEdit(ch);
+        setChannelEditData({
+            category: ch.category || '',
+            mode: ch.mode || 'sfs',
+            accepted_contract_types: ch.accepted_contract_types || ['SFS_VIEWS', 'SFS_TIME'],
+            min_partner_followers: ch.min_partner_followers || 0,
+            min_views_target: ch.min_views_target || 0,
+            bio: ch.bio || '',
+        });
+        setChannelEditModalOpen(true);
+    };
+
+    const saveChannelEdit = async () => {
+        if (!channelToEdit) return;
+        setChannelEditLoading(true);
+        try {
+            await api.put(`/promo/channels/${channelToEdit.id}`, channelEditData, {
+                params: { sfs_user_id: sfsUser.id }
+            });
+            showToast('Canal actualizado correctamente', 'success');
+            setChannelEditModalOpen(false);
+            fetchMyChannels();
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Error al actualizar canal', 'error');
+        } finally {
+            setChannelEditLoading(false);
+        }
+    };
+
+    const toggleContractType = (type) => {
+        const current = channelEditData.accepted_contract_types || [];
+        if (current.includes(type)) {
+            setChannelEditData(d => ({ ...d, accepted_contract_types: current.filter(t => t !== type) }));
+        } else {
+            setChannelEditData(d => ({ ...d, accepted_contract_types: [...current, type] }));
+        }
+    };
+
     const renderMyChannels = () => {
         if (loadingMyChannels) return <div className="flex justify-center py-10"><Loader className="w-6 h-6 animate-spin text-purple-400" /></div>;
         if (!myChannels.length) return (
@@ -750,38 +811,99 @@ const Promotions = () => {
                 {myChannels.map(ch => (
                     <div key={ch.id}
                         onClick={() => openStatsModal(ch)}
-                        className="bg-card/40 border border-white/5 rounded-xl p-4 flex justify-between items-center group cursor-pointer hover:bg-card/60 transition-all">
-                        <div>
-                            <h3 className="font-bold text-foreground flex items-center gap-2">
-                                {ch.invite_link ? (
-                                    <a href={ch.invite_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-purple-400 hover:underline flex items-center gap-1 transition-colors">
-                                        {ch.name} <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                ) : (
-                                    ch.name
-                                )}
-                            </h3>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${ch.status === 'active' ? 'bg-green-500/20 text-green-400' : ch.status === 'verifying' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-400'}`}>
-                                    {ch.status}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                    {(ch.followers || 0).toLocaleString()} subs
-                                </span>
+                        className="bg-card/40 border border-white/5 rounded-xl p-4 group cursor-pointer hover:bg-card/60 transition-all">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-bold text-foreground flex items-center gap-2">
+                                    {ch.invite_link ? (
+                                        <a href={ch.invite_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-purple-400 hover:underline flex items-center gap-1 transition-colors">
+                                            {ch.name} <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    ) : ch.name}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${ch.status === 'active' ? 'bg-green-500/20 text-green-400' : ch.status === 'verifying' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-400'}`}>
+                                        {ch.status}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">{(ch.followers || 0).toLocaleString()} subs</span>
+                                    {ch.mode && <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-bold uppercase">{ch.mode === 'both' ? 'SFS+PXP' : ch.mode}</span>}
+                                    {ch.category && <span className="text-[10px] text-muted-foreground/70">{ch.category}</span>}
+                                </div>
+                                {ch.bio && <p className="text-xs text-muted-foreground/60 mt-1 line-clamp-1">{ch.bio}</p>}
+                            </div>
+                            <div className="flex gap-2 shrink-0">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); openChannelEdit(ch); }}
+                                    className="p-2 bg-white/5 text-muted-foreground rounded-xl hover:bg-white/10 hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Editar Canal"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); openDeleteModal(ch); }}
+                                    className="p-2 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Eliminar Canal"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); openDeleteModal(ch); }}
-                            className="p-2 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                            title="Eliminar Canal"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
+                        {ch.min_partner_followers > 0 && (
+                            <p className="text-[10px] text-muted-foreground/50 mt-2">Mín. partner: {ch.min_partner_followers.toLocaleString()} subs</p>
+                        )}
                     </div>
                 ))}
             </div>
         );
     };
+
+    const renderProfile = () => (
+        <div className="space-y-4">
+            {/* Avatar y datos */}
+            <div className="bg-gradient-to-br from-purple-900/40 to-black border border-white/5 rounded-2xl p-5 flex gap-4 items-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-2xl shrink-0">
+                    {(sfsUser?.username || sfsUser?.full_name || '?')[0].toUpperCase()}
+                </div>
+                <div className="flex-1">
+                    <p className="font-black text-foreground text-lg">@{sfsUser?.username || sfsUser?.full_name || 'usuario'}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">Trust: {sfsUser?.trust_score ?? 100}/100</span>
+                        {sfsUser?.is_agency_model && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">Modelo Agencia</span>}
+                    </div>
+                </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3">
+                <div className="bg-card/30 border border-white/5 rounded-xl p-4 text-center">
+                    <p className="text-2xl font-black text-foreground">{myProfile?.channels?.filter(c => c.status === 'active').length ?? 0}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Canales Activos</p>
+                </div>
+                <div className="bg-card/30 border border-white/5 rounded-xl p-4 text-center">
+                    <p className="text-2xl font-black text-foreground">{myProfile?.completed_campaigns ?? 0}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">SFS Completados</p>
+                </div>
+            </div>
+
+            {/* Wallet */}
+            <div className="bg-card/30 border border-white/5 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-foreground flex items-center gap-2"><Wallet className="w-4 h-4 text-purple-400" /> Mi Billetera SFS</h3>
+                    <button onClick={() => setWalletModalOpen(true)}
+                        className="text-xs font-bold text-purple-400 hover:text-purple-300 border border-purple-500/30 hover:border-purple-400/50 px-3 py-1.5 rounded-xl transition-all">
+                        Gestionar
+                    </button>
+                </div>
+                <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-foreground">${parseFloat(myProfile?.wallet_balance || 0).toFixed(2)}</span>
+                    <span className="text-sm text-muted-foreground">USD</span>
+                </div>
+                {myProfile?.payout_address && (
+                    <p className="text-[10px] text-muted-foreground/60 font-mono mt-1 truncate">TON: {myProfile.payout_address}</p>
+                )}
+            </div>
+        </div>
+    );
 
     // ---- Estado y autoplay del carrusel de login (DEBE estar fuera de ifs) ----
     const [loginSlide, setLoginSlide] = useState(0);
@@ -932,10 +1054,12 @@ const Promotions = () => {
 
             {renderAddChannelModal()}
             {renderDeleteModal()}
-            {/* Modal Proponer SFS */}
+            {/* Modal Proponer SFS — 3 tipos de contrato */}
             <Modal isOpen={proposeModalOpen} onClose={() => setProposeModalOpen(false)}>
-                <div className="p-6 space-y-4">
+                <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
                     <h2 className="text-lg font-black text-foreground">Proponer SFS</h2>
+
+                    {/* Info canal destino */}
                     {proposeTarget && (
                         <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex gap-3 items-center">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-lg shrink-0">
@@ -947,6 +1071,82 @@ const Promotions = () => {
                             </div>
                         </div>
                     )}
+
+                    {/* Tipo de contrato */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Tipo de Contrato</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {[
+                                { id: 'SFS_VIEWS', emoji: '👁️', label: 'Por Vistas', desc: 'Finaliza al alcanzar una meta de vistas' },
+                                { id: 'SFS_TIME', emoji: '⏱️', label: 'Por Tiempo', desc: 'Dura una cantidad de horas fija' },
+                                { id: 'SFS_FOLLOWERS', emoji: '👥', label: 'Por Subs', desc: 'Finaliza al ganar N seguidores' },
+                            ].map(ct => (
+                                <button key={ct.id} onClick={() => setProposeContractType(ct.id)}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all ${proposeContractType === ct.id ? 'border-purple-500 bg-purple-500/20 text-foreground' : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10'}`}>
+                                    <span className="text-xl">{ct.emoji}</span>
+                                    <span className="text-[10px] font-bold leading-tight">{ct.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                        {/* Descripción contextual y ayuda ER */}
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-xs text-blue-300 space-y-1">
+                            {proposeContractType === 'SFS_VIEWS' && <>
+                                <p>👁️ El post se eliminará automáticamente cuando alcance la meta de vistas acordada.</p>
+                                {proposeTarget?.engagement_rate > 0 && proposeTarget?.avg_views > 0 && (
+                                    <p className="text-blue-200">📊 Este canal promedia <strong>{(proposeTarget.avg_views || 0).toLocaleString()}</strong> vistas/post con {proposeTarget.engagement_rate}% ER.</p>
+                                )}
+                                {proposeViewsTarget > (proposeTarget?.avg_views || 0) * 2 && (
+                                    <p className="text-amber-300">⚠️ La meta es alta para este canal. Considera bajarla.</p>
+                                )}
+                            </>}
+                            {proposeContractType === 'SFS_TIME' && <>
+                                <p>⏱️ Los posts permanecen publicados por el tiempo acordado, independientemente de las vistas.</p>
+                            </>}
+                            {proposeContractType === 'SFS_FOLLOWERS' && <>
+                                <p>👥 El contrato finaliza cuando tu canal gana los seguidores acordados.</p>
+                                {proposeTarget?.followers > 0 && (
+                                    <p className="text-blue-200">📈 Con conversión típica del 5%, un post aquí puede generar ~<strong>{Math.round((proposeTarget.avg_views || 0) * 0.05)}</strong> nuevos subs.</p>
+                                )}
+                                {proposeFollowersTarget > (proposeTarget?.followers || 0) * 0.2 && (
+                                    <p className="text-amber-300">⚠️ Meta alta respecto al tamaño del canal. Considera bajarla.</p>
+                                )}
+                            </>}
+                        </div>
+                    </div>
+
+                    {/* Selector según tipo */}
+                    <div className="space-y-1">
+                        {proposeContractType === 'SFS_VIEWS' && <>
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Meta de Vistas</label>
+                            <select value={proposeViewsTarget} onChange={e => setProposeViewsTarget(parseInt(e.target.value))}
+                                className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500">
+                                {[500, 1000, 2000, 5000, 10000].map(v => (
+                                    <option key={v} value={v}>{v.toLocaleString()} vistas</option>
+                                ))}
+                            </select>
+                        </>}
+                        {proposeContractType === 'SFS_TIME' && <>
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Duración del Post</label>
+                            <select value={proposeDurationHours} onChange={e => setProposeDurationHours(parseInt(e.target.value))}
+                                className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500">
+                                <option value={12}>12 horas</option>
+                                <option value={24}>24 horas</option>
+                                <option value={48}>48 horas</option>
+                                <option value={72}>72 horas</option>
+                            </select>
+                        </>}
+                        {proposeContractType === 'SFS_FOLLOWERS' && <>
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Meta de Nuevos Seguidores</label>
+                            <select value={proposeFollowersTarget} onChange={e => setProposeFollowersTarget(parseInt(e.target.value))}
+                                className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500">
+                                {[50, 100, 200, 500, 1000].map(v => (
+                                    <option key={v} value={v}>{v.toLocaleString()} seguidores</option>
+                                ))}
+                            </select>
+                        </>}
+                    </div>
+
+                    {/* Tu canal */}
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Tu Canal</label>
                         {proposeMyChannels.length === 0 ? (
@@ -961,6 +1161,8 @@ const Promotions = () => {
                             </select>
                         )}
                     </div>
+
+                    {/* Post plantilla */}
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Post a Publicar</label>
                         {proposeMyTemplates.length === 0 ? (
@@ -979,16 +1181,7 @@ const Promotions = () => {
                             </select>
                         )}
                     </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Duración del SFS</label>
-                        <select value={proposeDuration} onChange={e => setProposeDuration(parseInt(e.target.value))}
-                            className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500">
-                            <option value={12}>12 horas</option>
-                            <option value={24}>24 horas</option>
-                            <option value={48}>48 horas</option>
-                            <option value={72}>72 horas</option>
-                        </select>
-                    </div>
+
                     <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex gap-2 items-start">
                         <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                         <p className="text-xs text-amber-300">El anunciante recibirá tu propuesta y deberá aceptarla. Una vez aceptada, el bot publicará los posts automáticamente.</p>
@@ -1003,6 +1196,110 @@ const Promotions = () => {
                             {proposeLoading ? 'Enviando...' : 'Enviar Propuesta'}
                         </button>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Modal Editar Canal */}
+            <Modal isOpen={channelEditModalOpen} onClose={() => setChannelEditModalOpen(false)}>
+                <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+                    <h2 className="text-lg font-black text-foreground">Editar Canal</h2>
+                    {channelToEdit && <p className="text-xs text-muted-foreground -mt-2">{channelToEdit.name}</p>}
+
+                    {/* Categoría */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Categoría</label>
+                        <select value={channelEditData.category || ''} onChange={e => setChannelEditData(d => ({ ...d, category: e.target.value }))}
+                            className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500">
+                            <option value="">Sin categoría</option>
+                            {['Modelaje', 'Cine y Series', 'Memes', 'Cripto', 'Adultos', 'Otro'].map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Modo */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Modo de Participación</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {[
+                                { id: 'sfs', emoji: '🤝', label: 'Solo SFS' },
+                                { id: 'pxp', emoji: '💰', label: 'Solo PXP' },
+                                { id: 'both', emoji: '✨', label: 'Ambos' },
+                            ].map(m => (
+                                <button key={m.id} onClick={() => setChannelEditData(d => ({ ...d, mode: m.id }))}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all text-center ${channelEditData.mode === m.id ? 'border-purple-500 bg-purple-500/20 text-foreground' : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10'}`}>
+                                    <span className="text-xl">{m.emoji}</span>
+                                    <span className="text-[10px] font-bold">{m.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Tipos de contrato aceptados */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Contratos Aceptados</label>
+                        <div className="flex gap-2 flex-wrap">
+                            {[
+                                { id: 'SFS_VIEWS', label: 'Por Vistas' },
+                                { id: 'SFS_TIME', label: 'Por Tiempo' },
+                                { id: 'SFS_FOLLOWERS', label: 'Por Subs' },
+                            ].map(ct => {
+                                const active = (channelEditData.accepted_contract_types || []).includes(ct.id);
+                                return (
+                                    <button key={ct.id} onClick={() => toggleContractType(ct.id)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${active ? 'border-purple-500 bg-purple-500/20 text-purple-300' : 'border-white/10 text-muted-foreground hover:bg-white/10'}`}>
+                                        {ct.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Límites mínimos */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Mín. Subs del Partner</label>
+                            <input type="number" min="0"
+                                value={channelEditData.min_partner_followers || 0}
+                                onChange={e => setChannelEditData(d => ({ ...d, min_partner_followers: parseInt(e.target.value) || 0 }))}
+                                className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Mín. Vistas Meta</label>
+                            <input type="number" min="0"
+                                value={channelEditData.min_views_target || 0}
+                                onChange={e => setChannelEditData(d => ({ ...d, min_views_target: parseInt(e.target.value) || 0 }))}
+                                className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500" />
+                        </div>
+                    </div>
+
+                    {/* Bio */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Descripción del Canal</label>
+                        <textarea rows={3} value={channelEditData.bio || ''} onChange={e => setChannelEditData(d => ({ ...d, bio: e.target.value }))}
+                            placeholder="Cuéntanos sobre tu canal..."
+                            className="w-full bg-card/40 border border-white/10 rounded-xl p-3 text-sm text-foreground focus:outline-none focus:border-purple-500 resize-none" />
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button onClick={() => setChannelEditModalOpen(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-foreground bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                            Cancelar
+                        </button>
+                        <button onClick={saveChannelEdit} disabled={channelEditLoading}
+                            className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+                            {channelEditLoading ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                            {channelEditLoading ? 'Guardando...' : 'Guardar Cambios'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal Wallet SFS */}
+            <Modal isOpen={walletModalOpen} onClose={() => setWalletModalOpen(false)}>
+                <div className="p-6">
+                    <h2 className="text-lg font-black text-foreground mb-4">Mi Billetera SFS</h2>
+                    {sfsUser && <SfsWalletPanel sfsUser={{ ...sfsUser, wallet_balance: myProfile?.wallet_balance || 0 }}
+                        onBalanceUpdate={(newBal) => setMyProfile(p => ({ ...p, wallet_balance: newBal }))} />}
                 </div>
             </Modal>
 
@@ -1043,10 +1340,10 @@ const Promotions = () => {
             <BannerCarousel sfsUser={sfsUser} />
 
             {/* Tabs */}
-            <div className="flex bg-card/40 border border-white/5 p-1 rounded-xl mb-5">
-                {[['catalog', 'Catálogo'], ['sent', 'Enviadas'], ['received', 'Recibidas'], ['my_channels', 'Mis Canales']].map(([tab, label]) => (
+            <div className="flex bg-card/40 border border-white/5 p-1 rounded-xl mb-5 gap-0.5">
+                {[['catalog', 'Catálogo'], ['sent', 'Enviadas'], ['received', 'Recibidas'], ['my_channels', 'Canales'], ['profile', 'Perfil']].map(([tab, label]) => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
-                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === tab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+                        className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === tab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
                         {label}
                         {tab === 'received' && receivedCampaigns.length > 0 && (
                             <span className="bg-pink-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">{receivedCampaigns.length}</span>
@@ -1061,6 +1358,7 @@ const Promotions = () => {
                 {activeTab === 'sent' && renderCampaignList(sentCampaigns)}
                 {activeTab === 'received' && renderCampaignList(receivedCampaigns)}
                 {activeTab === 'my_channels' && renderMyChannels()}
+                {activeTab === 'profile' && renderProfile()}
             </div>
         </div>
     );

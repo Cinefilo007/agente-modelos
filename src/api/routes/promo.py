@@ -14,7 +14,12 @@ class TelegramUserAuth(BaseModel):
     full_name: Optional[str] = ""
 
 class UpdateChannelReq(BaseModel):
-    category: str
+    category: Optional[str] = None
+    mode: Optional[str] = None                          # 'sfs', 'pxp', 'both'
+    accepted_contract_types: Optional[List[str]] = None # ['SFS_VIEWS', 'SFS_TIME', 'SFS_FOLLOWERS']
+    min_partner_followers: Optional[int] = None
+    min_views_target: Optional[int] = None
+    bio: Optional[str] = None
 
 class ReviewReq(BaseModel):
     promo_campaign_id: str
@@ -23,15 +28,23 @@ class ReviewReq(BaseModel):
     comment: Optional[str] = ""
 
 class ProposeSFSReq(BaseModel):
-    target_sfs_user_id: str       # A quién se le propone
-    requester_channel_id: str     # Canal del que propone
-    requester_template_id: str    # Template (post) del que propone
-    duration_hours: int = 24      # Cuántas horas durará el post
+    target_sfs_user_id: str
+    requester_channel_id: str
+    requester_template_id: str
+    contract_type: str = "SFS_VIEWS"  # SFS_VIEWS | SFS_TIME | SFS_FOLLOWERS
+    views_target: Optional[int] = None
+    duration_hours: Optional[int] = None
+    followers_target: Optional[int] = None
+
+class UpdateProfileReq(BaseModel):
+    payout_address: Optional[str] = None
+    bio: Optional[str] = None
+    full_name: Optional[str] = None
 
 
 @router.post("/auth")
 async def authenticate_sfs_user(user: TelegramUserAuth):
-    """Login desde la WebApp (Fricción cero). Retorna el usuario o lo crea si no existe."""
+    """Login desde la WebApp. Retorna el usuario o lo crea si no existe."""
     try:
         res = db.client.table("sfs_users").select("*").eq("telegram_id", user.telegram_id).execute()
         if res.data:
@@ -60,18 +73,102 @@ async def authenticate_sfs_user(user: TelegramUserAuth):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/profile/me")
+async def get_my_profile(sfs_user_id: str = Query(...)):
+    """Perfil propio del usuario SFS con balance y estadísticas."""
+    try:
+        user_res = db.service_client.table("sfs_users").select("*").eq("id", sfs_user_id).execute()
+        if not user_res.data:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        user = user_res.data[0]
+
+        # Canales activos del usuario
+        channels_res = db.client.table("channels").select(
+            "id, name, followers, avg_views, engagement_rate, category, status, mode, is_verified"
+        ).eq("sfs_user_id", sfs_user_id).execute()
+
+        # Campañas completadas (como métrica de experiencia)
+        completed_res = db.service_client.table("promo_campaigns").select(
+            "id", count="exact"
+        ).or_(f"requester_id.eq.{sfs_user_id},target_id.eq.{sfs_user_id}").eq(
+            "status", "completed"
+        ).execute()
+
+        return {
+            **user,
+            "channels": channels_res.data or [],
+            "completed_campaigns": completed_res.count or 0
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/profile/me")
+async def update_my_profile(req: UpdateProfileReq, sfs_user_id: str = Query(...)):
+    """Actualiza payout_address, bio o nombre del usuario SFS."""
+    try:
+        update_data = {k: v for k, v in req.dict().items() if v is not None}
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+        res = db.service_client.table("sfs_users").update(update_data).eq("id", sfs_user_id).execute()
+        return res.data[0] if res.data else {}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/profile/withdraw")
+async def request_withdrawal(
+    sfs_user_id: str = Query(...),
+    amount: float = Body(...),
+    wallet_address: str = Body(...)
+):
+    """Solicita un retiro del balance SFS."""
+    try:
+        user_res = db.service_client.table("sfs_users").select("wallet_balance, payout_address").eq("id", sfs_user_id).execute()
+        if not user_res.data:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        balance = float(user_res.data[0].get("wallet_balance") or 0)
+        if amount <= 0 or amount > balance:
+            raise HTTPException(status_code=400, detail="Monto inválido o saldo insuficiente")
+
+        # Crear solicitud de retiro
+        db.service_client.table("sfs_withdrawals").insert({
+            "sfs_user_id": sfs_user_id,
+            "amount": amount,
+            "wallet_address": wallet_address,
+            "status": "pending"
+        }).execute()
+
+        # Retener fondos
+        new_balance = balance - amount
+        db.service_client.table("sfs_users").update({"wallet_balance": new_balance}).eq("id", sfs_user_id).execute()
+
+        return {"status": "success", "new_balance": new_balance}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/channels/catalog")
 async def get_channel_catalog(
     category: Optional[str] = None,
+    mode: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=50)
 ):
-    """Catálogo público de canales filtrado por categoría o ER"""
+    """Catálogo público de canales."""
     try:
         offset = (page - 1) * limit
         query = db.client.table("channels").select("*, sfs_users(username, trust_score)").eq("status", "active")
         if category:
             query = query.eq("category", category)
+        if mode and mode != 'all':
+            query = query.in_("mode", [mode, "both"])
         res = query.order("engagement_rate", desc=True).range(offset, offset + limit - 1).execute()
         return res.data or []
     except Exception as e:
@@ -80,7 +177,7 @@ async def get_channel_catalog(
 
 @router.get("/channels/my")
 async def get_my_channels(sfs_user_id: str = Query(...)):
-    """Canales registrados por el usuario"""
+    """Canales registrados por el usuario."""
     try:
         res = db.client.table("channels").select("*").eq("sfs_user_id", sfs_user_id).order("created_at", desc=True).execute()
         return res.data or []
@@ -90,18 +187,15 @@ async def get_my_channels(sfs_user_id: str = Query(...)):
 
 @router.get("/channels/my/{channel_id}/history")
 async def get_channel_history(channel_id: str, model_id: str = Query(...)):
-    """
-    Historial de métricas de un canal (para el gráfico de estadísticas).
-    Lee de channel_metrics_history: followers, avg_views, engagement_rate, created_at.
-    Devuelve también la última fecha de actualización.
-    """
+    """Historial de métricas de un canal desde channel_metrics_history."""
     try:
-        owns = db.client.table("channels").select("id, name, followers, avg_views, engagement_rate, updated_at").eq("id", channel_id).eq("sfs_user_id", model_id).execute()
+        owns = db.client.table("channels").select(
+            "id, name, followers, avg_views, engagement_rate, updated_at"
+        ).eq("id", channel_id).eq("sfs_user_id", model_id).execute()
         if not owns.data:
             raise HTTPException(status_code=403, detail="No autorizado")
 
         channel_info = owns.data[0]
-
         res = db.service_client.table("channel_metrics_history").select(
             "id, followers, avg_views, engagement_rate, created_at"
         ).eq("channel_id", channel_id).order("created_at", desc=False).limit(30).execute()
@@ -119,36 +213,40 @@ async def get_channel_history(channel_id: str, model_id: str = Query(...)):
 
 @router.put("/channels/{channel_id}")
 async def update_channel(channel_id: str, req: UpdateChannelReq, sfs_user_id: str = Query(...)):
-    """Permite al usuario actualizar la categoría de su canal"""
+    """Actualizar configuración de un canal propio."""
     try:
         existing = db.client.table("channels").select("id").eq("id", channel_id).eq("sfs_user_id", sfs_user_id).execute()
         if not existing.data:
             raise HTTPException(status_code=404, detail="Canal no encontrado o no autorizado")
-        res = db.client.table("channels").update({"category": req.category}).eq("id", channel_id).execute()
+
+        update_data = {k: v for k, v in req.dict().items() if v is not None}
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+
+        res = db.client.table("channels").update(update_data).eq("id", channel_id).execute()
         return res.data[0] if res.data else None
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/user/limits")
 async def check_user_limits(sfs_user_id: str = Query(...)):
-    """Devuelve cuántos SFS le quedan hoy al usuario"""
+    """Devuelve cuántos SFS le quedan hoy al usuario."""
     try:
         user_res = db.client.table("sfs_users").select("*").eq("id", sfs_user_id).execute()
         if not user_res.data:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
         user = user_res.data[0]
         base_limit = 6 if user.get("is_agency_model") else 2
-        total_limit = base_limit
-
         today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         count_res = db.client.table("promo_campaigns").select("id", count="exact").eq("requester_id", sfs_user_id).gte("created_at", today).execute()
         used = count_res.count or 0
-
         return {
-            "limit": total_limit,
+            "limit": base_limit,
             "used": used,
-            "remaining": max(0, total_limit - used),
+            "remaining": max(0, base_limit - used),
             "is_pro": user.get("subscription_tier") != 'basic'
         }
     except Exception as e:
@@ -157,7 +255,7 @@ async def check_user_limits(sfs_user_id: str = Query(...)):
 
 @router.get("/templates/my")
 async def get_my_templates(sfs_user_id: str = Query(...)):
-    """Retorna los templates de post guardados por el usuario al reenviar mensajes al bot."""
+    """Templates de post guardados por el bot."""
     try:
         res = db.client.table("promo_templates").select(
             "id, created_at, content_data, telegram_message_id_origin"
@@ -169,16 +267,27 @@ async def get_my_templates(sfs_user_id: str = Query(...)):
 
 @router.post("/campaigns")
 async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
-    """
-    Crea una propuesta de campaña SFS. Estado inicial: 'pending' (esperando aceptación del target).
-    """
+    """Crea una propuesta de campaña SFS."""
     try:
-        # Validar que el canal pertenece al requester
+        # Validar tipo de contrato
+        valid_types = ["SFS_VIEWS", "SFS_TIME", "SFS_FOLLOWERS"]
+        if req.contract_type not in valid_types:
+            raise HTTPException(status_code=400, detail=f"Tipo de contrato inválido. Usa: {valid_types}")
+
+        # Validar campo correspondiente al tipo
+        if req.contract_type == "SFS_VIEWS" and not req.views_target:
+            raise HTTPException(status_code=400, detail="Se requiere views_target para SFS_VIEWS")
+        if req.contract_type == "SFS_TIME" and not req.duration_hours:
+            raise HTTPException(status_code=400, detail="Se requiere duration_hours para SFS_TIME")
+        if req.contract_type == "SFS_FOLLOWERS" and not req.followers_target:
+            raise HTTPException(status_code=400, detail="Se requiere followers_target para SFS_FOLLOWERS")
+
+        # Validar canal del requester
         ch_res = db.client.table("channels").select("id").eq("id", req.requester_channel_id).eq("sfs_user_id", requester_id).eq("status", "active").execute()
         if not ch_res.data:
             raise HTTPException(status_code=404, detail="Canal no encontrado o no activo")
 
-        # Validar que el template pertenece al requester
+        # Validar template
         tpl_res = db.client.table("promo_templates").select("id").eq("id", req.requester_template_id).eq("sfs_user_id", requester_id).execute()
         if not tpl_res.data:
             raise HTTPException(status_code=404, detail="Template no encontrado")
@@ -187,22 +296,20 @@ async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
         today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         limits_res = db.client.table("promo_campaigns").select("id", count="exact").eq("requester_id", requester_id).gte("created_at", today).execute()
         used = limits_res.count or 0
-
         user_res = db.client.table("sfs_users").select("is_agency_model").eq("id", requester_id).execute()
         base_limit = 6 if (user_res.data and user_res.data[0].get("is_agency_model")) else 2
         if used >= base_limit:
             raise HTTPException(status_code=429, detail=f"Límite diario alcanzado ({base_limit} SFS/día)")
 
-        # Verificar que no haya una propuesta pendiente entre los mismos usuarios
+        # Verificar duplicados
         existing = db.client.table("promo_campaigns").select("id").eq("requester_id", requester_id).eq("target_id", req.target_sfs_user_id).in_("status", ["pending", "accepted", "active"]).execute()
         if existing.data:
             raise HTTPException(status_code=409, detail="Ya tienes una campaña activa o pendiente con este anunciante")
 
-        # Buscar el canal activo del target
+        # Canal activo del target
         target_ch_res = db.client.table("channels").select("id").eq("sfs_user_id", req.target_sfs_user_id).eq("status", "active").limit(1).execute()
         target_channel_id = target_ch_res.data[0]["id"] if target_ch_res.data else None
 
-        # Crear campaña
         campaign = db.service_client.table("promo_campaigns").insert({
             "requester_id": requester_id,
             "target_id": req.target_sfs_user_id,
@@ -210,8 +317,10 @@ async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
             "target_channel_id": target_channel_id,
             "requester_template_id": req.requester_template_id,
             "status": "pending",
-            "type": "SFS_TIME",
-            "duration_hours": req.duration_hours
+            "type": req.contract_type,
+            "views_target": req.views_target,
+            "duration_hours": req.duration_hours,
+            "followers_target": req.followers_target,
         }).execute()
 
         return campaign.data[0]
@@ -223,7 +332,7 @@ async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
 
 @router.get("/campaigns/sent")
 async def get_sent_campaigns(model_id: str = Query(...)):
-    """Campañas enviadas por el usuario"""
+    """Campañas enviadas por el usuario."""
     try:
         res = db.client.table("promo_campaigns").select(
             "*, target:sfs_users!target_id(username, full_name, trust_score)"
@@ -235,7 +344,7 @@ async def get_sent_campaigns(model_id: str = Query(...)):
 
 @router.get("/campaigns/received")
 async def get_received_campaigns(model_id: str = Query(...)):
-    """Campañas recibidas por el usuario"""
+    """Campañas recibidas por el usuario."""
     try:
         res = db.client.table("promo_campaigns").select(
             "*, requester:sfs_users!requester_id(username, full_name, trust_score)"
@@ -247,7 +356,7 @@ async def get_received_campaigns(model_id: str = Query(...)):
 
 @router.post("/reviews")
 async def submit_review(req: ReviewReq, sfs_user_id: str = Query(...)):
-    """Permite enviar una calificación post-SFS a la otra parte"""
+    """Envía una calificación post-SFS."""
     try:
         existing = db.client.table("sfs_reviews").select("id").eq("promo_campaign_id", req.promo_campaign_id).eq("reviewer_id", sfs_user_id).execute()
         if existing.data:
@@ -282,14 +391,12 @@ async def get_advertiser_profile(user_id: str):
         user_res = db.client.table("sfs_users").select(
             "id, username, full_name, trust_score, is_agency_model, created_at"
         ).eq("id", user_id).execute()
-
         if not user_res.data:
             raise HTTPException(status_code=404, detail="Anunciante no encontrado")
 
         user = user_res.data[0]
-
         channels_res = db.client.table("channels").select(
-            "id, name, followers, avg_views, engagement_rate, category, is_verified, status"
+            "id, name, followers, avg_views, engagement_rate, category, is_verified, status, mode, bio"
         ).eq("sfs_user_id", user_id).eq("status", "active").order("followers", desc=True).execute()
 
         reviews_res = db.service_client.table("sfs_reviews").select(
@@ -301,11 +408,7 @@ async def get_advertiser_profile(user_id: str):
             reviewer_res = db.client.table("sfs_users").select("username").eq("id", review["reviewer_id"]).execute()
             review["reviewer_username"] = reviewer_res.data[0]["username"] if reviewer_res.data else "Anónimo"
 
-        return {
-            **user,
-            "channels": channels_res.data or [],
-            "reviews": reviews
-        }
+        return {**user, "channels": channels_res.data or [], "reviews": reviews}
     except HTTPException:
         raise
     except Exception as e:

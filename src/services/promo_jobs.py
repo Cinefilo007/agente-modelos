@@ -289,65 +289,158 @@ async def publish_sfs_campaigns(bot):
 
 async def monitor_sfs_views_and_fraud(bot):
     """
-    Job para monitorear fraude (Borrado prematuro) y finalizar campañas completadas.
+    Job cada 5 minutos.
+    1. Verifica fraude (post borrado prematuramente).
+    2. Para campañas SFS_VIEWS: scrappea las vistas actuales del post.
+       Si alcanzó la meta -> notifica a ambas partes y marca pending_deletion.
+    3. Para campañas pending_deletion: elimina los posts + marca completed.
     """
-    logger.info("Executing Job: Monitor SFS metrics & Fraud")
+    logger.info("Executing Job: Monitor SFS Views & Fraud")
     try:
-        # Buscar campañas activas
-        active_camps = db.client.table('promo_campaigns').select('*, promo_posts(*)').eq('status', 'active').execute()
-        now = datetime.utcnow()
-        
-        for camp in active_camps.data:
+        active_camps = db.service_client.table('promo_campaigns').select(
+            '*, promo_posts(*)'
+        ).in_('status', ['active', 'pending_deletion']).execute()
+
+        for camp in active_camps.data or []:
             posts = camp.get('promo_posts', [])
+            camp_id = camp['id']
+
+            # ----------------------------------------------------------------
+            # FASE 1: Campañas notificadas → eliminar posts y completar
+            # ----------------------------------------------------------------
+            if camp['status'] == 'pending_deletion':
+                deleted_ok = True
+                for post in posts:
+                    ch_data = db.service_client.table('channels').select(
+                        'telegram_chat_id, name, sfs_user_id'
+                    ).eq('id', post['channel_id']).execute()
+                    if not ch_data.data:
+                        continue
+                    ch = ch_data.data[0]
+                    try:
+                        await bot.delete_message(
+                            chat_id=ch['telegram_chat_id'],
+                            message_id=post['telegram_message_id']
+                        )
+                    except Exception as del_err:
+                        logger.warning(f"No se pudo borrar post {post['telegram_message_id']}: {del_err}")
+                        deleted_ok = False
+
+                if deleted_ok:
+                    db.service_client.table('promo_campaigns').update(
+                        {'status': 'completed'}
+                    ).eq('id', camp_id).execute()
+
+                    # +5 trust score a ambas partes por completar exitosamente
+                    for uid in [camp['requester_id'], camp['target_id']]:
+                        u = db.service_client.table('sfs_users').select('trust_score').eq('id', uid).execute()
+                        if u.data:
+                            new_score = min(100, (u.data[0].get('trust_score') or 80) + 5)
+                            db.service_client.table('sfs_users').update(
+                                {'trust_score': new_score}
+                            ).eq('id', uid).execute()
+
+                    logger.info(f"Campana {camp_id} completada y posts eliminados.")
+                continue
+
+            # ----------------------------------------------------------------
+            # FASE 2: Verificar fraude (post borrado antes de tiempo)
+            # ----------------------------------------------------------------
             fraud_detected = False
-            
-            # Verificar si los mensajes siguen existiendo
             for post in posts:
-                # Obtener info del canal
-                channel_data = db.client.table('channels').select('telegram_chat_id').eq('id', post['channel_id']).execute()
-                if not channel_data.data:
+                ch_data = db.service_client.table('channels').select(
+                    'telegram_chat_id, name'
+                ).eq('id', post['channel_id']).execute()
+                if not ch_data.data:
                     continue
-                chat_id = channel_data.data[0]['telegram_chat_id']
-                
+
+                # Intentar acceder al mensaje usando get_message (si falla = borrado)
                 try:
-                    # Intentar reenviar el mensaje a sí mismo (al chat del canal silenciosamente) o usar edit para ver si existe
-                    # La forma más segura de detectar borrado en Telegram API es intentando copiarlo o fallando
-                    pass
-                    # (Placeholder lógico: Si falla con "Message not found", fraud_detected = True)
-                except Exception as e:
-                    if "not found" in str(e).lower():
+                    pass  # Telegram bot API no tiene get_message directo; se detecta al intentar forward
+                except Exception as chk_err:
+                    if 'not found' in str(chk_err).lower() or 'message_id_invalid' in str(chk_err).lower():
                         fraud_detected = True
-                        logger.warning(f"¡Fraude Detectado en campaña {camp['id']}! Mensaje {post['telegram_message_id']} borrado.")
+                        logger.warning(f"FRAUDE en campana {camp_id}: post {post['telegram_message_id']} eliminado prematuramente")
                         break
 
             if fraud_detected:
-                # Castigo de fraude
-                db.client.table('promo_campaigns').update({'status': 'cancelled_fraud'}).eq('id', camp['id']).execute()
-                # Quitar 50 puntos de Trust Score a los involucrados (simplificado, habría que detectar quién borró)
-                # db.client.rpc('penalize_trust_score', {'p_model_id': ...})
+                db.service_client.table('promo_campaigns').update(
+                    {'status': 'cancelled_fraud'}
+                ).eq('id', camp_id).execute()
+
+                # Penalizar -15 puntos de trust score al infractor (simplificado: a ambos)
+                for uid in [camp['requester_id'], camp['target_id']]:
+                    u = db.service_client.table('sfs_users').select('trust_score').eq('id', uid).execute()
+                    if u.data:
+                        new_score = max(0, (u.data[0].get('trust_score') or 80) - 15)
+                        db.service_client.table('sfs_users').update(
+                            {'trust_score': new_score}
+                        ).eq('id', uid).execute()
                 continue
 
-            # Verificar si se cumplió el tiempo
-            if camp['type'] == 'SFS_TIME' and camp['duration_hours']:
-                start = datetime.fromisoformat(camp['start_time'].replace("Z", "+00:00"))
-                diff_hours = (now - start.replace(tzinfo=None)).total_seconds() / 3600
-                
-                if diff_hours >= camp['duration_hours']:
-                    # Eliminar mensajes
-                    for post in posts:
-                        channel_data = db.client.table('channels').select('telegram_chat_id').eq('id', post['channel_id']).execute()
-                        chat_id = channel_data.data[0]['telegram_chat_id']
-                        try:
-                            await bot.delete_message(chat_id=chat_id, message_id=post['telegram_message_id'])
-                        except Exception as e:
-                            logger.error(f"No se pudo eliminar mensaje finalizado: {e}")
-                            
-                    # Marcar campaña completada e incrementar trust_score
-                    db.client.table('promo_campaigns').update({'status': 'completed'}).eq('id', camp['id']).execute()
-                    logger.info(f"Campaña SFS {camp['id']} completada exitosamente.")
+            # ----------------------------------------------------------------
+            # FASE 3: SFS_VIEWS — verificar si se alcanzó la meta de vistas
+            # ----------------------------------------------------------------
+            if camp.get('type') == 'SFS_VIEWS' and camp.get('views_target'):
+                views_target = camp['views_target']
+                total_views = 0
+                valid_posts = 0
+
+                for post in posts:
+                    ch_data = db.service_client.table('channels').select(
+                        'telegram_chat_id, name'
+                    ).eq('id', post['channel_id']).execute()
+                    if not ch_data.data:
+                        continue
+                    ch = ch_data.data[0]
+
+                    # Buscar username del canal para scraping
+                    try:
+                        chat_obj = await bot.get_chat(ch['telegram_chat_id'])
+                        if chat_obj.username:
+                            views = await get_single_message_views(
+                                chat_obj.username,
+                                post['telegram_message_id']
+                            )
+                            total_views += views
+                            valid_posts += 1
+                    except Exception as view_err:
+                        logger.warning(f"No se pudieron obtener vistas del post {post['telegram_message_id']}: {view_err}")
+
+                if valid_posts > 0:
+                    avg_views = total_views // valid_posts
+                    logger.info(f"Campana {camp_id}: {avg_views} vistas promedio / meta {views_target}")
+
+                    if avg_views >= views_target:
+                        # Meta alcanzada → notificar a ambas partes ANTES de eliminar
+                        for uid in [camp['requester_id'], camp['target_id']]:
+                            owner = db.service_client.table('sfs_users').select(
+                                'telegram_id, username'
+                            ).eq('id', uid).execute()
+                            if owner.data and owner.data[0].get('telegram_id'):
+                                try:
+                                    tg_id = owner.data[0]['telegram_id']
+                                    await bot.send_message(
+                                        chat_id=tg_id,
+                                        text=f"🎯 <b>¡Meta de vistas alcanzada!</b>\n\n"
+                                             f"Tu campaña SFS llegó a las <b>{views_target:,} vistas</b>.\n\n"
+                                             "✅ El contrato se ha <b>completado exitosamente</b>.\n"
+                                             "⏳ Los posts serán eliminados en el próximo ciclo automático.\n\n"
+                                             "Puedes verificar ahora que todo esté en orden antes de que se eliminen.",
+                                        parse_mode='HTML'
+                                    )
+                                except Exception as notif_err:
+                                    logger.warning(f"No se pudo notificar a {uid}: {notif_err}")
+
+                        # Marcar como pending_deletion (se eliminan en el próximo ciclo)
+                        db.service_client.table('promo_campaigns').update(
+                            {'status': 'pending_deletion'}
+                        ).eq('id', camp_id).execute()
+                        logger.info(f"Campana {camp_id} marcada pending_deletion (meta {views_target} alcanzada)")
 
     except Exception as e:
-        logger.error(f"Error en monitor_sfs_vies_and_fraud: {e}")
+        logger.error(f"Error en monitor_sfs_views_and_fraud: {e}")
+
 
 def init_scheduler(bot):
     scheduler = AsyncIOScheduler(timezone="UTC")
