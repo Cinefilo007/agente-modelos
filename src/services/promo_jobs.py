@@ -1,6 +1,7 @@
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
+import html as html_lib
 from datetime import datetime
 from telegram.error import TelegramError
 import httpx
@@ -235,8 +236,8 @@ async def publish_sfs_campaigns(bot):
 
         for camp in campaigns_res.data:
             # 1. Obtener los canales vinculados a requester y target
-            req_channels = db.client.table('channels').select('*').eq('model_id', camp['requester_id']).eq('status', 'active').execute()
-            tgt_channels = db.client.table('channels').select('*').eq('model_id', camp['target_id']).eq('status', 'active').execute()
+            req_channels = db.client.table('channels').select('*').eq('sfs_user_id', camp['requester_id']).eq('status', 'active').execute()
+            tgt_channels = db.client.table('channels').select('*').eq('sfs_user_id', camp['target_id']).eq('status', 'active').execute()
             
             if not req_channels.data or not tgt_channels.data:
                 logger.warning(f"Campaña {camp['id']} fallida: Uno de los usuarios no tiene canal activo.")

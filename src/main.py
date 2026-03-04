@@ -7,6 +7,7 @@ from src.bot import build_app as build_main_bot
 from src.promo_bot import build_app as build_promo_bot
 from src.api.main import app as fastapi_app
 from src.services.ton_monitor import start_monitor
+from src.services.promo_jobs import init_scheduler
 
 # Config logging
 logging.basicConfig(level=logging.INFO)
@@ -43,6 +44,9 @@ async def _run_bots_concurrently():
         await promo_bot.updater.start_polling(drop_pending_updates=True)
         apps_running.append(promo_bot)
         logger.info("Promo Bot (SFS) iniciado correctamente.")
+        # Inicializar jobs programados (estadísticas cada 6h, publicaciones, etc.)
+        init_scheduler(promo_bot.bot)
+        logger.info("Scheduler de Promo Bot iniciado.")
         
     # Mantener el loop vivo indefinidamente si hay apps corriendo
     if apps_running:

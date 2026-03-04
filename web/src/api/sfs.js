@@ -3,7 +3,6 @@ import api from './axios';
 export const sfsService = {
     // Autenticar/crear usuario SFS
     authenticateUser: async (telegramUserData) => {
-        // telegramUserData: { telegram_id, username, full_name }
         const response = await api.post('/promo/auth', telegramUserData);
         return response.data;
     },
@@ -30,15 +29,41 @@ export const sfsService = {
         return response.data;
     },
 
-    // Consultar límites diarios (SFS Free Limits)
+    // Consultar límites diarios
     getUserLimits: async (sfsUserId) => {
         const response = await api.get('/promo/user/limits', { params: { sfs_user_id: sfsUserId } });
         return response.data;
     },
 
+    // Obtener templates de post guardados por el bot
+    getMyTemplates: async (sfsUserId) => {
+        const response = await api.get('/promo/templates/my', { params: { sfs_user_id: sfsUserId } });
+        return Array.isArray(response.data) ? response.data : [];
+    },
+
+    // Proponer un SFS a otro anunciante
+    proposeSFS: async (requesterSfsUserId, payload) => {
+        // payload: { target_sfs_user_id, requester_channel_id, requester_template_id, duration_hours }
+        const response = await api.post('/promo/campaigns', payload, {
+            params: { requester_id: requesterSfsUserId }
+        });
+        return response.data;
+    },
+
+    // Campañas enviadas
+    getSentCampaigns: async (sfsUserId) => {
+        const response = await api.get('/promo/campaigns/sent', { params: { model_id: sfsUserId } });
+        return Array.isArray(response.data) ? response.data : [];
+    },
+
+    // Campañas recibidas
+    getReceivedCampaigns: async (sfsUserId) => {
+        const response = await api.get('/promo/campaigns/received', { params: { model_id: sfsUserId } });
+        return Array.isArray(response.data) ? response.data : [];
+    },
+
     // Enviar Calificación P2P
     submitReview: async (sfsUserId, reviewData) => {
-        // reviewData: { promo_campaign_id, target_id, rating, comment }
         const response = await api.post('/promo/reviews', reviewData, {
             params: { sfs_user_id: sfsUserId }
         });
