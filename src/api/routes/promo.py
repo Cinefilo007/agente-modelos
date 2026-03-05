@@ -396,6 +396,46 @@ async def get_received_campaigns(model_id: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.patch("/campaigns/{campaign_id}")
+async def respond_to_campaign(
+    campaign_id: str,
+    sfs_user_id: str = Query(...),
+    action: str = Query(...),   # "accept" | "reject"
+):
+    """El destinatario acepta o rechaza una propuesta SFS pendiente."""
+    try:
+        # Verificar que el usuario es el target
+        camp_res = db.service_client.table("promo_campaigns").select(
+            "id, status, target_id"
+        ).eq("id", campaign_id).execute()
+
+        if not camp_res.data:
+            raise HTTPException(status_code=404, detail="Campaña no encontrada")
+
+        camp = camp_res.data[0]
+        if camp["target_id"] != sfs_user_id:
+            raise HTTPException(status_code=403, detail="No autorizado")
+        if camp["status"] != "pending":
+            raise HTTPException(status_code=400, detail="La campaña ya no está en estado pendiente")
+
+        if action == "accept":
+            new_status = "accepted"
+        elif action == "reject":
+            new_status = "cancelled"
+        else:
+            raise HTTPException(status_code=400, detail="action debe ser 'accept' o 'reject'")
+
+        db.service_client.table("promo_campaigns").update({
+            "status": new_status
+        }).eq("id", campaign_id).execute()
+
+        return {"ok": True, "status": new_status}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/reviews")
 async def submit_review(req: ReviewReq, sfs_user_id: str = Query(...)):
     """Envía una calificación post-SFS."""

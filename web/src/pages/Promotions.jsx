@@ -792,7 +792,17 @@ const Promotions = () => {
 
     const statusLabel = { accepted: '⏳ Aceptada', active: '🟢 Activa', completed: '✅ Completada', cancelled_fraud: '🚨 Fraude', pending: '🕐 Pendiente' };
 
-    const renderCampaignList = (campaigns) => {
+    const handleCampaignResponse = async (campaignId, action) => {
+        try {
+            await api.patch(`/promo/campaigns/${campaignId}?sfs_user_id=${sfsUser.id}&action=${action}`);
+            showToast(action === 'accept' ? '¡Propuesta aceptada!' : 'Propuesta rechazada', action === 'accept' ? 'success' : 'error');
+            fetchCampaigns();
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Error al responder', 'error');
+        }
+    };
+
+    const renderCampaignList = (campaigns, isReceived = false) => {
         if (loadingCampaigns) return <div className="flex justify-center py-10"><Loader className="w-6 h-6 animate-spin text-purple-400" /></div>;
         if (!campaigns.length) return (
             <div className="text-center py-12 text-muted-foreground">
@@ -802,26 +812,61 @@ const Promotions = () => {
         );
         return (
             <div className="space-y-3">
-                {campaigns.map(c => (
-                    <div key={c.id} className="bg-card/40 border border-white/5 rounded-xl p-4">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-bold text-foreground capitalize">{c.type?.replace('_', ' ')}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                    {c.duration_hours ? `${c.duration_hours}h` : `${c.target_views?.toLocaleString()} vistas`}
-                                </p>
+                {campaigns.map(c => {
+                    const meta = isReceived ? c.requester : c.target;
+                    const targetLabel = c.type === 'SFS_VIEWS'
+                        ? `${(c.views_target || 0).toLocaleString()} vistas`
+                        : c.type === 'SFS_TIME'
+                            ? `${c.duration_hours}h de exposición`
+                            : c.type === 'SFS_FOLLOWERS'
+                                ? `${(c.followers_target || 0).toLocaleString()} subs nuevos`
+                                : c.type;
+                    return (
+                        <div key={c.id} className="bg-card/40 border border-white/5 rounded-xl p-4 space-y-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-sm font-bold text-foreground">
+                                        {c.type?.replace(/_/g, ' ')}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{targetLabel}</p>
+                                    {meta && (
+                                        <p className="text-[11px] text-purple-300 mt-1">
+                                            {isReceived ? '📨 De:' : '📤 A:'} @{meta.username || meta.full_name || '?'}
+                                            <span className="text-muted-foreground ml-1">· Trust {meta.trust_score ?? 100}/100</span>
+                                        </p>
+                                    )}
+                                </div>
+                                <span className="text-xs font-bold bg-white/5 px-2 py-1 rounded-md shrink-0">
+                                    {statusLabel[c.status] || c.status}
+                                </span>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <span className="text-xs font-bold bg-white/5 px-2 py-1 rounded-md">{statusLabel[c.status] || c.status}</span>
+
+                            {/* Botones de acción */}
+                            <div className="flex gap-2">
+                                {/* Aceptar / Rechazar — solo si es recibida y está pendiente */}
+                                {isReceived && c.status === 'pending' && (<>
+                                    <button
+                                        onClick={() => handleCampaignResponse(c.id, 'accept')}
+                                        className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-green-600 hover:bg-green-500 transition-all flex items-center justify-center gap-1.5">
+                                        <CheckCircle className="w-3.5 h-3.5" /> Aceptar
+                                    </button>
+                                    <button
+                                        onClick={() => handleCampaignResponse(c.id, 'reject')}
+                                        className="flex-1 py-2 rounded-xl text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-1.5">
+                                        <X className="w-3.5 h-3.5" /> Rechazar
+                                    </button>
+                                </>)}
+                                {/* Puntuar — si la campaña está completada */}
                                 {c.status === 'completed' && (
-                                    <button onClick={() => openReviewModal(c)} className="text-[10px] bg-yellow-500/20 text-yellow-400 font-bold px-2 py-1 rounded shadow-sm hover:bg-yellow-500/30 transition-colors">
-                                        ⭐ Puntuar
+                                    <button onClick={() => openReviewModal(c)}
+                                        className="w-full py-2 rounded-xl text-xs font-bold text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 transition-all flex items-center justify-center gap-1.5">
+                                        <Star className="w-3.5 h-3.5 fill-current" /> Puntuar campaña
                                     </button>
                                 )}
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         );
     };
@@ -1482,7 +1527,7 @@ const Promotions = () => {
             <div>
                 {activeTab === 'catalog' && renderCatalog()}
                 {activeTab === 'sent' && renderCampaignList(sentCampaigns)}
-                {activeTab === 'received' && renderCampaignList(receivedCampaigns)}
+                {activeTab === 'received' && renderCampaignList(receivedCampaigns, true)}
             </div>
 
             {/* Panel de Perfil SFS */}
