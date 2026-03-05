@@ -213,38 +213,35 @@ async def get_my_channels(sfs_user_id: str = Query(...)):
 @router.get("/channels/my/{channel_id}/history")
 async def get_channel_history(channel_id: str, model_id: str = Query(...)):
     """Historial de métricas de un canal desde channel_metrics_history."""
+    channel_info = None
+    history = []
+    last_updated = None
+
     try:
-        owns = db.client.table("channels").select(
+        owns = db.service_client.table("channels").select(
             "id, name, followers, avg_views, engagement_rate, updated_at"
-        ).eq("id", channel_id).eq("sfs_user_id", model_id).execute()
-        if not owns.data:
-            # Puede que model_id sea el telegram_id — buscar por canal directo
-            owns = db.service_client.table("channels").select(
-                "id, name, followers, avg_views, engagement_rate, updated_at"
-            ).eq("id", channel_id).execute()
-            if not owns.data:
-                raise HTTPException(status_code=404, detail="Canal no encontrado")
-
-        channel_info = owns.data[0]
-        try:
-            res = db.service_client.table("channel_metrics_history").select(
-                "id, followers, avg_views, engagement_rate, created_at"
-            ).eq("channel_id", channel_id).order("created_at", desc=False).limit(30).execute()
-            history = res.data or []
-        except Exception as hist_err:
-            logger.warning(f"channel_metrics_history no disponible: {hist_err}")
-            history = []
-
-        return {
-            "channel": channel_info,
-            "history": history,
-            "last_updated": channel_info.get("updated_at")
-        }
-    except HTTPException:
-        raise
+        ).eq("id", channel_id).execute()
+        if owns.data:
+            channel_info = owns.data[0]
+            last_updated = channel_info.get("updated_at")
     except Exception as e:
-        logger.error(f"Error en history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.warning(f"[history] Error buscando canal {channel_id}: {e}")
+
+    try:
+        res = db.service_client.table("channel_metrics_history").select(
+            "id, followers, avg_views, engagement_rate, created_at"
+        ).eq("channel_id", channel_id).order("created_at", desc=False).limit(30).execute()
+        history = res.data or []
+    except Exception as e:
+        logger.warning(f"[history] channel_metrics_history no disponible: {e}")
+
+    return {
+        "channel": channel_info or {"id": channel_id, "name": "Canal", "followers": 0, "avg_views": 0},
+        "history": history,
+        "last_updated": last_updated
+    }
+
+
 
 
 @router.put("/channels/{channel_id}")
