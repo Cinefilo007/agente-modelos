@@ -345,7 +345,7 @@ const Promotions = () => {
         localStorage.removeItem('token');
         setSfsUser(null);
         setLimits(null);
-        setMyCatalogChannels([]);
+        setCatalog([]);
         setSentCampaigns([]);
         setReceivedCampaigns([]);
         setMyProfile(null);
