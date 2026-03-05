@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook, CheckCircle2 } from 'lucide-react';
+import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook, CheckCircle2, Gamepad2 } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Link } from 'react-router-dom';
@@ -205,6 +205,15 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         </div>
                     ) : !isOwnProfile ? (
                         <>
+                            <Link to={`/casino/${user.username || user.id}`} className="flex-1">
+                                <Button
+                                    className="w-full h-full bg-card/60 border border-white/10 text-foreground hover:bg-white/10 gap-2 rounded-2xl py-4 shadow-lg backdrop-blur-md transition-all hover:border-white/20 flex items-center justify-center font-bold"
+                                    variant="ghost"
+                                >
+                                    <Gamepad2 size={20} className="text-purple-400" />
+                                    <span className="text-sm">Casino</span>
+                                </Button>
+                            </Link>
                             <Button
                                 onClick={handleSubscribe}
                                 disabled={loadingFollow}

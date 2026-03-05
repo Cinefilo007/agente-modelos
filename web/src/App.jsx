@@ -30,6 +30,7 @@ import InstallPWA from './components/pwa/InstallPWA';
 import WalletPage from './pages/WalletPage';
 import Promotions from './pages/Promotions';
 import AdvertiserProfile from './pages/AdvertiserProfile';
+import Casino from './pages/Casino';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -175,6 +176,7 @@ function App() {
                   <Route path="profile" element={<Navigate to="/me" replace />} />
                   <Route path="me" element={<Profile />} />
                   <Route path=":username" element={<Profile />} />
+                  <Route path="casino/:username" element={<Casino />} />
                 </Route>
 
                 {/* Onboarding Route */}
