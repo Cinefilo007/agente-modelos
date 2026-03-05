@@ -441,10 +441,14 @@ const Promotions = () => {
     };
 
     const tourSteps = [
-        { target: '.tour-step-1', content: '¡Bienvenida al SFS Automatizado! Intercambia publicidad con otras modelos con visualizaciones reales garantizadas.', disableBeacon: true },
-        { target: '.tour-step-2', content: 'Catálogo de canales verificados. Verás seguidores reales, vistas promedio y la calificación de calidad.' },
-        { target: '.tour-step-3', content: 'El Trust Score indica qué tan confiable es la modelo. A más alto, menor riesgo de que borre tu post antes de tiempo.' },
-        { target: '.tour-step-4', content: 'Antes de proponer un SFS, reenvíale tu post publicitario (foto + texto + emojis) directamente a @Nebula_sfs_bot en Telegram.' },
+        { target: '.tour-step-1', content: '¡Bienvenida al SFS Automatizado! Aquí puedes intercambiar publicidad con otras modelos con métricas reales y garantizadas.', disableBeacon: true },
+        { target: '.tour-step-2', content: 'Este es el catálogo de canales verificados. Podrás ver seguidores, vistas promedio y el Engagement Rate (ER) real de cada una.' },
+        { target: '.tour-step-3', content: 'El Trust Score indica la confiabilidad. Si alguien borra un post antes de tiempo, el sistema lo detecta y baja su puntuación automáticamente.' },
+        { target: '.tour-step-limits', content: 'Aquí ves tus límites diarios. Las modelos de la agencia tienen beneficios exclusivos y más slots de publicación.' },
+        { target: '.tour-step-tabs', content: 'Navega fácilmente entre el catálogo, las propuestas que has enviado y las que has recibido para aceptar.' },
+        { target: '.tour-step-live-metrics', content: 'En las campañas activas, podrás ver el progreso en tiempo real (vistas acumuladas y tiempo restante).' },
+        { target: '.tour-step-profile-btn', content: 'Desde tu perfil puedes gestionar tu Billetera SFS, ver tus ganancias por PXP y configurar tus canales.' },
+        { target: '.tour-step-4', content: '¡Muy importante! Para proponer un SFS o PXP, primero debes reenviar tu post publicitario al @Nebula_sfs_bot en Telegram.' },
     ];
 
     // ----------- MODAL AÑADIR CANAL -----------
@@ -872,7 +876,7 @@ const Promotions = () => {
                     const progress = goal > 0 ? Math.min(100, Math.round((totalViews / goal) * 100)) : 0;
 
                     return (
-                        <div key={c.id} className="bg-card/40 border border-white/5 rounded-xl p-4 space-y-3">
+                        <div key={c.id} className={`bg-card/40 border border-white/5 rounded-xl p-4 space-y-3 ${index === 0 ? 'tour-step-live-metrics' : ''}`}>
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-sm font-bold text-foreground">
@@ -1311,12 +1315,7 @@ const Promotions = () => {
 
     return (
         <div className="pb-24 pt-4 px-4 max-w-2xl mx-auto min-h-screen tour-step-1">
-            <Joyride steps={[
-                { target: '.tour-step-1', content: '¡Bienvenida al SFS Automatizado! Intercambia publicidad con otras modelos con visualizaciones reales garantizadas.', disableBeacon: true },
-                { target: '.tour-step-2', content: 'Catálogo de canales verificados. Verás seguidores reales, vistas promedio y la calificación de calidad.' },
-                { target: '.tour-step-3', content: 'El Trust Score indica qué tan confiable es la modelo. A más alto, menor riesgo de que borre tu post antes de tiempo.' },
-                { target: '.tour-step-4', content: 'Antes de proponer un SFS, reenvíale tu post publicitario (foto + texto + emojis) directamente a @Nebula_sfs_bot en Telegram.' },
-            ]} run={runTour} continuous showSkipButton showProgress callback={handleJoyrideCallback}
+            <Joyride steps={tourSteps} run={runTour} continuous showSkipButton showProgress callback={handleJoyrideCallback}
                 styles={{ options: { arrowColor: 'hsl(240 10% 5%)', backgroundColor: 'hsl(240 10% 5%)', overlayColor: 'rgba(0,0,0,0.75)', primaryColor: '#c026d3', textColor: 'hsl(0 0% 98%)', zIndex: 1000 }, buttonNext: { borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }, buttonBack: { marginRight: 10, color: '#a1a1aa' }, buttonSkip: { color: '#a1a1aa' } }} />
 
             {renderAddChannelModal()}
@@ -1622,7 +1621,7 @@ const Promotions = () => {
                     onClick={() => setProfilePanelOpen(true)}
                     className="flex items-center gap-2 px-3 py-2 bg-card/50 border border-white/10 rounded-xl text-xs font-bold text-foreground hover:bg-card/70 transition-all active:scale-95"
                 >
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white text-[10px] font-black">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white text-[10px] font-black tour-step-profile-btn">
                         {(sfsUser?.username || sfsUser?.full_name || '?')[0].toUpperCase()}
                     </div>
                     <span className="hidden sm:block">@{sfsUser?.username || sfsUser?.full_name || 'usuario'}</span>
@@ -1636,7 +1635,7 @@ const Promotions = () => {
                     <Plus className="w-3.5 h-3.5" /> Añadir Canal
                 </button>
                 {limits && (
-                    <div className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 tour-step-limits">
                         <span>SFS hoy:</span>
                         <span className="text-foreground">{limits.used ?? (limits.limit - limits.remaining)}/{limits.limit}</span>
                     </div>
@@ -1647,7 +1646,7 @@ const Promotions = () => {
             <BannerCarousel sfsUser={sfsUser} />
 
             {/* Tabs */}
-            <div className="flex bg-card/40 border border-white/5 p-1 rounded-xl mb-5 gap-0.5">
+            <div className="flex bg-card/40 border border-white/5 p-1 rounded-xl mb-5 gap-0.5 tour-step-tabs">
                 {[['catalog', 'Catálogo'], ['sent', 'Enviadas'], ['received', 'Recibidas']].map(([tab, label]) => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
                         className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === tab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
@@ -1714,8 +1713,8 @@ const Promotions = () => {
                                                 key={tpl.id}
                                                 onClick={() => setAcceptSelectedTpl(tpl.id)}
                                                 className={`w-full text-left p-3 rounded-xl border transition-all ${acceptSelectedTpl === tpl.id
-                                                        ? 'border-purple-500 bg-purple-500/10'
-                                                        : 'border-white/5 bg-white/5 hover:bg-white/10'
+                                                    ? 'border-purple-500 bg-purple-500/10'
+                                                    : 'border-white/5 bg-white/5 hover:bg-white/10'
                                                     }`}
                                             >
                                                 <p className="text-sm font-bold text-foreground truncate">

@@ -78,10 +78,15 @@ Para solventar los costos del Promo Bot y generar ingresos adicionales, se imple
 ## 6. Experiencia de Usuario (UX) y Onboarding
 
 Para asegurar que las modelos usen la herramienta correctamente sin sentirse abrumadas, la Mini App incluirá:
-1. **Tooltips Interactivos (Tour Intro):** La primera vez que entren a `/promociones`, un tour guiado (usando librerías como `react-joyride`) oscurecerá el fondo y resaltará paso a paso:
-   * "Aquí ves los canales disponibles y su calificación real."
-   * "Filtra por las chicas más confiables (Trust Score)."
-   * "¡Crea tu primera propuesta aquí!"
+1. **Tour Guiado de Bienvenida (Intro):** Al primer ingreso a `/promociones`, se activa un tour (vía `react-joyride`) que explica paso a paso:
+   * **Bienvenida**: Introducción al SFS Automatizado y PXP.
+   * **Catálogo Real**: Cómo leer el ER, seguidores y vistas promedio garantizadas.
+   * **Trust Score**: Sistema de reputación P2P y penalizaciones automáticas por fraude.
+   * **Límites y Plan**: Diferencia entre planes gratuitos y de agencia.
+   * **Navegación**: Gestión de propuestas enviadas y recibidas.
+   * **Monitoreo Live**: Seguimiento de campañas activas en tiempo real.
+   * **Billetera y Perfil**: Gestión de créditos, ingresos y configuración de canales.
+   * **Instrucción final Bot**: Recordatorio de reenviar el post al bot de Telegram para empezar.
 2. **Estados Vacíos (Empty States) Educativos:** Si no han reenviado ningún post al bot, la pantalla no dirá solo "Vacío", sino que mostrará un GIF o video corto explicando: *"Ve a Telegram, reenvíale tu mejor foto al @AgenciaPromoBot y vuelve aquí"*.
 3. **Indicadores de Progreso:** Al enviar una propuesta, verán una barra de estado clara: `Enviado -> Esperando Respuesta -> Activo -> Completado`.
 
