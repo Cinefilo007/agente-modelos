@@ -218,21 +218,32 @@ async def get_channel_history(channel_id: str, model_id: str = Query(...)):
             "id, name, followers, avg_views, engagement_rate, updated_at"
         ).eq("id", channel_id).eq("sfs_user_id", model_id).execute()
         if not owns.data:
-            raise HTTPException(status_code=403, detail="No autorizado")
+            # Puede que model_id sea el telegram_id — buscar por canal directo
+            owns = db.service_client.table("channels").select(
+                "id, name, followers, avg_views, engagement_rate, updated_at"
+            ).eq("id", channel_id).execute()
+            if not owns.data:
+                raise HTTPException(status_code=404, detail="Canal no encontrado")
 
         channel_info = owns.data[0]
-        res = db.service_client.table("channel_metrics_history").select(
-            "id, followers, avg_views, engagement_rate, created_at"
-        ).eq("channel_id", channel_id).order("created_at", desc=False).limit(30).execute()
+        try:
+            res = db.service_client.table("channel_metrics_history").select(
+                "id, followers, avg_views, engagement_rate, created_at"
+            ).eq("channel_id", channel_id).order("created_at", desc=False).limit(30).execute()
+            history = res.data or []
+        except Exception as hist_err:
+            logger.warning(f"channel_metrics_history no disponible: {hist_err}")
+            history = []
 
         return {
             "channel": channel_info,
-            "history": res.data or [],
+            "history": history,
             "last_updated": channel_info.get("updated_at")
         }
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error en history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -377,6 +388,29 @@ async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
         target_ch_res = db.client.table("channels").select("id").eq("sfs_user_id", req.target_sfs_user_id).eq("status", "active").limit(1).execute()
         target_channel_id = target_ch_res.data[0]["id"] if target_ch_res.data else None
 
+        # Validar que el intercambio es justo (SFS_VIEWS):
+        # Las vistas solicitadas no pueden superar 2x las vistas promedio del canal del requester
+        if req.contract_type == "SFS_VIEWS" and req.views_target:
+            req_ch_data = db.client.table("channels").select(
+                "avg_views, followers"
+            ).eq("id", req.requester_channel_id).execute()
+            if req_ch_data.data:
+                avg_v = req_ch_data.data[0].get("avg_views") or 0
+                followers = req_ch_data.data[0].get("followers") or 0
+                # No se pueden pedir más de 3x las vistas promedio del canal propio
+                max_allowed = max(int(avg_v * 3), 500)
+                if req.views_target > max_allowed:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Intercambio injusto: tu canal genera ~{int(avg_v):,} vistas/post. Máximo que puedes solicitar: {max_allowed:,} vistas."
+                    )
+                # No se pueden pedir más suscriptores de los que tiene el canal
+                if followers < 100:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Tu canal necesita al menos 100 suscriptores para proponer SFS."
+                    )
+
         campaign = db.service_client.table("promo_campaigns").insert({
             "requester_id": requester_id,
             "target_id": req.target_sfs_user_id,
@@ -432,12 +466,22 @@ async def get_sent_campaigns(model_id: str = Query(...)):
 
 @router.get("/campaigns/received")
 async def get_received_campaigns(model_id: str = Query(...)):
-    """Campañas recibidas por el usuario."""
+    """Campañas recibidas por el usuario, incluyendo datos del canal del solicitante."""
     try:
-        res = db.client.table("promo_campaigns").select(
+        res = db.service_client.table("promo_campaigns").select(
             "*, requester:sfs_users!requester_id(username, full_name, trust_score)"
         ).eq("target_id", model_id).order("created_at", desc=True).limit(20).execute()
-        return res.data or []
+
+        campaigns = res.data or []
+
+        # Enriquecer con el canal activo del solicitante
+        for camp in campaigns:
+            ch_res = db.service_client.table("channels").select(
+                "id, name, followers, avg_views, engagement_rate, category, bio, accepted_contract_types, invite_link"
+            ).eq("sfs_user_id", camp["requester_id"]).eq("status", "active").limit(1).execute()
+            camp["requester_channel"] = ch_res.data[0] if ch_res.data else None
+
+        return campaigns
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

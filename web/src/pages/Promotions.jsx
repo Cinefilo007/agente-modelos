@@ -790,9 +790,19 @@ const Promotions = () => {
         </div>
     );
 
-    const statusLabel = { accepted: '⏳ Aceptada', active: '🟢 Activa', completed: '✅ Completada', cancelled_fraud: '🚨 Fraude', pending: '🕐 Pendiente' };
+    const statusLabel = { accepted: '⏳ Aceptada', active: '🟢 Activa', completed: '✅ Completada', cancelled_fraud: '🚨 Fraude', pending: '🕐 Pendiente', cancelled: '❌ Rechazada' };
 
-    const [liveMetrics, setLiveMetrics] = useState({}); // { [campaignId]: { posts, loading } }
+    const handleCampaignResponse = async (campaignId, action) => {
+        try {
+            await api.patch(`/promo/campaigns/${campaignId}?sfs_user_id=${sfsUser.id}&action=${action}`);
+            showToast(action === 'accept' ? '¡Propuesta aceptada! El bot publicará en breve.' : 'Propuesta rechazada', action === 'accept' ? 'success' : 'error');
+            fetchCampaigns();
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Error al responder', 'error');
+        }
+    };
+
+    const [liveMetrics, setLiveMetrics] = useState({});
 
     const fetchLiveMetrics = async (campaignId) => {
         setLiveMetrics(prev => ({ ...prev, [campaignId]: { ...prev[campaignId], loading: true } }));
@@ -847,6 +857,36 @@ const Promotions = () => {
                                     {statusLabel[c.status] || c.status}
                                 </span>
                             </div>
+
+                            {/* Canal del solicitante — visible al recibir una propuesta */}
+                            {isReceived && c.requester_channel && (
+                                <div className="bg-purple-500/5 border border-purple-500/15 rounded-xl p-3 space-y-1.5">
+                                    <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wide mb-1">📡 Canal del solicitante</p>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs font-bold text-foreground">
+                                            {c.requester_channel.invite_link ? (
+                                                <a href={c.requester_channel.invite_link} target="_blank" rel="noreferrer" className="hover:text-purple-300 underline underline-offset-2 flex items-center gap-1">
+                                                    {c.requester_channel.name} <ExternalLink className="w-2.5 h-2.5" />
+                                                </a>
+                                            ) : c.requester_channel.name}
+                                        </p>
+                                        {c.requester_channel.category && (
+                                            <span className="text-[10px] px-2 py-0.5 bg-white/5 rounded-full text-muted-foreground">{c.requester_channel.category}</span>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-3 text-[11px]">
+                                        <span className="text-blue-400 flex items-center gap-0.5">
+                                            <Users className="w-3 h-3" /> {(c.requester_channel.followers || 0).toLocaleString()} subs
+                                        </span>
+                                        <span className="text-purple-400 flex items-center gap-0.5">
+                                            <BarChart2 className="w-3 h-3" /> ~{(c.requester_channel.avg_views || 0).toLocaleString()} vistas/post
+                                        </span>
+                                    </div>
+                                    {c.requester_channel.bio && (
+                                        <p className="text-[10px] text-muted-foreground/70 line-clamp-2">{c.requester_channel.bio}</p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Métricas en vivo — solo para campañas activas */}
                             {c.status === 'active' && (
