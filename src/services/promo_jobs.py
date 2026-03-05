@@ -284,19 +284,39 @@ async def publish_sfs_campaigns(bot):
                     logger.warning(f"[notify] No se pudo notificar template faltante: {notify_err}")
                 continue
 
+            # Obtener telegram_id de ambos usuarios (necesario para copy_message)
+            users_tg_res = db.service_client.table('sfs_users').select(
+                'id, telegram_id'
+            ).in_('id', [camp['requester_id'], camp['target_id']]).execute()
+            users_tg_map = {u['id']: u['telegram_id'] for u in (users_tg_res.data or [])}
+            req_tg_id = users_tg_map.get(camp['requester_id'])
+            tgt_tg_id = users_tg_map.get(camp['target_id'])
+
+            if not req_tg_id or not tgt_tg_id:
+                logger.warning(f"Campaña {camp['id']}: telegram_id no encontrado para req={req_tg_id} tgt={tgt_tg_id}. Saltando.")
+                continue
+
+            logger.info(
+                f"[publish] camp={camp['id']} "
+                f"req_tg={req_tg_id} tgt_tg={tgt_tg_id} "
+                f"req_ch={req_channel['telegram_chat_id']} tgt_ch={tgt_channel['telegram_chat_id']} "
+                f"req_msg={req_template['telegram_message_id_origin']} tgt_msg={tgt_template['telegram_message_id_origin']}"
+            )
+
             # Enviar el template del TARGET al canal del REQUESTER
             try:
-                # copy_message(chat_id_destino, chat_id_origen, message_id_origen)
+                # copy_message: el mensaje origen está en el chat privado del usuario con el bot
+                # from_chat_id = telegram_id del usuario (es el mismo ID que su chat privado con cualquier bot)
                 msg1 = await bot.copy_message(
                     chat_id=req_channel['telegram_chat_id'],
-                    from_chat_id=tgt_template['content_data'].get('chat_id', tgt_template['sfs_user_id']),
+                    from_chat_id=tgt_tg_id,
                     message_id=tgt_template['telegram_message_id_origin']
                 )
 
                 # Enviar el template del REQUESTER al canal del TARGET
                 msg2 = await bot.copy_message(
                     chat_id=tgt_channel['telegram_chat_id'],
-                    from_chat_id=req_template['content_data'].get('chat_id', req_template['sfs_user_id']),
+                    from_chat_id=req_tg_id,
                     message_id=req_template['telegram_message_id_origin']
                 )
 
