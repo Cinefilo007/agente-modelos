@@ -488,6 +488,7 @@ async def respond_to_campaign(
     campaign_id: str,
     sfs_user_id: str = Query(...),
     action: str = Query(...),   # "accept" | "reject"
+    target_template_id: Optional[str] = Query(None),   # requerido al aceptar
 ):
     """El destinatario acepta o rechaza una propuesta SFS pendiente."""
     try:
@@ -505,18 +506,18 @@ async def respond_to_campaign(
         if camp["status"] != "pending":
             raise HTTPException(status_code=400, detail="La campaña ya no está en estado pendiente")
 
-        # Cargar datos completos de la campaña para notificaciones
-        camp_full = db.service_client.table("promo_campaigns").select(
+        # Cargar datos completos para notificaciones
+        camp_full_res = db.service_client.table("promo_campaigns").select(
             "*, requester:sfs_users!requester_id(telegram_id, username, full_name),"
             " target:sfs_users!target_id(telegram_id, username, full_name)"
         ).eq("id", campaign_id).execute()
-        camp_full_data = camp_full.data[0] if camp_full.data else camp
+        camp_full = camp_full_res.data[0] if camp_full_res.data else camp
 
         if action == "accept":
             new_status = "accepted"
-            # Establecer start_time = ahora para que el job de publicación lo tome
             update_payload = {
                 "status": new_status,
+                "target_template_id": target_template_id,
                 "start_time": datetime.now(timezone.utc).isoformat()
             }
         elif action == "reject":
@@ -528,34 +529,31 @@ async def respond_to_campaign(
         db.service_client.table("promo_campaigns").update(update_payload).eq("id", campaign_id).execute()
 
         # ── Notificaciones ──
-        requester_tg = camp_full_data.get("requester", {}).get("telegram_id")
-        target_tg    = camp_full_data.get("target",    {}).get("telegram_id")
-        target_name  = camp_full_data.get("target",    {}).get("username") or "?"
-        label = _contract_label(camp_full_data)
+        requester_tg = (camp_full.get("requester") or {}).get("telegram_id")
+        target_tg    = (camp_full.get("target") or {}).get("telegram_id")
+        target_name  = (camp_full.get("target") or {}).get("username") or "?"
+        label = _contract_label(camp_full)
         promo_url = "https://agente-modelos-production.up.railway.app/promotions"
 
         if action == "accept":
-            # Notificar al REQUESTER: su propuesta fue aceptada
             await notify_sfs_user(
                 requester_tg,
                 f"✅ <b>@{target_name} aceptó tu propuesta SFS</b>\n"
                 f"📋 {label}\n"
                 f"🤖 El bot publicará los posts cruzados en breve."
             )
-            # Notificar al TARGET: recordatorio de que aceptó
             await notify_sfs_user(
                 target_tg,
                 f"✅ <b>Aceptaste la propuesta SFS</b>\n"
                 f"📋 {label}\n"
-                f"🤖 El bot publicará los posts cruzados en breve. Entra al <a href='{promo_url}'>Promo Center</a> para ver el seguimiento."
+                f"🤖 El bot publicará los posts cruzados en breve. <a href='{promo_url}'>Ver seguimiento →</a>"
             )
         else:
-            # Notificar al REQUESTER: su propuesta fue rechazada
             await notify_sfs_user(
                 requester_tg,
                 f"❌ <b>@{target_name} rechazó tu propuesta SFS</b>\n"
                 f"📋 {label}\n"
-                f"Puedes enviar una nueva propuesta a otro canal desde el <a href='{promo_url}'>Promo Center</a>."
+                f"Puedes enviar una nueva propuesta desde el <a href='{promo_url}'>Promo Center</a>."
             )
 
         return {"ok": True, "status": new_status}
@@ -563,6 +561,7 @@ async def respond_to_campaign(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.post("/reviews")

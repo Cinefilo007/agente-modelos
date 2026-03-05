@@ -249,6 +249,41 @@ async def publish_sfs_campaigns(bot):
             req_template = camp['requester_template']
             tgt_template = camp['target_template']
 
+            # ── Verificar que ambos templates existen ──
+            missing_user_id = None
+            if not req_template:
+                missing_user_id = camp['requester_id']
+                logger.warning(f"Campaña {camp['id']}: requester no tiene template. Cancelando.")
+            elif not tgt_template:
+                missing_user_id = camp['target_id']
+                logger.warning(f"Campaña {camp['id']}: target no tiene template. Cancelando.")
+
+            if missing_user_id:
+                db.service_client.table('promo_campaigns').update({
+                    'status': 'failed'
+                }).eq('id', camp['id']).execute()
+                # Notificar al usuario que le falta post
+                try:
+                    missing_user = db.service_client.table('sfs_users').select(
+                        'telegram_id'
+                    ).eq('id', missing_user_id).execute()
+                    tg_id = missing_user.data[0].get('telegram_id') if missing_user.data else None
+                    if tg_id:
+                        await bot.send_message(
+                            chat_id=tg_id,
+                            text=(
+                                "⚠️ <b>Campaña SFS cancelada</b>\n\n"
+                                "No tienes ningún post guardado para publicar en el canal de tu contraparte.\n\n"
+                                "📌 Para poder hacer SFS necesitas guardar al menos un post: "
+                                "reenvía tu mejor foto/video con emojis a @Nebula_sfs_bot en Telegram.\n\n"
+                                "Luego vuelve al <a href='https://agente-modelos-production.up.railway.app/promotions'>Promo Center</a> para iniciar una nueva colaboración."
+                            ),
+                            parse_mode="HTML"
+                        )
+                except Exception as notify_err:
+                    logger.warning(f"[notify] No se pudo notificar template faltante: {notify_err}")
+                continue
+
             # Enviar el template del TARGET al canal del REQUESTER
             try:
                 # copy_message(chat_id_destino, chat_id_origen, message_id_origen)

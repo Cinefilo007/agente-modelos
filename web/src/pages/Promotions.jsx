@@ -790,15 +790,47 @@ const Promotions = () => {
         </div>
     );
 
-    const statusLabel = { accepted: '⏳ Aceptada', active: '🟢 Activa', completed: '✅ Completada', cancelled_fraud: '🚨 Fraude', pending: '🕐 Pendiente', cancelled: '❌ Rechazada' };
+    const statusLabel = { accepted: '⏳ Aceptada', active: '🟢 Activa', completed: '✅ Completada', cancelled_fraud: '🚨 Fraude', pending: '🕐 Pendiente', cancelled: '❌ Rechazada', failed: '💔 Sin post' };
 
-    const handleCampaignResponse = async (campaignId, action) => {
+    // Modal de aceptación con selector de template
+    const [acceptModal, setAcceptModal] = useState(null); // { campaignId }
+    const [acceptTemplates, setAcceptTemplates] = useState([]);
+    const [acceptSelectedTpl, setAcceptSelectedTpl] = useState('');
+    const [acceptLoading, setAcceptLoading] = useState(false);
+
+    const openAcceptModal = async (campaignId) => {
+        setAcceptModal({ campaignId });
+        setAcceptSelectedTpl('');
+        setAcceptLoading(true);
         try {
-            await api.patch(`/promo/campaigns/${campaignId}?sfs_user_id=${sfsUser.id}&action=${action}`);
-            showToast(action === 'accept' ? '¡Propuesta aceptada! El bot publicará en breve.' : 'Propuesta rechazada', action === 'accept' ? 'success' : 'error');
+            const tpls = await sfsService.getMyTemplates(sfsUser.id);
+            setAcceptTemplates(Array.isArray(tpls) ? tpls : []);
+        } catch { setAcceptTemplates([]); }
+        setAcceptLoading(false);
+    };
+
+    const confirmAccept = async () => {
+        if (!acceptSelectedTpl) { showToast('Selecciona un post primero', 'error'); return; }
+        setAcceptLoading(true);
+        try {
+            await api.patch(`/promo/campaigns/${acceptModal.campaignId}?sfs_user_id=${sfsUser.id}&action=accept&target_template_id=${acceptSelectedTpl}`);
+            showToast('¡Propuesta aceptada! El bot publicará en breve.', 'success');
+            setAcceptModal(null);
             fetchCampaigns();
         } catch (err) {
-            showToast(err.response?.data?.detail || 'Error al responder', 'error');
+            showToast(err.response?.data?.detail || 'Error al aceptar', 'error');
+        } finally {
+            setAcceptLoading(false);
+        }
+    };
+
+    const handleReject = async (campaignId) => {
+        try {
+            await api.patch(`/promo/campaigns/${campaignId}?sfs_user_id=${sfsUser.id}&action=reject`);
+            showToast('Propuesta rechazada', 'error');
+            fetchCampaigns();
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Error al rechazar', 'error');
         }
     };
 
@@ -813,6 +845,7 @@ const Promotions = () => {
             setLiveMetrics(prev => ({ ...prev, [campaignId]: { ...prev[campaignId], loading: false } }));
         }
     };
+
 
     const renderCampaignList = (campaigns, isReceived = false) => {
         if (loadingCampaigns) return <div className="flex justify-center py-10"><Loader className="w-6 h-6 animate-spin text-purple-400" /></div>;
@@ -949,12 +982,12 @@ const Promotions = () => {
                                 {/* Aceptar / Rechazar — solo si es recibida y está pendiente */}
                                 {isReceived && c.status === 'pending' && (<>
                                     <button
-                                        onClick={() => handleCampaignResponse(c.id, 'accept')}
+                                        onClick={() => openAcceptModal(c.id)}
                                         className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-green-600 hover:bg-green-500 transition-all flex items-center justify-center gap-1.5">
                                         <CheckCircle className="w-3.5 h-3.5" /> Aceptar
                                     </button>
                                     <button
-                                        onClick={() => handleCampaignResponse(c.id, 'reject')}
+                                        onClick={() => handleReject(c.id)}
                                         className="flex-1 py-2 rounded-xl text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-1.5">
                                         <X className="w-3.5 h-3.5" /> Rechazar
                                     </button>
@@ -1645,8 +1678,72 @@ const Promotions = () => {
                 onOpenChannelEdit={(ch) => { setProfilePanelOpen(false); openChannelEdit(ch); }}
                 onOpenDeleteChannel={(ch) => { setProfilePanelOpen(false); setChannelToDelete(ch); setDeleteModalOpen(true); }}
             />
+
+            {/* Modal: Seleccionar post al aceptar propuesta SFS */}
+            {acceptModal && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-card border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                            <div>
+                                <p className="font-bold text-foreground">📌 Selecciona tu post</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Elige el contenido que quieres publicar en el canal de tu contraparte</p>
+                            </div>
+                            <button onClick={() => setAcceptModal(null)} className="text-muted-foreground hover:text-foreground transition-colors">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="px-5 pb-5 space-y-3 max-h-80 overflow-y-auto">
+                            {acceptLoading ? (
+                                <div className="flex justify-center py-8">
+                                    <Loader className="w-6 h-6 animate-spin text-purple-400" />
+                                </div>
+                            ) : acceptTemplates.length === 0 ? (
+                                <div className="text-center py-8 space-y-3">
+                                    <p className="text-2xl">📭</p>
+                                    <p className="text-sm font-bold text-foreground">No tienes posts guardados</p>
+                                    <p className="text-xs text-muted-foreground">Para hacer SFS necesitas al menos un post. Reenvía tu mejor foto/video a <span className="text-purple-400 font-bold">@Nebula_sfs_bot</span> en Telegram y luego vuelve aquí.</p>
+                                    <button onClick={() => setAcceptModal(null)} className="text-xs text-muted-foreground underline">Cancelar</button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="space-y-2">
+                                        {acceptTemplates.map(tpl => (
+                                            <button
+                                                key={tpl.id}
+                                                onClick={() => setAcceptSelectedTpl(tpl.id)}
+                                                className={`w-full text-left p-3 rounded-xl border transition-all ${acceptSelectedTpl === tpl.id
+                                                        ? 'border-purple-500 bg-purple-500/10'
+                                                        : 'border-white/5 bg-white/5 hover:bg-white/10'
+                                                    }`}
+                                            >
+                                                <p className="text-sm font-bold text-foreground truncate">
+                                                    {tpl.content_data?.caption || tpl.name || `Post #${tpl.id.slice(0, 6)}`}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground mt-0.5">
+                                                    {tpl.content_data?.type || 'Post'} · {tpl.created_at ? new Date(tpl.created_at).toLocaleDateString('es') : ''}
+                                                </p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={confirmAccept}
+                                        disabled={!acceptSelectedTpl || acceptLoading}
+                                        className="w-full py-3 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-green-600 to-emerald-500 hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                    >
+                                        {acceptLoading ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                        Confirmar y Aceptar SFS
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
+
 };
 
 export default Promotions;
