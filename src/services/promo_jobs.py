@@ -230,62 +230,96 @@ async def publish_sfs_campaigns(bot):
     logger.info("Executing Job: Publish SFS Campaigns")
     try:
         now_iso = datetime.utcnow().isoformat()
-        campaigns_res = db.client.table('promo_campaigns').select(
+        campaigns_res = db.service_client.table('promo_campaigns').select(
             '*, requester_template:promo_templates!requester_template_id(*), target_template:promo_templates!target_template_id(*)'
         ).eq('status', 'accepted').lte('start_time', now_iso).execute()
 
         for camp in campaigns_res.data:
             # 1. Obtener los canales vinculados a requester y target
-            req_channels = db.client.table('channels').select('*').eq('sfs_user_id', camp['requester_id']).eq('status', 'active').execute()
-            tgt_channels = db.client.table('channels').select('*').eq('sfs_user_id', camp['target_id']).eq('status', 'active').execute()
-            
+            req_channels = db.service_client.table('channels').select('*').eq('sfs_user_id', camp['requester_id']).eq('status', 'active').execute()
+            tgt_channels = db.service_client.table('channels').select('*').eq('sfs_user_id', camp['target_id']).eq('status', 'active').execute()
+
             if not req_channels.data or not tgt_channels.data:
                 logger.warning(f"Campaña {camp['id']} fallida: Uno de los usuarios no tiene canal activo.")
                 continue
 
             req_channel = req_channels.data[0]
             tgt_channel = tgt_channels.data[0]
-            
+
             req_template = camp['requester_template']
             tgt_template = camp['target_template']
-            
+
             # Enviar el template del TARGET al canal del REQUESTER
             try:
                 # copy_message(chat_id_destino, chat_id_origen, message_id_origen)
-                # El "chat_id_origen" es el bot en chat privado con el target. 
-                # Pero como template guarda el origin message ID, usamos eso
-                bot_chat_id = tgt_template['telegram_message_id_origin'] # Asumiendo que guardamos el mensaje en el chat con el bot
-                
-                # NOTA PARA DESARROLLO: copy_message requiere el ID del chat de origen (el chat privado del target con el bot)
-                # Simplificaremos enviando el contenido crudo si fallara el copy_message. Aquí usamos un try genérico.
                 msg1 = await bot.copy_message(
                     chat_id=req_channel['telegram_chat_id'],
-                    from_chat_id=tgt_template['content_data'].get('chat_id', tgt_template['model_id']), # Workaround
+                    from_chat_id=tgt_template['content_data'].get('chat_id', tgt_template['sfs_user_id']),
                     message_id=tgt_template['telegram_message_id_origin']
                 )
-                
+
                 # Enviar el template del REQUESTER al canal del TARGET
                 msg2 = await bot.copy_message(
                     chat_id=tgt_channel['telegram_chat_id'],
-                    from_chat_id=req_template['content_data'].get('chat_id', req_template['model_id']),
+                    from_chat_id=req_template['content_data'].get('chat_id', req_template['sfs_user_id']),
                     message_id=req_template['telegram_message_id_origin']
                 )
-                
+
                 # Guardar los IDs publicados
-                db.client.table('promo_posts').insert([
+                db.service_client.table('promo_posts').insert([
                     {'campaign_id': camp['id'], 'channel_id': req_channel['id'], 'telegram_message_id': msg1.message_id},
                     {'campaign_id': camp['id'], 'channel_id': tgt_channel['id'], 'telegram_message_id': msg2.message_id}
                 ]).execute()
-                
+
                 # Marcar campaña como activa
-                db.client.table('promo_campaigns').update({'status': 'active'}).eq('id', camp['id']).execute()
+                db.service_client.table('promo_campaigns').update({'status': 'active'}).eq('id', camp['id']).execute()
                 logger.info(f"Campaña {camp['id']} activada con éxito.")
-                
+
+                # ── Notificar a ambas partes que el SFS comenzó ──
+                users_res = db.service_client.table('sfs_users').select(
+                    'id, telegram_id, username'
+                ).in_('id', [camp['requester_id'], camp['target_id']]).execute()
+
+                users_map = {u['id']: u for u in (users_res.data or [])}
+                req_user = users_map.get(camp['requester_id'], {})
+                tgt_user = users_map.get(camp['target_id'], {})
+                promo_url = "https://agente-modelos-production.up.railway.app/promotions"
+
+                t = camp.get("type", "")
+                if t == "SFS_VIEWS":
+                    goal = f"{camp.get('views_target', '?'):,} vistas"
+                elif t == "SFS_TIME":
+                    goal = f"{camp.get('duration_hours', '?')}h"
+                elif t == "SFS_FOLLOWERS":
+                    goal = f"{camp.get('followers_target', '?'):,} subs"
+                else:
+                    goal = t
+
+                for user in [req_user, tgt_user]:
+                    tg_id = user.get('telegram_id')
+                    if not tg_id:
+                        continue
+                    try:
+                        await bot.send_message(
+                            chat_id=tg_id,
+                            text=(
+                                f"🚀 <b>¡Tu SFS está activo!</b>\n"
+                                f"📋 Tipo: <b>{t.replace('_', ' ')} — {goal}</b>\n"
+                                f"🤖 Los posts ya fueron publicados en ambos canales.\n"
+                                f"📊 El bot monitorea las métricas en tiempo real.\n\n"
+                                f"<a href='{promo_url}'>Ver en Promo Center →</a>"
+                            ),
+                            parse_mode="HTML"
+                        )
+                    except Exception as notify_err:
+                        logger.warning(f"[notify] No se pudo notificar 'activo' a {tg_id}: {notify_err}")
+
             except Exception as e:
                 logger.error(f"Error publicando cruzado para campaña {camp['id']}: {e}")
-                
+
     except Exception as e:
         logger.error(f"Error en publish_sfs_campaigns: {e}")
+
 
 async def monitor_sfs_views_and_fraud(bot):
     """

@@ -3,10 +3,35 @@ from pydantic import BaseModel
 from typing import Optional, List
 from src.services.database import db
 import os
+import logging
 from datetime import datetime, timezone
 from telegram import Bot
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+_SFS_BOT_TOKEN = os.getenv("PROMO_TELEGRAM_TOKEN") or os.getenv("SFS_BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
+
+async def notify_sfs_user(telegram_id: int, text: str) -> None:
+    """Envía una notificación por Telegram al usuario SFS. Falla silenciosamente."""
+    if not _SFS_BOT_TOKEN or not telegram_id:
+        return
+    try:
+        bot = Bot(token=_SFS_BOT_TOKEN)
+        await bot.send_message(chat_id=telegram_id, text=text, parse_mode="HTML")
+    except Exception as e:
+        logger.warning(f"[notify_sfs] No se pudo notificar a {telegram_id}: {e}")
+
+def _contract_label(camp: dict) -> str:
+    """Texto legible del tipo de contrato."""
+    t = camp.get("type", "")
+    if t == "SFS_VIEWS":
+        return f"Por Vistas ({camp.get('views_target', '?'):,} vistas)"
+    if t == "SFS_TIME":
+        return f"Por Tiempo ({camp.get('duration_hours', '?')}h)"
+    if t == "SFS_FOLLOWERS":
+        return f"Por Subs ({camp.get('followers_target', '?'):,} subs)"
+    return t
 
 class TelegramUserAuth(BaseModel):
     telegram_id: int
@@ -365,7 +390,28 @@ async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
             "followers_target": req.followers_target,
         }).execute()
 
-        return campaign.data[0]
+        camp_data = campaign.data[0]
+
+        # ── Notificación al TARGET: nueva propuesta recibida ──
+        target_res = db.service_client.table("sfs_users").select(
+            "telegram_id, username"
+        ).eq("id", req.target_sfs_user_id).execute()
+        requester_res = db.service_client.table("sfs_users").select(
+            "username, full_name"
+        ).eq("id", requester_id).execute()
+
+        if target_res.data and requester_res.data:
+            tg_target = target_res.data[0].get("telegram_id")
+            req_name = requester_res.data[0].get("username") or requester_res.data[0].get("full_name") or "?"
+            label = _contract_label(camp_data)
+            await notify_sfs_user(
+                tg_target,
+                f"📨 <b>Nueva propuesta SFS</b> de @{req_name}\n"
+                f"📋 Tipo: <b>{label}</b>\n\n"
+                f"Entra al <a href='https://agente-modelos-production.up.railway.app/promotions'>Promo Center</a> para aceptar o rechazar."
+            )
+
+        return camp_data
     except HTTPException:
         raise
     except Exception as e:
@@ -418,16 +464,58 @@ async def respond_to_campaign(
         if camp["status"] != "pending":
             raise HTTPException(status_code=400, detail="La campaña ya no está en estado pendiente")
 
+        # Cargar datos completos de la campaña para notificaciones
+        camp_full = db.service_client.table("promo_campaigns").select(
+            "*, requester:sfs_users!requester_id(telegram_id, username, full_name),"
+            " target:sfs_users!target_id(telegram_id, username, full_name)"
+        ).eq("id", campaign_id).execute()
+        camp_full_data = camp_full.data[0] if camp_full.data else camp
+
         if action == "accept":
             new_status = "accepted"
+            # Establecer start_time = ahora para que el job de publicación lo tome
+            update_payload = {
+                "status": new_status,
+                "start_time": datetime.now(timezone.utc).isoformat()
+            }
         elif action == "reject":
             new_status = "cancelled"
+            update_payload = {"status": new_status}
         else:
             raise HTTPException(status_code=400, detail="action debe ser 'accept' o 'reject'")
 
-        db.service_client.table("promo_campaigns").update({
-            "status": new_status
-        }).eq("id", campaign_id).execute()
+        db.service_client.table("promo_campaigns").update(update_payload).eq("id", campaign_id).execute()
+
+        # ── Notificaciones ──
+        requester_tg = camp_full_data.get("requester", {}).get("telegram_id")
+        target_tg    = camp_full_data.get("target",    {}).get("telegram_id")
+        target_name  = camp_full_data.get("target",    {}).get("username") or "?"
+        label = _contract_label(camp_full_data)
+        promo_url = "https://agente-modelos-production.up.railway.app/promotions"
+
+        if action == "accept":
+            # Notificar al REQUESTER: su propuesta fue aceptada
+            await notify_sfs_user(
+                requester_tg,
+                f"✅ <b>@{target_name} aceptó tu propuesta SFS</b>\n"
+                f"📋 {label}\n"
+                f"🤖 El bot publicará los posts cruzados en breve."
+            )
+            # Notificar al TARGET: recordatorio de que aceptó
+            await notify_sfs_user(
+                target_tg,
+                f"✅ <b>Aceptaste la propuesta SFS</b>\n"
+                f"📋 {label}\n"
+                f"🤖 El bot publicará los posts cruzados en breve. Entra al <a href='{promo_url}'>Promo Center</a> para ver el seguimiento."
+            )
+        else:
+            # Notificar al REQUESTER: su propuesta fue rechazada
+            await notify_sfs_user(
+                requester_tg,
+                f"❌ <b>@{target_name} rechazó tu propuesta SFS</b>\n"
+                f"📋 {label}\n"
+                f"Puedes enviar una nueva propuesta a otro canal desde el <a href='{promo_url}'>Promo Center</a>."
+            )
 
         return {"ok": True, "status": new_status}
     except HTTPException:
@@ -491,6 +579,35 @@ async def get_advertiser_profile(user_id: str):
             review["reviewer_username"] = reviewer_res.data[0]["username"] if reviewer_res.data else "Anónimo"
 
         return {**user, "channels": channels_res.data or [], "reviews": reviews}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/campaigns/{campaign_id}/posts")
+async def get_campaign_posts(campaign_id: str, sfs_user_id: str = Query(...)):
+    """Retorna los posts publicados de una campaña activa con sus vistas actuales."""
+    try:
+        # Verificar que el usuario es parte de la campaña
+        camp_res = db.service_client.table("promo_campaigns").select(
+            "id, requester_id, target_id, type, views_target, duration_hours, followers_target, status"
+        ).eq("id", campaign_id).execute()
+
+        if not camp_res.data:
+            raise HTTPException(status_code=404, detail="Campaña no encontrada")
+        camp = camp_res.data[0]
+        if sfs_user_id not in [camp["requester_id"], camp["target_id"]]:
+            raise HTTPException(status_code=403, detail="No autorizado")
+
+        posts_res = db.service_client.table("promo_posts").select(
+            "*, channel:channels!channel_id(id, name, telegram_chat_id)"
+        ).eq("campaign_id", campaign_id).execute()
+
+        return {
+            "campaign": camp,
+            "posts": posts_res.data or []
+        }
     except HTTPException:
         raise
     except Exception as e:

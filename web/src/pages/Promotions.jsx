@@ -792,13 +792,15 @@ const Promotions = () => {
 
     const statusLabel = { accepted: '⏳ Aceptada', active: '🟢 Activa', completed: '✅ Completada', cancelled_fraud: '🚨 Fraude', pending: '🕐 Pendiente' };
 
-    const handleCampaignResponse = async (campaignId, action) => {
+    const [liveMetrics, setLiveMetrics] = useState({}); // { [campaignId]: { posts, loading } }
+
+    const fetchLiveMetrics = async (campaignId) => {
+        setLiveMetrics(prev => ({ ...prev, [campaignId]: { ...prev[campaignId], loading: true } }));
         try {
-            await api.patch(`/promo/campaigns/${campaignId}?sfs_user_id=${sfsUser.id}&action=${action}`);
-            showToast(action === 'accept' ? '¡Propuesta aceptada!' : 'Propuesta rechazada', action === 'accept' ? 'success' : 'error');
-            fetchCampaigns();
-        } catch (err) {
-            showToast(err.response?.data?.detail || 'Error al responder', 'error');
+            const res = await api.get(`/promo/campaigns/${campaignId}/posts?sfs_user_id=${sfsUser.id}`);
+            setLiveMetrics(prev => ({ ...prev, [campaignId]: { posts: res.data.posts, campaign: res.data.campaign, loading: false } }));
+        } catch {
+            setLiveMetrics(prev => ({ ...prev, [campaignId]: { ...prev[campaignId], loading: false } }));
         }
     };
 
@@ -821,6 +823,11 @@ const Promotions = () => {
                             : c.type === 'SFS_FOLLOWERS'
                                 ? `${(c.followers_target || 0).toLocaleString()} subs nuevos`
                                 : c.type;
+                    const metrics = liveMetrics[c.id];
+                    const totalViews = (metrics?.posts || []).reduce((sum, p) => sum + (p.current_views || 0), 0);
+                    const goal = c.views_target || 0;
+                    const progress = goal > 0 ? Math.min(100, Math.round((totalViews / goal) * 100)) : 0;
+
                     return (
                         <div key={c.id} className="bg-card/40 border border-white/5 rounded-xl p-4 space-y-3">
                             <div className="flex justify-between items-start">
@@ -840,6 +847,62 @@ const Promotions = () => {
                                     {statusLabel[c.status] || c.status}
                                 </span>
                             </div>
+
+                            {/* Métricas en vivo — solo para campañas activas */}
+                            {c.status === 'active' && (
+                                <div className="bg-black/20 rounded-xl p-3 space-y-2 border border-white/5">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">📊 Métricas en vivo</p>
+                                        <button
+                                            onClick={() => fetchLiveMetrics(c.id)}
+                                            disabled={metrics?.loading}
+                                            className="text-[10px] text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1 transition-colors disabled:opacity-50"
+                                        >
+                                            {metrics?.loading ? <Loader className="w-3 h-3 animate-spin" /> : '↻'} Actualizar
+                                        </button>
+                                    </div>
+
+                                    {metrics?.posts?.length > 0 ? (
+                                        <>
+                                            {c.type === 'SFS_VIEWS' && (
+                                                <>
+                                                    <div className="flex justify-between text-xs">
+                                                        <span className="text-muted-foreground">{totalViews.toLocaleString()} vistas acumuladas</span>
+                                                        <span className="font-bold text-foreground">{progress}%</span>
+                                                    </div>
+                                                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-700"
+                                                            style={{ width: `${progress}%` }}
+                                                        />
+                                                    </div>
+                                                    <p className="text-[10px] text-muted-foreground/60">
+                                                        Meta: {(goal).toLocaleString()} vistas · Faltan: {Math.max(0, goal - totalViews).toLocaleString()}
+                                                    </p>
+                                                </>
+                                            )}
+                                            {c.type === 'SFS_TIME' && c.start_time && (() => {
+                                                const end = new Date(c.start_time);
+                                                end.setHours(end.getHours() + (c.duration_hours || 0));
+                                                const remaining = Math.max(0, end - Date.now());
+                                                const hLeft = Math.floor(remaining / 3600000);
+                                                const mLeft = Math.floor((remaining % 3600000) / 60000);
+                                                return <p className="text-xs text-foreground font-bold">⏱ {hLeft}h {mLeft}m restantes</p>;
+                                            })()}
+                                            <div className="space-y-1">
+                                                {metrics.posts.map(post => (
+                                                    <div key={post.id} className="flex justify-between text-[10px] text-muted-foreground">
+                                                        <span className="truncate">{post.channel?.name || 'Canal'}</span>
+                                                        <span className="font-bold text-foreground">{(post.current_views || 0).toLocaleString()} 👁</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    ) : !metrics?.loading ? (
+                                        <p className="text-[10px] text-muted-foreground/60">Pulsa ↻ Actualizar para ver las métricas live</p>
+                                    ) : null}
+                                </div>
+                            )}
 
                             {/* Botones de acción */}
                             <div className="flex gap-2">
