@@ -54,9 +54,18 @@ async def play_game(
     if user.role != "client":
         raise HTTPException(status_code=403, detail="Only fans can play")
 
-    # 1. Check user balance
+    # 1. Get Spin Price from Model Settings
+    price_res = db.client.table("model_casino_settings")\
+        .select("spin_price")\
+        .eq("model_id", bet.model_id)\
+        .eq("game_slug", bet.game_slug)\
+        .maybe_single().execute()
+    
+    bet_amount = float(price_res.data['spin_price']) if price_res.data else 10.0
+
+    # 2. Check user balance
     wallet_res = db.client.table("wallets").select("balance").eq("user_id", user.user_id).maybe_single().execute()
-    if not wallet_res.data or float(wallet_res.data['balance']) < bet.bet_amount:
+    if not wallet_res.data or float(wallet_res.data['balance']) < bet_amount:
         raise HTTPException(status_code=400, detail="Saldo insuficiente")
     
     current_balance = float(wallet_res.data['balance'])
@@ -73,7 +82,7 @@ async def play_game(
 
     # 4. Atomic Transactionish (manual flow for now)
     # Deduct bet amount
-    new_balance = current_balance - bet.bet_amount
+    new_balance = current_balance - bet_amount
     db.client.table("wallets").update({"balance": new_balance}).eq("user_id", user.user_id).execute()
 
     outcome = {"won": won_prize is not None}
@@ -100,7 +109,7 @@ async def play_game(
         "user_id": user.user_id,
         "model_id": bet.model_id,
         "game_id": game_id,
-        "bet_amount": bet.bet_amount,
+        "bet_amount": bet_amount,
         "outcome_json": outcome,
         "payout_amount": payout
     }
@@ -145,6 +154,32 @@ async def create_prize(
 
     response = db.client.table("model_casino_prizes").insert(data).execute()
     return response.data[0]
+@router.get("/model/{model_id}/settings")
+async def get_casino_settings(model_id: UUID):
+    """Fetch spin prices for a specific model."""
+    res = db.client.table("model_casino_settings").select("*").eq("model_id", str(model_id)).execute()
+    return res.data
+
+@router.post("/settings")
+async def update_casino_settings(
+    game_slug: str,
+    spin_price: float,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Allow models to set their own spin prices."""
+    if user.role != "model":
+        raise HTTPException(status_code=403, detail="Only models can change settings")
+    
+    # Upsert logic
+    data = {
+        "model_id": user.user_id,
+        "game_slug": game_slug,
+        "spin_price": spin_price
+    }
+    
+    res = db.client.table("model_casino_settings").upsert(data, on_conflict="model_id,game_slug").execute()
+    return {"status": "success", "data": res.data}
+
 @router.delete("/prizes/{prize_id}")
 async def delete_prize(
     prize_id: UUID,

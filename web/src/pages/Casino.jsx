@@ -17,8 +17,9 @@ function Casino() {
 
     const [model, setModel] = useState(null);
     const [prizes, setPrizes] = useState([]);
+    const [prices, setPrices] = useState({ roulette: 10, slots: 10 });
     const [loading, setLoading] = useState(true);
-    const [activeGame, setActiveGame] = useState('roulette'); // 'roulette' or 'slots'
+    const [activeGame, setActiveGame] = useState('roulette');
     const [betting, setBetting] = useState(false);
     const [result, setResult] = useState(null);
     const [history, setHistory] = useState([]);
@@ -26,7 +27,6 @@ function Casino() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch latest user profile to ensure balance is correct
                 const meRes = await api.get('/profile/me');
                 updateUser(meRes.data);
 
@@ -35,6 +35,17 @@ function Casino() {
 
                 const prizesRes = await api.get(`/casino/model/${modelRes.data.id}/prizes`);
                 setPrizes(prizesRes.data);
+
+                try {
+                    const settingsRes = await api.get(`/casino/model/${modelRes.data.id}/settings`);
+                    const settingsMap = {};
+                    settingsRes.data.forEach(s => {
+                        settingsMap[s.game_slug] = s.spin_price;
+                    });
+                    setPrices(prev => ({ ...prev, ...settingsMap }));
+                } catch (e) {
+                    console.log("Using default prices");
+                }
 
                 const historyRes = await api.get('/casino/my-bets');
                 setHistory(historyRes.data);
@@ -54,36 +65,37 @@ function Casino() {
         setResult(null);
 
         try {
+            const spinCost = prices[activeGame] || 10;
             const { data } = await api.post('/casino/play', {
                 model_id: model.id,
                 game_slug: activeGame,
-                bet_amount: 10
+                bet_amount: spinCost
             });
 
             setResult(data);
 
-            // Sync balance after play
-            if (data.new_balance !== undefined) {
-                updateUser({ wallet_balance: data.new_balance });
-            }
+            const animDuration = activeGame === 'roulette' ? 6200 : 2500;
 
-            const historyRes = await api.get('/casino/my-bets');
-            setHistory(historyRes.data);
+            setTimeout(async () => {
+                if (data.new_balance !== undefined) {
+                    updateUser({ wallet_balance: data.new_balance });
+                }
 
-            if (data.won) {
-                showToast(`¡FELICIDADES! Ganaste: ${data.prize}`, "success");
-            } else {
-                showToast("Más suerte la próxima vez", "info");
-            }
+                const historyRes = await api.get('/casino/my-bets');
+                setHistory(historyRes.data);
+
+                if (data.won) {
+                    showToast(`¡FELICIDADES! Ganaste: ${data.prize}`, "success");
+                } else {
+                    showToast("Más suerte la próxima vez", "info");
+                }
+                setBetting(false);
+            }, animDuration);
+
         } catch (err) {
             console.error("Error playing:", err);
             showToast(err.response?.data?.detail || "Error al jugar", "error");
             setBetting(false);
-        } finally {
-            if (activeGame === 'roulette') setBetting(false);
-            if (activeGame === 'slots') {
-                setTimeout(() => setBetting(false), 2000);
-            }
         }
     };
 
@@ -95,7 +107,6 @@ function Casino() {
 
     return (
         <div className="min-h-screen bg-black text-white pb-20">
-            {/* Header */}
             <div className="p-4 flex items-center justify-between sticky top-0 z-50 bg-black/80 backdrop-blur-md">
                 <button onClick={() => navigate(-1)} className="p-2 rounded-full bg-white/5">
                     <ArrowLeft size={20} />
@@ -108,7 +119,6 @@ function Casino() {
             </div>
 
             <div className="max-w-md mx-auto px-4 pt-4">
-                {/* Game Selector Tabs */}
                 <div className="flex gap-2 mb-6 p-1 bg-white/5 rounded-2xl border border-white/5">
                     <button
                         onClick={() => setActiveGame('roulette')}
@@ -126,7 +136,6 @@ function Casino() {
                     </button>
                 </div>
 
-                {/* Visual Intro */}
                 {activeGame === 'roulette' && (
                     <div className="text-center mb-8">
                         <div className="inline-block p-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 mb-4">
@@ -136,12 +145,16 @@ function Casino() {
                                 </span>
                             </div>
                         </div>
-                        <p className="text-white/60 text-sm">Apuesta 10 créditos y gana premios exclusivos</p>
+                        <p className="text-white/60 text-sm">Apuesta {prices.roulette} créditos y gana premios exclusivos</p>
                     </div>
                 )}
 
+                {activeGame === 'slots' && (
+                    <div className="text-center mb-8">
+                        <p className="text-white/60 text-sm">Apuesta {prices.slots} créditos y alinea los símbolos</p>
+                    </div>
+                )}
 
-                {/* Game Display */}
                 <div className="mb-10 flex justify-center py-4">
                     {activeGame === 'roulette' ? (
                         <Roulette
@@ -161,7 +174,6 @@ function Casino() {
                     )}
                 </div>
 
-                {/* Prize List */}
                 <div className="bg-white/5 rounded-3xl p-6 mb-8 border border-white/10">
                     <div className="flex items-center gap-2 mb-4">
                         <Trophy size={18} className="text-yellow-500" />
@@ -178,7 +190,6 @@ function Casino() {
                     </div>
                 </div>
 
-                {/* Recent History */}
                 <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
                     <div className="flex items-center gap-2 mb-4">
                         <History size={18} className="text-blue-500" />

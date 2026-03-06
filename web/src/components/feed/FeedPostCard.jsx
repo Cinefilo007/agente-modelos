@@ -71,7 +71,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         videoRef.current.muted = isMuted;
                         videoRef.current.play().catch(e => console.log("Autoplay prevented:", e.message));
                     } else {
-                        videoRef.current.pause();
+                        if (videoRef.current) videoRef.current.pause();
                     }
                 });
             },

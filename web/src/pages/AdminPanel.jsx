@@ -523,8 +523,10 @@ export default function AdminPanel() {
 
 function CasinoTab({ themeColor, showToast }) {
     const [prizes, setPrizes] = useState([]);
+    const [prices, setPrices] = useState({ roulette: 10, slots: 10 });
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
+    const [savingPrices, setSavingPrices] = useState(false);
     const [newPrize, setNewPrize] = useState({
         prize_name: '',
         prize_type: 'custom_service',
@@ -532,22 +534,45 @@ function CasinoTab({ themeColor, showToast }) {
         prize_value_json: {}
     });
 
-    const fetchPrizes = async () => {
+    const fetchData = async () => {
         try {
-            // First fetch model ID to use in prizes endpoint
             const profile = await api.get('/profile/me');
-            const res = await api.get(`/casino/model/${profile.data.id}/prizes`);
-            setPrizes(res.data);
+            const [prizesRes, settingsRes] = await Promise.all([
+                api.get(`/casino/model/${profile.data.id}/prizes`),
+                api.get(`/casino/model/${profile.data.id}/settings`)
+            ]);
+
+            setPrizes(prizesRes.data);
+            const settingsMap = {};
+            settingsRes.data.forEach(s => {
+                settingsMap[s.game_slug] = s.spin_price;
+            });
+            setPrices(prev => ({ ...prev, ...settingsMap }));
         } catch (err) {
-            console.error("Error fetching prizes:", err);
+            console.error("Error fetching casino data:", err);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchPrizes();
+        fetchData();
     }, []);
+
+    const handleSavePrices = async () => {
+        setSavingPrices(true);
+        try {
+            await Promise.all([
+                api.post('/casino/settings', { game_slug: 'roulette', spin_price: prices.roulette }),
+                api.post('/casino/settings', { game_slug: 'slots', spin_price: prices.slots })
+            ]);
+            showToast("Precios actualizados", "success");
+        } catch (err) {
+            showToast("Error al guardar precios", "error");
+        } finally {
+            setSavingPrices(false);
+        }
+    };
 
     const handleAddPrize = async (e) => {
         e.preventDefault();
@@ -585,7 +610,46 @@ function CasinoTab({ themeColor, showToast }) {
                 <h3 className="text-xl font-bold flex items-center gap-2 mb-2">
                     <Gamepad2 size={24} style={{ color: themeColor }} /> Tu Casino Personal
                 </h3>
-                <p className="text-sm text-muted-foreground mb-6">Configura los premios que tus fans pueden ganar al jugar en tu perfil.</p>
+                <p className="text-sm text-muted-foreground mb-6">Configura los premios y precios que tus fans encontrarán al jugar.</p>
+
+                {/* Spin Prices Configuration */}
+                <div className="bg-white/5 rounded-3xl p-6 border border-white/5 mb-8">
+                    <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60 mb-4">Precios por Giro</h4>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase ml-1">Ruleta</label>
+                            <div className="relative mt-1">
+                                <input
+                                    type="number"
+                                    value={prices.roulette}
+                                    onChange={(e) => setPrices({ ...prices, roulette: parseFloat(e.target.value) })}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 pl-8 text-sm focus:outline-none focus:border-white/30"
+                                />
+                                <Coins className="absolute left-2.5 top-1/2 -translate-y-1/2 text-yellow-500/50" size={14} />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase ml-1">Slots</label>
+                            <div className="relative mt-1">
+                                <input
+                                    type="number"
+                                    value={prices.slots}
+                                    onChange={(e) => setPrices({ ...prices, slots: parseFloat(e.target.value) })}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 pl-8 text-sm focus:outline-none focus:border-white/30"
+                                />
+                                <Gamepad2 className="absolute left-2.5 top-1/2 -translate-y-1/2 text-blue-500/50" size={14} />
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleSavePrices}
+                        disabled={savingPrices}
+                        className="w-full py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl transition-all border border-white/5 flex items-center justify-center gap-2"
+                    >
+                        {savingPrices ? <Loader className="animate-spin" size={14} /> : <Save size={14} />}
+                        {savingPrices ? 'Guardando...' : 'Actualizar Precios'}
+                    </button>
+                </div>
 
                 <div className="bg-white/5 rounded-2xl p-4 border border-white/5 mb-8">
                     <div className="flex justify-between items-center mb-2">
