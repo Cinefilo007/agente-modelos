@@ -54,14 +54,17 @@ async def play_game(
     if user.role != "client":
         raise HTTPException(status_code=403, detail="Only fans can play")
 
-    # 1. Get Spin Price from Model Settings
-    price_res = db.client.table("model_casino_settings")\
-        .select("spin_price")\
-        .eq("model_id", bet.model_id)\
-        .eq("game_slug", bet.game_slug)\
-        .maybe_single().execute()
-    
-    bet_amount = float(price_res.data['spin_price']) if price_res.data else 10.0
+    # 1. Get Spin Price from Model Settings (Safe Fetch)
+    try:
+        price_res = db.client.table("model_casino_settings")\
+            .select("spin_price")\
+            .eq("model_id", str(bet.model_id))\
+            .eq("game_slug", bet.game_slug)\
+            .maybe_single().execute()
+        bet_amount = float(price_res.data['spin_price']) if price_res.data else 10.0
+    except Exception as e:
+        print(f"Error fetching spin price, using default: {e}")
+        bet_amount = 10.0
 
     # 2. Check user balance
     wallet_res = db.client.table("wallets").select("balance").eq("user_id", user.user_id).maybe_single().execute()
@@ -157,8 +160,12 @@ async def create_prize(
 @router.get("/model/{model_id}/settings")
 async def get_casino_settings(model_id: UUID):
     """Fetch spin prices for a specific model."""
-    res = db.client.table("model_casino_settings").select("*").eq("model_id", str(model_id)).execute()
-    return res.data
+    try:
+        res = db.client.table("model_casino_settings").select("*").eq("model_id", str(model_id)).execute()
+        return res.data
+    except Exception as e:
+        print(f"Table model_casino_settings missing: {e}")
+        return []
 
 @router.post("/settings")
 async def update_casino_settings(
@@ -170,15 +177,18 @@ async def update_casino_settings(
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Only models can change settings")
     
-    # Upsert logic
     data = {
         "model_id": user.user_id,
         "game_slug": game_slug,
         "spin_price": spin_price
     }
-    
-    res = db.client.table("model_casino_settings").upsert(data, on_conflict="model_id,game_slug").execute()
-    return {"status": "success", "data": res.data}
+
+    try:
+        res = db.client.table("model_casino_settings").upsert(data, on_conflict="model_id,game_slug").execute()
+        return {"status": "success", "data": res.data}
+    except Exception as e:
+        print(f"Error updating settings: {e}")
+        raise HTTPException(status_code=500, detail="Error al guardar configuración. Verifique que la tabla 'model_casino_settings' exista.")
 
 @router.delete("/prizes/{prize_id}")
 async def delete_prize(

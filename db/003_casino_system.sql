@@ -36,6 +36,16 @@ CREATE TABLE IF NOT EXISTS casino_bets (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- 4. Tabla de Configuración de Casino por Modelo
+CREATE TABLE IF NOT EXISTS model_casino_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    model_id UUID REFERENCES models(id) ON DELETE CASCADE,
+    game_slug TEXT NOT NULL,
+    spin_price DECIMAL(12, 2) DEFAULT 10,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(model_id, game_slug)
+);
+
 -- 4. Extensión de Tipos de Transacción (Enum o Check si existe)
 -- Nota: Esto depende de cómo esté implementada la tabla wallets
 -- Supongamos que hay una columna 'transaction_type' en wallet_transactions
