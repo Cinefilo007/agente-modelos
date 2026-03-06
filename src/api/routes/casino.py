@@ -55,9 +55,11 @@ async def play_game(
         raise HTTPException(status_code=403, detail="Only fans can play")
 
     # 1. Check user balance
-    client_res = db.client.table("clients").select("wallet_balance").eq("id", user.user_id).single().execute()
-    if not client_res.data or float(client_res.data['wallet_balance']) < bet.bet_amount:
+    wallet_res = db.client.table("wallets").select("balance").eq("user_id", user.user_id).maybe_single().execute()
+    if not wallet_res.data or float(wallet_res.data['balance']) < bet.bet_amount:
         raise HTTPException(status_code=400, detail="Saldo insuficiente")
+    
+    current_balance = float(wallet_res.data['balance'])
 
     # 2. Get Game ID
     game_res = db.client.table("casino_games").select("id").eq("slug", bet.game_slug).single().execute()
@@ -67,16 +69,12 @@ async def play_game(
 
     # 3. Get Model Prizes
     prizes_res = db.client.table("model_casino_prizes").select("*").eq("model_id", bet.model_id).eq("is_active", True).execute()
-    if not prizes_res.data:
-        # Default: No prizes configured means 100% loss or model hasn't setup casino
-        won_prize = None
-    else:
-        won_prize = casino_engine.resolve_bet(prizes_res.data)
+    won_prize = casino_engine.resolve_bet(prizes_res.data) if prizes_res.data else None
 
     # 4. Atomic Transactionish (manual flow for now)
     # Deduct bet amount
-    new_balance = float(client_res.data['wallet_balance']) - bet.bet_amount
-    db.client.table("clients").update({"wallet_balance": new_balance}).eq("id", user.user_id).execute()
+    new_balance = current_balance - bet.bet_amount
+    db.client.table("wallets").update({"balance": new_balance}).eq("user_id", user.user_id).execute()
 
     outcome = {"won": won_prize is not None}
     payout = 0
@@ -91,10 +89,10 @@ async def play_game(
             bonus = won_prize['prize_value_json'].get('amount', 0)
             payout = bonus
             new_balance += bonus
-            db.client.table("clients").update({"wallet_balance": new_balance}).eq("id", user.user_id).execute()
+            db.client.table("wallets").update({"balance": new_balance}).eq("user_id", user.user_id).execute()
         
         elif won_prize['prize_type'] == "unlock_post":
-            # Logic to grant access (could be a simple record in a new table or outcome_json is enough)
+            # Logic to grant access
             pass
 
     # 5. Save Bet Record

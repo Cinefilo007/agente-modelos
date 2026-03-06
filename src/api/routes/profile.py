@@ -190,6 +190,11 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
         if not client.data:
              raise HTTPException(status_code=404, detail="Client profile not found.")
         user_data = client.data
+        
+        # Fetch real wallet balance
+        wallet_res = db.client.table("wallets").select("balance").eq("user_id", user_data['id']).maybe_single().execute()
+        user_data['wallet_balance'] = float(wallet_res.data['balance']) if wallet_res.data else 0.0
+        
         user_data['role'] = 'client'
         return user_data
 
