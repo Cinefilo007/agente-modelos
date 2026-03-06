@@ -147,3 +147,19 @@ async def create_prize(
 
     response = db.client.table("model_casino_prizes").insert(data).execute()
     return response.data[0]
+@router.delete("/prizes/{prize_id}")
+async def delete_prize(
+    prize_id: UUID,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Allow models to deactivate their prizes."""
+    if user.role != "model":
+        raise HTTPException(status_code=403, detail="Only models can manage prizes")
+    
+    # Verify ownership
+    existing = db.client.table("model_casino_prizes").select("model_id").eq("id", str(prize_id)).single().execute()
+    if not existing.data or existing.data['model_id'] != user.user_id:
+        raise HTTPException(status_code=404, detail="Premio no encontrado o no autorizado")
+
+    response = db.client.table("model_casino_prizes").update({"is_active": False}).eq("id", str(prize_id)).execute()
+    return {"status": "success"}

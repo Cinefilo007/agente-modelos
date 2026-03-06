@@ -7,7 +7,7 @@ import StoryViewer from '../components/profile/StoryViewer';
 import ClientProfile from './ClientProfile'; // Import Client View
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck } from 'lucide-react';
+import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck, Gamepad2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 
@@ -162,6 +162,13 @@ function Profile() {
                         <span className="text-sm font-semibold">{isFollowing ? 'Siguiendo' : 'Seguir'}</span>
                     </>
                 )}
+            </button>
+            <button
+                onClick={() => navigate(`/casino/${profileUser.username || profileUser.id}`)}
+                className="w-full h-full bg-card/60 border border-white/10 text-foreground hover:bg-white/10 gap-2 rounded-2xl py-4 shadow-lg backdrop-blur-md transition-all hover:border-white/20 flex items-center justify-center group"
+            >
+                <Gamepad2 size={18} className="text-purple-400 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">Casino</span>
             </button>
             <button
                 onClick={() => requireAuth(handleTelegramChat)}
