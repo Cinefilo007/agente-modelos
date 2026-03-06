@@ -11,7 +11,7 @@ import { Loader, ArrowLeft, Coins, Trophy, History, Gamepad2, Sparkles } from 'l
 function Casino() {
     const { username } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const { showToast } = useToast();
     const { themeColor } = useTheme();
 
@@ -26,15 +26,16 @@ function Casino() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Fetch Model Info
+                // Fetch latest user profile to ensure balance is correct
+                const meRes = await api.get('/profile/me');
+                updateUser(meRes.data);
+
                 const modelRes = await api.get(`/profile/${username}`);
                 setModel(modelRes.data);
 
-                // 2. Fetch Prizes
                 const prizesRes = await api.get(`/casino/model/${modelRes.data.id}/prizes`);
                 setPrizes(prizesRes.data);
 
-                // 3. Fetch History
                 const historyRes = await api.get('/casino/my-bets');
                 setHistory(historyRes.data);
             } catch (err) {
@@ -61,7 +62,11 @@ function Casino() {
 
             setResult(data);
 
-            // Re-fetch history
+            // Sync balance after play
+            if (data.new_balance !== undefined) {
+                updateUser({ wallet_balance: data.new_balance });
+            }
+
             const historyRes = await api.get('/casino/my-bets');
             setHistory(historyRes.data);
 
@@ -73,13 +78,9 @@ function Casino() {
         } catch (err) {
             console.error("Error playing:", err);
             showToast(err.response?.data?.detail || "Error al jugar", "error");
-            setBetting(false); // Only reset on error here, successful spin resets via component effect or manual if needed
+            setBetting(false);
         } finally {
-            // Note: For Slots, we might want to wait for animation.
-            // The component handles IS_ANIMATING internally, but 'betting' state in parent prevents multiple calls.
             if (activeGame === 'roulette') setBetting(false);
-            // Slots will trigger a state change via timeout or similar if we wanted,
-            // but for simplicity, we'll let parent state manage the API lock.
             if (activeGame === 'slots') {
                 setTimeout(() => setBetting(false), 2000);
             }
@@ -99,7 +100,7 @@ function Casino() {
                 <button onClick={() => navigate(-1)} className="p-2 rounded-full bg-white/5">
                     <ArrowLeft size={20} />
                 </button>
-                <h1 className="text-lg font-bold">Casino de {model?.artistic_name || model?.username}</h1>
+                <h1 className="text-lg font-bold">Suerte con {model?.artistic_name || model?.username}</h1>
                 <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
                     <Coins size={16} className="text-yellow-400" />
                     <span className="text-sm font-bold">{user?.wallet_balance || 0}</span>

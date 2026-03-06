@@ -1,25 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { motion, useAnimation } from 'framer-motion';
 import './Roulette.css';
 
 export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor }) {
-    const [rotation, setRotation] = useState(0);
+    const controls = useAnimation();
     const [lastRotation, setLastRotation] = useState(0);
 
     useEffect(() => {
         if (winnerIndex !== -1 && !isSpinning) {
-            // Calculate final rotation
-            // Each slice size
-            const sliceSize = 360 / prizes.length;
-            // Center of the winning slice (inverted because roulette rotates)
-            const targetRotation = 360 - (winnerIndex * sliceSize) - (sliceSize / 2);
-
-            // Add 10 full spins for effect (3600 deg)
-            const totalRotation = lastRotation + (3600 - (lastRotation % 360)) + targetRotation;
-
-            setRotation(totalRotation);
-            setLastRotation(totalRotation);
+            spinTo(winnerIndex);
         }
     }, [winnerIndex, isSpinning]);
+
+    const spinTo = async (index) => {
+        const sliceSize = 360 / prizes.length;
+        const targetRotation = 360 - (index * sliceSize) - (sliceSize / 2);
+
+        // Add full spins + offset
+        const totalRotation = lastRotation + (360 * 8) + targetRotation - (lastRotation % 360);
+
+        await controls.start({
+            rotate: totalRotation,
+            transition: {
+                duration: 6,
+                ease: [0.15, 0, 0.15, 1], // Custom slow-down ease
+            }
+        });
+        setLastRotation(totalRotation);
+    };
 
     const handleButtonClick = () => {
         if (!isSpinning) {
@@ -30,11 +38,11 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor }
     return (
         <div className="roulette-container">
             <div className="roulette-pointer" style={{ borderBottomColor: themeColor }}></div>
-            <div
-                className={`roulette-wheel ${isSpinning ? 'spinning' : ''}`}
+            <motion.div
+                className="roulette-wheel"
+                animate={controls}
                 style={{
-                    transform: `rotate(${rotation}deg)`,
-                    transition: isSpinning ? 'none' : 'transform 5s cubic-bezier(0.15, 0, 0.15, 1)'
+                    rotate: lastRotation,
                 }}
             >
                 {prizes.map((prize, idx) => {
@@ -60,7 +68,7 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor }
                 {prizes.length === 0 && (
                     <div className="roulette-empty">Configura premios</div>
                 )}
-            </div>
+            </motion.div>
 
             <button
                 onClick={handleButtonClick}

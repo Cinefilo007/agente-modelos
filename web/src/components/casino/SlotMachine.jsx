@@ -1,84 +1,75 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './SlotMachine.css';
 
 const SYMBOLS = ['🍒', '🍋', '🔔', '💎', '7️⃣', '🍀', '⭐', '🔥'];
 
 export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
-    const [reels, setReels] = useState([SYMBOLS[0], SYMBOLS[1], SYMBOLS[2]]);
-    const [isAnimating, setIsAnimating] = useState(false);
-    const timeoutRefs = useRef([]);
+    const [reels, setReels] = useState([0, 1, 2]); // Indexes of SYMBOLS
+    const [spinningReels, setSpinningReels] = useState([false, false, false]);
 
     useEffect(() => {
-        if (isSpinning) {
-            startSpinning();
+        if (isSpinning && result === null) {
+            setSpinningReels([true, true, true]);
         } else if (result) {
-            stopSpinning(result);
+            stopReels(result);
         }
     }, [isSpinning, result]);
 
-    const startSpinning = () => {
-        setIsAnimating(true);
-        // Clean previous intervals if any
-        timeoutRefs.current.forEach(clearTimeout);
-        timeoutRefs.current = [];
-
-        // Continuous random shuffle for animation
-        const interval = setInterval(() => {
-            setReels([
-                SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-                SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-                SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-            ]);
-        }, 100);
-
-        timeoutRefs.current.push(interval);
-    };
-
-    const stopSpinning = (res) => {
-        // Clear the rotation interval
-        timeoutRefs.current.forEach(clearTimeout);
-        timeoutRefs.current = [];
-
-        // Determine final symbols based on result
-        let finalReels = [];
+    const stopReels = (res) => {
+        // Determine final indexes
+        let finalIndexes = [];
         if (res.won) {
-            // Pick a winning symbol (same for all 3)
-            const winSym = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-            finalReels = [winSym, winSym, winSym];
+            const winIdx = Math.floor(Math.random() * SYMBOLS.length);
+            finalIndexes = [winIdx, winIdx, winIdx];
         } else {
-            // Non-matching symbols
-            finalReels = [
-                SYMBOLS[0],
-                SYMBOLS[1],
-                SYMBOLS[2]
+            finalIndexes = [
+                Math.floor(Math.random() * SYMBOLS.length),
+                Math.floor(Math.random() * SYMBOLS.length),
+                Math.floor(Math.random() * SYMBOLS.length)
             ];
-            // Shuffle them a bit to not always show the same loss
-            finalReels.sort(() => Math.random() - 0.5);
-            // Ensure they are not all the same by chance
-            if (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]) {
-                finalReels[0] = SYMBOLS[(SYMBOLS.indexOf(finalReels[0]) + 1) % SYMBOLS.length];
+            // Ensure no win by accident
+            if (finalIndexes[0] === finalIndexes[1] && finalIndexes[1] === finalIndexes[2]) {
+                finalIndexes[0] = (finalIndexes[0] + 1) % SYMBOLS.length;
             }
         }
 
-        // Staggered stop effect
+        // Staggered stop
         setTimeout(() => {
-            setReels(prev => [finalReels[0], prev[1], prev[2]]);
+            setSpinningReels([false, true, true]);
+            setReels(prev => [finalIndexes[0], prev[1], prev[2]]);
             setTimeout(() => {
-                setReels(prev => [prev[0], finalReels[1], prev[2]]);
+                setSpinningReels([false, false, true]);
+                setReels(prev => [prev[0], finalIndexes[1], prev[2]]);
                 setTimeout(() => {
-                    setReels(prev => [prev[0], prev[1], finalReels[2]]);
-                    setIsAnimating(false);
-                }, 500);
-            }, 500);
-        }, 500);
+                    setSpinningReels([false, false, false]);
+                    setReels(prev => [prev[0], prev[1], finalIndexes[2]]);
+                }, 600);
+            }, 600);
+        }, 800);
     };
 
     return (
         <div className="slots-container">
             <div className="slots-window border-2" style={{ borderColor: themeColor }}>
-                {reels.map((symbol, idx) => (
-                    <div key={idx} className={`slot-reel ${isAnimating ? 'blur-sm' : ''}`}>
-                        <div className="slot-symbol">{symbol}</div>
+                {[0, 1, 2].map((reelIdx) => (
+                    <div key={reelIdx} className="slot-reel-container">
+                        <AnimatePresence mode="popLayout">
+                            <motion.div
+                                key={spinningReels[reelIdx] ? 'spinning' : reels[reelIdx]}
+                                initial={{ y: spinningReels[reelIdx] ? -20 : 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: spinningReels[reelIdx] ? 20 : -20, opacity: 0 }}
+                                transition={{
+                                    duration: spinningReels[reelIdx] ? 0.1 : 0.5,
+                                    repeat: spinningReels[reelIdx] ? Infinity : 0,
+                                    ease: spinningReels[reelIdx] ? "linear" : "backOut"
+                                }}
+                                className="slot-symbol-wrapper"
+                            >
+                                {SYMBOLS[spinningReels[reelIdx] ? Math.floor(Math.random() * SYMBOLS.length) : reels[reelIdx]]}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
                 ))}
                 <div className="slots-payline" style={{ backgroundColor: themeColor }}></div>

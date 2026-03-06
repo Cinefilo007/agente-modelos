@@ -211,7 +211,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                                     variant="ghost"
                                 >
                                     <Gamepad2 size={20} className="text-purple-400" />
-                                    <span className="text-sm">Casino</span>
+                                    <span className="text-sm">Probar suerte</span>
                                 </Button>
                             </Link>
                             <Button

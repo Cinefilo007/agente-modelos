@@ -19,8 +19,8 @@
     justify-content: center;
 }
 
-.slot-reel {
-    width: 70px;
+.slot-reel-container {
+    width: 76px;
     height: 100px;
     background: #000;
     border-radius: 15px;
@@ -28,12 +28,16 @@
     align-items: center;
     justify-content: center;
     font-size: 40px;
-    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
-    transition: transform 0.1s linear;
+    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    position: relative;
 }
 
-.slot-reel.blur-sm {
-    filter: blur(2px);
+.slot-symbol-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
 }
 
 .slots-payline {

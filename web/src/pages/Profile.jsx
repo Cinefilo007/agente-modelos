@@ -168,7 +168,7 @@ function Profile() {
                 className="w-full h-full bg-card/60 border border-white/10 text-foreground hover:bg-white/10 gap-2 rounded-2xl py-4 shadow-lg backdrop-blur-md transition-all hover:border-white/20 flex items-center justify-center group"
             >
                 <Gamepad2 size={18} className="text-purple-400 group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">Casino</span>
+                <span className="text-sm font-semibold">Probar suerte</span>
             </button>
             <button
                 onClick={() => requireAuth(handleTelegramChat)}
