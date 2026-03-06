@@ -111,105 +111,115 @@ function Casino() {
     );
 
     return (
-        <div className="min-h-screen bg-black text-white pb-20">
-            <div className="p-4 flex items-center justify-between sticky top-0 z-50 bg-black/80 backdrop-blur-md">
-                <button onClick={() => navigate(-1)} className="p-2 rounded-full bg-white/5">
-                    <ArrowLeft size={20} />
-                </button>
-                <h1 className="text-lg font-bold">Suerte con {model?.artistic_name || model?.username}</h1>
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
-                    <Coins size={16} className="text-yellow-400" />
-                    <span className="text-sm font-bold">{user?.wallet_balance || 0}</span>
-                </div>
+        <div className="min-h-screen bg-[#080511] text-white pb-20 relative overflow-hidden">
+            {/* Premium Animated Background */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-purple-900/20 blur-[120px]"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-900/20 blur-[120px]"></div>
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
             </div>
 
-            <div className="max-w-md mx-auto px-4 pt-4">
-                <div className="flex gap-2 mb-6 p-1 bg-white/5 rounded-2xl border border-white/5">
-                    <button
-                        onClick={() => setActiveGame('roulette')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-xs uppercase tracking-widest ${activeGame === 'roulette' ? 'bg-white/10 shadow-lg' : 'opacity-40 hover:opacity-100'}`}
-                        style={activeGame === 'roulette' ? { borderBottom: `2px solid ${themeColor}` } : {}}
-                    >
-                        < Sparkles size={16} /> Ruleta
+            <div className="relative z-10">
+                <div className="p-4 flex items-center justify-between sticky top-0 z-50 bg-black/20 backdrop-blur-xl border-b border-white/5">
+                    <button onClick={() => navigate(-1)} className="p-2 rounded-full bg-white/5 active:scale-95 transition-transform">
+                        <ArrowLeft size={20} />
                     </button>
-                    <button
-                        onClick={() => setActiveGame('slots')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-xs uppercase tracking-widest ${activeGame === 'slots' ? 'bg-white/10 shadow-lg' : 'opacity-40 hover:opacity-100'}`}
-                        style={activeGame === 'slots' ? { borderBottom: `2px solid ${themeColor}` } : {}}
-                    >
-                        <Gamepad2 size={16} /> Slots
-                    </button>
+                    <h1 className="text-lg font-bold tracking-tight">Casino de {model?.artistic_name || model?.username}</h1>
+                    <div className="flex items-center gap-2 bg-white/10 px-4 py-1.5 rounded-full border border-white/10 shadow-lg">
+                        <Coins size={16} className="text-yellow-400" />
+                        <span className="text-sm font-bold">{user?.wallet_balance || 0}</span>
+                    </div>
                 </div>
 
-                {activeGame === 'roulette' && (
-                    <div className="text-center mb-8">
-                        <div className="inline-block p-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 mb-4">
-                            <div className="bg-black rounded-full px-6 py-2">
-                                <span className="text-sm font-bold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                                    Ruleta de la Fortuna
-                                </span>
+                <div className="max-w-md mx-auto px-4 pt-4">
+                    <div className="flex gap-2 mb-8 p-1.5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
+                        <button
+                            onClick={() => setActiveGame('roulette')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-[10px] uppercase tracking-[0.2em] ${activeGame === 'roulette' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'}`}
+                            style={activeGame === 'roulette' ? { borderBottom: `20px solid ${themeColor}00` } : {}}
+                        >
+                            <Sparkles size={14} /> Ruleta
+                        </button>
+                        <button
+                            onClick={() => setActiveGame('slots')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-[10px] uppercase tracking-[0.2em] ${activeGame === 'slots' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'}`}
+                        >
+                            <Gamepad2 size={14} /> Slots
+                        </button>
+                    </div>
+
+                    {activeGame === 'roulette' && (
+                        <div className="text-center mb-10">
+                            <div className="inline-block relative">
+                                <h1 className="text-2xl font-black italic tracking-tighter uppercase mb-2" style={{ textShadow: `0 0 20px ${themeColor}` }}>
+                                    Roulette of Fortune
+                                </h1>
+                                <div className="h-1 w-full bg-gradient-to-r from-transparent via-purple-500 to-transparent blur-sm"></div>
+                            </div>
+                            <p className="text-white/40 text-[11px] font-medium tracking-widest uppercase mt-4">Apuesta {prices.roulette} créditos • Gana premios exclusivos</p>
+                        </div>
+                    )}
+
+                    <div className="mb-14 flex justify-center py-6">
+                        {activeGame === 'roulette' ? (
+                            <Roulette
+                                prizes={prizes}
+                                onSpin={handleSpin}
+                                isSpinning={betting}
+                                winnerIndex={result?.won ? prizes.findIndex(p => p.prize_name === result.prize) : (result ? -1 : null)}
+                                themeColor={themeColor}
+                                onFinished={handleGameFinished}
+                            />
+                        ) : (
+                            <SlotMachine
+                                onSpin={handleSpin}
+                                isSpinning={betting}
+                                result={result}
+                                themeColor={themeColor}
+                            />
+                        )}
+                    </div>
+
+                    <div className="grid gap-6">
+                        <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 rounded-xl bg-yellow-500/10">
+                                    <Trophy size={20} className="text-yellow-500" />
+                                </div>
+                                <h2 className="text-xs font-black uppercase tracking-[0.15em] text-white/80">Premios en Juego</h2>
+                            </div>
+                            <div className="grid gap-3">
+                                {prizes.map((prize, idx) => (
+                                    <div key={idx} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors group">
+                                        <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">{prize.prize_name}</span>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                                            <span className="text-[10px] font-bold text-white/30 tracking-widest">{(prize.probability * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {prizes.length === 0 && <p className="text-xs text-center text-white/30 py-4 italic">No hay premios configurados aún.</p>}
                             </div>
                         </div>
-                        <p className="text-white/60 text-sm">Apuesta {prices.roulette} créditos y gana premios exclusivos</p>
-                    </div>
-                )}
 
-                {activeGame === 'slots' && (
-                    <div className="text-center mb-8">
-                        <p className="text-white/60 text-sm">Apuesta {prices.slots} créditos y alinea los símbolos</p>
-                    </div>
-                )}
-
-                <div className="mb-10 flex justify-center py-4">
-                    {activeGame === 'roulette' ? (
-                        <Roulette
-                            prizes={prizes}
-                            onSpin={handleSpin}
-                            isSpinning={betting}
-                            winnerIndex={result?.won ? prizes.findIndex(p => p.prize_name === result.prize) : (result ? -1 : null)}
-                            themeColor={themeColor}
-                            onFinished={handleGameFinished}
-                        />
-                    ) : (
-                        <SlotMachine
-                            onSpin={handleSpin}
-                            isSpinning={betting}
-                            result={result}
-                            themeColor={themeColor}
-                        />
-                    )}
-                </div>
-
-                <div className="bg-white/5 rounded-3xl p-6 mb-8 border border-white/10">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Trophy size={18} className="text-yellow-500" />
-                        <h2 className="text-sm font-bold uppercase tracking-wider">Posibles Premios</h2>
-                    </div>
-                    <div className="space-y-3">
-                        {prizes.map((prize, idx) => (
-                            <div key={idx} className="flex justify-between items-center p-3 rounded-2xl bg-white/5 border border-white/5">
-                                <span className="text-sm">{prize.prize_name}</span>
-                                <span className="text-xs text-white/40">{(prize.probability * 100).toFixed(0)}%</span>
+                        <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 rounded-xl bg-blue-500/10">
+                                    <History size={20} className="text-blue-500" />
+                                </div>
+                                <h2 className="text-xs font-black uppercase tracking-[0.15em] text-white/80">Historial Reciente</h2>
                             </div>
-                        ))}
-                        {prizes.length === 0 && <p className="text-xs text-white/40 text-center">La modelo no ha configurado premios aún.</p>}
-                    </div>
-                </div>
-
-                <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
-                    <div className="flex items-center gap-2 mb-4">
-                        <History size={18} className="text-blue-500" />
-                        <h2 className="text-sm font-bold uppercase tracking-wider">Últimas Jugadas</h2>
-                    </div>
-                    <div className="space-y-2">
-                        {history.slice(0, 5).map((bet, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-xs p-2 border-b border-white/5">
-                                <span>{new Date(bet.created_at).toLocaleTimeString()}</span>
-                                <span className={bet.outcome_json.won ? 'text-green-400 font-bold' : 'text-white/40'}>
-                                    {bet.outcome_json.won ? `Ganó ${bet.outcome_json.prize_name}` : 'No ganó'}
-                                </span>
+                            <div className="space-y-4">
+                                {history.slice(0, 5).map((bet, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-[11px] p-3 rounded-xl bg-white/5 border border-white/5">
+                                        <span className="text-white/40 font-medium">{new Date(bet.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span className={`font-bold tracking-tight ${bet.outcome_json.won ? 'text-green-400' : 'text-white/20'}`}>
+                                            {bet.outcome_json.won ? `GANÓ ${bet.outcome_json.prize_name}` : 'NO GANÓ'}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                        </div>
                     </div>
                 </div>
             </div>
