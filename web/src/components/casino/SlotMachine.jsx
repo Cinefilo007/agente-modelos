@@ -2,27 +2,34 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import './SlotMachine.css';
 
-const SYMBOLS = ['🍒', '🍋', '🔔', '💎', '7️⃣', '🍀', '⭐', '🔥'];
+const SYMBOLS = ['7️⃣', '💎', '⭐', '🍒', '🔔', '🍋', '🍀', '🔥'];
 
 export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
     // Each reel stores the index of the symbol it lands on.
     const [reels, setReels] = useState([0, 1, 2]);
     const controls = [useAnimation(), useAnimation(), useAnimation()];
 
+    const [isStopping, setIsStopping] = useState(false);
+
     useEffect(() => {
-        if (isSpinning && result === null) {
+        if (isSpinning && !isStopping) {
             startSpinning();
-        } else if (result) {
+        }
+    }, [isSpinning]);
+
+    useEffect(() => {
+        if (result && isSpinning) {
             stopSpinning(result);
         }
-    }, [isSpinning, result]);
+    }, [result]);
 
     const startSpinning = () => {
+        setIsStopping(false);
         controls.forEach(control => {
             control.start({
-                y: [0, -1000],
+                y: [0, -640],
                 transition: {
-                    duration: 1.5,
+                    duration: 0.8,
                     repeat: Infinity,
                     ease: "linear"
                 }
@@ -31,42 +38,45 @@ export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
     };
 
     const stopSpinning = async (res) => {
-        // Determine final indexes
-        let finalIndexes = [];
-        if (res.won) {
-            const winIdx = Math.floor(Math.random() * SYMBOLS.length);
-            finalIndexes = [winIdx, winIdx, winIdx];
-        } else {
-            finalIndexes = [
-                Math.floor(Math.random() * SYMBOLS.length),
-                Math.floor(Math.random() * SYMBOLS.length),
-                Math.floor(Math.random() * SYMBOLS.length)
-            ];
-            if (finalIndexes[0] === finalIndexes[1] && finalIndexes[1] === finalIndexes[2]) {
-                finalIndexes[0] = (finalIndexes[0] + 1) % SYMBOLS.length;
-            }
+        setIsStopping(true);
+        // Determine final symbols based on win/loss
+        // If won, all 3 same. If lost, at least one different.
+        let winnerIdx = Math.floor(Math.random() * SYMBOLS.length);
+        let finalIndexes = res.won ? [winnerIdx, winnerIdx, winnerIdx] : [
+            Math.floor(Math.random() * SYMBOLS.length),
+            Math.floor(Math.random() * SYMBOLS.length),
+            Math.floor(Math.random() * SYMBOLS.length)
+        ];
+
+        // Ensure no accidentaly win on loss
+        if (!res.won && finalIndexes[0] === finalIndexes[1] && finalIndexes[1] === finalIndexes[2]) {
+            finalIndexes[0] = (finalIndexes[0] + 1) % SYMBOLS.length;
         }
+
+        const symbolHeight = 80;
 
         // Staggered stop
         for (let i = 0; i < 3; i++) {
-            const symbolHeight = 80; // Match CSS
             const finalPos = -(finalIndexes[i] * symbolHeight);
 
-            await new Promise(resolve => setTimeout(resolve, i * 400));
+            // Wait a bit for each reel to give a realistic feel
+            await new Promise(r => setTimeout(r, i * 600));
 
-            controls[i].start({
-                y: [null, -2000, finalPos],
+            await controls[i].start({
+                y: [null, finalPos - (640 * 2)], // Spin 2 more times then stop
                 transition: {
-                    duration: 1.2,
-                    ease: "backOut"
+                    duration: 2,
+                    ease: [0.45, 0.05, 0.55, 0.95]
                 }
             });
+
             setReels(prev => {
                 const next = [...prev];
                 next[i] = finalIndexes[i];
                 return next;
             });
         }
+        setIsStopping(false);
     };
 
     const ReelColumn = ({ control, finalIdx }) => {

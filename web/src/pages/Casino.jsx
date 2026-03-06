@@ -180,26 +180,37 @@ function Casino() {
                     </div>
 
                     <div className="grid gap-6">
-                        <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 rounded-xl bg-yellow-500/10">
-                                    <Trophy size={20} className="text-yellow-500" />
-                                </div>
-                                <h2 className="text-xs font-black uppercase tracking-[0.15em] text-white/80">Premios en Juego</h2>
-                            </div>
-                            <div className="grid gap-3">
-                                {prizes.map((prize, idx) => (
-                                    <div key={idx} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors group">
-                                        <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">{prize.prize_name}</span>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                                            <span className="text-[10px] font-bold text-white/30 tracking-widest">{(prize.probability * 100).toFixed(0)}%</span>
-                                        </div>
+                        {activeGame === 'slots' && (
+                            <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-xl bg-yellow-500/10">
+                                        <Trophy size={20} className="text-yellow-500" />
                                     </div>
-                                ))}
-                                {prizes.length === 0 && <p className="text-xs text-center text-white/30 py-4 italic">No hay premios configurados aún.</p>}
+                                    <h2 className="text-xs font-black uppercase tracking-[0.15em] text-white/80">Tabla de Pagos (Tragamonedas)</h2>
+                                </div>
+                                <div className="grid gap-3">
+                                    {prizes.map((prize, idx) => {
+                                        // Map index to a consistent "winning" symbol for the UI
+                                        const symbols = ['7️⃣', '💎', '⭐', '🍒', '🔔', '🍋', '🍀', '🔥'];
+                                        const winSymbol = symbols[idx % symbols.length];
+                                        return (
+                                            <div key={idx} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex gap-1 text-lg">
+                                                        <span>{winSymbol}</span>
+                                                        <span>{winSymbol}</span>
+                                                        <span>{winSymbol}</span>
+                                                    </div>
+                                                    <span className="text-sm font-medium text-white/80">{prize.prize_name}</span>
+                                                </div>
+                                                <span className="text-[10px] font-bold text-white/20 tracking-widest">{(prize.probability * 100).toFixed(0)}%</span>
+                                            </div>
+                                        );
+                                    })}
+                                    {prizes.length === 0 && <p className="text-xs text-center text-white/30 py-4 italic">No hay combinaciones configuradas.</p>}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
                             <div className="flex items-center gap-3 mb-6">

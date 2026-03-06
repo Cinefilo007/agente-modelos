@@ -182,12 +182,13 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                                     {slice.isPrize && (
                                         <text
                                             x="50"
-                                            y="24" // Vertical Center Offset (Deep enough)
+                                            y="28" // Radial distance from center
                                             fill="#fff"
                                             fontSize="2.8"
                                             fontWeight="900"
                                             textAnchor="middle"
-                                            transform="rotate(-90 50 24)"
+                                            dominantBaseline="middle" // Center relative to the radial line
+                                            transform="rotate(-90 50 28)"
                                             style={{ textShadow: '0 0 12px rgba(255,255,255,0.7)', letterSpacing: '0.4px' }}
                                         >
                                             {slice.prize_name}
@@ -217,10 +218,7 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                     onClick={() => !isSpinning && onSpin()}
                     className="roulette-spin-btn-external"
                     disabled={isSpinning || prizes.length === 0}
-                    style={{
-                        background: `linear-gradient(135deg, ${themeColor}, #000)`,
-                        boxShadow: `0 0 25px ${themeColor}66`
-                    }}
+                    style={{ '--btn-theme': themeColor }} // Pass theme as CSS variable if needed
                 >
                     {isSpinning ? '...' : 'GIRAR'}
                 </button>
