@@ -92,11 +92,6 @@ function Casino() {
 
             setResult(data);
 
-            // For slots, we still need a manual sync since it doesn't have onFinished yet
-            if (activeGame === 'slots') {
-                setTimeout(() => handleGameFinished(data.won), 3000);
-            }
-
         } catch (err) {
             console.error("Error playing:", err);
             showToast(err.response?.data?.detail || "Error al jugar", "error");
@@ -175,6 +170,7 @@ function Casino() {
                                 isSpinning={betting}
                                 result={result}
                                 themeColor={themeColor}
+                                onFinished={handleGameFinished}
                             />
                         )}
                     </div>

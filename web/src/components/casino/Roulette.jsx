@@ -218,9 +218,10 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                     onClick={() => !isSpinning && onSpin()}
                     className="roulette-spin-btn-external"
                     disabled={isSpinning || prizes.length === 0}
-                    style={{ '--btn-theme': themeColor }} // Pass theme as CSS variable if needed
+                    style={{ backgroundColor: themeColor, '--btn-theme': themeColor }}
                 >
                     {isSpinning ? '...' : 'GIRAR'}
+                    <div className="btn-glow" style={{ boxShadow: `0 0 25px ${themeColor}` }}></div>
                 </button>
             </div>
         </div>

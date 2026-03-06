@@ -128,46 +128,48 @@
 }
 
 .roulette-spin-btn-external {
-    width: 220px;
-    height: 60px;
-    border-radius: 100px;
-    /* Capsule shape */
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    position: relative;
+    width: 200px;
+    padding: 18px;
+    border-radius: 50px;
     color: white;
-    font-weight: 900;
+    font-weight: 950;
     font-size: 16px;
     letter-spacing: 4px;
     text-transform: uppercase;
+    border: none;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
-    background: linear-gradient(135deg, var(--btn-theme, #7c3aed), #000);
-    /* Fallback */
+    background: var(--btn-theme, #7c3aed);
     overflow: visible;
-    /* Permitir que los brillos se salgan un poco */
-    box-shadow:
-        0 10px 40px rgba(0, 0, 0, 0.6),
-        0 0 20px rgba(var(--btn-theme), 0.2),
-        inset 0 0 20px rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 .roulette-spin-btn-external:hover:not(:disabled) {
     transform: translateY(-3px) scale(1.05);
-    letter-spacing: 5px;
-    border-color: rgba(255, 255, 255, 0.4);
+    filter: brightness(1.1);
 }
 
-.roulette-spin-btn-external:active {
-    transform: translateY(1px);
+.roulette-spin-btn-external:active:not(:disabled) {
+    transform: scale(0.95) translateY(1px);
 }
 
 .roulette-spin-btn-external:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    filter: grayscale(0.5);
+    filter: grayscale(1);
+}
+
+.btn-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: 50px;
+    opacity: 0.5;
+    pointer-events: none;
+    transition: all 0.3s;
 }
 
 /* Neon ring animation */

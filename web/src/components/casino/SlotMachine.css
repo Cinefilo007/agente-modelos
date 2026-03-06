@@ -70,17 +70,19 @@
 
 .slots-play-btn {
     position: relative;
-    width: 140px;
+    width: 200px;
     padding: 18px;
     border-radius: 50px;
     color: white;
-    font-weight: 900;
+    font-weight: 950;
     font-size: 16px;
-    letter-spacing: 2px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
     border: none;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 .slots-play-btn:active {

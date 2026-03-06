@@ -4,7 +4,7 @@ import './SlotMachine.css';
 
 const SYMBOLS = ['7️⃣', '💎', '⭐', '🍒', '🔔', '🍋', '🍀', '🔥'];
 
-export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
+export function SlotMachine({ onSpin, isSpinning, result, themeColor, onFinished }) {
     // Each reel stores the index of the symbol it lands on.
     const [reels, setReels] = useState([0, 1, 2]);
     const controls = [useAnimation(), useAnimation(), useAnimation()];
@@ -13,15 +13,13 @@ export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
 
     useEffect(() => {
         if (isSpinning && !isStopping) {
-            startSpinning();
+            if (result) {
+                stopSpinning(result);
+            } else {
+                startSpinning();
+            }
         }
-    }, [isSpinning]);
-
-    useEffect(() => {
-        if (result && isSpinning) {
-            stopSpinning(result);
-        }
-    }, [result]);
+    }, [isSpinning, result, isStopping]);
 
     const startSpinning = () => {
         setIsStopping(false);
@@ -29,7 +27,7 @@ export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
             control.start({
                 y: [0, -640],
                 transition: {
-                    duration: 0.8,
+                    duration: 0.6, // Faster spin for excitement
                     repeat: Infinity,
                     ease: "linear"
                 }
@@ -38,9 +36,9 @@ export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
     };
 
     const stopSpinning = async (res) => {
+        if (isStopping) return;
         setIsStopping(true);
-        // Determine final symbols based on win/loss
-        // If won, all 3 same. If lost, at least one different.
+
         let winnerIdx = Math.floor(Math.random() * SYMBOLS.length);
         let finalIndexes = res.won ? [winnerIdx, winnerIdx, winnerIdx] : [
             Math.floor(Math.random() * SYMBOLS.length),
@@ -48,7 +46,6 @@ export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
             Math.floor(Math.random() * SYMBOLS.length)
         ];
 
-        // Ensure no accidentaly win on loss
         if (!res.won && finalIndexes[0] === finalIndexes[1] && finalIndexes[1] === finalIndexes[2]) {
             finalIndexes[0] = (finalIndexes[0] + 1) % SYMBOLS.length;
         }
@@ -58,12 +55,10 @@ export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
         // Staggered stop
         for (let i = 0; i < 3; i++) {
             const finalPos = -(finalIndexes[i] * symbolHeight);
-
-            // Wait a bit for each reel to give a realistic feel
             await new Promise(r => setTimeout(r, i * 600));
 
             await controls[i].start({
-                y: [null, finalPos - (640 * 2)], // Spin 2 more times then stop
+                y: [null, finalPos - (640 * 2)],
                 transition: {
                     duration: 2,
                     ease: [0.45, 0.05, 0.55, 0.95]
@@ -76,6 +71,8 @@ export function SlotMachine({ onSpin, isSpinning, result, themeColor }) {
                 return next;
             });
         }
+
+        if (onFinished) onFinished(res.won);
         setIsStopping(false);
     };
 
