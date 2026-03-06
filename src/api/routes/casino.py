@@ -21,6 +21,10 @@ class BetRequest(BaseModel):
     game_slug: str
     bet_amount: float
 
+class SettingsUpdate(BaseModel):
+    game_slug: str
+    spin_price: float
+
 @router.get("/games")
 async def get_games():
     """List available casino games."""
@@ -169,8 +173,7 @@ async def get_casino_settings(model_id: UUID):
 
 @router.post("/settings")
 async def update_casino_settings(
-    game_slug: str,
-    spin_price: float,
+    settings: SettingsUpdate,
     user: TelegramUser = Depends(get_current_user)
 ):
     """Allow models to set their own spin prices."""
@@ -179,8 +182,8 @@ async def update_casino_settings(
     
     data = {
         "model_id": user.user_id,
-        "game_slug": game_slug,
-        "spin_price": spin_price
+        "game_slug": settings.game_slug,
+        "spin_price": settings.spin_price
     }
 
     try:
@@ -200,7 +203,7 @@ async def delete_prize(
         raise HTTPException(status_code=403, detail="Only models can manage prizes")
     
     # Verify ownership
-    existing = db.client.table("model_casino_prizes").select("model_id").eq("id", str(prize_id)).single().execute()
+    existing = db.client.table("model_casino_prizes").select("model_id").eq("id", str(prize_id)).maybe_single().execute()
     if not existing.data or existing.data['model_id'] != user.user_id:
         raise HTTPException(status_code=404, detail="Premio no encontrado o no autorizado")
 
