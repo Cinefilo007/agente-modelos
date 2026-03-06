@@ -20,13 +20,13 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
             };
             const audio = new Audio(sounds[type]);
             audio.volume = type === 'tick' ? 0.2 : 0.5;
-            audio.play().catch(e => console.log("Audio play blocked"));
+            audio.play().catch(e => { }); // Silently fail to avoid console clutter
         } catch (e) {
             // Silently fail to avoid console clutter
         }
     };
 
-    // Logical slices (Interpolated)
+    // Logical slices (Equitable Distribution V4)
     const allSlices = useMemo(() => {
         let items = [];
         if (!prizes.length) return items;
@@ -34,13 +34,17 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
         const totalSlices = 24;
         const prizeCount = prizes.length;
 
+        // Calculate even steps for rewards
+        const step = totalSlices / prizeCount;
+        const prizePositions = prizes.map((_, idx) => Math.floor(idx * step));
+
         for (let i = 0; i < totalSlices; i++) {
-            if (i % 3 === 0 && items.filter(it => it.isPrize).length < prizeCount) {
-                const pIndex = items.filter(it => it.isPrize).length;
+            const prizeIndexForPos = prizePositions.indexOf(i);
+            if (prizeIndexForPos !== -1) {
                 items.push({
-                    ...prizes[pIndex],
+                    ...prizes[prizeIndexForPos],
                     isPrize: true,
-                    originalIndex: pIndex,
+                    originalIndex: prizeIndexForPos,
                     wheelNumber: Math.floor(Math.random() * 36) + 1
                 });
             } else {
@@ -65,18 +69,10 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
 
             const pathData = `M 50 50 L ${x1} ${y1} A 50 50 0 0 1 ${x2} ${y2} Z`;
 
-            // High Fidelity Colors: Purples, Violets, Cyans
-            let color = '#1a0b2e'; // Deep night purple
-            if (item.isPrize) {
-                color = i % 2 === 0 ? '#4b0082' : '#2d0050'; // Indigo vs Deep Purple
-            } else {
-                color = i % 2 === 0 ? '#111' : '#0a0a0a'; // Very dark contrast
-            }
-
             return {
                 ...item,
                 path: pathData,
-                color: color,
+                color: item.isPrize ? (i % 2 === 0 ? 'url(#purpleSlice)' : 'url(#blueSlice)') : (i % 2 === 0 ? '#1a1425' : '#120d1a'),
                 labelAngle: startAngle + angle / 2,
                 angleSize: angle
             };
@@ -93,21 +89,24 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
             const targetIndex = mappedIndex !== -1 ? mappedIndex : allSlices.findIndex(s => !s.isPrize);
             spinTo(targetIndex);
         }
-    }, [winnerIndex, audioReady, allSlices]); // Only depend on winnerIndex to avoid re-triggers
+    }, [winnerIndex, allSlices]);
 
     const spinTo = async (index) => {
         if (allSlices.length === 0) return;
 
         const sliceSize = 360 / allSlices.length;
-        const targetRotation = 360 - (index * sliceSize) - (sliceSize / 2);
+        // Visual Randomness: Stop at a random point inside the winning slice (+/- 25% from center)
+        const randomOffset = (Math.random() - 0.5) * (sliceSize * 0.5);
+
+        const targetRotation = 360 - (index * sliceSize) - (sliceSize / 2) + randomOffset;
         // Ensure it always spins several full turns
-        const totalRotation = (lastRotation - (lastRotation % 360)) + (360 * 12) + targetRotation;
+        const totalRotation = (lastRotation - (lastRotation % 360)) + (360 * 15) + targetRotation;
 
         await controls.start({
             rotate: totalRotation,
             transition: {
-                duration: 8,
-                ease: [0.1, 0, 0.1, 1], // Very slow end
+                duration: 9,
+                ease: [0.12, 0, 0.1, 1], // Even more dramatic slowdown
             }
         });
 
@@ -184,27 +183,29 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                                     {slice.isPrize ? (
                                         <text
                                             x="50"
-                                            y="26"
+                                            y="18" // Alejar del centro (antes 26)
                                             fill="#fff"
-                                            fontSize="2.4"
+                                            fontSize="2.6"
                                             fontWeight="900"
                                             textAnchor="middle"
-                                            transform="rotate(-90 50 26)"
-                                            style={{ textShadow: '0 0 10px rgba(255,255,255,0.6)', letterSpacing: '0.4px' }}
+                                            transform="rotate(-90 50 18)"
+                                            style={{ textShadow: '0 0 12px rgba(255,255,255,0.7)', letterSpacing: '0.4px' }}
                                         >
                                             {slice.prize_name}
                                         </text>
                                     ) : (
                                         <text
                                             x="50"
-                                            y="42"
+                                            y="46" // Más al borde (antes 42)
                                             fill="#ffffff"
-                                            fillOpacity="1"
-                                            fontSize="3.8"
-                                            fontWeight="900"
+                                            fontSize="4.2"
+                                            fontWeight="950"
                                             textAnchor="middle"
-                                            transform="rotate(-90 50 42)"
-                                            style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,1))' }}
+                                            transform="rotate(-90 50 46)"
+                                            stroke="#000"
+                                            strokeWidth="0.2"
+                                            paintOrder="stroke"
+                                            style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,1))' }}
                                         >
                                             {slice.wheelNumber}
                                         </text>

@@ -112,34 +112,42 @@
     border-radius: 4px;
 }
 
-/* Controles */
+/* Controles: Contrarrestrar la inclinación de la base para que el botón NO se deforme */
 .roulette-controls {
     position: absolute;
     z-index: 100;
+    transform: rotateX(-15deg);
+    /* Anula el rotateX(15deg) de la base */
 }
 
 .roulette-spin-btn {
-    width: 80px;
-    height: 80px;
+    width: 85px;
+    height: 85px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.15);
+    border: 3px solid rgba(255, 255, 255, 0.2);
     color: white;
     font-weight: 900;
-    font-size: 14px;
+    font-size: 15px;
     letter-spacing: 2px;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #111;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    background: radial-gradient(circle at center, #222 0%, #000 100%);
+    box-shadow:
+        0 10px 20px rgba(0, 0, 0, 0.6),
+        inset 0 0 15px rgba(255, 255, 255, 0.1);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .roulette-spin-btn:hover:not(:disabled) {
-    transform: scale(1.1);
+    transform: scale(1.1) translateY(-5px);
     letter-spacing: 3px;
-    border-color: rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow:
+        0 15px 30px rgba(0, 0, 0, 0.8),
+        0 0 20px var(--theme-color-glow);
 }
 
 .roulette-spin-btn:active {
