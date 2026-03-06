@@ -59,6 +59,24 @@ function Casino() {
         fetchData();
     }, [username]);
 
+    const handleGameFinished = async (won) => {
+        if (!result) return;
+
+        if (result.new_balance !== undefined) {
+            updateUser({ wallet_balance: result.new_balance });
+        }
+
+        const historyRes = await api.get('/casino/my-bets');
+        setHistory(historyRes.data);
+
+        if (won) {
+            showToast(`¡FELICIDADES! Ganaste: ${result.prize}`, "success");
+        } else {
+            showToast("Más suerte la próxima vez", "info");
+        }
+        setBetting(false);
+    };
+
     const handleSpin = async () => {
         if (betting) return;
         setBetting(true);
@@ -74,23 +92,10 @@ function Casino() {
 
             setResult(data);
 
-            const animDuration = activeGame === 'roulette' ? 6200 : 2500;
-
-            setTimeout(async () => {
-                if (data.new_balance !== undefined) {
-                    updateUser({ wallet_balance: data.new_balance });
-                }
-
-                const historyRes = await api.get('/casino/my-bets');
-                setHistory(historyRes.data);
-
-                if (data.won) {
-                    showToast(`¡FELICIDADES! Ganaste: ${data.prize}`, "success");
-                } else {
-                    showToast("Más suerte la próxima vez", "info");
-                }
-                setBetting(false);
-            }, animDuration);
+            // For slots, we still need a manual sync since it doesn't have onFinished yet
+            if (activeGame === 'slots') {
+                setTimeout(() => handleGameFinished(data.won), 3000);
+            }
 
         } catch (err) {
             console.error("Error playing:", err);
@@ -161,8 +166,9 @@ function Casino() {
                             prizes={prizes}
                             onSpin={handleSpin}
                             isSpinning={betting}
-                            winnerIndex={result?.won ? prizes.findIndex(p => p.prize_name === result.prize) : -1}
+                            winnerIndex={result?.won ? prizes.findIndex(p => p.prize_name === result.prize) : (result ? -1 : null)}
                             themeColor={themeColor}
+                            onFinished={handleGameFinished}
                         />
                     ) : (
                         <SlotMachine
