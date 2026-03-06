@@ -28,24 +28,23 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
         let items = [];
         if (!prizes.length) return items;
 
-        // Ensure at least 12 slices for a professional visual
-        const minSlices = 12;
+        const minSlices = 24; // More slices for a reel feel
         const prizeCount = prizes.length;
 
-        // Strategy: Prize, Empty, Prize, Empty...
-        for (let i = 0; i < Math.max(minSlices, prizeCount * 2); i++) {
-            if (i % 2 === 0 && items.filter(it => it.isPrize).length < prizeCount) {
+        for (let i = 0; i < minSlices; i++) {
+            if (i % 3 === 0 && items.filter(it => it.isPrize).length < prizeCount) {
                 const pIndex = items.filter(it => it.isPrize).length;
                 items.push({
                     ...prizes[pIndex],
                     isPrize: true,
-                    originalIndex: pIndex
+                    originalIndex: pIndex,
+                    wheelNumber: Math.floor(Math.random() * 37)
                 });
             } else {
                 items.push({
-                    prize_name: 'Suerte Próxima',
+                    prize_name: '',
                     isPrize: false,
-                    color: 'rgba(0,0,0,0.4)'
+                    wheelNumber: Math.floor(Math.random() * 37)
                 });
             }
         }
@@ -54,60 +53,52 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
         return items.map((item, i) => {
             const startAngle = i * angle;
             const endAngle = (i + 1) * angle;
-            const x1 = 50 + 50 * Math.cos((Math.PI * (startAngle - 90)) / 180);
-            const y1 = 50 + 50 * Math.sin((Math.PI * (startAngle - 90)) / 180);
-            const x2 = 50 + 50 * Math.cos((Math.PI * (endAngle - 90)) / 180);
-            const y2 = 50 + 50 * Math.sin((Math.PI * (endAngle - 90)) / 180);
-            const pathData = `M 50 50 L ${x1} ${y1} A 50 50 0 ${angle > 180 ? 1 : 0} 1 ${x2} ${y2} Z`;
+            const rad1 = ((startAngle - 90) * Math.PI) / 180;
+            const rad2 = ((endAngle - 90) * Math.PI) / 180;
+            const x1 = 50 + 50 * Math.cos(rad1);
+            const y1 = 50 + 50 * Math.sin(rad1);
+            const x2 = 50 + 50 * Math.cos(rad2);
+            const y2 = 50 + 50 * Math.sin(rad2);
+
+            const pathData = `M 50 50 L ${x1} ${y1} A 50 50 0 0 1 ${x2} ${y2} Z`;
 
             return {
                 ...item,
                 path: pathData,
                 color: item.isPrize
-                    ? (i % 4 === 0 ? 'rgba(147, 51, 234, 0.4)' : 'rgba(59, 130, 246, 0.4)')
-                    : 'rgba(255, 255, 255, 0.03)',
+                    ? themeColor
+                    : (i % 2 === 0 ? '#e74c3c' : '#1a1a1a'),
                 labelAngle: startAngle + angle / 2,
                 angleSize: angle
             };
         });
-    }, [prizes]);
+    }, [prizes, themeColor]);
 
     useEffect(() => {
-        if (winnerIndex !== -1 && !isSpinning) {
+        // ONLY trigger if winnerIndex is a valid result (not null on mount)
+        if (winnerIndex !== null && winnerIndex !== undefined) {
             const mappedIndex = allSlices.findIndex(s => s.originalIndex === winnerIndex && s.isPrize);
-
-            // If winnerIndex is -1 (from backend but mapped differently) or lost result
-            // we should pick an empty slice. 
-            // In Casino.jsx we'll pass winnerIndex -1 if lose.
             const targetIndex = mappedIndex !== -1 ? mappedIndex : allSlices.findIndex(s => !s.isPrize);
             spinTo(targetIndex);
         }
-    }, [winnerIndex, isSpinning]);
+    }, [winnerIndex]); // Only depend on winnerIndex to avoid re-triggers
 
     const spinTo = async (index) => {
+        if (allSlices.length === 0) return;
+
         const sliceSize = 360 / allSlices.length;
         const targetRotation = 360 - (index * sliceSize) - (sliceSize / 2);
-        const totalRotation = lastRotation + (360 * 10) + targetRotation - (lastRotation % 360);
-
-        // Sound listener for ticks
-        const checkTicks = (latest) => {
-            const currentAngle = latest % 360;
-            const step = 360 / allSlices.length;
-            if (Math.abs(currentAngle - lastTickAngle) >= step) {
-                playSound('tick');
-                setLastTickAngle(currentAngle);
-            }
-        };
+        // Ensure it always spins several full turns
+        const totalRotation = (lastRotation - (lastRotation % 360)) + (360 * 10) + targetRotation;
 
         await controls.start({
             rotate: totalRotation,
             transition: {
                 duration: 7,
-                ease: [0.15, 0, 0.15, 1],
+                ease: [0.1, 0, 0.1, 1], // Very slow end
             }
         });
 
-        // End sound and feedback
         const won = allSlices[index].isPrize;
         playSound(won ? 'win' : 'lose');
         setLastRotation(totalRotation);
@@ -129,7 +120,8 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                     const rot = typeof latest.rotate === 'number' ? latest.rotate : lastRotation;
                     const step = 360 / allSlices.length;
                     if (Math.floor(rot / step) !== Math.floor(lastTickAngle / step)) {
-                        playSound('tick');
+                        // Only play if actively spinning to avoid mount error
+                        if (isSpinning) playSound('tick');
                         setLastTickAngle(rot);
                     }
                 }}
@@ -151,8 +143,8 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                     </defs>
 
                     {/* Outer Neon Ring */}
-                    <circle cx="50" cy="50" r="49" fill="none" stroke={themeColor} strokeWidth="1.5" filter="url(#glow)" opacity="0.6">
-                        <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite" />
+                    <circle cx="50" cy="50" r="49" fill="none" stroke={themeColor} strokeWidth="1.2" filter="url(#glow)" opacity="0.8">
+                        <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2s" repeatCount="indefinite" />
                     </circle>
 
                     {allSlices.map((slice, i) => (
@@ -161,28 +153,43 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                                 d={slice.path}
                                 fill={slice.color}
                                 stroke="rgba(255,255,255,0.05)"
-                                strokeWidth="0.3"
+                                strokeWidth="0.2"
                             />
                             <g transform={`rotate(${slice.labelAngle} 50 50)`}>
-                                <text
-                                    x="50"
-                                    y="12"
-                                    fill={slice.isPrize ? "white" : "rgba(255,255,255,0.3)"}
-                                    fontSize={slice.isPrize ? "2.8" : "2.2"}
-                                    fontWeight="bold"
-                                    textAnchor="middle"
-                                    transform={`rotate(0 50 12)`}
-                                    style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
-                                >
-                                    {slice.prize_name}
-                                </text>
+                                {slice.isPrize ? (
+                                    <text
+                                        x="50"
+                                        y="14"
+                                        fill="white"
+                                        fontSize="2.4"
+                                        fontWeight="900"
+                                        textAnchor="middle"
+                                        transform="rotate(90 50 14)"
+                                        style={{ textShadow: '0 0 5px rgba(0,0,0,1)' }}
+                                    >
+                                        {slice.prize_name}
+                                    </text>
+                                ) : (
+                                    <text
+                                        x="50"
+                                        y="14"
+                                        fill="rgba(255,255,255,0.6)"
+                                        fontSize="3.2"
+                                        fontWeight="bold"
+                                        textAnchor="middle"
+                                        transform="rotate(90 50 14)"
+                                    >
+                                        {slice.wheelNumber}
+                                    </text>
+                                )}
                             </g>
                         </g>
                     ))}
 
                     {/* Inner Decorative Rings */}
-                    <circle cx="50" cy="50" r="10" fill="url(#goldGrad)" filter="url(#glow)" />
-                    <circle cx="50" cy="50" r="12" fill="none" stroke="url(#goldGrad)" strokeWidth="0.5" opacity="0.5" />
+                    <circle cx="50" cy="50" r="11" fill="#080808" stroke={themeColor} strokeWidth="0.5" filter="url(#glow)" />
+                    <circle cx="50" cy="50" r="9" fill="url(#goldGrad)" />
+                    <circle cx="50" cy="50" r="7" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="0.5" />
                 </svg>
             </motion.div>
 
