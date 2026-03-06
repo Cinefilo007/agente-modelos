@@ -80,33 +80,38 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
     }, [prizes]);
 
     useEffect(() => {
-        // ONLY trigger if winnerIndex is a valid result (not null on mount)
-        if (winnerIndex !== null && winnerIndex !== undefined) {
-            // Unlock audio on first real action
+        // ONLY trigger if winnerIndex is valid AND we are actively betting/spinning
+        if (winnerIndex !== null && winnerIndex !== undefined && isSpinning) {
             if (!audioReady) setAudioReady(true);
-
             const mappedIndex = allSlices.findIndex(s => s.originalIndex === winnerIndex && s.isPrize);
             const targetIndex = mappedIndex !== -1 ? mappedIndex : allSlices.findIndex(s => !s.isPrize);
             spinTo(targetIndex);
         }
-    }, [winnerIndex, allSlices]);
+    }, [winnerIndex, isSpinning, allSlices]); // Adding isSpinning as dependency ensures it only runs when the game is "Active"
 
     const spinTo = async (index) => {
         if (allSlices.length === 0) return;
 
         const sliceSize = 360 / allSlices.length;
-        // Visual Randomness: Stop at a random point inside the winning slice (+/- 25% from center)
         const randomOffset = (Math.random() - 0.5) * (sliceSize * 0.5);
 
-        const targetRotation = 360 - (index * sliceSize) - (sliceSize / 2) + randomOffset;
-        // Ensure it always spins several full turns
-        const totalRotation = (lastRotation - (lastRotation % 360)) + (360 * 15) + targetRotation;
+        // UNIDIRECTIONAL (Always Clockwise)
+        // Find how many degrees we need to reach the target slice
+        const currentMod = lastRotation % 360;
+        const targetInner = 360 - (index * sliceSize) - (sliceSize / 2) + randomOffset;
+
+        // Calculate the shortest positive distance to the target position
+        let diff = (targetInner - currentMod);
+        while (diff < 0) diff += 360; // Ensure distance is positive
+
+        // Total rotation = current + several full laps + the positive diff
+        const totalRotation = lastRotation + (360 * 12) + diff;
 
         await controls.start({
             rotate: totalRotation,
             transition: {
                 duration: 9,
-                ease: [0.12, 0, 0.1, 1], // Even more dramatic slowdown
+                ease: [0.12, 0, 0.1, 1],
             }
         });
 
@@ -154,12 +159,6 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                 >
                     <svg viewBox="0 0 100 100" className="roulette-svg">
                         <defs>
-                            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style={{ stopColor: '#ffd700', stopOpacity: 1 }} />
-                                <stop offset="50%" style={{ stopColor: '#bf953f', stopOpacity: 1 }} />
-                                <stop offset="100%" style={{ stopColor: '#fcf6ba', stopOpacity: 1 }} />
-                            </linearGradient>
-
                             {/* Vibrancy Gradients */}
                             <linearGradient id="purpleSlice" x1="0%" y1="0%" x2="100%" y2="0%">
                                 <stop offset="0%" style={{ stopColor: '#3a007d', stopOpacity: 1 }} />
@@ -180,34 +179,18 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                                     strokeWidth="0.15"
                                 />
                                 <g transform={`rotate(${slice.labelAngle} 50 50)`}>
-                                    {slice.isPrize ? (
+                                    {slice.isPrize && (
                                         <text
                                             x="50"
-                                            y="18" // Alejar del centro (antes 26)
+                                            y="24" // Vertical Center Offset (Deep enough)
                                             fill="#fff"
-                                            fontSize="2.6"
+                                            fontSize="2.8"
                                             fontWeight="900"
                                             textAnchor="middle"
-                                            transform="rotate(-90 50 18)"
+                                            transform="rotate(-90 50 24)"
                                             style={{ textShadow: '0 0 12px rgba(255,255,255,0.7)', letterSpacing: '0.4px' }}
                                         >
                                             {slice.prize_name}
-                                        </text>
-                                    ) : (
-                                        <text
-                                            x="50"
-                                            y="46" // Más al borde (antes 42)
-                                            fill="#ffffff"
-                                            fontSize="4.2"
-                                            fontWeight="950"
-                                            textAnchor="middle"
-                                            transform="rotate(-90 50 46)"
-                                            stroke="#000"
-                                            strokeWidth="0.2"
-                                            paintOrder="stroke"
-                                            style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,1))' }}
-                                        >
-                                            {slice.wheelNumber}
                                         </text>
                                     )}
                                 </g>
@@ -228,17 +211,18 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                 <div className="roulette-v-pointer" style={{ filter: `drop-shadow(0 0 10px ${themeColor})` }}></div>
             </div>
 
-            <div className="roulette-controls">
+            {/* EXTERNAL PLAY BUTTON (outside the 3D base area) */}
+            <div className="roulette-external-controls">
                 <button
                     onClick={() => !isSpinning && onSpin()}
-                    className="roulette-spin-btn"
+                    className="roulette-spin-btn-external"
                     disabled={isSpinning || prizes.length === 0}
                     style={{
                         background: `linear-gradient(135deg, ${themeColor}, #000)`,
                         boxShadow: `0 0 25px ${themeColor}66`
                     }}
                 >
-                    {isSpinning ? '...' : 'PLAY'}
+                    {isSpinning ? '...' : 'GIRAR'}
                 </button>
             </div>
         </div>

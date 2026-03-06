@@ -1,19 +1,22 @@
 .roulette-container {
     position: relative;
-    width: 360px;
-    height: 380px;
+    width: 310px;
+    /* ~10% smaller than before */
+    height: 440px;
+    /* Larger vertical space for external button */
     margin: 0 auto;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     perspective: 2000px;
 }
 
 /* Base Estática: NO ROTA, contiene sombras y 3D slant */
 .roulette-static-base {
     position: relative;
-    width: 350px;
-    height: 350px;
+    width: 310px;
+    height: 310px;
     background: #06030c;
     border-radius: 50%;
     transform: rotateX(15deg);
@@ -22,10 +25,11 @@
     justify-content: center;
     border: 1px solid rgba(255, 255, 255, 0.05);
     box-shadow:
-        0 40px 100px rgba(0, 0, 0, 0.9),
-        0 15px 30px rgba(0, 0, 0, 0.7),
+        0 30px 60px rgba(0, 0, 0, 0.9),
+        0 10px 20px rgba(0, 0, 0, 0.7),
         inset 0 0 40px rgba(0, 0, 0, 0.5);
     overflow: visible;
+    aspect-ratio: 1 / 1;
 }
 
 /* Plato Giratorio: SOLO ROTA */
@@ -38,6 +42,7 @@
     overflow: hidden;
     z-index: 10;
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    aspect-ratio: 1 / 1;
 }
 
 .roulette-svg {
@@ -68,8 +73,8 @@
 /* Eje Central Estático */
 .roulette-center-hub {
     position: absolute;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     z-index: 30;
     display: flex;
     align-items: center;
@@ -83,7 +88,6 @@
     border-radius: 50%;
     background: #080511;
     border: 2px solid;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .hub-inner {
@@ -92,7 +96,6 @@
     height: 45%;
     border-radius: 50%;
     background: linear-gradient(135deg, #ffd700, #bf953f, #fcf6ba);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Puntero */
@@ -105,59 +108,57 @@
 }
 
 .roulette-v-pointer {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
     background: linear-gradient(135deg, #ffd700, #bf953f, #fcf6ba);
     clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
     border-radius: 4px;
 }
 
-/* Controles: Contrarrestrar la inclinación de la base para que el botón NO se deforme */
-.roulette-controls {
-    position: absolute;
-    z-index: 100;
-    transform: rotateX(-15deg);
-    /* Anula el rotateX(15deg) de la base */
+/* Botón Externo (Fuera de la zona 3D) */
+.roulette-external-controls {
+    margin-top: 40px;
+    z-index: 150;
+    width: 100%;
+    display: flex;
+    justify-content: center;
 }
 
-.roulette-spin-btn {
-    width: 85px;
-    height: 85px;
-    border-radius: 50%;
-    border: 3px solid rgba(255, 255, 255, 0.2);
+.roulette-spin-btn-external {
+    width: 200px;
+    height: 52px;
+    border-radius: 100px;
+    /* Capsule shape */
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
     font-weight: 900;
-    font-size: 15px;
-    letter-spacing: 2px;
+    font-size: 14px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, #222 0%, #000 100%);
-    box-shadow:
-        0 10px 20px rgba(0, 0, 0, 0.6),
-        inset 0 0 15px rgba(255, 255, 255, 0.1);
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    position: relative;
+    overflow: hidden;
 }
 
-.roulette-spin-btn:hover:not(:disabled) {
-    transform: scale(1.1) translateY(-5px);
-    letter-spacing: 3px;
-    border-color: rgba(255, 255, 255, 0.5);
-    box-shadow:
-        0 15px 30px rgba(0, 0, 0, 0.8),
-        0 0 20px var(--theme-color-glow);
+.roulette-spin-btn-external:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    letter-spacing: 5px;
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
-.roulette-spin-btn:active {
-    transform: scale(0.9);
+.roulette-spin-btn-external:active {
+    transform: translateY(1px);
 }
 
-.roulette-spin-btn:disabled {
+.roulette-spin-btn-external:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    filter: blur(0.5px);
+    filter: grayscale(0.5);
 }
 
 /* Neon ring animation */

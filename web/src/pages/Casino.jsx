@@ -134,17 +134,16 @@ function Casino() {
                 <div className="max-w-md mx-auto px-4 pt-4">
                     <div className="flex gap-2 mb-8 p-1.5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
                         <button
-                            onClick={() => setActiveGame('roulette')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-[10px] uppercase tracking-[0.2em] ${activeGame === 'roulette' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'}`}
-                            style={activeGame === 'roulette' ? { borderBottom: `20px solid ${themeColor}00` } : {}}
+                            onClick={() => { setActiveGame('roulette'); setResult(null); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-[0.2em] ${activeGame === 'roulette' ? 'bg-white/10 text-white shadow-inner' : 'text-white/30 hover:text-white/50'}`}
                         >
-                            <Sparkles size={14} /> Ruleta
+                            <Sparkles size={14} /> <span>Ruleta</span>
                         </button>
                         <button
-                            onClick={() => setActiveGame('slots')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-[10px] uppercase tracking-[0.2em] ${activeGame === 'slots' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'}`}
+                            onClick={() => { setActiveGame('slots'); setResult(null); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-[0.2em] ${activeGame === 'slots' ? 'bg-white/10 text-white shadow-inner' : 'text-white/30 hover:text-white/50'}`}
                         >
-                            <Gamepad2 size={14} /> Slots
+                            <Gamepad2 size={14} /> <span>Slots</span>
                         </button>
                     </div>
 
