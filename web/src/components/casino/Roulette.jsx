@@ -119,91 +119,113 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
 
     return (
         <div className="roulette-container">
-            {/* V-Pointer (Golden) */}
-            <div className="roulette-pointer-wrapper">
-                <div className="roulette-v-pointer" style={{ boxShadow: `0 0 20px ${themeColor}` }}></div>
-            </div>
-
-            <motion.div
-                className="roulette-wheel-wrapper"
-                animate={controls}
-                style={{ rotate: lastRotation }}
-                onUpdate={(latest) => {
-                    const rot = typeof latest.rotate === 'number' ? latest.rotate : lastRotation;
-                    const step = 360 / allSlices.length;
-                    if (Math.floor(rot / step) !== Math.floor(lastTickAngle / step)) {
-                        // Only play if actively spinning to avoid mount error
-                        if (isSpinning) playSound('tick');
-                        setLastTickAngle(rot);
-                    }
-                }}
-            >
-                <svg viewBox="0 0 100 100" className="roulette-svg">
+            {/* Base Estática con Sombras y Brillos */}
+            <div className="roulette-static-base" style={{ borderColor: `${themeColor}44` }}>
+                {/* Outer Neon Ring (Static) */}
+                <svg viewBox="0 0 100 100" className="roulette-static-overlay">
                     <defs>
-                        <filter id="glow">
-                            <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+                        <filter id="glow-static">
+                            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
                             <feMerge>
                                 <feMergeNode in="coloredBlur" />
                                 <feMergeNode in="SourceGraphic" />
                             </feMerge>
                         </filter>
-                        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style={{ stopColor: '#ffd700', stopOpacity: 1 }} />
-                            <stop offset="50%" style={{ stopColor: '#bf953f', stopOpacity: 1 }} />
-                            <stop offset="100%" style={{ stopColor: '#fcf6ba', stopOpacity: 1 }} />
-                        </linearGradient>
                     </defs>
-
-                    {/* Outer Neon Ring */}
-                    <circle cx="50" cy="50" r="49" fill="none" stroke={themeColor} strokeWidth="1" filter="url(#glow)" opacity="0.8">
-                        <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2s" repeatCount="indefinite" />
+                    <circle cx="50" cy="50" r="48.5" fill="none" stroke={themeColor} strokeWidth="1" filter="url(#glow-static)" opacity="0.6">
+                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="3s" repeatCount="indefinite" />
                     </circle>
-
-                    {allSlices.map((slice, i) => (
-                        <g key={i}>
-                            <path
-                                d={slice.path}
-                                fill={slice.color}
-                                stroke="rgba(255,255,255,0.05)"
-                                strokeWidth="0.1"
-                            />
-                            <g transform={`rotate(${slice.labelAngle} 50 50)`}>
-                                {slice.isPrize ? (
-                                    <text
-                                        x="50"
-                                        y="30" // Closer to center for prizes
-                                        fill="white"
-                                        fontSize="2.1"
-                                        fontWeight="900"
-                                        textAnchor="middle"
-                                        transform="rotate(-90 50 30)" // Rotated to read from center -> out
-                                        style={{ textShadow: '0 0 5px rgba(0,0,0,1)', letterSpacing: '0.1px' }}
-                                    >
-                                        {slice.prize_name}
-                                    </text>
-                                ) : (
-                                    <text
-                                        x="50"
-                                        y="45" // Pegado al borde exterior
-                                        fill="rgba(255,255,255,0.5)"
-                                        fontSize="2.8"
-                                        fontWeight="bold"
-                                        textAnchor="middle"
-                                        transform="rotate(-90 50 45)"
-                                    >
-                                        {slice.wheelNumber}
-                                    </text>
-                                )}
-                            </g>
-                        </g>
-                    ))}
-
-                    {/* Inner Decorative Rings */}
-                    <circle cx="50" cy="50" r="12" fill="#0c0715" stroke={themeColor} strokeWidth="0.5" filter="url(#glow)" />
-                    <circle cx="50" cy="50" r="10" fill="url(#goldGrad)" />
-                    <circle cx="50" cy="50" r="8" fill="none" stroke="rgba(0,0,0,0.4)" strokeWidth="0.5" />
                 </svg>
-            </motion.div>
+
+                {/* Glass Gloss Effect (Static) */}
+                <div className="roulette-glass-shine"></div>
+
+                <motion.div
+                    className="roulette-wheel-plate"
+                    animate={controls}
+                    style={{ rotate: lastRotation }}
+                    onUpdate={(latest) => {
+                        const rot = typeof latest.rotate === 'number' ? latest.rotate : lastRotation;
+                        const step = 360 / allSlices.length;
+                        if (Math.floor(rot / step) !== Math.floor(lastTickAngle / step)) {
+                            if (isSpinning) playSound('tick');
+                            setLastTickAngle(rot);
+                        }
+                    }}
+                >
+                    <svg viewBox="0 0 100 100" className="roulette-svg">
+                        <defs>
+                            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{ stopColor: '#ffd700', stopOpacity: 1 }} />
+                                <stop offset="50%" style={{ stopColor: '#bf953f', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#fcf6ba', stopOpacity: 1 }} />
+                            </linearGradient>
+
+                            {/* Vibrancy Gradients */}
+                            <linearGradient id="purpleSlice" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style={{ stopColor: '#3a007d', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#5e00c9', stopOpacity: 1 }} />
+                            </linearGradient>
+                            <linearGradient id="blueSlice" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style={{ stopColor: '#002b5c', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#004daa', stopOpacity: 1 }} />
+                            </linearGradient>
+                        </defs>
+
+                        {allSlices.map((slice, i) => (
+                            <g key={i}>
+                                <path
+                                    d={slice.path}
+                                    fill={slice.isPrize ? (i % 2 === 0 ? 'url(#purpleSlice)' : 'url(#blueSlice)') : (i % 2 === 0 ? '#1a1425' : '#120d1a')}
+                                    stroke="rgba(255,255,255,0.12)"
+                                    strokeWidth="0.15"
+                                />
+                                <g transform={`rotate(${slice.labelAngle} 50 50)`}>
+                                    {slice.isPrize ? (
+                                        <text
+                                            x="50"
+                                            y="26"
+                                            fill="#fff"
+                                            fontSize="2.4"
+                                            fontWeight="900"
+                                            textAnchor="middle"
+                                            transform="rotate(-90 50 26)"
+                                            style={{ textShadow: '0 0 10px rgba(255,255,255,0.6)', letterSpacing: '0.4px' }}
+                                        >
+                                            {slice.prize_name}
+                                        </text>
+                                    ) : (
+                                        <text
+                                            x="50"
+                                            y="42"
+                                            fill="#ffffff"
+                                            fillOpacity="1"
+                                            fontSize="3.8"
+                                            fontWeight="900"
+                                            textAnchor="middle"
+                                            transform="rotate(-90 50 42)"
+                                            style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,1))' }}
+                                        >
+                                            {slice.wheelNumber}
+                                        </text>
+                                    )}
+                                </g>
+                            </g>
+                        ))}
+                    </svg>
+                </motion.div>
+
+                {/* Static Center Hub */}
+                <div className="roulette-center-hub">
+                    <div className="hub-outer" style={{ borderColor: themeColor }}></div>
+                    <div className="hub-inner"></div>
+                </div>
+            </div>
+
+            {/* Pointer (Static) */}
+            <div className="roulette-pointer-wrapper">
+                <div className="roulette-v-pointer" style={{ filter: `drop-shadow(0 0 10px ${themeColor})` }}></div>
+            </div>
 
             <div className="roulette-controls">
                 <button
@@ -211,8 +233,8 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                     className="roulette-spin-btn"
                     disabled={isSpinning || prizes.length === 0}
                     style={{
-                        boxShadow: `0 0 20px ${themeColor}44`,
-                        background: `linear-gradient(45deg, ${themeColor}, #000)`
+                        background: `linear-gradient(135deg, ${themeColor}, #000)`,
+                        boxShadow: `0 0 25px ${themeColor}66`
                     }}
                 >
                     {isSpinning ? '...' : 'PLAY'}
