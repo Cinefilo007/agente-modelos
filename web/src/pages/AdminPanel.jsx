@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import clsx from 'clsx';
 import WalletPanel from '../components/wallet/WalletPanel';
 import PostCalendar from '../components/posts/PostCalendar';
-import ShopManager from '../components/shop/ShopManager';
+import ShopManager from './ShopManager';
 import CasinoPrizeManager from '../components/admin/CasinoPrizeManager';
 
 export default function AdminPanel() {
@@ -260,7 +260,7 @@ export default function AdminPanel() {
                 {activeTab === 'calendar' && <PostCalendar />}
                 {activeTab === 'shop' && <ShopManager />}
                 {activeTab === 'wallet' && <WalletPanel />}
-                {activeTab === 'casino' && <CasinoPrizeManager themeColor={themeColor} />}
+                {activeTab === 'casino' && <CasinoPrizeManager />}
             </div>
         </div>
     );
