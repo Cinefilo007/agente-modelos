@@ -249,8 +249,8 @@ const SfsProfilePanel = ({
                                             ) : (
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div>
-                                                        <p className="text-sm font-bold text-foreground">
-                                                            {tpl.title || <span className="text-muted-foreground italic font-normal">Sin título</span>}
+                                                        <p className="text-sm font-bold text-foreground truncate">
+                                                            {tpl.title || tpl.content_data?.caption || tpl.name || `Post #${tpl.id.slice(0, 6)}`}
                                                         </p>
                                                         <p className="text-[10px] text-muted-foreground/60 mt-0.5">
                                                             {tpl.created_at ? format(new Date(tpl.created_at), "d MMM yyyy 'a las' HH:mm", { locale: es }) : `Post #${i + 1}`}

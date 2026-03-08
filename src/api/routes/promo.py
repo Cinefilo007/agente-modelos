@@ -494,7 +494,7 @@ async def respond_to_campaign(
     try:
         # Verificar que el usuario es el target
         camp_res = db.service_client.table("promo_campaigns").select(
-            "id, status, target_id"
+            "id, status, target_id, requester_id"
         ).eq("id", campaign_id).execute()
 
         if not camp_res.data:

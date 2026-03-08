@@ -1480,7 +1480,7 @@ const Promotions = () => {
                                 <option value="">— Selecciona una plantilla —</option>
                                 {proposeMyTemplates.map((tpl, i) => (
                                     <option key={tpl.id} value={tpl.id}>
-                                        {tpl.title ? `📝 ${tpl.title}` : `Post del ${tpl.created_at ? format(new Date(tpl.created_at), 'd MMM yyyy', { locale: es }) : `#${i + 1}`}`}
+                                        {tpl.title ? `📝 ${tpl.title}` : (tpl.content_data?.caption ? `📋 ${tpl.content_data.caption.slice(0, 20)}...` : `Post #${tpl.id.slice(0, 6)}`)}
                                     </option>
                                 ))}
                             </select>
@@ -1718,7 +1718,7 @@ const Promotions = () => {
                                                     }`}
                                             >
                                                 <p className="text-sm font-bold text-foreground truncate">
-                                                    {tpl.content_data?.caption || tpl.name || `Post #${tpl.id.slice(0, 6)}`}
+                                                    {tpl.title || tpl.content_data?.caption || tpl.name || `Post #${tpl.id.slice(0, 6)}`}
                                                 </p>
                                                 <p className="text-[10px] text-muted-foreground mt-0.5">
                                                     {tpl.content_data?.type || 'Post'} · {tpl.created_at ? new Date(tpl.created_at).toLocaleDateString('es') : ''}
