@@ -141,8 +141,21 @@ async def create_post(
         "status": post_status
     }
     
-    response = db.client.table("posts").insert(data).execute()
-    return response.data[0]
+    try:
+        response = db.client.table("posts").insert(data).execute()
+        return response.data[0]
+    except Exception as e:
+        logger.warning(f"Full post insert failed, retrying without new columns: {e}")
+        # Base columns only fallback
+        base_data = {
+            "model_id": user.user_id,
+            "media_url": public_url,
+            "media_type": media_type,
+            "caption": caption,
+            "thumbnail_url": thumbnail_url
+        }
+        response = db.client.table("posts").insert(base_data).execute()
+        return response.data[0]
 
 @router.get("/posts/{user_id}")
 async def get_user_posts(user_id: str):
@@ -278,52 +291,51 @@ async def get_my_posts(
 async def get_feed(
     sort: str = "recent", 
     filter_type: str = "global",
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(get_current_user_optional)
 ):
     """Get global feed with filters."""
     try:
-        # Fetch posts with model info (including last_seen) and counts
         now = datetime.utcnow().isoformat()
         query = db.client.table("posts") \
-            .select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)") \
-            .or_(f"status.eq.published,and(status.eq.scheduled,scheduled_at.lte.{now})")
+            .select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
         
-        # Filter by following (if strictly requested)
-        if filter_type == "following":
-            client = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
-            if client and hasattr(client, 'data') and client.data:
-                following = db.client.table("followers").select("model_id").eq("client_id", client.data['id']).execute()
-                model_ids = [f['model_id'] for f in following.data] if following and hasattr(following, 'data') else []
+        # 1. Try to apply status filter (will fail if columns don't exist yet)
+        try:
+            # Only show published or scheduled (past) if the columns exist
+            query = query.or_(f"status.eq.published,and(status.eq.scheduled,scheduled_at.lte.{now})")
+        except Exception as e:
+            logger.warning(f"Status filter columns or clause failed (likely missing columns): {e}")
+            # Fallback: continue without status filter to show existing posts
+        
+        # 2. Filter by following (if requested and user is logged in)
+        if filter_type == "following" and user:
+            client_res = db.client.table("clients").select("id").eq("telegram_id", user.id).maybe_single().execute()
+            if client_res.data:
+                following = db.client.table("followers").select("model_id").eq("client_id", client_res.data['id']).execute()
+                model_ids = [f['model_id'] for f in following.data] if following.data else []
                 if model_ids:
                     query = query.in_("model_id", model_ids)
                 else:
                     return [] # Follows no one
-            else:
-                 return [] 
-
-        # Sort
+        
+        # 3. Apply sorting
         if sort == "top":
-            # Only order by likes_count if you are sure the column exists. 
-            # If not, use created_at.
-            try:
-                query = query.order("likes_count", desc=True)
-            except:
-                query = query.order("created_at", desc=True)
+            query = query.order("likes_count", desc=True)
         else: # recent
             query = query.order("created_at", desc=True)
 
+        # 4. Execute query with limit
         response = query.limit(50).execute()
         posts = response.data or []
         
         if not posts:
             return []
 
-        # Enrich with 'is_liked' and 'is_online'
+        # 5. Hydrate/Enrich with 'is_liked' and 'is_online'
         post_ids = [p['id'] for p in posts]
-        
-        # Check likes by current user
         liked_posts = set()
-        if post_ids:
+        
+        if user and post_ids:
             try:
                 likes_res = db.client.table("interactions") \
                     .select("target_id") \
@@ -333,14 +345,14 @@ async def get_feed(
                     .execute()
                 liked_posts = {l['target_id'] for l in likes_res.data} if likes_res.data else set()
             except Exception as e:
-                print(f"[Feed] Error checking likes: {e}")
+                logger.error(f"[Feed] Error checking likes: {e}")
 
-        # Process posts
         enriched_posts = []
         for p in posts:
-            # Check Online Status
+            # Calculate Online Status
             model = p.get('models') or {}
-            is_online = calculate_is_online(model.get('last_seen')) if model else False
+            last_seen = model.get('last_seen')
+            is_online = calculate_is_online(last_seen) if last_seen else False
             
             enriched_posts.append({
                 **p,
@@ -352,11 +364,12 @@ async def get_feed(
             })
 
         return enriched_posts
+
     except Exception as e:
-        print(f"Error in get_feed: {e}")
+        logger.error(f"Critical error in get_feed: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error fetching feed data")
 
 @router.get("/post/{post_id}")
 async def get_post_detail(
