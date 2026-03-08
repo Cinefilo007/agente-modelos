@@ -5,6 +5,9 @@ from src.api.dependencies import get_current_user, get_current_user_optional, Te
 from src.services.database import db
 from src.services.storage import upload_file
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ReportCreate(BaseModel):
     post_id: str
@@ -280,12 +283,17 @@ async def get_my_posts(
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Only models can access this")
     
-    response = db.client.table("posts") \
-        .select("*") \
-        .eq("model_id", user.user_id) \
-        .order("created_at", desc=True) \
-        .execute()
-    return response.data
+    try:
+        response = db.client.table("posts") \
+            .select("*") \
+            .eq("model_id", user.user_id) \
+            .order("created_at", desc=True) \
+            .execute()
+        return response.data or []
+    except Exception as e:
+        logger.error(f"Error in get_my_posts for user {user.user_id}: {e}")
+        # Basic fallback: return empty list instead of crashing
+        return []
 
 @router.get("/feed")
 async def get_feed(
