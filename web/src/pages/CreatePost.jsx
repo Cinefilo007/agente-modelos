@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, X, Loader, Play, Pause } from 'lucide-react';
+import { ArrowLeft, ImagePlus, X, Loader, Play, Pause, Link, Calendar, Plus, Trash2, Clock } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 
@@ -12,6 +12,11 @@ function CreatePost() {
     const [loading, setLoading] = useState(false);
     const [isEditingVideo, setIsEditingVideo] = useState(false);
     const { showToast } = useToast();
+    const [links, setLinks] = useState([]); // { label: '', url: '' }
+    const [newLink, setNewLink] = useState({ label: '', url: '' });
+    const [isScheduling, setIsScheduling] = useState(false);
+    const [scheduledAt, setScheduledAt] = useState('');
+    const [showLinkPanel, setShowLinkPanel] = useState(false);
 
     // Video Edit State
     const [videoDuration, setVideoDuration] = useState(0);
@@ -214,6 +219,14 @@ function CreatePost() {
             formData.append('thumbnail_time', thumbnailTime.toString());
         }
 
+        // Add New Features: Links and Scheduling
+        if (links.length > 0) {
+            formData.append('external_links', JSON.stringify(links));
+        }
+        if (isScheduling && scheduledAt) {
+            formData.append('scheduled_at', scheduledAt);
+        }
+
         try {
             await api.post('/content/posts', formData, {
                 headers: {
@@ -348,6 +361,121 @@ function CreatePost() {
                         onChange={(e) => setDescription(e.target.value)}
                         className="w-full bg-transparent border-none text-white text-sm placeholder:text-gray-500 focus:outline-none focus:ring-0 resize-none min-h-[80px]"
                     />
+                </div>
+
+                {/* --- NUEVAS MEJORAS: LINKS Y PROGRAMACIÓN --- */}
+                <div className="mt-6 space-y-4 pb-20">
+                    {/* Botones de Acción Rápidos */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowLinkPanel(!showLinkPanel)}
+                            className={clsx(
+                                "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border transition-all active:scale-95",
+                                links.length > 0 || showLinkPanel ? "bg-blue-600/20 border-blue-500/50 text-blue-400" : "bg-white/5 border-white/10 text-gray-400"
+                            )}
+                        >
+                            <Link size={18} />
+                            <span className="text-xs font-bold uppercase tracking-wider">
+                                {links.length > 0 ? `${links.length} Links` : 'Añadir Links'}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setIsScheduling(!isScheduling)}
+                            className={clsx(
+                                "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border transition-all active:scale-95",
+                                isScheduling ? "bg-purple-600/20 border-purple-500/50 text-purple-400" : "bg-white/5 border-white/10 text-gray-400"
+                            )}
+                        >
+                            <Calendar size={18} />
+                            <span className="text-xs font-bold uppercase tracking-wider">
+                                {isScheduling ? 'Programado' : 'Programar'}
+                            </span>
+                        </button>
+                    </div>
+
+                    {/* Panel de Links */}
+                    {showLinkPanel && (
+                        <div className="bg-card/40 border border-white/10 rounded-2xl p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+                            <div className="flex justify-between items-center mb-1">
+                                <h3 className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Gestionar Enlaces</h3>
+                                <button onClick={() => setShowLinkPanel(false)}><X size={14} className="text-gray-500" /></button>
+                            </div>
+
+                            {/* Lista de Links Actuales */}
+                            {links.map((lnk, idx) => (
+                                <div key={idx} className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-white truncate">{lnk.label}</p>
+                                        <p className="text-[10px] text-gray-500 truncate">{lnk.url}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setLinks(links.filter((_, i) => i !== idx))}
+                                        className="text-red-400 p-2 hover:bg-red-400/10 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+
+                            {/* Formulario Nuevo Link */}
+                            <div className="space-y-3 pt-2 border-t border-white/5">
+                                <input
+                                    type="text"
+                                    placeholder="Nombre del botón (ej: Mi Web)"
+                                    value={newLink.label}
+                                    onChange={(e) => setNewLink({ ...newLink, label: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-all"
+                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="URL (https://...)"
+                                        value={newLink.url}
+                                        onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-all"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            if (newLink.label && newLink.url) {
+                                                setLinks([...links, newLink]);
+                                                setNewLink({ label: '', url: '' });
+                                            }
+                                        }}
+                                        className="bg-blue-600 p-2.5 rounded-xl text-white hover:bg-blue-500 active:scale-90 transition-all shadow-lg shadow-blue-600/20"
+                                    >
+                                        <Plus size={20} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Panel de Programación */}
+                    {isScheduling && (
+                        <div className="bg-card/40 border border-purple-500/30 rounded-2xl p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-purple-500/20 rounded-xl text-purple-400">
+                                    <Clock size={20} />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-xs font-bold text-white">Publicación Programada</h3>
+                                    <p className="text-[10px] text-gray-500">¿Cuándo quieres que se publique?</p>
+                                </div>
+                            </div>
+                            <input
+                                type="datetime-local"
+                                value={scheduledAt}
+                                onChange={(e) => setScheduledAt(e.target.value)}
+                                min={new Date(Date.now() + 5 * 60000).toISOString().slice(0, 16)} // Min 5 min from now
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 accent-purple-500 color-scheme-dark"
+                            />
+                            {scheduledAt && (
+                                <p className="text-[10px] text-purple-400 bg-purple-400/10 p-2 rounded-lg border border-purple-400/20 animate-pulse">
+                                    El post se publicará automáticamente en la fecha seleccionada.
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 

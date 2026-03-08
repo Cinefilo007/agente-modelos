@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX, AlertTriangle, Send, X, Trash2, Flag } from 'lucide-react';
+import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX, AlertTriangle, Send, X, Trash2, Flag, ExternalLink } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import EliteAvatar from '../common/EliteAvatar';
 import GiftSelector from '../posts/GiftSelector';
@@ -42,6 +42,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
     const [isTipping, setIsTipping] = useState(false);
     const [tipsCount, setTipsCount] = useState(Number(post.tips_count) || 0);
     const [animations, setAnimations] = useState([]); // Track flying coins
+    const [isExpanded, setIsExpanded] = useState(false);
     const isOnline = post.user?.is_online || post.is_online || false;
 
     // Refs
@@ -419,10 +420,50 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         </button>
                     </div>
 
-                    <p className="text-sm text-gray-200 mb-3 line-clamp-3">
-                        <span className="font-bold text-white mr-2">{post.user.artistic_name || post.user.name}</span>
-                        {post.description}
-                    </p>
+                    <div className="relative mb-3">
+                        <p className={clsx(
+                            "text-sm text-gray-200 leading-relaxed",
+                            !isExpanded && "line-clamp-2"
+                        )}>
+                            <span className="font-bold text-white mr-2">{post.user.artistic_name || post.user.name}</span>
+                            {post.description || post.caption}
+                        </p>
+                        {(post.description?.length > 80 || post.caption?.length > 80) && !isExpanded && (
+                            <button
+                                onClick={() => setIsExpanded(true)}
+                                className="text-gray-400 text-xs font-bold mt-1 hover:text-white transition-colors"
+                            >
+                                ... más
+                            </button>
+                        )}
+                        {isExpanded && (
+                            <button
+                                onClick={() => setIsExpanded(false)}
+                                className="text-gray-500 text-[10px] font-bold mt-1 hover:text-white transition-colors block"
+                            >
+                                ocultar
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Links Externos Elegantes */}
+                    {post.external_links && post.external_links.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {post.external_links.map((lnk, idx) => (
+                                <a
+                                    key={idx}
+                                    href={lnk.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full text-[11px] font-bold text-white transition-all active:scale-95 group/link"
+                                >
+                                    <ExternalLink size={12} className="text-blue-400 group-hover/link:text-blue-300" />
+                                    {lnk.label}
+                                </a>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Quick Comment Input - Simplified */}
                     {!isAdmin && (

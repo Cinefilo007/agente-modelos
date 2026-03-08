@@ -36,12 +36,14 @@ async def create_post(
     file: UploadFile = File(...),
     thumbnail: Optional[UploadFile] = File(None),
     caption: Optional[str] = Form(None),
+    external_links: str = Form("[]"),
+    scheduled_at: Optional[str] = Form(None),
     start_time: float = Form(0),
     end_time: Optional[float] = Form(None),
     thumbnail_time: float = Form(0.1),
     user: TelegramUser = Depends(get_current_user)
 ):
-    """Create a new post with file upload."""
+    """Create a new post with file upload, now supporting links and scheduling."""
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Only models can create posts")
 
@@ -58,13 +60,12 @@ async def create_post(
         if end_time is not None and end_time > start_time:
             print(f"[Video Editor] Trimming video: {start_time}s to {end_time}s")
             file_content = await trim_video(file_content, start_time, end_time)
-            # The video is now smaller; adapt the thumbnail_time to be within the new shorter video
             thumbnail_time = max(0.1, min(thumbnail_time - start_time, (end_time - start_time) / 2))
         
-        # Upload Video (Standard or Trimmed)
+        # Upload Video
         import uuid
         unique_id = uuid.uuid4()
-        extension = "mp4" # Standardize or get from extension
+        extension = "mp4"
         filename = f"uploads/{unique_id}.{extension}"
         
         try:
@@ -95,7 +96,7 @@ async def create_post(
             raise HTTPException(status_code=500, detail="Error al subir video")
 
     else:
-        # It's an image. Upload once.
+        # It's an image
         import uuid
         unique_id = uuid.uuid4()
         file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
@@ -112,13 +113,32 @@ async def create_post(
             print(f"Error uploading image: {e}")
             raise HTTPException(status_code=500, detail="Error al subir imagen")
 
-    # 4. Save to Database
+    # 4. Handle Scheduling and Status
+    post_status = "published"
+    import json
+    try:
+        links_data = json.loads(external_links)
+    except:
+        links_data = []
+
+    if scheduled_at:
+        try:
+            sched_dt = datetime.fromisoformat(scheduled_at.replace('Z', '+00:00'))
+            if sched_dt > datetime.now(sched_dt.tzinfo):
+                post_status = "scheduled"
+        except Exception as e:
+            print(f"Error parsing scheduled_at: {e}")
+
+    # 5. Save to Database
     data = {
         "model_id": user.user_id,
         "media_url": public_url,
         "media_type": media_type,
         "caption": caption,
-        "thumbnail_url": thumbnail_url
+        "thumbnail_url": thumbnail_url,
+        "external_links": links_data,
+        "scheduled_at": scheduled_at,
+        "status": post_status
     }
     
     response = db.client.table("posts").insert(data).execute()
@@ -239,6 +259,21 @@ async def get_user_stories(user_id: str):
         .execute()
     return response.data
 
+@router.get("/posts/my-posts")
+async def get_my_posts(
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Get all posts (including scheduled) for the current model."""
+    if user.role != "model":
+        raise HTTPException(status_code=403, detail="Only models can access this")
+    
+    response = db.client.table("posts") \
+        .select("*") \
+        .eq("model_id", user.user_id) \
+        .order("created_at", desc=True) \
+        .execute()
+    return response.data
+
 @router.get("/feed")
 async def get_feed(
     sort: str = "recent", 
@@ -248,8 +283,10 @@ async def get_feed(
     """Get global feed with filters."""
     try:
         # Fetch posts with model info (including last_seen) and counts
-        # We use * to get everything. If likes_count/comments_count are real columns, they will be there.
-        query = db.client.table("posts").select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
+        now = datetime.utcnow().isoformat()
+        query = db.client.table("posts") \
+            .select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)") \
+            .or_(f"status.eq.published,and(status.eq.scheduled,scheduled_at.lte.{now})")
         
         # Filter by following (if strictly requested)
         if filter_type == "following":
