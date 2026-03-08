@@ -441,6 +441,34 @@ async def monitor_sfs_views_and_fraud(bot):
             except Exception as n_err:
                 logger.warning(f"[notify] complete → {tg_id}: {n_err}")
 
+    async def _notify_90(camp_id, requester_id, target_id, progress_msg: str):
+        """Envía alerta del 90% a ambas partes y marca alert_90_sent=True."""
+        db.service_client.table('promo_campaigns').update(
+            {'alert_90_sent': True}
+        ).eq('id', camp_id).execute()
+        
+        users_res = db.service_client.table('sfs_users').select(
+            'id, telegram_id'
+        ).in_('id', [requester_id, target_id]).execute()
+        
+        for u in (users_res.data or []):
+            tg_id = u.get('telegram_id')
+            if not tg_id:
+                continue
+            try:
+                await bot.send_message(
+                    chat_id=tg_id,
+                    text=(
+                        f"⚠️ <b>¡Casi completado! (90%)</b>\n\n"
+                        f"📈 {progress_msg}\n\n"
+                        "Aviso: El contrato SFS está por finalizar. Los posts se eliminarán automáticamente pronto.\n\n"
+                        f"<a href='{promo_url}'>Ver progreso →</a>"
+                    ),
+                    parse_mode='HTML'
+                )
+            except Exception as n_err:
+                logger.warning(f"[notify] 90% → {tg_id}: {n_err}")
+
     async def _fraud_campaign(camp_id, requester_id, target_id, offender_channel_id: str):
         """Marca cancelled_fraud y penaliza solo al canal infractor."""
         db.service_client.table('promo_campaigns').update(
@@ -488,7 +516,7 @@ async def monitor_sfs_views_and_fraud(bot):
 
     try:
         active_camps_res = db.service_client.table('promo_campaigns').select(
-            '*'
+            '*, alert_90_sent'
         ).in_('status', ['active', 'pending_deletion']).execute()
 
         for camp in active_camps_res.data or []:
@@ -606,6 +634,11 @@ async def monitor_sfs_views_and_fraud(bot):
                         camp_id, camp['requester_id'], camp['target_id'],
                         f"Tu campaña alcanzó las <b>{views_target:,} vistas</b> acordadas."
                     )
+                elif total_views >= views_target * 0.9 and not camp.get('alert_90_sent'):
+                    await _notify_90(
+                        camp_id, camp['requester_id'], camp['target_id'],
+                        f"Tu campaña lleva <b>{total_views:,} / {views_target:,} vistas</b> (90%+)."
+                    )
 
             # ── SFS_TIME ──
             elif camp_type == 'SFS_TIME' and camp.get('start_time') and camp.get('duration_hours'):
@@ -625,6 +658,14 @@ async def monitor_sfs_views_and_fraud(bot):
                     remaining = end_time - now_utc
                     h_left = int(remaining.total_seconds() // 3600)
                     logger.info(f"[monitor] Campaña {camp_id} SFS_TIME: {h_left}h restantes")
+                    
+                    # Alerta 90% del tiempo (si queda menos del 10% del tiempo original)
+                    total_seconds = duration_h * 3600
+                    if remaining.total_seconds() <= total_seconds * 0.1 and not camp.get('alert_90_sent'):
+                         await _notify_90(
+                            camp_id, camp['requester_id'], camp['target_id'],
+                            f"Quedan menos de <b>{remaining.total_seconds()/60:.0f} minutos</b> para finalizar el tiempo de exposición."
+                        )
 
             # ── SFS_FOLLOWERS ──
             elif camp_type == 'SFS_FOLLOWERS' and camp.get('followers_target'):
@@ -643,6 +684,11 @@ async def monitor_sfs_views_and_fraud(bot):
                     await _complete_campaign(
                         camp_id, camp['requester_id'], camp['target_id'],
                         f"Tu campaña alcanzó los <b>{followers_target:,} nuevos suscriptores</b> acordados."
+                    )
+                elif gained >= followers_target * 0.9 and not camp.get('alert_90_sent'):
+                    await _notify_90(
+                        camp_id, camp['requester_id'], camp['target_id'],
+                        f"Tu campaña ha generado <b>{gained:,} / {followers_target:,} suscriptores</b> (90%+)."
                     )
 
     except Exception as e:
