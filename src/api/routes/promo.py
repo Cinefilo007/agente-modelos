@@ -514,11 +514,20 @@ async def respond_to_campaign(
         camp_full = camp_full_res.data[0] if camp_full_res.data else camp
 
         if action == "accept":
+            # Obtener baseline de seguidores para contratos SFS_FOLLOWERS
+            ch1_res = db.service_client.table("channels").select("followers").eq("sfs_user_id", camp["requester_id"]).eq("status", "active").execute()
+            ch2_res = db.service_client.table("channels").select("followers").eq("sfs_user_id", camp.get("target_id", sfs_user_id)).eq("status", "active").execute()
+            
+            f1 = ch1_res.data[0]["followers"] if ch1_res.data else 0
+            f2 = ch2_res.data[0]["followers"] if ch2_res.data else 0
+            baseline = f1 + f2
+
             new_status = "accepted"
             update_payload = {
                 "status": new_status,
                 "target_template_id": target_template_id,
-                "start_time": datetime.now(timezone.utc).isoformat()
+                "start_time": datetime.now(timezone.utc).isoformat(),
+                "followers_baseline": baseline
             }
         elif action == "reject":
             new_status = "cancelled"

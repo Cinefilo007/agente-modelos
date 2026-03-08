@@ -2,7 +2,7 @@ import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
 import html as html_lib
-from datetime import datetime
+from datetime import datetime, timedelta
 from telegram.error import TelegramError
 import httpx
 import re
@@ -30,6 +30,7 @@ async def extract_views_from_html(url: str, is_single: bool) -> int:
                 html = resp.text
                 matches = re.findall(r'<span class="tgme_widget_message_views">(.*?)</span>', html)
                 if not matches:
+                    logger.warning(f"[scraping] No se encontraron vistas en {url}. HTML len: {len(html)}")
                     return 0
                 
                 total_views = 0
@@ -303,8 +304,14 @@ async def publish_sfs_campaigns(bot):
                 f"req_msg={req_template['telegram_message_id_origin']} tgt_msg={tgt_template['telegram_message_id_origin']}"
             )
 
-            # ── Marcar como 'active' ANTES de publicar para evitar el bucle ──
-            # Si el job falla a la mitad, la próxima ejecución no lo reprocesará
+            # ── Verificar si ya se publicaron posts (Idempotencia) ──
+            existing_posts = db.service_client.table('promo_posts').select('id').eq('campaign_id', camp['id']).execute()
+            if existing_posts.data:
+                logger.info(f"Campaña {camp['id']} ya tiene posts en la BD. Marcando como active y saltando publicación.")
+                db.service_client.table('promo_campaigns').update({'status': 'active'}).eq('id', camp['id']).execute()
+                continue
+
+            # ── Marcar como 'active' ANTES de publicar para evitar el bucle concurrente ──
             db.service_client.table('promo_campaigns').update(
                 {'status': 'active'}
             ).eq('id', camp['id']).eq('status', 'accepted').execute()
@@ -380,10 +387,15 @@ async def publish_sfs_campaigns(bot):
 
             except Exception as e:
                 logger.error(f"Error publicando cruzado para campaña {camp['id']}: {e}")
-                # Revertir a 'accepted' para reintentar en el próximo ciclo
-                db.service_client.table('promo_campaigns').update(
-                    {'status': 'accepted'}
-                ).eq('id', camp['id']).execute()
+                # SOLO revertir si NO se llegó a guardar ningún post en la BD
+                check_posts = db.service_client.table('promo_posts').select('id').eq('campaign_id', camp['id']).execute()
+                if not check_posts.data:
+                    logger.info(f"Revirtiendo campaña {camp['id']} a 'accepted' para reintento manual/automático.")
+                    db.service_client.table('promo_campaigns').update(
+                        {'status': 'accepted'}
+                    ).eq('id', camp['id']).execute()
+                else:
+                    logger.warning(f"Campaña {camp['id']} falló parcialmente pero ya tiene posts. Se queda en 'active' para revisión.")
 
     except Exception as e:
         logger.error(f"Error en publish_sfs_campaigns: {e}")
@@ -564,11 +576,27 @@ async def monitor_sfs_views_and_fraud(bot):
                         chat_obj = await bot.get_chat(ch_res.data[0]['telegram_chat_id'])
                         if chat_obj.username:
                             views = await get_single_message_views(chat_obj.username, post['telegram_message_id'])
-                            total_views += views
-                            # Actualizar vistas en DB para el frontend
-                            db.service_client.table('promo_posts').update(
-                                {'current_views': views}
-                            ).eq('id', post['id']).execute()
+                        else:
+                            # Canal Privado -> Usar Mirror en Dump Channel
+                            dump_channel = "@nebula_dumper"
+                            try:
+                                fwd = await bot.forward_message(
+                                    chat_id=dump_channel,
+                                    from_chat_id=chat_obj.id,
+                                    message_id=post['telegram_message_id']
+                                )
+                                views = await get_single_message_views("nebula_dumper", fwd.message_id)
+                                # Limpiar el dump
+                                await bot.delete_message(chat_id=dump_channel, message_id=fwd.message_id)
+                            except Exception as d_err:
+                                logger.warning(f"[dump] Falló mirror para canal privado {chat_obj.id}: {d_err}")
+                                views = 0
+
+                        total_views += views
+                        # Actualizar vistas en DB para el frontend
+                        db.service_client.table('promo_posts').update(
+                            {'current_views': views}
+                        ).eq('id', post['id']).execute()
                     except Exception as v_err:
                         logger.warning(f"[views] post {post['telegram_message_id']}: {v_err}")
 
@@ -582,7 +610,8 @@ async def monitor_sfs_views_and_fraud(bot):
             # ── SFS_TIME ──
             elif camp_type == 'SFS_TIME' and camp.get('start_time') and camp.get('duration_hours'):
                 from datetime import timezone as tz
-                start = datetime.fromisoformat(camp['start_time'].replace('Z', '+00:00'))
+                start_str = camp['start_time'].replace('Z', '+00:00')
+                start = datetime.fromisoformat(start_str)
                 duration_h = camp['duration_hours']
                 end_time = start + timedelta(hours=duration_h)
                 now_utc = datetime.now(tz.utc)
