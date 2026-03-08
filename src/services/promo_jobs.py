@@ -134,65 +134,9 @@ async def evaluate_channels_quality(bot):
                     if scraped_views > 0:
                         estimated_avg_views = scraped_views
                 else:
-                    # Canal Privado -> Usar Dump Channel Scraper
-                    recent_posts = db.service_client.table('channel_metrics_tracker') \
-                        .select('telegram_message_id, id') \
-                        .eq('channel_id', channel['id']) \
-                        .order('created_at', desc=True) \
-                        .limit(10) \
-                        .execute()
-                    
-                    if recent_posts.data:
-                        total_private_views = 0
-                        valid_posts_count = 0
-                        
-                        dump_channel = "@nebula_dumper"
-                        for post in recent_posts.data:
-                            try:
-                                fwd = await bot.forward_message(
-                                    chat_id=dump_channel, 
-                                    from_chat_id=chat.id, 
-                                    message_id=post['telegram_message_id']
-                                )
-                                # Scrapear views del dump
-                                views = await get_single_message_views("nebula_dumper", fwd.message_id)
-                                if views > 0:
-                                    total_private_views += views
-                                    valid_posts_count += 1
-                                    
-                                # Borrar del dump
-                                await bot.delete_message(chat_id=dump_channel, message_id=fwd.message_id)
-                                
-                            except Exception as fwd_err:
-                                error_str = str(fwd_err).lower()
-                                if "protected content" in error_str or "can't be forwarded" in error_str:
-                                    # CANAL RESTRINGIDO
-                                    logger.warning(f"Cierre por privacidad: Canal {chat.title} restringe envíos.")
-                                    # Desactivar canal
-                                    db.service_client.table('channels').update({'status': 'inactive'}).eq('id', channel['id']).execute()
-                                    
-                                    # Obtener telegram_id de la modelo para notificarla
-                                    model_data = db.service_client.table('models').select('telegram_id').eq('id', channel['model_id']).execute()
-                                    if model_data.data:
-                                        await bot.send_message(
-                                            chat_id=model_data.data[0]['telegram_id'],
-                                            text=f"⚠️ **Atención sobre tu canal '{chat.title}'**\n\n"
-                                                 "Tu canal ha sido ocultado del catálogo SFS porque tiene habilitada la opción **'Restringir guardar contenido'**.\n"
-                                                 "Esto le impide al bot medir el impacto y vistas reales de tus posts privados.\n\n"
-                                                 "**Para arreglarlo:**\n"
-                                                 "1. Ve a los Ajustes de tu Canal -> Tipo de Canal -> **Desactiva** 'Restringir guardar contenido'.\n"
-                                                 "2. Vuelve a registrar tu canal enviando el código `/link_...`\n"
-                                                 "3. ¡El bot confirmará y tu canal volverá a estar activo!",
-                                            parse_mode='Markdown'
-                                        )
-                                    # Evitar seguir procesando este canal
-                                    break
-                                elif "message to forward not found" in error_str or "message not found" in error_str:
-                                    # Msj borrado, simplemente ignorar
-                                    pass
-                        
-                        if valid_posts_count > 0:
-                            estimated_avg_views = int(total_private_views / valid_posts_count)
+                    # Canal Privado -> No podemos scrapear vistas via Bot API sin resetear contador.
+                    # Se mantiene el 15% estimado basado en subscriptores.
+                    logger.info(f"[metrics] Canal privado {chat.id}: Usando estimación 15% para vistas.")
                             
                 estimated_er = round((estimated_avg_views / max(count, 1)) * 100, 2)
                 
@@ -627,6 +571,10 @@ async def monitor_sfs_views_and_fraud(bot):
                         ).eq('id', post['id']).execute()
                     except Exception as v_err:
                         logger.warning(f"[views] post {post['telegram_message_id']}: {v_err}")
+
+                # Para SFS_VIEWS en privado, avisar que no se puede medir automáticamente
+                if not chat_obj.username and total_views == 0:
+                    logger.warning(f"[monitor] Campaña {camp_id} en canal privado sin vistas automáticas. Se requiere intervención o cambio a Seguidores/Tiempo.")
 
                 logger.info(f"[monitor] Campaña {camp_id} SFS_VIEWS: {total_views}/{views_target} vistas")
                 if total_views >= views_target:

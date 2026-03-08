@@ -1364,6 +1364,12 @@ const Promotions = () => {
                                 {proposeViewsTarget > (proposeTarget?.avg_views || 0) * 2 && (
                                     <p className="text-amber-300">⚠️ La meta es alta para este canal. Considera bajarla.</p>
                                 )}
+                                {!proposeTarget?.username && (
+                                    <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                        <p className="text-red-300 font-bold">⚠️ Canal Privado</p>
+                                        <p className="text-red-200/80">Las vistas en canales privados no se pueden medir automáticamente. Se recomienda usar <b>Tiempo</b> o <b>Seguidores</b> para este canal.</p>
+                                    </div>
+                                )}
                             </>}
                             {proposeContractType === 'SFS_TIME' && <>
                                 <p>⏱️ Los posts permanecen publicados por el tiempo acordado, independientemente de las vistas.</p>
