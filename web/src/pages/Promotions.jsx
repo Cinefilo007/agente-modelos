@@ -861,7 +861,7 @@ const Promotions = () => {
         );
         return (
             <div className="space-y-3">
-                {campaigns.map(c => {
+                {campaigns.map((c, index) => {
                     const meta = isReceived ? c.requester : c.target;
                     const targetLabel = c.type === 'SFS_VIEWS'
                         ? `${(c.views_target || 0).toLocaleString()} vistas`
