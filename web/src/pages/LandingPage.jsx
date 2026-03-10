@@ -4,14 +4,18 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
-import { Shield, Zap, Heart, Globe, Lock, Star, ChevronRight, TrendingUp, Users, DollarSign, Bot, X, Check } from 'lucide-react';
+import {
+    Shield, Zap, Heart, Globe, Lock, Star, ChevronRight,
+    TrendingUp, Users, DollarSign, Bot, X, Check,
+    Database, Coins, Gift, MessageSquare, Repeat,
+    Activity, Cpu, Briefcase, UserCheck
+} from 'lucide-react';
 
 const LandingPage = () => {
     const { loginWithTelegram } = useAuth();
     const { showToast } = useToast();
     const navigate = useNavigate();
     const telegramWrapperRef = useRef(null);
-    const [activeTab, setActiveTab] = useState('creators'); // 'creators' (priority) or 'fans'
     const [scrolled, setScrolled] = useState(false);
 
     // Scroll effect for navbar
@@ -21,26 +25,22 @@ const LandingPage = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // State for dynamic bot name
     const [botUsername, setBotUsername] = useState(null);
 
-    // Fetch bot config
     useEffect(() => {
         const fetchConfig = async () => {
             try {
                 const res = await api.get('/config/bot-username');
                 setBotUsername(res.data.username);
             } catch (err) {
-                console.error("Failed to fetch bot name, using fallback", err);
                 setBotUsername('AgenteNebulaIA_bot');
             }
         };
         fetchConfig();
     }, []);
 
-    // Telegram Widget
     useEffect(() => {
-        if (!botUsername) return; // Wait for config
+        if (!botUsername) return;
         if (telegramWrapperRef.current && telegramWrapperRef.current.innerHTML !== "") return;
 
         const script = document.createElement('script');
@@ -58,7 +58,6 @@ const LandingPage = () => {
             try { await loginWithTelegram(user); navigate('/'); }
             catch (error) { showToast(error.response?.data?.detail || "Login failed", "error"); }
         };
-        // Clean global only on unmount
         return () => { window.onTelegramAuth = undefined; }
     }, [loginWithTelegram, navigate, botUsername]);
 
@@ -67,367 +66,337 @@ const LandingPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#030014] text-white font-sans selection:bg-pink-500 selection:text-white overflow-x-hidden">
+        <div className="min-h-screen bg-[#02010a] text-white font-sans selection:bg-purple-500 selection:text-white overflow-x-hidden">
 
             {/* Background Effects */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-purple-900/20 rounded-full blur-[120px] animate-pulse"></div>
-                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-pink-900/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute top-[40%] left-[20%] w-[300px] h-[300px] bg-blue-900/10 rounded-full blur-[80px]"></div>
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#02010a]">
+                {/* Nebulosas principales con animación asíncrona */}
+                <div className="absolute top-[-10%] left-[-10%] w-[1000px] h-[1000px] bg-purple-600/20 rounded-full blur-[150px] animate-pulse duration-[8s]"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[800px] h-[800px] bg-indigo-600/15 rounded-full blur-[150px] animate-pulse duration-[10s] delay-1000"></div>
+
+                {/* Pulsos centrales más dinámicos */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[120px] animate-pulse duration-[6s] delay-500"></div>
+                <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-pink-500/5 rounded-full blur-[100px] animate-pulse duration-[12s]"></div>
+
+                {/* Textura de ruido */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay brightness-100 contrast-150"></div>
             </div>
 
             {/* Navbar */}
-            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 py-4' : 'bg-transparent py-6'}`}>
+            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
                 <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-                    <div className="flex items-center gap-2 group cursor-pointer">
+                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                         <div className="relative">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center transform group-hover:rotate-12 transition-transform shadow-[0_0_20px_rgba(236,72,153,0.5)]">
-                                <Zap className="w-6 h-6 text-white text-shadow" />
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center transform group-hover:rotate-12 transition-transform shadow-[0_0_20px_rgba(124,58,237,0.5)]">
+                                <Activity className="w-6 h-6 text-white" />
                             </div>
                         </div>
                         <span className="font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                            NEBULA<span className="text-pink-500">.AGENCY</span>
+                            NEBULA<span className="text-purple-500">.AGENCY</span>
                         </span>
                     </div>
-                    <div className="hidden md:flex gap-8 text-sm font-medium text-gray-300">
-                        <a href="#features" className="hover:text-white transition-colors">Características</a>
-                        <a href="#creators" className="hover:text-white transition-colors">Para Creadoras</a>
-                        <a href="#fans" className="hover:text-white transition-colors">Para Fans</a>
+                    <div className="hidden md:flex gap-8 text-xs font-bold uppercase tracking-widest text-gray-400">
+                        <a href="#vision" className="hover:text-white transition-colors">Visión</a>
+                        <a href="#ia" className="hover:text-white transition-colors">Tecnología IA</a>
+                        <a href="#economy" className="hover:text-white transition-colors">Economía</a>
+                        <a href="#safety" className="hover:text-white transition-colors">Seguridad</a>
                     </div>
                     <button
                         onClick={scrollToLogin}
-                        className="px-6 py-2.5 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 hover:border-pink-500/50 hover:shadow-[0_0_20px_rgba(236,72,153,0.3)] transition-all font-bold text-sm backdrop-blur-md"
+                        className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all font-bold text-xs uppercase tracking-widest backdrop-blur-md"
                     >
-                        Ingresar
+                        Acceso
                     </button>
                 </div>
             </nav>
 
             {/* Hero Section */}
             <section className="relative min-h-screen flex items-center justify-center pt-20 px-4 z-10">
-                <div className="container mx-auto grid lg:grid-cols-2 gap-16 items-center">
-
-                    {/* Text Content */}
-                    <div className="space-y-8 text-center lg:text-left">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/30 bg-purple-900/20 backdrop-blur-md animate-fade-in-up">
-                            <span className="status-dot w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                            <span className="text-xs font-bold uppercase tracking-widest text-purple-300">Revolucionando la Creator Economy</span>
-                        </div>
-
-                        <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight">
-                            Tu Imperio Digital, <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 animate-gradient-x">
-                                100% Automatizado
-                            </span>
-                        </h1>
-
-                        <p className="text-xl text-gray-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                            La primera plataforma que combina <strong>Inteligencia Artificial</strong> con gestión humana.
-                            Deja que nuestro Chatbot venda por ti mientras tú te enfocas en crear.
-                        </p>
-
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-                            <button
-                                onClick={scrollToLogin}
-                                className="px-8 py-4 bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl font-bold text-lg shadow-[0_0_40px_rgba(236,72,153,0.4)] hover:shadow-[0_0_60px_rgba(236,72,153,0.6)] hover:scale-105 transition-all flex items-center justify-center gap-2"
-                            >
-                                <Zap className="w-5 h-5" /> Comenzar Ahora
-                            </button>
-                            <a href="https://t.me/AgenteNebulaIA_bot" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2 backdrop-blur-sm">
-                                <Bot className="w-5 h-5 text-gray-400" /> Ver Demo
-                            </a>
-                        </div>
-
-                        <div className="pt-8 flex items-center justify-center lg:justify-start gap-8 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-                            <div className="flex -space-x-4">
-                                {[1, 2, 3, 4].map(i => (
-                                    <div key={i} className="w-10 h-10 rounded-full border-2 border-[#030014] overflow-hidden">
-                                        <img src={`https://randomuser.me/api/portraits/women/${20 + i}.jpg`} alt="User" className="w-full h-full object-cover" />
-                                    </div>
-                                ))}
-                                <div className="w-10 h-10 rounded-full border-2 border-[#030014] bg-white/10 flex items-center justify-center text-xs font-bold">+2k</div>
-                            </div>
-                            <div className="text-sm font-medium">
-                                <span className="text-white font-bold block">Creadoras Activas</span>
-                                <span className="text-green-400">Generando ahora</span>
-                            </div>
-                        </div>
+                <div className="container mx-auto text-center space-y-12">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/20 bg-purple-900/10 backdrop-blur-md animate-fade-in-up">
+                        <span className="status-dot w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-300">Telegram en Esteroides</span>
                     </div>
 
-                    {/* Hero Visual */}
-                    <div className="relative h-[600px] w-full hidden lg:block perspective-1000">
-                        {/* Main Image */}
-                        <div className="relative w-full h-full transform rotate-y-[-10deg] hover:rotate-y-0 transition-transform duration-700 ease-out z-20">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-pink-600 to-purple-600 rounded-[2.5rem] blur-2xl opacity-30 animate-pulse"></div>
-                            <img
-                                src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1974&auto=format&fit=crop"
-                                alt="Futuristic Model"
-                                className="w-full h-full object-cover rounded-[2rem] border-2 border-white/10 shadow-2xl relative z-10"
-                            />
+                    <h1 className="text-5xl md:text-8xl font-black leading-tight tracking-[calc(-0.02em)] max-w-5xl mx-auto">
+                        Sacamos el jugo a <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-100">
+                            Telegram como nadie
+                        </span>
+                    </h1>
 
-                            {/* Floating Stats Cards */}
-                            <div className="absolute top-20 -right-10 bg-black/60 backdrop-blur-xl border border-white/10 p-4 rounded-2xl flex items-center gap-4 animate-float z-30 shadow-xl">
-                                <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center text-green-400"><DollarSign /></div>
-                                <div>
-                                    <div className="text-xs text-gray-400 font-medium tracking-wide">Ingresos Hoy</div>
-                                    <div className="font-bold text-xl text-white ml-1">$1,240.50</div>
-                                </div>
-                            </div>
+                    <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+                        No inventamos la rueda, solo la hacemos girar a la velocidad de la luz.
+                        <strong> Potenciamos cada funcionalidad nativa </strong> para crear el ecosistema de monetización definitiva.
+                    </p>
 
-                            <div className="absolute bottom-32 -left-10 bg-black/60 backdrop-blur-xl border border-white/10 p-4 rounded-2xl flex items-center gap-4 animate-float z-30 shadow-xl" style={{ animationDelay: '2s' }}>
-                                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-400"><Bot /></div>
-                                <div>
-                                    <div className="text-xs text-gray-400 font-medium tracking-wide">Bot Activo</div>
-                                    <div className="font-bold text-sm text-white">Cerrando venta...</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
+                        <button
+                            onClick={scrollToLogin}
+                            className="px-10 py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all shadow-[0_20px_40px_-10px_rgba(255,255,255,0.2)]"
+                        >
+                            Empezar Imperio
+                        </button>
+                        <a href="https://t.me/AgenteNebulaIA_bot" target="_blank" rel="noopener noreferrer" className="px-10 py-5 bg-white/5 border border-white/10 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all backdrop-blur-sm flex items-center gap-3">
+                            <Bot className="w-5 h-5" /> Probar Demo
+                        </a>
                     </div>
                 </div>
             </section>
 
-            {/* Value Proposition Toggle */}
-            <section className="py-24 relative z-10" id="creators">
-                <div className="container mx-auto px-4">
-                    <div className="flex flex-col items-center mb-16">
-                        <h2 className="text-4xl md:text-5xl font-black text-center mb-8">
-                            Diseñado para <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Escalar</span>
-                        </h2>
-
-                        {/* Selector Fixed & Width constrained */}
-                        {/* Replaced logic with grid for perfect alignment */}
-                        <div className="p-1.5 bg-white/5 rounded-full border border-white/10 grid grid-cols-2 relative backdrop-blur-sm w-[320px] isolate">
-                            {/* Animated Background */}
-                            <div
-                                className={`absolute inset-y-1.5 w-[calc(50%-0.375rem)] bg-gradient-to-r from-pink-600 to-purple-600 rounded-full transition-all duration-300 shadow-lg -z-10`}
-                                style={{
-                                    left: activeTab === 'creators' ? '0.375rem' : '50%'
-                                }}
-                            ></div>
-
-                            <button
-                                onClick={() => {
-                                    setActiveTab('creators');
-                                    setTimeout(() => document.getElementById('creators-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-                                }}
-                                className={`py-3 rounded-full text-sm font-bold tracking-wide transition-colors ${activeTab === 'creators' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                Soy Creadora
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setActiveTab('fans');
-                                    setTimeout(() => document.getElementById('fans-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-                                }}
-                                className={`py-3 rounded-full text-sm font-bold tracking-wide transition-colors ${activeTab === 'fans' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                Soy Fan
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Creators Content */}
-                    <div id="creators-content" className={`transition-all duration-700 ${activeTab === 'creators' ? 'opacity-100 translate-y-0' : 'hidden opacity-0 translate-y-10 fixed top-0 -z-50'}`}>
-                        {/* Hide visually but keep in DOM or actually hide */}
-                        <div className={activeTab === 'creators' ? '' : 'hidden'}>
-                            <div className="grid md:grid-cols-3 gap-8 mb-24">
-                                <FeatureCard
-                                    icon={Bot}
-                                    color="purple"
-                                    title="Bot Hunter & Manager"
-                                    desc="Nuestro sistema de IA interactúa con tus leads, filtra curiosos y cierra ventas sin que tengas que responder un solo mensaje."
-                                />
-                                <FeatureCard
-                                    icon={TrendingUp}
-                                    color="green"
-                                    title="Ingresos Pasivos"
-                                    desc="Configura tu contenido una vez y véndelo infinitas veces. Sistema de suscripciones y PPV automatizado."
-                                />
-                                <FeatureCard
-                                    icon={Shield}
-                                    color="blue"
-                                    title="Seguridad Nivel Banco"
-                                    desc="Verificación de usuarios, marcas de agua dinámicas y lista negra compartida para evitar estafas."
-                                />
-                            </div>
-
-                            {/* Comparison Table Section */}
-                            <div className="max-w-5xl mx-auto mb-20 animate-fade-in-up">
-                                <h3 className="text-3xl font-bold text-center mb-12">¿Por qué Elegir Nebula?</h3>
-                                <div className="glass-panel overflow-hidden rounded-3xl border border-white/10 bg-black/40 shadow-2xl">
-                                    <div className="grid grid-cols-12 p-6 border-b border-white/10 bg-white/5 font-bold text-sm md:text-xl gap-4">
-                                        <div className="col-span-4 text-gray-400">Punto de Dolor</div>
-                                        <div className="col-span-4 text-center text-red-400">Modo Tradicional</div>
-                                        <div className="col-span-4 text-center text-green-400">Modo Nebula</div>
+            {/* Features Grid - IA & Blockchain */}
+            <section className="py-32 relative z-10 bg-black/40" id="ia">
+                <div className="container mx-auto px-6">
+                    <div className="grid lg:grid-cols-2 gap-24 items-center">
+                        <div className="space-y-8">
+                            <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
+                                IA que <span className="text-purple-500 text-glow">Vende</span>, <br />
+                                Blockchain que <span className="text-indigo-500 text-glow">Protege</span>.
+                            </h2>
+                            <p className="text-lg text-gray-500 leading-relaxed">
+                                Tu asistente personal no solo responde, **cierra ventas 24/7** con una personalidad calibrada.
+                                Además, tus fotos son procesadas por una IA de retoque estético para que cada post sea perfecto.
+                            </p>
+                            <div className="grid sm:grid-cols-2 gap-8 pt-8">
+                                <div className="space-y-4">
+                                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
+                                        <Cpu className="w-6 h-6" />
                                     </div>
-
-                                    <ComparisonRow
-                                        title="Gestión de Mensajes"
-                                        traditional="Responder manualmente 100+ DMs. Pérdida de tiempo."
-                                        nebula="IA responde al instante y cierra ventas 24/7."
-                                    />
-                                    <ComparisonRow
-                                        title="Adquisición"
-                                        traditional="Hacer SFS, Spammear grupos, Mendigar likes."
-                                        nebula="Tráfico orgánico y herramientas de promoción."
-                                    />
-                                    <ComparisonRow
-                                        title="Seguridad"
-                                        traditional="Riesgo de estafas y cuentas falsas."
-                                        nebula="Verificación Biométrica + Blacklist Global."
-                                    />
-                                    <ComparisonRow
-                                        title="Estabilidad"
-                                        traditional="Miedo constante a baneos de redes."
-                                        nebula="Infraestructura propia y base de datos segura."
-                                    />
-                                    <ComparisonRow
-                                        title="Estadísticas"
-                                        traditional="Cero datos. No sabes quién te compra."
-                                        nebula="CRM Financiero en tiempo real."
-                                    />
+                                    <h4 className="font-bold">Chat Manager IA</h4>
+                                    <p className="text-sm text-gray-500 italic">Interacción real, ventas automáticas.</p>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                                        <Database className="w-6 h-6" />
+                                    </div>
+                                    <h4 className="font-bold">TON Storage</h4>
+                                    <p className="text-sm text-gray-500 italic">Almacenamiento descentralizado e inmutable.</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Fans Content */}
-                    <div id="fans-section" className={`transition-all duration-700 ${activeTab === 'fans' ? 'opacity-100 translate-y-0' : 'hidden opacity-0 translate-y-10'}`}>
-                        <div className="grid md:grid-cols-3 gap-8">
-                            <FeatureCard
+                        <div className="grid gap-6">
+                            <Card
                                 icon={Star}
-                                color="yellow"
-                                title="Creadoras Verificadas"
-                                desc="Accede a perfiles 100% reales. Cada creadora pasa por un riguroso proceso de verificación biométrica."
+                                title="NFTs en TON"
+                                desc="Convierte tu contenido en activos digitales únicos. Propiedad certificada y subastas con regalías perpetuas."
                             />
-                            <FeatureCard
-                                icon={Zap}
-                                color="pink"
-                                title="Atención Inmediata"
-                                desc="Olvídate de esperar horas por una respuesta. Nuestro sistema garantiza interacción fluida y entrega instantánea."
-                            />
-                            <FeatureCard
-                                icon={Lock}
-                                color="indigo"
-                                title="Privacidad Total"
-                                desc="Tus datos están encriptados. Disfruta de contenido exclusivo con la seguridad de la infraestructura de Telegram."
+                            <Card
+                                icon={Globe}
+                                title="Red Social Interna"
+                                desc="Stories, Feed y Perfiles dentro de Telegram. Una comunidad real para que te promociones como nunca antes."
                             />
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Social Proof / Stats */}
-            <section className="py-20 border-y border-white/5 bg-white/[0.02]">
-                <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-                    <StatItem number="$1.2M+" label="Pagado a Creadoras" />
-                    <StatItem number="50k+" label="Usuarios Activos" />
-                    <StatItem number="24/7" label="Soporte IA" />
-                    <StatItem number="0%" label="Comisión de Entrada" />
+            {/* Monetización Section */}
+            <section className="py-32 relative z-10" id="economy">
+                <div className="container mx-auto px-6 text-center space-y-16">
+                    <div className="space-y-4">
+                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Monetización Explosiva</h2>
+                        <p className="text-gray-500 max-w-2xl mx-auto">Ofrecemos el abanico más amplio de opciones para que tu contenido genere beneficios reales.</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-4 gap-6">
+                        <Feature icon={Coins} title="Billetera Crypto" desc="Descentralizada, sin bloqueos y con las mejores tasas." />
+                        <Feature icon={Gift} title="Regalos & Tips" desc="Tus fans pueden premiar cada post con monedas y regalos exclusivos." />
+                        <Feature icon={TrendingUp} title="Casino P2P" desc="Tus fans prueban su suerte para ganar tus servicios VIP." />
+                        <Feature icon={Repeat} title="Venta P2P" desc="Sistema de intercambio de contenido seguro fuera de la web." />
+                    </div>
                 </div>
             </section>
 
-            {/* CTA Login Section */}
-            <section className="py-32 relative text-center z-10" id="login">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-pink-600/20 to-purple-600/20 rounded-full blur-[120px] -z-10"></div>
+            {/* Comparison Table Section */}
+            <section className="py-32 relative z-10 bg-white/[0.02]" id="vision">
+                <div className="container mx-auto px-6">
+                    <div className="max-w-5xl mx-auto space-y-16">
+                        <div className="text-center space-y-4">
+                            <h2 className="text-4xl font-black uppercase tracking-widest">Nebula vs Tradicional</h2>
+                            <p className="text-gray-500">Eliminamos tus puntos de dolor para que solo te preocupes de brillar.</p>
+                        </div>
 
-                <div className="container mx-auto px-4">
-                    <div className="max-w-4xl mx-auto bg-black/40 backdrop-blur-2xl border border-white/10 p-12 md:p-20 rounded-[3rem] shadow-2xl relative overflow-hidden group">
-
-                        {/* Hover Gradient Effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-
-                        <h2 className="text-4xl md:text-6xl font-black mb-6">¿Lista para empezar?</h2>
-                        <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                            Únete a la plataforma de gestión más avanzada del mercado.
-                            Sin contratos forzosos. Sin letras pequeñas.
-                        </p>
-
-                        <div className="flex flex-col items-center justify-center gap-6 relative z-10">
-                            {/* Simplified container without glow border */}
-                            <div className="flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
-                                <div ref={telegramWrapperRef}>
-                                    {/* Telegram Widget Renders Here */}
-                                </div>
+                        <div className="border border-white/5 bg-black/40 rounded-[2rem] overflow-hidden backdrop-blur-3xl shadow-2xl">
+                            <div className="grid grid-cols-12 p-8 border-b border-white/5 font-black text-[10px] uppercase tracking-[0.2em] text-gray-500">
+                                <div className="col-span-4">Punto de Dolor</div>
+                                <div className="col-span-4 text-center">Modo Tradicional</div>
+                                <div className="col-span-4 text-center text-purple-500">Efecto Nebula</div>
                             </div>
-                            <p className="text-xs text-gray-500 uppercase tracking-widest mt-4 flex items-center gap-2">
-                                <Lock className="w-3 h-3" /> Acceso Seguro vía Telegram
+
+                            <TableRow
+                                pain="Mensajes Agobiantes"
+                                trad="Responder 500 DMs a mano. Agotamiento total."
+                                nebula="IA Manager cierra ventas mientras duermes."
+                            />
+                            <TableRow
+                                pain="Seguridad Financiera"
+                                trad="Comisiones del 20%+ y baneos de bancos."
+                                nebula="Pagos Crypto/P2P instantáneos y 100% tuyos."
+                            />
+                            <TableRow
+                                pain="Filtraciones"
+                                trad="Tus fotos robadas en minutos."
+                                nebula="TON Storage + NFTs con propiedad verificada."
+                            />
+                            <TableRow
+                                pain="Crecimiento"
+                                trad="Mendigar seguidores y pagar promos dudosas."
+                                nebula="Feed Colaborativo + SFS Automatizado entre canales."
+                            />
+                        </div>
+                    </div>
+
+                    {/* Collaborative Feed & Blacklist */}
+                    <div className="grid md:grid-cols-2 gap-12 mt-24">
+                        <div className="p-12 rounded-[2rem] bg-gradient-to-br from-purple-900/10 to-transparent border border-purple-500/10 space-y-6">
+                            <Users className="w-12 h-12 text-purple-500" />
+                            <h3 className="text-3xl font-black">Feed Colaborativo</h3>
+                            <p className="text-gray-500 leading-relaxed">
+                                Aquí no importa si tienes 0 o 1M de seguidores. Todas tienen la oportunidad de darse a conocer.
+                                Entre todas las modelos se colaboran para que el tráfico circule orgánicamente.
+                            </p>
+                        </div>
+                        <div className="p-12 rounded-[2rem] bg-gradient-to-br from-red-900/10 to-transparent border border-red-500/10 space-y-6" id="safety">
+                            <Shield className="w-12 h-12 text-red-500" />
+                            <h3 className="text-3xl font-black">Lista Negra Global</h3>
+                            <p className="text-gray-500 leading-relaxed">
+                                Si se meten con una, se meten con todas. Los estafadores y malos clientes quedan excluidos
+                                de todo el ecosistema y expuestos para proteger a la comunidad.
                             </p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="py-12 border-t border-white/5 bg-black">
-                <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-2 grayscale hover:grayscale-0 transition-all opacity-50 hover:opacity-100">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center">
-                            <Zap className="w-4 h-4 text-white" />
+            {/* Reputación Section */}
+            <section className="py-32 relative z-10">
+                <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-24 items-center">
+                    <div className="order-2 lg:order-1 relative">
+                        <div className="absolute inset-0 bg-purple-600/10 blur-[100px] rounded-full"></div>
+                        <div className="relative p-8 bg-black/60 border border-white/5 rounded-3xl backdrop-blur-xl space-y-6">
+                            <div className="flex gap-4 items-center">
+                                <div className="w-12 h-12 rounded-full bg-gray-800 animate-pulse"></div>
+                                <div className="space-y-2 flex-1">
+                                    <div className="h-4 w-32 bg-gray-800 rounded animate-pulse"></div>
+                                    <div className="h-3 w-16 bg-gray-900 rounded animate-pulse"></div>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <p className="text-sm text-gray-500 italic">"Excelente trato y contenido de calidad. 100% recomendada."</p>
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-4 h-4 text-yellow-500 fill-yellow-500" />)}
+                                </div>
+                            </div>
                         </div>
-                        <span className="font-bold tracking-widest text-sm">NEBULA</span>
                     </div>
-                    <div className="text-gray-500 text-sm">
-                        © 2024 Nebula Agency. Built for the future.
+                    <div className="order-1 lg:order-2 space-y-8">
+                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Reputación es Poder</h2>
+                        <p className="text-lg text-gray-500 leading-relaxed">
+                            Implementamos un sistema de **comentarios en perfiles** tanto para modelos como para clientes.
+                            Cada interacción suma a tu historial, creando un ecosistema de confianza donde los mejores
+                            siempre tienen más ventas.
+                        </p>
+                        <ul className="space-y-4 pt-4">
+                            <li className="flex items-center gap-3 text-sm font-bold text-gray-400">
+                                <UserCheck className="w-5 h-5 text-green-500" /> Perfiles Verificados Biométricamente
+                            </li>
+                            <li className="flex items-center gap-3 text-sm font-bold text-gray-400">
+                                <MessageSquare className="w-5 h-5 text-blue-500" /> Reseñas Reales de Clientes Reales
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            {/* SFS Section */}
+            <section className="py-32 relative z-10 bg-indigo-600/5">
+                <div className="container mx-auto px-6 text-center space-y-12">
+                    <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Intercambio Promo Automatizado</h2>
+                    <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+                        Nunca había sido tan fácil darse a conocer. Nuestra super plataforma para intercambio de publicidad (SFS/Promo)
+                        gestiona todo automáticamente entre canales verificados. **Tráfico garantizado.**
+                    </p>
+                    <div className="pt-8">
+                        <button onClick={scrollToLogin} className="px-12 py-6 bg-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all">
+                            Vincular mi Canal
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Final CTA */}
+            <section className="py-48 relative text-center z-10" id="login">
+                <div className="container mx-auto px-6">
+                    <div className="max-w-4xl mx-auto space-y-12">
+                        <h2 className="text-6xl md:text-9xl font-black tracking-tighter mix-blend-difference mb-12">Es Tu Momento.</h2>
+                        <div className="flex flex-col items-center gap-8 border border-white/10 p-16 rounded-[4rem] bg-black/40 backdrop-blur-3xl shadow-[0_0_100px_rgba(168,85,247,0.1)]">
+                            <p className="text-xl text-gray-400 font-bold max-w-xl">Únete a la elite que ya está operando en el futuro de Telegram.</p>
+                            <div ref={telegramWrapperRef} className="transform scale-125 hover:scale-135 transition-transform duration-500"></div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-600 flex items-center gap-4">
+                                <Lock className="w-3 h-3" /> Conexión Directa & Encriptada
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <footer className="py-12 border-t border-white/5 bg-black z-20 relative">
+                <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 opacity-40 hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2 font-black tracking-tighter text-sm">
+                        NEBULA<span className="text-purple-500">.AGENCY</span>
+                    </div>
+                    <div className="text-[10px] items-center gap-8 hidden md:flex font-bold uppercase tracking-widest text-gray-500">
+                        <span>Estatus: Operativo</span>
+                        <span>v2.4.0 Codename: Super Star</span>
+                        <span>© 2026</span>
                     </div>
                 </div>
             </footer>
 
             <style>{`
-                .text-shadow { text-shadow: 0 0 20px rgba(255,255,255,0.5); }
-                .perspective-1000 { perspective: 1000px; }
-                @keyframes float {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-20px); }
+                .text-glow { filter: drop-shadow(0 0 10px currentColor); }
+                @keyframes fade-in-up {
+                    from { opacity: 0; transform: translateY(30px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
-                .animate-float { animation: float 6s ease-in-out infinite; }
+                .animate-fade-in-up { animation: fade-in-up 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
             `}</style>
         </div>
     );
 };
 
-// Helper Components
-const FeatureCard = ({ icon: Icon, color, title, desc }) => {
-    const colorClasses = {
-        purple: "bg-purple-500/10 text-purple-400 border-purple-500/20 group-hover:border-purple-500/50",
-        pink: "bg-pink-500/10 text-pink-400 border-pink-500/20 group-hover:border-pink-500/50",
-        blue: "bg-blue-500/10 text-blue-400 border-blue-500/20 group-hover:border-blue-500/50",
-        green: "bg-green-500/10 text-green-400 border-green-500/20 group-hover:border-green-500/50",
-        yellow: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20 group-hover:border-yellow-500/50",
-        indigo: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20 group-hover:border-indigo-500/50",
-    };
-
-    return (
-        <div className={`p-8 rounded-3xl border ${colorClasses[color].split(' ')[2]} ${colorClasses[color].split(' ')[3]} bg-white/[0.02] backdrop-blur-sm transition-all duration-300 hover:-translate-y-2 hover:bg-white/[0.05] group cursor-default`}>
-            <div className={`w-14 h-14 rounded-2xl ${colorClasses[color].split(' ')[0]} ${colorClasses[color].split(' ')[1]} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                <Icon className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold mb-3">{title}</h3>
-            <p className="text-gray-400 leading-relaxed text-sm">{desc}</p>
+// Subcomponents
+const Card = ({ icon: Icon, title, desc }) => (
+    <div className="p-8 rounded-[2rem] border border-white/5 bg-white/[0.02] backdrop-blur-sm transition-all hover:bg-white/[0.05] hover:border-white/10 group">
+        <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <Icon className="w-6 h-6 text-white" />
         </div>
-    );
-};
+        <h4 className="text-xl font-bold mb-3">{title}</h4>
+        <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+    </div>
+);
 
-// ADDED: ComparisonRow Component (Missing in simple code block)
-const ComparisonRow = ({ title, traditional, nebula }) => (
-    <div className="grid grid-cols-12 p-6 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors gap-4 items-center">
-        <div className="col-span-4 font-bold text-white text-sm md:text-base">{title}</div>
-        <div className="col-span-4 text-center text-red-400/80 text-xs md:text-sm flex flex-col items-center">
-            <X className="w-5 h-5 mb-1 opacity-50" />
-            {traditional}
+const Feature = ({ icon: Icon, title, desc }) => (
+    <div className="space-y-6 p-8 border border-white/5 rounded-3xl transition-all hover:border-purple-500/20 group">
+        <div className="w-14 h-14 mx-auto rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-600 transition-colors">
+            <Icon className="w-6 h-6 text-white" />
         </div>
-        <div className="col-span-4 text-center text-green-400 text-xs md:text-sm font-medium flex flex-col items-center bg-green-500/5 p-2 rounded-xl border border-green-500/20">
-            <Check className="w-5 h-5 mb-1" />
-            {nebula}
+        <div className="space-y-2">
+            <h4 className="font-black uppercase tracking-tighter text-lg">{title}</h4>
+            <p className="text-xs text-gray-500 leading-normal">{desc}</p>
         </div>
     </div>
 );
 
-const StatItem = ({ number, label }) => (
-    <div className="space-y-2">
-        <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-500">{number}</div>
-        <div className="text-sm font-medium text-gray-500 uppercase tracking-widest">{label}</div>
+const TableRow = ({ pain, trad, nebula }) => (
+    <div className="grid grid-cols-12 p-8 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors items-center gap-4">
+        <div className="col-span-4 font-black text-xs uppercase tracking-widest text-white/50">{pain}</div>
+        <div className="col-span-4 text-xs text-gray-600 line-through decoration-red-900/50">{trad}</div>
+        <div className="col-span-4 text-xs font-bold text-gray-300 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,1)]"></div>
+            {nebula}
+        </div>
     </div>
 );
 

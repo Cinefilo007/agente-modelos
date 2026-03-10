@@ -4,6 +4,7 @@ import { ArrowLeft, ImagePlus, X, Loader, Play, Pause, Link, Calendar, Plus, Tra
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import clsx from 'clsx';
+import { AIPhotoEditor } from '../components/ai/AIPhotoEditor';
 
 function CreatePost() {
     const navigate = useNavigate();
@@ -18,6 +19,7 @@ function CreatePost() {
     const [isScheduling, setIsScheduling] = useState(false);
     const [scheduledAt, setScheduledAt] = useState('');
     const [showLinkPanel, setShowLinkPanel] = useState(false);
+    const [showAIEditor, setShowAIEditor] = useState(false);
 
     // Video Edit State
     const [videoDuration, setVideoDuration] = useState(0);
@@ -321,7 +323,19 @@ function CreatePost() {
                                 ) : (
                                     <img src={previewUrl} alt="Preview" className="w-full h-full object-contain" />
                                 )}
-                                <div className="absolute top-2 right-2">
+                                <div className="absolute top-2 right-2 flex gap-2">
+                                    {!file.type.startsWith('video/') && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowAIEditor(true);
+                                            }}
+                                            className="bg-blue-600/80 backdrop-blur-md p-2 rounded-full text-white hover:bg-blue-600 transition-colors shadow-lg"
+                                            title="Editar con IA"
+                                        >
+                                            <Sparkles size={16} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -329,7 +343,7 @@ function CreatePost() {
                                             setPreviewUrl(null);
                                             if (fileInputRef.current) fileInputRef.current.value = "";
                                         }}
-                                        className="bg-black/50 p-1 rounded-full text-white hover:bg-black/70"
+                                        className="bg-black/50 p-2 rounded-full text-white hover:bg-black/70 transition-colors"
                                     >
                                         <X size={16} />
                                     </button>
@@ -673,6 +687,17 @@ function CreatePost() {
                         </div>
                     </div>
                 </div>
+            )}
+            {/* AI EDITOR MODAL */}
+            {showAIEditor && file && (
+                <AIPhotoEditor
+                    originalImage={file}
+                    onClose={() => setShowAIEditor(false)}
+                    onApply={(newFile, newPreview) => {
+                        setFile(newFile);
+                        setPreviewUrl(newPreview);
+                    }}
+                />
             )}
         </div>
     );
