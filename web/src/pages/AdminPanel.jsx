@@ -292,7 +292,7 @@ export default function AdminPanel() {
                                         const isPeak = val > 0 && (i === 0 || val >= views[i - 1]) && (i === views.length - 1 || val >= views[i + 1]);
                                         if (!isPeak) return null;
                                         return (
-                                            <text key={`v-${i}`} x={p.x} y={p.y - 3} textAnchor="middle" fill="#60A5FA" style={{ fontSize: '3px', fontWeight: '400', fontFamily: 'inherit' }}>
+                                            <text key={`v-${i}`} x={p.x} y={p.y - 3} textAnchor="middle" fill="#60A5FA" style={{ fontSize: '3px', fontWeight: '400', fontFamily: "'Inter', sans-serif" }}>
                                                 {val}
                                             </text>
                                         );
@@ -304,7 +304,7 @@ export default function AdminPanel() {
                                         const isPeak = val > 0 && (i === 0 || val >= revenue[i - 1]) && (i === revenue.length - 1 || val >= revenue[i + 1]);
                                         if (!isPeak) return null;
                                         return (
-                                            <text key={`r-${i}`} x={p.x} y={p.y - 3} textAnchor="middle" fill="#4ADE80" style={{ fontSize: '3px', fontWeight: '400', fontFamily: 'inherit' }}>
+                                            <text key={`r-${i}`} x={p.x} y={p.y - 3} textAnchor="middle" fill="#4ADE80" style={{ fontSize: '3px', fontWeight: '400', fontFamily: "'Inter', sans-serif" }}>
                                                 ${val}
                                             </text>
                                         );
@@ -316,7 +316,7 @@ export default function AdminPanel() {
                                         const x = (i / (labels.length - 1)) * width;
                                         const day = label.split('-')[2];
                                         return (
-                                            <text key={i} x={x} y={98} textAnchor="middle" fill="white" fillOpacity="0.3" style={{ fontSize: '3.5px', fontWeight: '400', fontFamily: 'inherit', letterSpacing: '0.05em' }}>
+                                            <text key={i} x={x} y={98} textAnchor="middle" fill="white" fillOpacity="0.3" style={{ fontSize: '3.5px', fontWeight: '400', fontFamily: "'Inter', sans-serif", letterSpacing: '0.05em' }}>
                                                 {day}
                                             </text>
                                         );
