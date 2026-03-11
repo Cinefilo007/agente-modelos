@@ -155,6 +155,7 @@ export default function NebulaCoachPanel() {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
     const [semanaActiva, setSemanaActiva] = useState(1);
+    const [feedbackMap, setFeedbackMap] = useState({}); // { action_key: 'success' | 'failure' }
     const navigate = useNavigate();
     const [insights, setInsights] = useState([]);
 
