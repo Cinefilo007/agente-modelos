@@ -2,15 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, MapPin } from 'lucide-react';
 import { ModelGrid } from '../components/explore/ModelGrid';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import EscrowTour from '../components/escrow/EscrowTour';
 
 function Explore() {
     const { themeColor } = useTheme();
+    const { user } = useAuth();
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [runTour, setRunTour] = useState(false);
+
+    useEffect(() => {
+        // Run tour if client and hasn't seen it
+        if (user?.role === 'client' && !localStorage.getItem('escrow_tour_seen')) {
+            setRunTour(true);
+        }
+    }, [user]);
+
+    const handleTourFinish = () => {
+        setRunTour(false);
+        localStorage.setItem('escrow_tour_seen', 'true');
+    };
 
     const filters = [
         { id: 'all', label: 'Todas' },
@@ -78,8 +94,8 @@ function Explore() {
                             key={f.id}
                             onClick={() => setActiveFilter(f.id)}
                             className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === f.id
-                                    ? 'bg-white text-black border-white'
-                                    : 'bg-transparent text-gray-400 border-white/10 hover:border-white/30'
+                                ? 'bg-white text-black border-white'
+                                : 'bg-transparent text-gray-400 border-white/10 hover:border-white/30'
                                 }`}
                         >
                             {f.label}
@@ -94,7 +110,10 @@ function Explore() {
                     <p className="text-sm">Buscando modelos...</p>
                 </div>
             ) : (
-                <ModelGrid models={models} />
+                <>
+                    <EscrowTour run={runTour} onFinish={handleTourFinish} />
+                    <ModelGrid models={models} />
+                </>
             )}
         </div>
     );

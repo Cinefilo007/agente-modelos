@@ -3,7 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import {
     ShieldCheck, Lock, CheckCircle, AlertTriangle, ArrowLeft,
-    Clock, Wallet, MessageSquare
+    Clock, Wallet, MessageSquare, Send, ExternalLink, HelpCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -21,23 +21,42 @@ export default function ServiceCheckout() {
     const [loadingBalance, setLoadingBalance] = useState(true);
     const [errorMsg, setErrorMsg] = useState(null);
 
+    // Payment Method: 'escrow' (In-app wallet) or 'direct' (Private chat)
+    const [paymentMethod, setPaymentMethod] = useState('escrow');
+
     // Status: 'summary', 'processing', 'held', 'completed', 'disputed'
     const [status, setStatus] = useState('summary');
+    const [lastOrderId, setLastOrderId] = useState(null);
 
     // Get data from navigation state
     const { service: initialService, option: selectedOption, model: initialModel } = location.state || {};
 
-    // Service Data (Dynamic from navigation state)
+    if (!initialService || !selectedOption || !initialModel) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-black">
+                <AlertTriangle size={48} className="text-red-500 mb-4" />
+                <h2 className="text-xl font-bold mb-2">Error de Navegación</h2>
+                <p className="text-muted-foreground mb-6 text-sm">No pudimos recuperar los detalles del servicio. Por favor, selecciona el servicio nuevamente.</p>
+                <Link to="/explore" className="px-6 py-2 bg-white/10 rounded-xl font-bold">Volver a Explorar</Link>
+            </div>
+        );
+    }
+
+    // Service Data
     const service = {
-        title: initialService?.title || "Servicio Seleccionado",
-        modelName: initialModel?.artistic_name || initialModel?.username || "Modelo",
-        modelAvatar: initialModel?.avatar_url || "https://github.com/shadcn.png",
-        price: selectedOption?.price || 0,
-        description: initialService?.description || "Cargando detalles...",
+        id: initialService.id,
+        title: initialService.title,
+        modelId: initialModel.id,
+        modelName: initialModel.artistic_name || initialModel.username || "Modelo",
+        modelUsername: initialModel.username || "",
+        modelAvatar: initialModel.avatar_url,
+        optionId: selectedOption.id,
+        price: selectedOption.price,
+        description: initialService.description,
         deliveryTime: "24-48h"
     };
 
-    const fee = 2.50;
+    const fee = paymentMethod === 'escrow' ? 2.50 : 0;
     const totalAmount = service.price + fee;
 
     useEffect(() => {
@@ -57,132 +76,211 @@ export default function ServiceCheckout() {
     const handlePayment = async () => {
         setErrorMsg(null);
 
-        if (balance.balance < totalAmount) {
-            showToast("Saldo insuficiente. Por favor recarga tu billetera.", "warning");
-            navigate('/wallet');
-            return;
-        }
-
-        setStatus('processing');
-
-        try {
-            const res = await api.post('/escrow/create', {
-                model_id: initialModel?.id,
-                service_id: initialService?.id || "custom-service",
-                amount: totalAmount
-            });
-
-            if (res.data.success) {
-                // Success!
-                setStatus('held');
+        if (paymentMethod === 'escrow') {
+            if (balance.balance < totalAmount) {
+                showToast("Saldo insuficiente. Por favor recarga tu billetera.", "warning");
+                navigate('/wallet');
+                return;
             }
-        } catch (e) {
-            console.error("Payment failed", e);
-            setErrorMsg(e.response?.data?.detail || "Error al procesar el pago. Intenta nuevamente.");
-            setStatus('summary');
+
+            setStatus('processing');
+
+            try {
+                // Original escrow creation call
+                const res = await api.post('/escrow/create', {
+                    model_id: service.modelId,
+                    service_id: service.id,
+                    amount: totalAmount
+                });
+
+                if (res.data.success) {
+                    setLastOrderId(res.data.escrow_id);
+                    setStatus('held');
+                }
+            } catch (e) {
+                console.error("Escrow payment failed", e);
+                setErrorMsg(e.response?.data?.detail || "Error al procesar el pago. Intenta nuevamente.");
+                setStatus('summary');
+            }
+        } else {
+            // Direct Payment logic
+            setStatus('processing');
+            try {
+                const res = await api.post('/shop/order', {
+                    model_id: service.modelId,
+                    service_id: service.id,
+                    option_id: service.optionId,
+                    payment_method: 'direct'
+                });
+
+                if (res.data) {
+                    setLastOrderId(res.data.id);
+                    setStatus('completed');
+                }
+            } catch (e) {
+                console.error("Direct order failed", e);
+                setErrorMsg("No se pudo registrar la solicitud de pago directo.");
+                setStatus('summary');
+            }
         }
     };
 
-    const handleConfirm = () => {
-        // In real flow, this makes a request to Release funds
-        // For now, let's assume client is happy and we confirm locally or call API
-        // Ideally: api.post('/escrow/release', { escrow_id: ... })
-        // But we didn't save escrow_id in state yet. For UI Demo purposes:
-        setStatus('completed');
-    };
-
-    const handleDispute = () => {
-        setStatus('disputed');
+    const handleGoToChat = () => {
+        const msg = encodeURIComponent(
+            `Hola ${service.modelName}! He seleccionado el servicio: "${service.title}" (${selectedOption.label}). \n\n` +
+            (paymentMethod === 'escrow'
+                ? `Acabo de pagar vía ESCROW. Por favor confírmame cuando puedas iniciar. \nID Orden: ${lastOrderId}`
+                : `Me gustaría coordinar el pago directo para este servicio. ¿Me compartes tus datos de pago?`)
+        );
+        const username = service.modelUsername.replace('@', '');
+        window.open(`https://t.me/${username}?text=${msg}`, '_blank');
+        navigate('/me');
     };
 
     return (
-        <div className="min-h-screen pb-20 pt-6 px-4 font-sans flex flex-col items-center">
+        <div className="min-h-screen pb-20 pt-6 px-4 font-sans flex flex-col items-center bg-black">
 
             {/* Header */}
-            <div className="w-full flex items-center mb-6">
-                <Link to="/explore" className="p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground">
+            <div className="w-full flex items-center mb-6 max-w-md">
+                <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground">
                     <ArrowLeft size={20} />
-                </Link>
-                <span className="ml-2 font-bold text-lg">Checkout Seguro</span>
+                </button>
+                <div className="ml-2 flex flex-col">
+                    <span className="font-bold text-lg leading-tight">Finalizar Compra</span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest flex items-center gap-1">
+                        <ShieldCheck size={10} className="text-blue-400" /> Transacción Segura
+                    </span>
+                </div>
             </div>
 
             {/* --- SUMMARY STAGE --- */}
             {status === 'summary' && (
                 <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {/* Service Card */}
-                    <div className="bg-card/40 border border-white/5 rounded-3xl p-6 mb-6">
-                        <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/5">
-                            <Avatar src={service.modelAvatar} size="lg" />
+                    {/* Service Summary Card */}
+                    <div className="bg-card/40 border border-white/5 rounded-3xl p-5 mb-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <Avatar src={service.modelAvatar} size="md" />
                             <div>
-                                <h2 className="font-bold text-lg">{service.modelName}</h2>
-                                <p className="text-xs text-muted-foreground">Modelo Verificada</p>
+                                <h2 className="font-bold text-base text-white">{service.modelName}</h2>
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold">Vendedora Verificada</p>
                             </div>
                         </div>
-                        <h3 className="text-xl font-bold mb-2">{service.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-4">{service.description}</p>
-                        <div className="flex items-center gap-2 text-xs font-semibold bg-white/5 self-start px-3 py-1.5 rounded-lg w-fit">
-                            <Clock size={14} /> Entrega estimada: {service.deliveryTime}
+                        <div className="bg-white/5 rounded-2xl p-4">
+                            <h3 className="text-sm font-bold text-white mb-1">{service.title}</h3>
+                            <p className="text-[11px] text-muted-foreground line-clamp-2">{service.description}</p>
+                            <div className="mt-3 flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-blue-400 bg-blue-400/10 px-2 py-1 rounded-lg uppercase tracking-wider">
+                                    {selectedOption.label}
+                                </span>
+                                <span className="text-sm font-black text-white">${service.price.toFixed(2)}</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Price Breakdown */}
-                    <div className="bg-card/40 border border-white/5 rounded-2xl p-5 mb-8">
-                        <div className="flex justify-between items-center mb-2 text-sm text-muted-foreground">
+                    {/* Payment Method Selector */}
+                    <div className="mb-6 space-y-3">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-1">Método de Pago</label>
+
+                        {/* Escrow Option */}
+                        <div
+                            onClick={() => setPaymentMethod('escrow')}
+                            className={clsx(
+                                "p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden group",
+                                paymentMethod === 'escrow' ? "border-primary bg-primary/5" : "border-white/5 bg-white/5 hover:bg-white/10"
+                            )}
+                            style={paymentMethod === 'escrow' ? { borderColor: themeColor } : {}}
+                        >
+                            <div className="flex items-start gap-3 relative z-10">
+                                <div className={clsx("p-2 rounded-xl", paymentMethod === 'escrow' ? "bg-primary text-primary-foreground" : "bg-white/10 text-muted-foreground")}>
+                                    <ShieldCheck size={20} />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <h4 className="font-bold text-sm text-white">Billetera App (Escrow)</h4>
+                                        <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded uppercase">Recomendado</span>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                        Pago 100% protegido. El dinero se libera a la modelo solo cuando confirmes que recibiste el servicio.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Direct Payment Option */}
+                        <div
+                            onClick={() => setPaymentMethod('direct')}
+                            className={clsx(
+                                "p-4 rounded-2xl border-2 transition-all cursor-pointer group",
+                                paymentMethod === 'direct' ? "border-amber-500/50 bg-amber-500/5" : "border-white/5 bg-white/5 hover:bg-white/10"
+                            )}
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className={clsx("p-2 rounded-xl", paymentMethod === 'direct' ? "bg-amber-500 text-black" : "bg-white/10 text-muted-foreground")}>
+                                    <MessageSquare size={20} />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-sm text-white mb-1">Coordinar al Privado</h4>
+                                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                        Acuerda el pago directamente con la modelo vía Telegram Chat. <br />
+                                        <span className="text-amber-400/80 font-bold uppercase text-[9px]">⚠️ Bajo tu propio riesgo</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Order Summary */}
+                    <div className="bg-card/40 border border-white/5 rounded-3xl p-5 mb-8">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-2">
                             <span>Subtotal</span>
                             <span>${service.price.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between items-center mb-4 text-sm text-muted-foreground">
-                            <span>Tasa de Servicio (Protección Escrow)</span>
-                            <span>$2.50</span>
-                        </div>
-                        <div className="border-t border-white/10 pt-4 flex justify-between items-center">
-                            <span className="font-bold text-lg">Total</span>
-                            <span className="font-bold text-2xl text-foreground">${totalAmount.toFixed(2)}</span>
+                        {paymentMethod === 'escrow' && (
+                            <div className="flex justify-between text-xs text-muted-foreground mb-4">
+                                <span className="flex items-center gap-1 italic">Tasa de Protección <HelpCircle size={10} /></span>
+                                <span>$2.50</span>
+                            </div>
+                        )}
+                        <div className="pt-4 border-t border-white/10 flex justify-between items-center">
+                            <span className="font-black text-sm uppercase tracking-widest text-white/50">Total</span>
+                            <span className="text-2xl font-black text-white">${totalAmount.toFixed(2)}</span>
                         </div>
                     </div>
 
-                    {/* Pay Button / Wallet Info */}
-                    <div className="bg-gradient-to-r from-gray-900 to-black p-4 rounded-2xl border border-white/10 mb-4">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs text-gray-400 uppercase tracking-widest font-bold">Saldo Disponible</span>
-                            {loadingBalance ? <span className="text-xs">Cargando...</span> : (
-                                <span className={balance.balance >= totalAmount ? "text-green-400 font-bold" : "text-red-400 font-bold"}>
-                                    ${Number(balance.balance).toFixed(2)} {balance.currency}
-                                </span>
+                    {/* Footer Info & Button */}
+                    {paymentMethod === 'escrow' && (
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 mb-4">
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-[10px] font-bold text-blue-300 uppercase underline">Saldo en Billetera</span>
+                                {loadingBalance ? <span className="text-[10px] animate-pulse">Consultando...</span> : (
+                                    <span className={clsx("text-xs font-black", balance.balance >= totalAmount ? "text-green-400" : "text-red-400")}>
+                                        ${Number(balance.balance).toFixed(2)} {balance.currency}
+                                    </span>
+                                )}
+                            </div>
+                            {balance.balance < totalAmount && !loadingBalance && (
+                                <p className="text-[9px] text-red-300 font-bold mt-1">Saldo insuficiente. Necesitas recargar fondos.</p>
                             )}
                         </div>
-                        {balance.balance < totalAmount && !loadingBalance && (
-                            <div className="text-xs text-red-300 bg-red-500/10 p-2 rounded-lg mb-2">
-                                Saldo insuficiente. Necesitas al menos ${totalAmount.toFixed(2)}.
-                            </div>
-                        )}
-                    </div>
+                    )}
 
                     <button
                         onClick={handlePayment}
-                        disabled={loadingBalance || balance.balance < totalAmount}
+                        disabled={loadingBalance || (paymentMethod === 'escrow' && balance.balance < totalAmount)}
                         className={clsx(
-                            "w-full py-4 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 group relative overflow-hidden",
-                            loadingBalance || balance.balance < totalAmount ? "opacity-50 cursor-not-allowed grayscale" : ""
+                            "w-full py-4 rounded-2xl font-black text-lg text-white shadow-2xl flex items-center justify-center gap-2 group transition-all active:scale-95 disabled:opacity-50 disabled:grayscale",
                         )}
-                        style={{ backgroundColor: themeColor }}
+                        style={{ backgroundColor: paymentMethod === 'escrow' ? themeColor : '#f59e0b' }}
                     >
-                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                        <ShieldCheck size={20} className="relative z-10" />
-                        <span className="relative z-10">
-                            {balance.balance < totalAmount ? "Recargar Billetera" : "Pagar con Saldo"}
-                        </span>
+                        {loadingBalance ? <Wallet className="animate-pulse" /> : (
+                            <>
+                                {paymentMethod === 'escrow' ? <ShieldCheck size={20} /> : <Send size={20} />}
+                                <span>{paymentMethod === 'escrow' ? (balance.balance < totalAmount ? "Recargar Billetera" : "Pagar con Billetera") : "Ir a Coordinar Chat"}</span>
+                            </>
+                        )}
                     </button>
 
-                    {errorMsg && (
-                        <p className="text-center text-red-500 text-xs mt-2 font-bold p-2 bg-red-500/10 rounded-lg">
-                            {errorMsg}
-                        </p>
-                    )}
-
-                    <p className="text-center text-[10px] text-muted-foreground mt-4 flex items-center justify-center gap-1 opacity-70">
-                        <Lock size={10} /> Tus fondos se retienen hasta que confirmes la entrega.
-                    </p>
+                    {errorMsg && <p className="mt-4 text-center text-red-400 text-xs font-bold leading-tight bg-red-500/10 p-2 rounded-xl">{errorMsg}</p>}
                 </div>
             )}
 
@@ -190,85 +288,78 @@ export default function ServiceCheckout() {
             {status === 'processing' && (
                 <div className="flex flex-col items-center justify-center h-[60vh] animate-in fade-in zoom-in duration-300">
                     <div className="w-16 h-16 border-4 border-white/10 border-t-primary rounded-full animate-spin mb-6" style={{ borderColor: `${themeColor} transparent transparent transparent` }}></div>
-                    <h3 className="text-xl font-bold mb-2">Procesando Pago...</h3>
-                    <p className="text-sm text-muted-foreground text-center max-w-xs">Contactando con Telegram Wallet para asegurar los fondos.</p>
+                    <h3 className="text-xl font-bold mb-2">Asegurando Transacción...</h3>
+                    <p className="text-xs text-muted-foreground text-center max-w-xs px-10">Conectando con el sistema de pagos seguros Nebula Escrow para proteger tu compra.</p>
                 </div>
             )}
 
             {/* --- HELD STAGE (Escrow Active) --- */}
             {status === 'held' && (
-                <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500 text-center">
-                    <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500 text-center px-4">
+                    <div className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-8 relative">
                         <div className="absolute inset-0 bg-blue-500/20 rounded-full animate-ping"></div>
-                        <Lock size={36} className="text-blue-400" />
+                        <Lock size={40} className="text-blue-400" />
                     </div>
-                    <h2 className="text-2xl font-bold mb-2">Fondos en Garantía</h2>
+
+                    <h2 className="text-3xl font-black mb-2 text-white italic">¡PAGO PROTEGIDO!</h2>
                     <p className="text-sm text-muted-foreground mb-8">
                         Hemos retenido <strong>${totalAmount.toFixed(2)}</strong> de tu wallet.<br />
-                        La modelo ha sido notificada para comenzar el servicio.
+                        La modelo ha sido notificada y tu dinero está en garantía.
                     </p>
 
-                    <div className="bg-card/40 border-l-4 border-blue-500 p-4 rounded-r-xl text-left mb-8">
-                        <h4 className="font-bold text-sm mb-1 text-blue-400">Estado: Esperando Entrega</h4>
-                        <p className="text-xs text-muted-foreground">La modelo tiene 24h para entregar el servicio. Cuando lo recibas, vuelve aquí para liberar el pago.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3">
-                        <button
-                            onClick={handleConfirm}
-                            className="w-full py-4 rounded-2xl font-bold bg-green-500 hover:bg-green-600 text-white shadow-lg transition-transform active:scale-95"
-                        >
-                            Confirmar Entrega y Liberar Pago
-                        </button>
-                        <button
-                            onClick={handleDispute}
-                            className="w-full py-3 rounded-2xl font-semibold bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-red-400 transition-colors border border-white/5"
-                        >
-                            ¡Ayuda! No recibí nada
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* --- COMPLETED STAGE --- */}
-            {status === 'completed' && (
-                <div className="flex flex-col items-center justify-center h-[70vh] animate-in fade-in zoom-in duration-500 text-center">
-                    <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
-                        <CheckCircle size={48} className="text-green-500" />
-                    </div>
-                    <h2 className="text-3xl font-bold mb-2">¡Transacción Exitosa!</h2>
-                    <p className="text-muted-foreground mb-8 max-w-xs">
-                        Has liberado los fondos. Gracias por usar nuestro sistema seguro.
-                    </p>
-                    <Link to="/profile" className="px-8 py-3 rounded-xl bg-white/10 font-bold hover:bg-white/20 transition-colors">
-                        Volver al Perfil
-                    </Link>
-                </div>
-            )}
-
-            {/* --- DISPUTED STAGE --- */}
-            {status === 'disputed' && (
-                <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500 text-center">
-                    <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <AlertTriangle size={36} className="text-red-500" />
-                    </div>
-                    <h2 className="text-2xl font-bold mb-2 text-red-500">Disputa Iniciada</h2>
-                    <p className="text-sm text-muted-foreground mb-8">
-                        Un administrador revisará el caso. Por favor, sube las pruebas (capturas de pantalla) de que el servicio no fue entregado.
-                    </p>
-
-                    <div className="bg-card/40 border border-white/10 rounded-2xl p-6 text-left mb-6">
-                        <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block">Evidencia</label>
-                        <div className="border-2 border-dashed border-white/10 rounded-xl h-32 flex flex-col items-center justify-center text-muted-foreground hover:bg-white/5 cursor-pointer transition-colors">
-                            <span className="text-sm">Click para subir imagen</span>
+                    <div className="bg-white/5 border border-white/10 p-5 rounded-3xl text-left mb-10">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-1.5 bg-green-500/20 rounded-lg"><Clock size={16} className="text-green-500" /></div>
+                            <h4 className="font-bold text-sm text-white">Siguiente Paso</h4>
                         </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Avisa a la modelo en su chat privado para iniciar el servicio. <br /><br />
+                            <strong>Regla:</strong> No liberes el pago hasta que recibas el servicio completo.
+                        </p>
                     </div>
 
-                    <button className="w-full py-4 rounded-2xl font-bold bg-white/10 hover:bg-white/20 text-foreground transition-colors">
-                        Enviar Pruebas
+                    <button
+                        onClick={handleGoToChat}
+                        className="w-full py-5 rounded-2xl font-black text-lg bg-primary text-primary-foreground shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                        style={{ backgroundColor: themeColor }}
+                    >
+                        <MessageSquare size={24} /> Ir al Chat de la Modelo
+                    </button>
+
+                    <p className="mt-4 text-[10px] text-muted-foreground uppercase font-bold tracking-widest flex items-center justify-center gap-1 opacity-50">
+                        ID DE ORDEN: {lastOrderId}
+                    </p>
+                </div>
+            )}
+
+            {/* --- COMPLETED STAGE (Direct Payment Redirect) --- */}
+            {status === 'completed' && (
+                <div className="flex flex-col items-center justify-center h-[70vh] animate-in fade-in zoom-in duration-500 text-center px-6">
+                    <div className="w-24 h-24 bg-amber-500/20 rounded-full flex items-center justify-center mb-8">
+                        <Send size={48} className="text-amber-500" />
+                    </div>
+                    <h2 className="text-3xl font-black mb-4 text-white italic">PAGO DIRECTO</h2>
+                    <p className="text-sm text-muted-foreground mb-10">
+                        Solicitud de compra registrada. Ahora coordina los detalles y el medio de pago directamente con la modelo.
+                    </p>
+
+                    <button
+                        onClick={handleGoToChat}
+                        className="w-full py-5 rounded-2xl font-black text-lg bg-amber-500 text-black shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                    >
+                        Ir al Chat (Enviar Solicitud)
                     </button>
                 </div>
             )}
+
+            {/* Security Footer */}
+            <div className="mt-auto pt-10 opacity-30">
+                <div className="flex items-center justify-center gap-6">
+                    <ShieldCheck size={24} />
+                    <Lock size={24} />
+                    <Wallet size={24} />
+                </div>
+            </div>
 
         </div>
     );

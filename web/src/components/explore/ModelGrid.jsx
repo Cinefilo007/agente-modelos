@@ -30,7 +30,7 @@ export function ModelGrid({ models }) {
                     <Link
                         key={model.id}
                         to={`/${model.username || model.id}`}
-                        className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg group block bg-[#1a1a1a]"
+                        className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg group block bg-[#1a1a1a] service-card-tour"
                     >
                         <img
                             src={model.avatar_url || model.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${model.username}`}

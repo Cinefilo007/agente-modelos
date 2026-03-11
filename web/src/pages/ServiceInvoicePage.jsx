@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     ChevronLeft, CheckCircle2, AlertCircle, Info,
-    ShieldCheck, Zap, Star, LayoutGrid
+    ShieldCheck, Zap, Star, LayoutGrid, Send
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Avatar } from '../components/ui/Avatar';
@@ -55,7 +55,7 @@ export default function ServiceInvoicePage() {
 
     const handleProceed = () => {
         if (!selectedOption) return;
-        navigate('/service-checkout', {
+        navigate('/checkout', {
             state: {
                 service,
                 option: selectedOption,
@@ -142,7 +142,7 @@ export default function ServiceInvoicePage() {
                 </section>
 
                 {/* Rules */}
-                <section className="bg-red-500/5 rounded-3xl p-6 border border-red-500/10">
+                <section className="bg-red-500/5 rounded-3xl p-6 border border-red-500/10 service-rules-tour">
                     <h3 className="text-sm font-black uppercase tracking-widest text-red-400/50 mb-4 flex items-center gap-2">
                         <AlertCircle size={16} /> Reglas del Servicio
                     </h3>
@@ -156,14 +156,26 @@ export default function ServiceInvoicePage() {
                     </ul>
                 </section>
 
-                {/* Security Badge */}
-                <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500 font-bold uppercase py-4">
-                    <ShieldCheck size={14} className="text-blue-500" /> Transacción protegida por el sistema Escrow
+                {/* Security Badge & Warning */}
+                <div className="space-y-4 py-4">
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
+                        <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={18} />
+                        <div>
+                            <h4 className="text-amber-200 text-sm font-bold mb-1">Consulta disponibilidad primero</h4>
+                            <p className="text-amber-200/60 text-xs leading-relaxed">
+                                Para evitar inconvenientes, pulsa en el botón de Telegram abajo y confirma con la modelo que está disponible para este servicio antes de proceder al pago.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500 font-bold uppercase escrow-badge-tour">
+                        <ShieldCheck size={14} className="text-blue-500" /> Transacción protegida por el sistema Escrow
+                    </div>
                 </div>
             </div>
 
             {/* Bottom Actions */}
-            <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent z-40">
+            <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent z-40 flex flex-col gap-3">
                 <button
                     onClick={handleProceed}
                     disabled={!selectedOption}
@@ -172,6 +184,15 @@ export default function ServiceInvoicePage() {
                 >
                     Continuar al Pago • ${selectedOption?.price || '0.00'}
                 </button>
+
+                {service.models?.username && (
+                    <button
+                        onClick={() => window.open(`https://t.me/${service.models.username.replace('@', '')}`, '_blank')}
+                        className="w-full py-3 rounded-xl font-bold text-sm bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Send size={16} className="text-blue-400" /> Hablar con la modelo (Consultar disponibilidad)
+                    </button>
+                )}
             </div>
         </div>
     );
