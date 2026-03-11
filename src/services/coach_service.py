@@ -22,7 +22,7 @@ def _get_openrouter_client():
     return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
 
 # Constantes
-COACH_MODEL_PRINCIPAL = "google/gemini-2.5-flash-preview"
+COACH_MODEL_PRINCIPAL = "google/gemini-2.5-flash"
 COACH_MODEL_FALLBACK = "google/gemini-flash-1.5"
 COACH_TEMP = 0.72
 COACH_MAX_TOKENS = 3000
