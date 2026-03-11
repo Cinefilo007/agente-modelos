@@ -160,32 +160,63 @@ async def create_post(
         response = db.client.table("posts").insert(base_data).execute()
         return response.data[0]
 
+@router.get("/posts/my-posts")
+async def get_my_posts(
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Get all posts (including scheduled) for the current model."""
+    if user.role != "model":
+        raise HTTPException(status_code=403, detail="Only models can access this")
+    
+    try:
+        # Detailed logging for debugging 500
+        logger.info(f"Fetching my-posts for user_id: {user.user_id}")
+        
+        response = db.client.table("posts") \
+            .select("*") \
+            .eq("model_id", user.user_id) \
+            .order("created_at", desc=True) \
+            .execute()
+        
+        if response is None:
+            logger.debug("Supabase response data is empty or None for get_my_posts")
+            return []
+            
+        return response.data or []
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        logger.error(f"Error in get_my_posts for user {user.user_id}: {str(e)}\n{error_detail}")
+        # Basic fallback: return empty list instead of crashing
+        return []
+
 @router.get("/posts/{user_id}")
 async def get_user_posts(
     user_id: str,
     user: Optional[TelegramUser] = Depends(get_current_user_optional)
 ):
     """Get posts for a specific user (model) with visibility filters."""
-    query = db.client.table("posts").select("*").eq("model_id", user_id)
-    
-    # Visibility logic: 
-    # Only the author or admins can see 'scheduled' posts.
-    is_owner = user and str(user.user_id) == str(user_id)
-    is_admin = user and user.role == "admin"
-    
-    if not (is_owner or is_admin):
-        now = datetime.utcnow().isoformat()
-        # Filter: only published OR (scheduled AND already past)
-        # Note: If columns don't exist yet, this might fail, so we wrap it.
-        try:
-            query = query.or_(f"status.eq.published,and(status.eq.scheduled,scheduled_at.lte.{now})")
-        except Exception as e:
-            logger.warning(f"Visibility filter failed in get_user_posts (likely missing columns): {e}")
-            # Fallback: if columns don't exist, we assume everything in DB is visible (old posts)
-            pass
+    try:
+        query = db.client.table("posts").select("*").eq("model_id", user_id)
+        
+        # Visibility logic: 
+        # Only the author or admins can see 'scheduled' posts.
+        is_owner = user and str(user.user_id) == str(user_id)
+        is_admin = user and user.role == "admin"
+        
+        if not (is_owner or is_admin):
+            now = datetime.utcnow().isoformat()
+            try:
+                query = query.or_(f"status.eq.published,and(status.eq.scheduled,scheduled_at.lte.{now})")
+            except Exception as e:
+                logger.warning(f"Visibility filter failed in get_user_posts (likely missing columns): {e}")
+                pass
 
-    response = query.order("created_at", desc=True).execute()
-    return response.data
+        response = query.order("created_at", desc=True).execute()
+        return response.data or []
+    except Exception as e:
+        logger.error(f"Error in get_user_posts for user_id {user_id}: {e}")
+        return []
 
 @router.post("/stories")
 async def create_story(
@@ -295,36 +326,6 @@ async def get_user_stories(user_id: str):
         .order("created_at", desc=False) \
         .execute()
     return response.data
-
-@router.get("/posts/my-posts")
-async def get_my_posts(
-    user: TelegramUser = Depends(get_current_user)
-):
-    """Get all posts (including scheduled) for the current model."""
-    if user.role != "model":
-        raise HTTPException(status_code=403, detail="Only models can access this")
-    
-    try:
-        # Detailed logging for debugging 500
-        logger.info(f"Fetching my-posts for user_id: {user.user_id}")
-        
-        response = db.client.table("posts") \
-            .select("*") \
-            .eq("model_id", user.user_id) \
-            .order("created_at", desc=True) \
-            .execute()
-        
-        if response is None:
-            logger.error("Supabase response is None for get_my_posts")
-            return []
-            
-        return response.data or []
-    except Exception as e:
-        import traceback
-        error_detail = traceback.format_exc()
-        logger.error(f"Error in get_my_posts for user {user.user_id}: {str(e)}\n{error_detail}")
-        # Basic fallback: return empty list instead of crashing
-        return []
 
 @router.get("/feed")
 async def get_feed(
