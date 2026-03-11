@@ -22,8 +22,8 @@ def _get_openrouter_client():
     return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
 
 # Constantes
-COACH_MODEL_PRINCIPAL = "mistralai/mistral-large" 
-COACH_MODEL_FALLBACK = "google/gemini-2.5-flash"
+COACH_MODEL_PRINCIPAL = "google/gemini-2.5-flash" 
+COACH_MODEL_FALLBACK = "mistralai/mistral-large"
 COACH_TEMP = 0.75
 COACH_MAX_TOKENS = 3500
 REGENERATION_COOLDOWN_DAYS = 0 # Temporalmente 0 para pruebas del usuario
@@ -94,7 +94,7 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
             "model_id", model_id).eq("status", "RELEASED").gte("created_at", hace_un_mes).execute()
         if v_res and v_res.data:
             datos["ventas_ultimo_mes"] = len(v_res.data)
-            datos["ingresos_ultimo_mes"] = sum(float(o["amount"]) for o in v_res.data) or 0.0
+            datos["ingresos_ultimo_mes"] = sum(float(o.get("amount", 0) or 0) for o in v_res.data)
             if datos["visitas_ultimo_mes"] > 0:
                 datos["tasa_conversion"] = round(len(v_res.data) / datos["visitas_ultimo_mes"] * 100, 2)
     except: pass
@@ -199,20 +199,37 @@ Tu mision es transformar Creadoras de Contenido en Super Estrellas usando TODO e
 # ================================================================
 
 def _llamar_ia_y_parsear(prompt: str) -> dict:
+    """Llama a OpenRouter y parsea el JSON del plan con limpieza robusta."""
     client = _get_openrouter_client()
-    for modelo in [COACH_MODEL_PRINCIPAL, COACH_MODEL_FALLBACK]:
+    modelos = [COACH_MODEL_PRINCIPAL, COACH_MODEL_FALLBACK, "google/gemini-pro-1.5"]
+    
+    for modelo in modelos:
         try:
+            logger.info(f"[Coach] Intentando con modelo: {modelo}")
             resp = client.chat.completions.create(
                 model=modelo, temperature=COACH_TEMP, max_tokens=COACH_MAX_TOKENS,
-                messages=[{"role": "system", "content": "Eres Nebula Coach Pro. Responde solo con JSON valido."},
-                          {"role": "user", "content": prompt}]
+                messages=[{"role": "system", "content": "Eres Nebula Coach Pro. Tu UNICA salida debe ser un JSON valido. No incluyas texto explicativo antes ni despues."},
+                          {"role": "user", "content": prompt}],
+                timeout=60
             )
             contenido = resp.choices[0].message.content.strip()
-            if "```" in contenido:
-                contenido = contenido.split("```")[1].replace("json", "")
-            return json.loads(contenido.strip())
-        except: continue
-    raise RuntimeError("Fallo total de IA")
+            
+            # Limpieza agresiva de JSON
+            if "{" in contenido:
+                inicio = contenido.find("{")
+                fin = contenido.rfind("}") + 1
+                contenido_limpio = contenido[inicio:fin]
+                try:
+                    return json.loads(contenido_limpio)
+                except json.JSONDecodeError as je:
+                    logger.error(f"[Coach] Error decode JSON de {modelo}: {je}. Contenido: {contenido[:100]}...")
+            else:
+                logger.error(f"[Coach] El modelo {modelo} no devolvio un JSON valido (no se encontro '{{').")
+        except Exception as e:
+            logger.error(f"[Coach] Error llamando a {modelo}: {str(e)}")
+            continue
+
+    raise RuntimeError("Fallo total de IA: Ninguno de los modelos seleccionados pudo generar un plan valido.")
 
 def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = False) -> dict:
     try:
