@@ -1,5 +1,5 @@
 """
-Nebula Coach — Servicio de Consejero IA para Modelos
+Nebula Coach - Servicio de Consejero IA para Modelos
 =====================================================
 Recolecta datos reales de la modelo, consulta el pool colectivo de insights,
 construye un prompt contextual y llama a la IA para generar un plan mensual.
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def _get_openrouter_client():
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
-        raise ValueError("OPENROUTER_API_KEY no está configurado en .env")
+        raise ValueError("OPENROUTER_API_KEY no esta configurado en .env")
     return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
 
 # Constantes
@@ -26,18 +26,18 @@ COACH_MODEL_PRINCIPAL = "google/gemini-2.5-flash-preview"
 COACH_MODEL_FALLBACK = "google/gemini-flash-1.5"
 COACH_TEMP = 0.72
 COACH_MAX_TOKENS = 3000
-REGENERATION_COOLDOWN_DAYS = 7  # Días mínimos entre regeneraciones manuales
+REGENERATION_COOLDOWN_DAYS = 7  # Dias minimos entre regeneraciones manuales
 
 
 # ================================================================
-# 1. RECOLECCIÓN DE DATOS DE LA MODELO
+# 1. RECOLECCION DE DATOS DE LA MODELO
 # ================================================================
 
 def _recolectar_datos_modelo(db, model_id: str) -> dict:
-    """Recolecta todas las métricas relevantes de la modelo para el análisis."""
+    """Recolecta todas las metricas relevantes de la modelo para el analisis."""
     datos = {
         "model_id": model_id,
-        "antigüedad_dias": 0,
+        "antiguedad_dias": 0,
         "estado": "activa",
         "creditos": 0,
         "visitas_total": 0,
@@ -54,7 +54,7 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
         "total_reviews": 0,
         "canales_sfs": 0,
         "seguidores_telegram": 0,
-        "campañas_sfs_mes": 0,
+        "campanias_sfs_mes": 0,
         "balance_wallet": 0.0,
         "tiene_bot_activo": False,
     }
@@ -67,9 +67,10 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
         res = db.client.table("models").select(
             "id, status, credits_balance, created_at, artistic_name"
         ).eq("id", model_id).maybe_single().execute()
-        if res.data:
+        
+        if res and res.data:
             created = datetime.fromisoformat(res.data["created_at"].replace("Z", "+00:00"))
-            datos["antigüedad_dias"] = (now.replace(tzinfo=created.tzinfo) - created).days
+            datos["antiguedad_dias"] = (now.replace(tzinfo=created.tzinfo) - created).days
             datos["estado"] = res.data.get("status", "activa")
             datos["creditos"] = res.data.get("credits_balance", 0) or 0
             datos["nombre_artistico"] = res.data.get("artistic_name", "Modelo")
@@ -79,11 +80,13 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
     try:
         # Visitas al perfil
         vt = db.client.table("profile_views").select("id", count="exact").eq("model_id", model_id).execute()
-        datos["visitas_total"] = vt.count or 0
+        if vt:
+            datos["visitas_total"] = vt.count or 0
 
         vm = db.client.table("profile_views").select("id", count="exact").eq(
             "model_id", model_id).gte("viewed_at", hace_un_mes).execute()
-        datos["visitas_ultimo_mes"] = vm.count or 0
+        if vm:
+            datos["visitas_ultimo_mes"] = vm.count or 0
     except Exception as e:
         logger.warning(f"[Coach] Error obteniendo visitas: {e}")
 
@@ -97,7 +100,7 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
 
         ventas_res = db.client.table("escrow_orders").select("amount, created_at").eq(
             "model_id", model_id).eq("status", "RELEASED").execute()
-        if ventas_res.data:
+        if ventas_res and ventas_res.data:
             datos["ventas_total"] = len(ventas_res.data)
             datos["ingresos_total"] = sum(safe_float(o["amount"]) for o in ventas_res.data)
             ventas_mes = [o for o in ventas_res.data if o["created_at"] >= hace_un_mes]
@@ -115,7 +118,7 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
         # Posts y engagement
         posts_res = db.client.table("posts").select("id, likes_count, created_at").eq(
             "model_id", model_id).execute()
-        if posts_res.data:
+        if posts_res and posts_res.data:
             datos["posts_total"] = len(posts_res.data)
             datos["posts_ultimo_mes"] = sum(1 for p in posts_res.data if p["created_at"] >= hace_un_mes)
             likes = [p.get("likes_count", 0) or 0 for p in posts_res.data]
@@ -124,10 +127,10 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
         logger.warning(f"[Coach] Error obteniendo posts: {e}")
 
     try:
-        # Reviews y reputación
+        # Reviews y reputacion
         reviews_res = db.client.table("client_reviews").select("rating").eq(
             "model_id", model_id).execute()
-        if reviews_res.data:
+        if reviews_res and reviews_res.data:
             ratings = [r["rating"] for r in reviews_res.data if r.get("rating")]
             datos["total_reviews"] = len(ratings)
             datos["calificacion_reviews"] = round(sum(ratings) / len(ratings), 2) if ratings else 0.0
@@ -138,14 +141,15 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
         # Actividad SFS
         sfs_res = db.client.table("channels").select("id, followers").eq(
             "sfs_user_id", model_id).execute()
-        if sfs_res.data:
+        if sfs_res and sfs_res.data:
             datos["canales_sfs"] = len(sfs_res.data)
             datos["seguidores_telegram"] = sum(c.get("followers", 0) or 0 for c in sfs_res.data)
 
-        # Campañas SFS del último mes
+        # Campanias SFS del ultimo mes
         camp_res = db.client.table("promo_campaigns").select("id", count="exact").eq(
             "status", "completed").gte("created_at", hace_un_mes).execute()
-        datos["campañas_sfs_mes"] = camp_res.count or 0
+        if camp_res:
+            datos["campanias_sfs_mes"] = camp_res.count or 0
     except Exception as e:
         logger.warning(f"[Coach] Error obteniendo datos SFS: {e}")
 
@@ -153,7 +157,7 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
         # Wallet balance
         wallet_res = db.client.table("wallets").select("balance").eq(
             "user_id", model_id).maybe_single().execute()
-        if wallet_res.data:
+        if wallet_res and wallet_res.data:
             datos["balance_wallet"] = float(wallet_res.data.get("balance", 0) or 0)
     except Exception as e:
         logger.warning(f"[Coach] Error obteniendo wallet: {e}")
@@ -166,40 +170,41 @@ def _recolectar_datos_modelo(db, model_id: str) -> dict:
 # ================================================================
 
 def _obtener_insights_colectivos(db) -> list[dict]:
-    """Obtiene las estadísticas anónimas del pool colectivo de feedback."""
+    """Obtiene las estadisticas anonimas del pool colectivo de feedback."""
     try:
         res = db.client.table("coach_collective_insights").select("*").execute()
-        return res.data or []
+        if res:
+            return res.data or []
     except Exception as e:
         logger.warning(f"[Coach] No se pudo obtener insights colectivos: {e}")
-        return []
+    return []
 
 
 # ================================================================
-# 3. CÁLCULO DEL SCORE Y NIVEL
+# 3. CALCULO DEL SCORE Y NIVEL
 # ================================================================
 
 def _calcular_score(datos: dict) -> dict:
     """Calcula el score general (0-100) y nivel de la modelo."""
     score = 0
 
-    # Visitas (20 pts máx): buen umbral = 200 visitas/mes
+    # Visitas (20 pts max): buen umbral = 200 visitas/mes
     visitas_score = min(datos["visitas_ultimo_mes"] / 200 * 20, 20)
     score += visitas_score
 
-    # Tasa de conversión (30 pts máx): 5% = perfecto
+    # Tasa de conversion (30 pts max): 5% = perfecto
     conv_score = min(datos["tasa_conversion"] / 5 * 30, 30)
     score += conv_score
 
-    # Frecuencia de posts (15 pts máx): 20 posts/mes = perfecto
+    # Frecuencia de posts (15 pts max): 20 posts/mes = perfecto
     posts_score = min(datos["posts_ultimo_mes"] / 20 * 15, 15)
     score += posts_score
 
-    # Actividad SFS (20 pts máx): 4 campañas/mes = perfecto
-    sfs_score = min(datos["campañas_sfs_mes"] / 4 * 20, 20)
+    # Actividad SFS (20 pts max): 4 campanias/mes = perfecto
+    sfs_score = min(datos["campanias_sfs_mes"] / 4 * 20, 20)
     score += sfs_score
 
-    # Reputación (15 pts máx): 5 estrellas promedio con 10+ reviews
+    # Reputacion (15 pts max): 5 estrellas promedio con 10+ reviews
     if datos["total_reviews"] > 0:
         rep_score = (datos["calificacion_reviews"] / 5) * min(datos["total_reviews"] / 10, 1) * 15
         score += rep_score
@@ -222,10 +227,10 @@ def _calcular_score(datos: dict) -> dict:
 
 
 # ================================================================
-# 4. CONSTRUCCIÓN DEL PROMPT
+# 4. CONSTRUCCION DEL PROMPT
 # ================================================================
 
-def _construir_prompt(datos: dict, score_info: dict, insights: list[dict], mes: int, año: int) -> str:
+def _construir_prompt(datos: dict, score_info: dict, insights: list[dict], mes: int, anio: int) -> str:
     """Construye el prompt contextual para la IA."""
     meses_es = {
         1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
@@ -239,86 +244,86 @@ def _construir_prompt(datos: dict, score_info: dict, insights: list[dict], mes: 
     if insights:
         top_exitosas = sorted(insights, key=lambda x: x.get("tasa_exito", 0) or 0, reverse=True)[:5]
         insights_texto = "\n".join([
-            f"- '{i['action_key']}': tasa de éxito del {i.get('tasa_exito', 0)}% en {i.get('total_respuestas', 0)} modelos"
+            f"- '{i['action_key']}': tasa de exito del {i.get('tasa_exito', 0)}% en {i.get('total_respuestas', 0)} modelos"
             for i in top_exitosas if i.get("tasa_exito") is not None
         ])
 
-    prompt = f"""Eres Nebula Coach, el consejero estratégico de élite de la plataforma Nebula.Agency.
-Eres un experto combinado en: ventas de contenido digital, marketing en Telegram, psicología social del consumidor, growth hacking y monetización de creadores de contenido.
+    prompt = f"""Eres Nebula Coach, el consejero estrategico de elite de la plataforma Nebula.Agency.
+Eres un experto combinado en: ventas de contenido digital, marketing en Telegram, psicologia social del consumidor, growth hacking y monetizacion de creadores de contenido.
 
-Tu misión: analizar la situación real de la modelo y generar un plan mensual PRÁCTICO, EJECUTABLE y PERSONALIZADO para {nombre_mes} {año}.
+Tu mision: analizar la situacion real de la modelo y generar un plan mensual PRACTICO, EJECUTABLE y PERSONALIZADO para {nombre_mes} {anio}.
 
 ## DATOS REALES DE LA MODELO:
-- Nombre artístico: {datos.get('nombre_artistico', 'Modelo')}
-- Antigüedad en plataforma: {datos.get('antigüedad_dias', 0)} días
-- Score actual: {score_info['score']}/100 — Nivel: {score_info['nivel']}
+- Nombre artistico: {datos.get('nombre_artistico', 'Modelo')}
+- Antiguedad en plataforma: {datos.get('antiguedad_dias', 0)} dias
+- Score actual: {score_info['score']}/100 - Nivel: {score_info['nivel']}
 
-### EXPOSICIÓN Y TRÁFICO:
+### EXPOSICION Y TRAFICO:
 - Visitas totales al perfil: {datos['visitas_total']}
-- Visitas este último mes: {datos['visitas_ultimo_mes']}
+- Visitas este ultimo mes: {datos['visitas_ultimo_mes']}
 - Seguidores en Telegram: {datos['seguidores_telegram']}
 - Canales vinculados al sistema SFS: {datos['canales_sfs']}
 
-### VENTAS Y CONVERSIÓN:
-- Ventas totales históricas: {datos['ventas_total']}
-- Ventas último mes: {datos['ventas_ultimo_mes']}
-- Ingresos último mes: ${datos['ingresos_ultimo_mes']:.2f}
-- Tasa de conversión: {datos['tasa_conversion']}% (visitas → ventas)
+### VENTAS Y CONVERSION:
+- Ventas totales historicas: {datos['ventas_total']}
+- Ventas ultimo mes: {datos['ventas_ultimo_mes']}
+- Ingresos ultimo mes: ${datos['ingresos_ultimo_mes']:.2f}
+- Tasa de conversion: {datos['tasa_conversion']}% (visitas -> ventas)
 
 ### CONTENIDO:
-- Posts publicados en último mes: {datos['posts_ultimo_mes']}
-- Total posts históricos: {datos['posts_total']}
+- Posts publicados en ultimo mes: {datos['posts_ultimo_mes']}
+- Total posts historicos: {datos['posts_total']}
 - Likes promedio por post: {datos['likes_promedio']}
 
-### REPUTACIÓN:
-- Calificación promedio de reviews: {datos['calificacion_reviews']}/5 ({datos['total_reviews']} reviews)
+### REPUTACION:
+- Calificacion promedio de reviews: {datos['calificacion_reviews']}/5 ({datos['total_reviews']} reviews)
 
-### ACTIVIDAD SFS ÚLTIMO MES:
-- Campañas SFS participadas: {datos['campañas_sfs_mes']}
+### ACTIVIDAD SFS ULTIMO MES:
+- Campanias SFS participadas: {datos['campanias_sfs_mes']}
 
-### ECONOMÍA:
-- Créditos disponibles: {datos['creditos']}
+### ECONOMIA:
+- Creditos disponibles: {datos['creditos']}
 - Balance en wallet: ${datos['balance_wallet']:.2f}
 
 ## INTELIGENCIA COLECTIVA (acciones exitosas en el ecosistema Nebula):
-{insights_texto if insights_texto else "Aún no hay suficientes datos colectivos. Usa tu criterio experto."}
+{insights_texto if insights_texto else "Aun no hay suficientes datos colectivos. Usa tu criterio experto."}
 
-## INSTRUCCIONES DE GENERACIÓN:
-1. Analiza los datos y encuentra los CUELLOS DE BOTELLA más críticos.
+## INSTRUCCIONES DE GENERACION:
+1. Analiza los datos y encuentra los CUELLOS DE BOTELLA mas criticos.
 2. Genera un plan para 4 semanas del mes, con FOCO DIFERENTE cada semana (no repitas las mismas acciones).
 3. Cada semana debe tener 3-5 acciones concretas y ejecutables.
-4. Usa las acciones del pool colectivo cuando sean relevantes, mencionando la estadística.
-5. Sé directo, motivador pero realista. No uses lenguaje corporativo.
-6. El plan debe estar en español, tono moderno y cercano.
+4. Usa las acciones del pool colectivo cuando sean relevantes, mencionando la estadistica.
+5. Se directo, motivador pero realista. No uses lenguaje corporativo.
+6. El plan debe estar en espaniol, tono moderno y cercano.
 
-## FORMATO DE RESPUESTA (JSON ESTRICTO, sin markdown, sin texto antes ni después):
+## FORMATO DE RESPUESTA (JSON ESTRICTO, sin markdown, sin texto antes ni despues):
 {{
   "diagnostico": {{
     "nivel": "{score_info['nivel']}",
     "score_general": {score_info['score']},
     "fortalezas": ["lista de 2-3 puntos fuertes reales basados en los datos"],
-    "areas_criticas": ["lista de 2-3 puntos débiles críticos con datos específicos"],
-    "resumen": "Párrafo corto y directo analizando la situación real en 2-3 oraciones"
+    "areas_criticas": ["lista de 2-3 puntos debiles criticos con datos especificos"],
+    "resumen": "Parrafo corto y directo analizando la situacion real en 2-3 oraciones"
   }},
-  "meta_del_mes": "Meta principal y específica para este mes (con número medible)",
+  "meta_del_mes": "Meta principal y especifica para este mes (con numero medible)",
   "semanas": [
     {{
       "numero": 1,
-      "foco": "Nombre del foco estratégico de esta semana",
+      "foco": "Nombre del foco estrategico de esta semana",
       "acciones": [
         {{
           "key": "identificador_snake_case_unico",
           "categoria": "crecimiento|ventas|contenido|reputacion|monetizacion",
-          "titulo": "Título corto (máx 8 palabras)",
-          "descripcion": "Descripción práctica de QUÉ hacer y CÓMO (2-3 oraciones)",
+          "titulo": "Titulo corto (max 8 palabras)",
+          "descripcion": "Descripcion practica de QUE hacer y COMO (2-3 oraciones)",
           "impacto": "alto|medio|bajo",
-          "tiempo_estimado": "Ej: 20 min/día",
+          "tiempo_estimado": "Ej: 20 min/dia",
           "dato_colectivo": "Dato del pool o insight experto relevante (o null si no hay dato)"
         }}
       ]
     }}
   ],
-  "mensaje_motivacional": "Mensaje personalizado, genuino y alentador. Máx 2 oraciones."
+  "mensaje_motivacional": "Mensaje personalizado, genuino y alentador. Max 2 oraciones."
 }}"""
     return prompt
 
@@ -339,7 +344,7 @@ def _llamar_ia_y_parsear(prompt: str) -> dict:
                 temperature=COACH_TEMP,
                 max_tokens=COACH_MAX_TOKENS,
                 messages=[
-                    {"role": "system", "content": "Eres Nebula Coach. SIEMPRE responde con JSON puro válido, sin markdown ni texto extra."},
+                    {"role": "system", "content": "Eres Nebula Coach. SIEMPRE responde con JSON puro valido, sin markdown ni texto extra."},
                     {"role": "user", "content": prompt}
                 ],
                 extra_headers={
@@ -374,10 +379,10 @@ def _llamar_ia_y_parsear(prompt: str) -> dict:
 
 
 # ================================================================
-# 6. FUNCIÓN PRINCIPAL: GENERAR PLAN
+# 6. FUNCION PRINCIPAL: GENERAR PLAN
 # ================================================================
 
-def generar_plan_mensual(db, model_id: str, mes: int, año: int, forzar: bool = False) -> dict:
+def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = False) -> dict:
     """
     Genera (o recupera cached) el plan mensual de la modelo.
     
@@ -385,28 +390,50 @@ def generar_plan_mensual(db, model_id: str, mes: int, año: int, forzar: bool = 
         db: Instancia de base de datos Supabase.
         model_id: UUID de la modelo.
         mes: Mes del plan (1-12).
-        año: Año del plan.
-        forzar: Si True, regenera aunque exista (con validación de cooldown).
+        anio: Anio del plan.
+        forzar: Si True, regenera aunque exista (con validacion de cooldown).
     
     Returns:
         dict con el plan completo + metadata.
     """
-    # 1. Verificar si ya existe un plan para este mes
-    existing_res = db.client.table("coach_plans").select("*").eq("model_id", model_id).eq(
-        "month", mes).eq("year", año).maybe_single().execute()
+    # 1. Verificar si ya existe un plan para este mes (defensivo ante tabla inexistente)
+    existing_data = None
+    existing_id = None
 
-    if existing_res.data and not forzar:
-        logger.info(f"[Coach] Retornando plan cacheado para modelo {model_id} ({mes}/{año})")
+    try:
+        existing_res = db.client.table("coach_plans").select("*").eq("model_id", model_id).eq(
+            "month", mes).eq("year", anio).maybe_single().execute()
+
+        # Defensa contra None en la respuesta
+        if existing_res is None:
+            logger.error("[Coach] execute() retorno None - ¿La migracion SQL fue aplicada?")
+        elif existing_res.data:
+            existing_data = existing_res.data
+            existing_id = existing_res.data.get("id")
+    except Exception as e:
+        import traceback
+        logger.error(f"[Coach] Error consultando coach_plans: {e}")
+        logger.error(f"[Coach] ¿Aplicaste la migracion db/024_nebula_coach.sql en Supabase?")
+        logger.error(traceback.format_exc())
+        raise RuntimeError(
+            f"Error de base de datos consultando coach_plans. "
+            f"Asegurate de ejecutar la migracion SQL 024_nebula_coach.sql en Supabase. "
+            f"Detalle: {str(e)}"
+        )
+
+    # 2. Retornar plan cacheado si existe y no se fuerza regeneracion
+    if existing_data and not forzar:
+        logger.info(f"[Coach] Retornando plan cacheado para modelo {model_id} ({mes}/{anio})")
         return {
-            "plan": existing_res.data["plan_data"],
-            "generado_en": existing_res.data["generated_at"],
-            "regeneraciones": existing_res.data["regenerated_count"],
+            "plan": existing_data["plan_data"],
+            "generado_en": existing_data["generated_at"],
+            "regeneraciones": existing_data.get("regenerated_count", 0),
             "desde_cache": True
         }
 
-    # 2. Validar cooldown de regeneración manual
-    if existing_res.data and forzar:
-        last_regen = existing_res.data.get("last_regenerated_at")
+    # 3. Validar cooldown de regeneracion manual
+    if existing_data and forzar:
+        last_regen = existing_data.get("last_regenerated_at")
         if last_regen:
             try:
                 last_dt = datetime.fromisoformat(last_regen.replace("Z", "+00:00"))
@@ -415,49 +442,56 @@ def generar_plan_mensual(db, model_id: str, mes: int, año: int, forzar: bool = 
                 if dias_desde_regen < REGENERATION_COOLDOWN_DAYS:
                     dias_restantes = REGENERATION_COOLDOWN_DAYS - dias_desde_regen
                     raise ValueError(
-                        f"Puedes regenerar el plan en {dias_restantes} día(s). "
-                        f"El cooldown es de {REGENERATION_COOLDOWN_DAYS} días."
+                        f"Puedes regenerar el plan en {dias_restantes} dia(s). "
+                        f"El cooldown es de {REGENERATION_COOLDOWN_DAYS} dias."
                     )
             except ValueError:
                 raise
             except Exception:
-                pass  # Si no se puede parsear la fecha, permitir regeneración
+                pass  # Si no se puede parsear la fecha, permitir regeneracion
 
-    # 3. Recolectar datos y generar plan
+    # 4. Recolectar datos y generar plan con IA
     logger.info(f"[Coach] Recolectando datos para modelo {model_id}...")
     datos = _recolectar_datos_modelo(db, model_id)
     insights = _obtener_insights_colectivos(db)
     score_info = _calcular_score(datos)
 
-    prompt = _construir_prompt(datos, score_info, insights, mes, año)
+    prompt = _construir_prompt(datos, score_info, insights, mes, anio)
     plan = _llamar_ia_y_parsear(prompt)
 
-    # 4. Guardar en DB (upsert)
+    # 5. Guardar en DB (upsert)
     ahora_iso = datetime.utcnow().isoformat()
-    if existing_res.data:
-        # Actualizar plan existente (regeneración)
-        db.client.table("coach_plans").update({
-            "plan_data": plan,
-            "last_regenerated_at": ahora_iso,
-            "regenerated_count": existing_res.data["regenerated_count"] + 1
-        }).eq("id", existing_res.data["id"]).execute()
-        regeneraciones = existing_res.data["regenerated_count"] + 1
-    else:
-        # Crear nuevo plan
-        insert_res = db.client.table("coach_plans").insert({
-            "model_id": model_id,
-            "month": mes,
-            "year": año,
-            "plan_data": plan,
-            "generated_at": ahora_iso,
-            "regenerated_count": 0
-        }).execute()
-        regeneraciones = 0
+    try:
+        if existing_data and existing_id:
+            # Actualizar plan existente (regeneracion)
+            db.client.table("coach_plans").update({
+                "plan_data": plan,
+                "last_regenerated_at": ahora_iso,
+                "regenerated_count": existing_data.get("regenerated_count", 0) + 1
+            }).eq("id", existing_id).execute()
+            regeneraciones = existing_data.get("regenerated_count", 0) + 1
+        else:
+            # Crear nuevo plan
+            db.client.table("coach_plans").insert({
+                "model_id": model_id,
+                "month": mes,
+                "year": anio,
+                "plan_data": plan,
+                "generated_at": ahora_iso,
+                "regenerated_count": 0
+            }).execute()
+            regeneraciones = 0
+    except Exception as e:
+        import traceback
+        logger.error(f"[Coach] Error guardando plan en DB: {e}")
+        logger.error(traceback.format_exc())
+        # El plan YA fue generado por la IA - lo retornamos igual aunque no se pudo guardar
+        logger.warning("[Coach] Retornando plan sin persistencia (error de guardado)")
 
     return {
         "plan": plan,
         "generado_en": ahora_iso,
-        "regeneraciones": regeneraciones,
+        "regeneraciones": regeneraciones if 'regeneraciones' in dir() else 0,
         "desde_cache": False,
         "score": score_info["score"],
         "nivel": score_info["nivel"]
@@ -470,7 +504,7 @@ def generar_plan_mensual(db, model_id: str, mes: int, año: int, forzar: bool = 
 
 def registrar_feedback(db, model_id: str, plan_id: str, action_key: str,
                        action_category: str, result: str, notes: str = None) -> dict:
-    """Registra el resultado de una acción del plan."""
+    """Registra el resultado de una accion del plan."""
     try:
         ahora = datetime.utcnow().isoformat()
 
@@ -478,7 +512,7 @@ def registrar_feedback(db, model_id: str, plan_id: str, action_key: str,
         existing = db.client.table("coach_feedback").select("id").eq(
             "plan_id", plan_id).eq("action_key", action_key).maybe_single().execute()
 
-        if existing.data:
+        if existing and existing.data:
             db.client.table("coach_feedback").update({
                 "result": result,
                 "notes": notes,

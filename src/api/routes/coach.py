@@ -2,6 +2,7 @@
 Nebula Coach — Rutas API
 ========================
 Endpoints REST para el sistema de consejero IA de la plataforma.
+Sin caracteres especiales en parametros de funcion para compatibilidad Python/Windows.
 """
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
@@ -35,19 +36,24 @@ def _get_model_id(user: TelegramUser) -> str:
     """Obtiene el UUID de la modelo desde su telegram_id."""
     res = db.client.table("models").select("id").eq(
         "telegram_id", user.id).maybe_single().execute()
-    if not res.data:
+    if not res or not res.data:
         raise HTTPException(
             status_code=404,
-            detail="Perfil de modelo no encontrado. Asegúrate de estar registrada como modelo."
+            detail="Perfil de modelo no encontrado. Asegurate de estar registrada como modelo."
         )
     return res.data["id"]
 
 
-def _get_plan_id(model_id: str, mes: int, año: int) -> Optional[str]:
+def _get_plan_id(model_id: str, mes: int, anio: int) -> Optional[str]:
     """Obtiene el ID del plan del mes actual si existe."""
-    res = db.client.table("coach_plans").select("id").eq(
-        "model_id", model_id).eq("month", mes).eq("year", año).maybe_single().execute()
-    return res.data["id"] if res.data else None
+    try:
+        res = db.client.table("coach_plans").select("id").eq(
+            "model_id", model_id).eq("month", mes).eq("year", anio).maybe_single().execute()
+        if res and res.data:
+            return res.data["id"]
+    except Exception:
+        pass
+    return None
 
 
 # ================================================================
@@ -57,12 +63,12 @@ def _get_plan_id(model_id: str, mes: int, año: int) -> Optional[str]:
 @router.get("/plan")
 async def obtener_plan_mensual(
     mes: Optional[int] = None,
-    año: Optional[int] = None,
+    anio: Optional[int] = None,
     user: TelegramUser = Depends(get_current_user)
 ):
     """
     Obtiene el plan mensual del Coach para la modelo autenticada.
-    Si no existe, lo genera automáticamente (puede tardar ~10-15 segundos).
+    Si no existe, lo genera automaticamente (puede tardar ~10-15 segundos).
     """
     if user.role != "model":
         raise HTTPException(status_code=403, detail="El Coach es exclusivo para modelos.")
@@ -70,31 +76,30 @@ async def obtener_plan_mensual(
     # Fecha por defecto: mes actual
     ahora = datetime.utcnow()
     mes = mes or ahora.month
-    año = año or ahora.year
+    anio = anio or ahora.year
 
     if not (1 <= mes <= 12):
-        raise HTTPException(status_code=400, detail="Mes inválido. Debe ser entre 1 y 12.")
+        raise HTTPException(status_code=400, detail="Mes invalido. Debe ser entre 1 y 12.")
 
     try:
         model_id = _get_model_id(user)
-        print(f"[Coach] Solicitud de plan para modelo {model_id} — {mes}/{año}")
+        print(f"[Coach] Solicitud de plan para modelo {model_id} — {mes}/{anio}")
 
         resultado = coach_service.generar_plan_mensual(
             db=db,
             model_id=model_id,
             mes=mes,
-            año=año,
+            anio=anio,
             forzar=False
         )
 
-        # Obtener el plan_id para el frontend (necesario para el feedback)
-        plan_id = _get_plan_id(model_id, mes, año)
+        plan_id = _get_plan_id(model_id, mes, anio)
 
         return {
             **resultado,
             "plan_id": plan_id,
             "mes": mes,
-            "año": año
+            "anio": anio
         }
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
@@ -110,40 +115,40 @@ async def obtener_plan_mensual(
 @router.post("/plan/regenerar")
 async def regenerar_plan_mensual(
     mes: Optional[int] = None,
-    año: Optional[int] = None,
+    anio: Optional[int] = None,
     user: TelegramUser = Depends(get_current_user)
 ):
     """
-    Fuerza la regeneración del plan mensual.
-    Cooldown: 7 días entre regeneraciones manuales.
+    Fuerza la regeneracion del plan mensual.
+    Cooldown: 7 dias entre regeneraciones manuales.
     """
     if user.role != "model":
         raise HTTPException(status_code=403, detail="El Coach es exclusivo para modelos.")
 
     ahora = datetime.utcnow()
     mes = mes or ahora.month
-    año = año or ahora.year
+    anio = anio or ahora.year
 
     try:
         model_id = _get_model_id(user)
-        print(f"[Coach] Regeneración solicitada para modelo {model_id} — {mes}/{año}")
+        print(f"[Coach] Regeneracion solicitada para modelo {model_id} — {mes}/{anio}")
 
         resultado = coach_service.generar_plan_mensual(
             db=db,
             model_id=model_id,
             mes=mes,
-            año=año,
+            anio=anio,
             forzar=True
         )
 
-        plan_id = _get_plan_id(model_id, mes, año)
+        plan_id = _get_plan_id(model_id, mes, anio)
 
         return {
             **resultado,
             "plan_id": plan_id,
             "mes": mes,
-            "año": año,
-            "mensaje": "✨ Tu plan ha sido actualizado con tus datos más recientes."
+            "anio": anio,
+            "mensaje": "Tu plan ha sido actualizado con tus datos mas recientes."
         }
     except ValueError as e:
         # Cooldown activo
@@ -152,7 +157,7 @@ async def regenerar_plan_mensual(
         raise
     except Exception as e:
         import traceback
-        print(f"[Coach] Error en regeneración: {e}")
+        print(f"[Coach] Error en regeneracion: {e}")
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error regenerando el plan: {str(e)}")
 
@@ -163,8 +168,8 @@ async def registrar_feedback(
     user: TelegramUser = Depends(get_current_user)
 ):
     """
-    Registra el resultado de una acción del plan (éxito/fracaso).
-    Alimenta el pool colectivo anónimo del ecosistema.
+    Registra el resultado de una accion del plan (exito/fracaso).
+    Alimenta el pool colectivo anonimo del ecosistema.
     """
     if user.role != "model":
         raise HTTPException(status_code=403, detail="El Coach es exclusivo para modelos.")
@@ -200,8 +205,8 @@ async def obtener_insights_colectivos(
     user: TelegramUser = Depends(get_current_user)
 ):
     """
-    Retorna las insights colectivas anónimas del ecosistema.
-    Muestra qué acciones tienen mayor tasa de éxito entre todas las modelos.
+    Retorna las insights colectivas anonimas del ecosistema.
+    Muestra que acciones tienen mayor tasa de exito entre todas las modelos.
     """
     if user.role != "model":
         raise HTTPException(status_code=403, detail="El Coach es exclusivo para modelos.")
@@ -211,7 +216,7 @@ async def obtener_insights_colectivos(
         return {
             "insights": insights,
             "total": len(insights),
-            "descripcion": "Estadísticas anónimas del ecosistema Nebula"
+            "descripcion": "Estadisticas anonimas del ecosistema Nebula"
         }
     except Exception as e:
         print(f"[Coach] Error obteniendo insights: {e}")
