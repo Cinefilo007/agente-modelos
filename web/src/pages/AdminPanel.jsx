@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck, ShoppingBag, Loader, X, Gamepad2, Plus, Coins, BarChart2, Settings, Calendar, Trophy, Clock, Eye } from 'lucide-react';
+import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck, ShoppingBag, Loader, X, Gamepad2, Plus, Coins, BarChart2, Settings, Calendar, Trophy, Clock, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
@@ -149,6 +149,17 @@ export default function AdminPanel() {
         { id: 'casino', label: 'Casino', icon: Trophy },
     ];
 
+    const changeMonth = (delta) => {
+        const d = new Date(selectedYear, selectedMonth - 1 + delta, 1);
+        setSelectedMonth(d.getMonth() + 1);
+        setSelectedYear(d.getFullYear());
+    };
+
+    const getMonthName = (m) => {
+        const names = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        return names[m - 1];
+    };
+
     const renderAnalytics = () => (
         <div className="animate-in fade-in duration-500">
             <div className="mb-6 px-1">
@@ -156,27 +167,17 @@ export default function AdminPanel() {
                 <p className="text-xs text-muted-foreground/60">Aquí tienes el resumen de tu rendimiento esta semana.</p>
             </div>
 
-            <div className="flex items-center gap-2 mb-8 overflow-x-auto no-scrollbar pb-2">
-                {[...Array(6)].map((_, i) => {
-                    const d = new Date();
-                    d.setMonth(d.getMonth() - i);
-                    const m = d.getMonth() + 1;
-                    const y = d.getFullYear();
-                    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-                    const isSelected = selectedMonth === m && selectedYear === y;
-                    return (
-                        <button
-                            key={i}
-                            onClick={() => { setSelectedMonth(m); setSelectedYear(y); }}
-                            className={clsx(
-                                "px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap border",
-                                isSelected ? "bg-white text-black border-white shadow-lg scale-105" : "bg-white/5 text-gray-500 border-white/5 hover:bg-white/10"
-                            )}
-                        >
-                            {monthNames[m - 1]} {y}
-                        </button>
-                    );
-                })}
+            <div className="flex items-center justify-center gap-6 mb-8 bg-card/20 border border-white/5 p-4 rounded-2xl">
+                <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400">
+                    <ChevronLeft />
+                </button>
+                <div className="text-center min-w-[140px]">
+                    <span className="block text-xs uppercase tracking-widest font-black text-blue-400 mb-0.5">{selectedYear}</span>
+                    <span className="block text-lg font-bold text-white capitalize">{getMonthName(selectedMonth)}</span>
+                </div>
+                <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400">
+                    <ChevronRight />
+                </button>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -221,46 +222,71 @@ export default function AdminPanel() {
             <div className="bg-card/40 border border-white/5 rounded-3xl p-6 mb-8 relative overflow-hidden">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="font-bold text-foreground flex items-center gap-2">
-                        <TrendingUp size={18} className="text-blue-400" /> Exposición
+                        <TrendingUp size={18} className="text-blue-400" /> Rendimiento Dual
                     </h3>
+                    <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5 text-blue-400"><div className="w-2 h-2 rounded-full bg-blue-400" /> Visitas</span>
+                        <span className="flex items-center gap-1.5 text-green-400"><div className="w-2 h-2 rounded-full bg-green-400" /> Ingresos</span>
+                    </div>
                 </div>
 
-                <div className="h-48 w-full relative mt-4">
-                    {exposure.length > 0 ? (() => {
-                        const maxVal = Math.max(...exposure, 5);
+                <div className="h-56 w-full relative mt-4">
+                    {exposure && exposure.views && exposure.views.length > 0 ? (() => {
+                        const views = exposure.views;
+                        const revenue = exposure.revenue;
+
+                        const maxViews = Math.max(...views, 5);
+                        const maxRevenue = Math.max(...revenue, 10);
+
                         const width = 100;
                         const height = 100;
-                        const points = exposure.map((val, i) => {
-                            const x = (i / (exposure.length - 1)) * width;
-                            const y = height - (val / maxVal) * height;
-                            return { x, y };
-                        });
 
-                        const pathStr = points.map(p => `${p.x},${p.y}`).join(' ');
-                        const areaPath = `M 0,${height} ` + points.map(p => `L ${p.x},${p.y}`).join(' ') + ` L ${width},${height} Z`;
-                        const lastPoint = points[points.length - 1];
+                        const getPoints = (data, max) => data.map((val, i) => ({
+                            x: (i / (data.length - 1)) * width,
+                            y: height - (val / max) * height
+                        }));
+
+                        const viewPoints = getPoints(views, maxViews);
+                        const revenuePoints = getPoints(revenue, maxRevenue);
+
+                        const getPath = (pts) => pts.map((p, i) => (i === 0 ? `M ${p.x},${p.y}` : `L ${p.x},${p.y}`)).join(' ');
+                        const getArea = (pts) => `${getPath(pts)} L ${width},${height} L 0,${height} Z`;
 
                         return (
                             <div className="absolute inset-0">
                                 <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
                                     <defs>
-                                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor={themeColor} stopOpacity="0.3" />
-                                            <stop offset="100%" stopColor={themeColor} stopOpacity="0" />
+                                        <linearGradient id="viewGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.2" />
+                                            <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
+                                        </linearGradient>
+                                        <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.1" />
+                                            <stop offset="100%" stopColor="#4ADE80" stopOpacity="0" />
                                         </linearGradient>
                                     </defs>
-                                    <path d={areaPath} fill="url(#chartGradient)" />
-                                    <polyline points={pathStr} fill="none" stroke={themeColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+                                    {/* Areas */}
+                                    <path d={getArea(viewPoints)} fill="url(#viewGrad)" />
+                                    <path d={getArea(revenuePoints)} fill="url(#revGrad)" />
+
+                                    {/* Lines */}
+                                    <path d={getPath(viewPoints)} fill="none" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d={getPath(revenuePoints)} fill="none" stroke="#4ADE80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1 3" />
                                 </svg>
-                                <div className="absolute transform -translate-x-1/2 -translate-y-full" style={{ left: `${lastPoint.x}%`, top: `${lastPoint.y}%`, marginTop: '-12px' }}>
-                                    <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-xl px-3 py-1.5 text-[11px] font-bold text-white">
-                                        {exposure[exposure.length - 1]} visitas hoy
+
+                                {/* Tooltip for last day */}
+                                <div className="absolute top-0 right-0 text-right space-y-1 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-2.5">
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Hoy</p>
+                                    <div className="flex justify-between gap-4">
+                                        <span className="text-[11px] text-blue-400 font-black">{views[views.length - 1]} VISITAS</span>
+                                        <span className="text-[11px] text-green-400 font-black">${revenue[revenue.length - 1]} USD</span>
                                     </div>
                                 </div>
                             </div>
                         );
                     })() : (
-                        <div className="flex items-center justify-center h-full text-xs text-gray-500">Sin datos de exposición</div>
+                        <div className="flex items-center justify-center h-full text-xs text-gray-500 uppercase tracking-widest font-black opacity-20">Sincronizando datos...</div>
                     )}
                 </div>
             </div>

@@ -186,7 +186,9 @@ async def get_model_exposure(
         model_res = db.client.table("models").select("id").eq("telegram_id", user.id).single().execute()
         model_id = model_res.data['id']
         
-        days = {}
+        views_data = []
+        revenue_data = []
+
         if month and year:
             import calendar
             _, last_day = calendar.monthrange(year, month)
@@ -194,37 +196,70 @@ async def get_model_exposure(
             end_date = datetime(year, month, last_day, 23, 59, 59).isoformat()
             
             # Pre-fill month
+            days_views = {}
+            days_revenue = {}
             for i in range(1, last_day + 1):
                 d = f"{year}-{month:02d}-{i:02d}"
-                days[d] = 0
+                days_views[d] = 0
+                days_revenue[d] = 0.0
             
+            # Fetch views
             views_res = db.client.table("profile_views") \
                 .select("viewed_at") \
                 .eq("model_id", model_id) \
                 .gte("viewed_at", start_date) \
                 .lte("viewed_at", end_date) \
                 .execute()
+            
+            # Fetch revenue
+            orders_res = db.client.table("escrow_orders") \
+                .select("amount, created_at") \
+                .eq("model_id", model_id) \
+                .eq("status", "RELEASED") \
+                .gte("created_at", start_date) \
+                .lte("created_at", end_date) \
+                .execute()
         else:
             # Last 7 days
             seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
-            # Pre-fill
+            days_views = {}
+            days_revenue = {}
             for i in range(7):
                 d = (datetime.utcnow() - timedelta(days=i)).strftime('%Y-%m-%d')
-                days[d] = 0
+                days_views[d] = 0
+                days_revenue[d] = 0.0
                 
             views_res = db.client.table("profile_views") \
                 .select("viewed_at") \
                 .eq("model_id", model_id) \
                 .gte("viewed_at", seven_days_ago) \
                 .execute()
+
+            orders_res = db.client.table("escrow_orders") \
+                .select("amount, created_at") \
+                .eq("model_id", model_id) \
+                .eq("status", "RELEASED") \
+                .gte("created_at", seven_days_ago) \
+                .execute()
         
         for v in views_res.data:
             d = v['viewed_at'].split('T')[0]
-            if d in days:
-                days[d] += 1
+            if d in days_views:
+                days_views[d] += 1
+
+        for o in orders_res.data:
+            d = o['created_at'].split('T')[0]
+            if d in days_revenue:
+                days_revenue[d] += safe_float(o['amount'])
                 
-        sorted_days = sorted(days.items())
-        return [count for date, count in sorted_days]
+        sorted_views = sorted(days_views.items())
+        sorted_revenue = sorted(days_revenue.items())
+
+        return {
+            "views": [count for date, count in sorted_views],
+            "revenue": [round(amount, 2) for date, amount in sorted_revenue],
+            "labels": [date for date, _ in sorted_views]
+        }
         
     except Exception as e:
         print(f"[Analytics] Error fetching exposure: {e}")
