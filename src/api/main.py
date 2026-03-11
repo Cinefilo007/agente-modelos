@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from src.api.routes import profile, feed, interactions, admin, client, auth, content, notifications, shop, analytics, wallet, escrow, admin_gifts, config, promo, casino, ai_editor
+from src.api.routes import profile, feed, interactions, admin, client, auth, content, notifications, shop, analytics, wallet, escrow, admin_gifts, config, promo, casino, ai_editor, coach
 
 app = FastAPI(
     title="Agency Bot Mini App API",
@@ -48,6 +48,7 @@ app.include_router(config.router, prefix="/api/config", tags=["Config"])
 app.include_router(promo.router, prefix="/api/promo", tags=["Promo SFS"])
 app.include_router(casino.router, prefix="/api/casino", tags=["Casino"])
 app.include_router(ai_editor.router, prefix="/api/ai-editor", tags=["AI Photo Editor"])
+app.include_router(coach.router, prefix="/api/coach", tags=["Nebula Coach"])
 
 # Serve React Frontend (Static Files)
 # Ensure 'web/dist' exists (it will be created during build process)

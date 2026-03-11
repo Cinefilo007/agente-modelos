@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck, ShoppingBag, Loader, X, Gamepad2, Plus, Coins, BarChart2, Settings, Calendar, Trophy, Clock, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, DollarSign, CreditCard, TrendingUp, ArrowLeft, Save, Sparkles, Tag, Wallet, FileText, ShieldAlert, AlertTriangle, ShieldCheck, ShoppingBag, Loader, X, Gamepad2, Plus, Coins, BarChart2, Settings, Calendar, Trophy, Clock, Eye, ChevronLeft, ChevronRight, Brain } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
@@ -9,6 +9,7 @@ import WalletPanel from '../components/wallet/WalletPanel';
 import PostCalendar from '../components/posts/PostCalendar';
 import ShopManager from './ShopManager';
 import CasinoPrizeManager from '../components/admin/CasinoPrizeManager';
+import NebulaCoachPanel from '../components/coach/NebulaCoachPanel';
 
 export default function AdminPanel() {
     const { themeColor } = useTheme();
@@ -142,6 +143,7 @@ export default function AdminPanel() {
 
     const tabs = [
         { id: 'analytics', label: 'Métricas', icon: BarChart2 },
+        { id: 'coach', label: 'Mi Coach', icon: Brain },
         { id: 'bot', label: 'Bot Config', icon: Settings },
         { id: 'calendar', label: 'Calendario', icon: Calendar },
         { id: 'shop', label: 'Mi Tienda', icon: ShoppingBag },
@@ -472,6 +474,7 @@ export default function AdminPanel() {
 
             <div className="pb-10">
                 {activeTab === 'analytics' && renderAnalytics()}
+                {activeTab === 'coach' && <NebulaCoachPanel />}
                 {activeTab === 'bot' && renderBotConfig()}
                 {activeTab === 'calendar' && <PostCalendar />}
                 {activeTab === 'shop' && <ShopManager />}
