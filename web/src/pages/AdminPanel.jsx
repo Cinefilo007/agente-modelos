@@ -260,68 +260,68 @@ export default function AdminPanel() {
 
                         return (
                             <div className="absolute inset-0">
-                                <svg viewBox={`-5 0 ${width + 10} 100`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                                <svg viewBox={`0 0 ${width} 100`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
                                     <defs>
                                         <linearGradient id="viewGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.15" />
+                                            <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.1" />
                                             <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
                                         </linearGradient>
                                         <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.08" />
+                                            <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.05" />
                                             <stop offset="100%" stopColor="#4ADE80" stopOpacity="0" />
                                         </linearGradient>
                                     </defs>
 
-                                    {/* Grid Lines (Horizontal) and Y-Axis Labels */}
-                                    {[0, 25, 50, 75, 100].map(v => {
-                                        const yPos = (1 - v / 100) * height;
-                                        return (
-                                            <React.Fragment key={v}>
-                                                <line x1="0" y1={yPos} x2={width} y2={yPos} stroke="white" strokeOpacity="0.05" strokeWidth="0.3" />
-
-                                                {/* Y-Axis Views (Left) */}
-                                                <text x="-2" y={yPos} textAnchor="end" dominantBaseline="middle" fill="#60A5FA" fillOpacity="0.5" style={{ fontSize: '3.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
-                                                    {Math.round((v / 100) * maxViews)}
-                                                </text>
-
-                                                {/* Y-Axis Income (Right) */}
-                                                <text x={width + 2} y={yPos} textAnchor="start" dominantBaseline="middle" fill="#4ADE80" fillOpacity="0.5" style={{ fontSize: '3.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
-                                                    ${Math.round((v / 100) * maxRevenue)}
-                                                </text>
-                                            </React.Fragment>
-                                        );
-                                    })}
+                                    {/* Grid Lines (Minimalist) */}
+                                    {[0, 25, 50, 75, 100].map(v => (
+                                        <line key={v} x1="0" y1={v * height / 100} x2={width} y2={v * height / 100} stroke="white" strokeOpacity="0.03" strokeWidth="0.2" />
+                                    ))}
 
                                     {/* Areas */}
                                     <path d={getArea(viewPoints)} fill="url(#viewGrad)" />
                                     <path d={getArea(revenuePoints)} fill="url(#revGrad)" />
 
-                                    {/* Lines - Thinner and Elegant */}
-                                    <path d={getPath(viewPoints)} fill="none" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d={getPath(revenuePoints)} fill="none" stroke="#4ADE80" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2 3" />
+                                    {/* Lines - Ultrafine and Elegant */}
+                                    <path d={getPath(viewPoints)} fill="none" stroke="#60A5FA" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d={getPath(revenuePoints)} fill="none" stroke="#4ADE80" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1 2" />
 
-                                    {/* X-Axis Labels */}
+                                    {/* Peak Values - Direct Labels */}
+                                    {viewPoints.map((p, i) => {
+                                        const val = views[i];
+                                        // Show if it's a "peak" (higher than neighbors) and > 0
+                                        const isPeak = val > 0 && (i === 0 || val >= views[i - 1]) && (i === views.length - 1 || val >= views[i + 1]);
+                                        if (!isPeak) return null;
+                                        return (
+                                            <text key={`v-${i}`} x={p.x} y={p.y - 2} textAnchor="middle" fill="#60A5FA" style={{ fontSize: '2.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
+                                                {val}
+                                            </text>
+                                        );
+                                    })}
+
+                                    {/* Revenue Values on Peaks */}
+                                    {revenuePoints.map((p, i) => {
+                                        const val = revenue[i];
+                                        const isPeak = val > 0 && (i === 0 || val >= revenue[i - 1]) && (i === revenue.length - 1 || val >= revenue[i + 1]);
+                                        if (!isPeak) return null;
+                                        return (
+                                            <text key={`r-${i}`} x={p.x} y={p.y - 2} textAnchor="middle" fill="#4ADE80" style={{ fontSize: '2.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
+                                                ${val}
+                                            </text>
+                                        );
+                                    })}
+
+                                    {/* X-Axis Labels - Lighter Font */}
                                     {labels.map((label, i) => {
                                         if (i % labelStep !== 0 && i !== labels.length - 1) return null;
                                         const x = (i / (labels.length - 1)) * width;
                                         const day = label.split('-')[2];
                                         return (
-                                            <text key={i} x={x} y={98} textAnchor="middle" fill="white" fillOpacity="0.6" style={{ fontSize: '4.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
+                                            <text key={i} x={x} y={98} textAnchor="middle" fill="white" fillOpacity="0.2" style={{ fontSize: '3.5px', fontWeight: '500', fontFamily: 'Inter', letterSpacing: '0.1em' }}>
                                                 {day}
                                             </text>
                                         );
                                     })}
                                 </svg>
-
-                                {/* Info Badge */}
-                                <div className="absolute top-2 right-2 flex flex-col items-end gap-1.5 pointer-events-none grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all">
-                                    <div className="bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-2">
-                                        <span className="text-[9px] text-blue-400 font-black uppercase">Visitas: {views[views.length - 1]}</span>
-                                    </div>
-                                    <div className="bg-green-500/10 border border-green-500/20 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-2">
-                                        <span className="text-[9px] text-green-400 font-black uppercase">Ingresos: ${revenue[revenue.length - 1]}</span>
-                                    </div>
-                                </div>
                             </div>
                         );
                     })() : (
