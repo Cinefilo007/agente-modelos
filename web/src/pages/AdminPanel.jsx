@@ -17,6 +17,14 @@ export default function AdminPanel() {
     const [activeTab, setActiveTab] = useState('analytics'); // analytics, bot, calendar, shop, wallet, casino
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [showVisitorsModal, setShowVisitorsModal] = useState(false);
+    const [visitors, setVisitors] = useState([]);
+    const [loadingVisitors, setLoadingVisitors] = useState(false);
+
+    // Date Filtering
+    const now = new Date();
+    const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(now.getFullYear());
     const { showToast } = useToast();
     const [config, setConfig] = useState({
         prices: "",
@@ -28,39 +36,59 @@ export default function AdminPanel() {
     const [tags, setTags] = useState([]);
     const [tagInput, setTagInput] = useState("");
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [summaryRes, exposureRes, profileRes] = await Promise.all([
-                    api.get('/analytics/model/summary'),
-                    api.get('/analytics/model/exposure'),
-                    api.get('/profile/me')
-                ]);
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            const params = { month: selectedMonth, year: selectedYear };
+            const [summaryRes, exposureRes, profileRes] = await Promise.all([
+                api.get('/analytics/model/summary', { params }),
+                api.get('/analytics/model/exposure', { params }),
+                api.get('/profile/me')
+            ]);
 
-                setStats(summaryRes.data);
-                setExposure(exposureRes.data);
+            setStats(summaryRes.data);
+            setExposure(exposureRes.data);
 
-                if (profileRes.data) {
-                    const physicalAspects = profileRes.data.physical_aspects || "";
-                    setConfig({
-                        prices: profileRes.data.prices || "",
-                        personality: profileRes.data.personality || "",
-                        physicalAspects: physicalAspects,
-                        paymentMethods: profileRes.data.payment_methods || ""
-                    });
+            if (profileRes.data) {
+                const physicalAspects = profileRes.data.physical_aspects || "";
+                setConfig({
+                    prices: profileRes.data.prices || "",
+                    personality: profileRes.data.personality || "",
+                    physicalAspects: physicalAspects,
+                    paymentMethods: profileRes.data.payment_methods || ""
+                });
 
-                    if (physicalAspects) {
-                        setTags(physicalAspects.split(',').map(t => t.trim()).filter(Boolean));
-                    }
+                if (physicalAspects) {
+                    setTags(physicalAspects.split(',').map(t => t.trim()).filter(Boolean));
                 }
-            } catch (err) {
-                console.error("Error fetching dashboard data:", err);
-            } finally {
-                setLoading(false);
             }
-        };
+        } catch (err) {
+            console.error("Error fetching dashboard data:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchVisitors = async () => {
+        setLoadingVisitors(true);
+        try {
+            const res = await api.get('/analytics/model/visitors');
+            setVisitors(res.data);
+        } catch (err) {
+            console.error("Error fetching visitors:", err);
+        } finally {
+            setLoadingVisitors(false);
+        }
+    };
+
+    const handleOpenVisitors = () => {
+        setShowVisitorsModal(true);
+        fetchVisitors();
+    };
+
+    useEffect(() => {
         fetchDashboardData();
-    }, []);
+    }, [selectedMonth, selectedYear]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -128,21 +156,38 @@ export default function AdminPanel() {
                 <p className="text-xs text-muted-foreground/60">Aquí tienes el resumen de tu rendimiento esta semana.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="bg-card/40 border border-white/5 rounded-2xl p-5 flex flex-col relative overflow-hidden group hover:bg-card/60 transition-colors">
+            <div className="flex items-center gap-2 mb-8 overflow-x-auto no-scrollbar pb-2">
+                {[...Array(6)].map((_, i) => {
+                    const d = new Date();
+                    d.setMonth(d.getMonth() - i);
+                    const m = d.getMonth() + 1;
+                    const y = d.getFullYear();
+                    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+                    const isSelected = selectedMonth === m && selectedYear === y;
+                    return (
+                        <button
+                            key={i}
+                            onClick={() => { setSelectedMonth(m); setSelectedYear(y); }}
+                            className={clsx(
+                                "px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap border",
+                                isSelected ? "bg-white text-black border-white shadow-lg scale-105" : "bg-white/5 text-gray-500 border-white/5 hover:bg-white/10"
+                            )}
+                        >
+                            {monthNames[m - 1]} {y}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+                <div onClick={handleOpenVisitors} className="bg-card/40 border border-white/5 rounded-2xl p-5 flex flex-col relative overflow-hidden group hover:bg-card/60 transition-colors cursor-pointer">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                         <Users size={48} />
                     </div>
-                    <span className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold mb-2 opacity-80">Visitas</span>
+                    <span className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold mb-2 opacity-80">Visitas ({stats.period_title})</span>
                     <span className="text-3xl font-bold text-white leading-none">{stats.visitors.toLocaleString()}</span>
-                    <div className={clsx(
-                        "flex items-center gap-1.5 mt-2 w-fit px-2 py-0.5 rounded-full",
-                        stats.visitors_growth >= 0 ? "bg-green-500/10" : "bg-red-500/10"
-                    )}>
-                        <TrendingUp size={12} className={stats.visitors_growth >= 0 ? "text-green-400" : "text-red-400"} />
-                        <span className={clsx("text-[10px] font-bold", stats.visitors_growth >= 0 ? "text-green-400" : "text-red-400")}>
-                            {stats.visitors_growth > 0 ? '+' : ''}{stats.visitors_growth}%
-                        </span>
+                    <div className="flex items-center gap-1.5 mt-2 w-fit px-2 py-0.5 rounded-full bg-blue-500/10 text-[10px] font-bold text-blue-400">
+                        <Users size={10} /> +Detalle
                     </div>
                 </div>
 
@@ -150,17 +195,26 @@ export default function AdminPanel() {
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                         <DollarSign size={48} />
                     </div>
-                    <span className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold mb-2 opacity-80">Ventas</span>
+                    <span className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold mb-2 opacity-80">Ventas ({stats.period_title})</span>
                     <span className="text-3xl font-bold text-white leading-none">${stats.revenue.toLocaleString()}</span>
-                    <div className={clsx(
-                        "flex items-center gap-1.5 mt-2 w-fit px-2 py-0.5 rounded-full",
-                        stats.sales_growth >= 0 ? "bg-green-500/10" : "bg-red-500/10"
-                    )}>
-                        <TrendingUp size={12} className={stats.sales_growth >= 0 ? "text-green-400" : "text-red-400"} />
-                        <span className={clsx("text-[10px] font-bold", stats.sales_growth >= 0 ? "text-green-400" : "text-red-400")}>
-                            {stats.sales_growth > 0 ? '+' : ''}{stats.sales_growth}%
-                        </span>
+                    <div className="flex items-center gap-1.5 mt-2 w-fit px-2 py-0.5 rounded-full bg-green-500/10 text-[10px] font-bold text-green-400">
+                        <TrendingUp size={10} /> {stats.sales_count} órdenes
                     </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mb-8">
+                <div className="bg-card/30 border border-white/5 rounded-2xl p-4 flex flex-col items-center text-center">
+                    <span className="text-[9px] uppercase tracking-tighter text-gray-500 font-black mb-1">Billetera</span>
+                    <span className="text-lg font-bold text-white">${stats.wallet_balance}</span>
+                </div>
+                <div className="bg-card/30 border border-white/5 rounded-2xl p-4 flex flex-col items-center text-center">
+                    <span className="text-[9px] uppercase tracking-tighter text-gray-500 font-black mb-1">IA Créditos</span>
+                    <span className="text-lg font-bold text-purple-400">{stats.credits}</span>
+                </div>
+                <div className="bg-card/30 border border-white/5 rounded-2xl p-4 flex flex-col items-center text-center">
+                    <span className="text-[9px] uppercase tracking-tighter text-gray-500 font-black mb-1">Conversión</span>
+                    <span className="text-lg font-bold text-blue-400">{stats.conversion_rate}%</span>
                 </div>
             </div>
 
@@ -172,7 +226,7 @@ export default function AdminPanel() {
                 </div>
 
                 <div className="h-48 w-full relative mt-4">
-                    {(() => {
+                    {exposure.length > 0 ? (() => {
                         const maxVal = Math.max(...exposure, 5);
                         const width = 100;
                         const height = 100;
@@ -205,9 +259,75 @@ export default function AdminPanel() {
                                 </div>
                             </div>
                         );
-                    })()}
+                    })() : (
+                        <div className="flex items-center justify-center h-full text-xs text-gray-500">Sin datos de exposición</div>
+                    )}
                 </div>
             </div>
+
+            {/* Modal de Visitantes */}
+            {showVisitorsModal && (
+                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowVisitorsModal(false)} />
+                    <div className="relative w-full max-w-lg bg-[#0A0A0A] border border-white/10 rounded-t-[32px] sm:rounded-[32px] overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-500 max-h-[85vh] flex flex-col">
+                        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+                            <div>
+                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <Users className="text-blue-400" size={20} /> Detalle de Visitantes
+                                </h3>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mt-1">Últimas 50 interacciones</p>
+                            </div>
+                            <button onClick={() => setShowVisitorsModal(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+                            {loadingVisitors ? (
+                                <div className="flex flex-col items-center justify-center py-20 grayscale opacity-50">
+                                    <Loader className="animate-spin text-white mb-4" />
+                                    <p className="text-xs text-gray-400">Cargando visitantes...</p>
+                                </div>
+                            ) : visitors.length === 0 ? (
+                                <div className="text-center py-20 opacity-40">
+                                    <Users size={48} className="mx-auto mb-4" />
+                                    <p className="text-sm">Aún no hay visitas registradas.</p>
+                                </div>
+                            ) : (
+                                visitors.map((v, i) => (
+                                    <div key={i} className="flex items-center justify-between bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-transparent flex items-center justify-center text-lg font-bold border border-white/5">
+                                                {v.username.substring(0, 1).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-white">{v.username}</p>
+                                                <p className="text-[10px] text-gray-500 flex items-center gap-1">
+                                                    <Clock size={10} /> {new Date(v.viewed_at).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            {v.country_code ? (
+                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/40 border border-white/5">
+                                                    <span className="text-xs font-bold text-gray-300">{v.country_code}</span>
+                                                    <img
+                                                        src={`https://flagcdn.com/w40/${v.country_code.toLowerCase()}.png`}
+                                                        alt={v.country_code}
+                                                        className="w-5 h-auto rounded-sm border border-white/10"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <span className="text-[10px] text-gray-600 font-bold uppercase">Desconocido</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 

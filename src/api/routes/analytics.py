@@ -38,7 +38,12 @@ async def record_view(data: ViewRecord, request: Request, user: Optional[Telegra
         return {"status": "error", "detail": str(e)}
 
 @router.get("/model/summary")
-async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
+async def get_model_summary(
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Returns summary stats for the logged-in model with time filters."""
     """Returns summary stats for the logged-in model."""
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Solo para modelos")
@@ -94,56 +99,69 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
             total_sales_count = 0
             total_revenue = 0.0
         
-        # 4. Calculate Trends (Last 7 days vs Previous 7 days)
-        try:
+        # 4. Period Filtering (Month/Year)
+        period_filter_at = None
+        if month and year:
+            import calendar
+            _, last_day = calendar.monthrange(year, month)
+            start_date = datetime(year, month, 1).isoformat()
+            end_date = datetime(year, month, last_day, 23, 59, 59).isoformat()
+            period_title = f"{month}/{year}"
+        else:
+            # Default: current week logic
             now = datetime.utcnow()
-            last_7_days = (now - timedelta(days=7)).isoformat()
-            prev_7_days = (now - timedelta(days=14)).isoformat()
+            start_date = (now - timedelta(days=7)).isoformat()
+            end_date = now.isoformat()
+            period_title = "Esta semana"
 
-            # Current Period Views
+        # Current Period Views
+        try:
             curr_views_res = db.client.table("profile_views").select("id", count="exact") \
-                .eq("model_id", model_id).gte("viewed_at", last_7_days).execute()
-            curr_views = curr_views_res.count or 0
+                .eq("model_id", model_id) \
+                .gte("viewed_at", start_date) \
+                .lte("viewed_at", end_date) \
+                .execute()
+            curr_period_views = curr_views_res.count or 0
+        except:
+            curr_period_views = 0
 
-            # Previous Period Views
-            prev_views_res = db.client.table("profile_views").select("id", count="exact") \
-                .eq("model_id", model_id).gte("viewed_at", prev_7_days).lt("viewed_at", last_7_days).execute()
-            prev_views = prev_views_res.count or 0
+        # Current Period Sales
+        try:
+            curr_sales_res = db.client.table("escrow_orders").select("amount") \
+                .eq("model_id", model_id) \
+                .eq("status", "RELEASED") \
+                .gte("created_at", start_date) \
+                .lte("created_at", end_date) \
+                .execute()
+            curr_period_sales_count = len(curr_sales_res.data) if curr_sales_res.data else 0
+            curr_period_revenue = sum([safe_float(o['amount']) for o in curr_sales_res.data]) if curr_sales_res.data else 0.0
+        except:
+            curr_period_sales_count = 0
+            curr_period_revenue = 0.0
 
-            # Growth calc: ((curr - prev) / max(prev, 1)) * 100
-            visitors_growth = round(((curr_views - prev_views) / prev_views * 100), 1) if prev_views > 0 else (100.0 if curr_views > 0 else 0.0)
+        # 5. Fetch Wallet Balance
+        wallet_balance = 0.0
+        try:
+            wallet_res = db.client.table("wallets").select("balance").eq("user_id", model_id).maybe_single().execute()
+            if wallet_res.data:
+                wallet_balance = float(wallet_res.data.get('balance', 0))
+        except:
+            pass
 
-            # Current Period Sales
-            curr_sales_res = db.client.table("escrow_orders").select("id", count="exact") \
-                .eq("model_id", model_id).eq("status", "RELEASED").gte("created_at", last_7_days).execute()
-            curr_sales = curr_sales_res.count or 0
-
-            # Previous Period Sales
-            prev_sales_res = db.client.table("escrow_orders").select("id", count="exact") \
-                .eq("model_id", model_id).eq("status", "RELEASED").gte("created_at", prev_7_days).lt("created_at", last_7_days).execute()
-            prev_sales = prev_sales_res.count or 0
-
-            sales_growth = round(((curr_sales - prev_sales) / prev_sales * 100), 1) if prev_sales > 0 else (100.0 if curr_sales > 0 else 0.0)
-            
-            print(f"[Analytics] Visitors Growth: {visitors_growth}%, Sales Growth: {sales_growth}%")
-        except Exception as e:
-            print(f"[Analytics] Error calculating trends: {e}")
-            visitors_growth = 0.0
-            sales_growth = 0.0
-
-        # 5. Calculate Conversion Rate
-        # Conversion = (Sales / Views) * 100
-        conversion_rate = (total_sales_count / total_views * 100) if total_views > 0 else 0
+        # 6. Calculate Conversion Rate for period
+        conversion_rate = (curr_period_sales_count / curr_period_views * 100) if curr_period_views > 0 else 0
         
         return {
             "model_name": artistic_name,
-            "visitors": total_views,
-            "sales_count": total_sales_count,
-            "revenue": round(total_revenue, 2),
+            "period_title": period_title,
+            "visitors": curr_period_views,
+            "sales_count": curr_period_sales_count,
+            "revenue": round(curr_period_revenue, 2),
+            "wallet_balance": round(wallet_balance, 2),
             "credits": credits,
             "conversion_rate": round(conversion_rate, 2),
-            "visitors_growth": visitors_growth,
-            "sales_growth": sales_growth
+            "total_visitors_all_time": total_views,
+            "total_revenue_all_time": round(total_revenue, 2)
         }
     except HTTPException:
         raise
@@ -155,8 +173,12 @@ async def get_model_summary(user: TelegramUser = Depends(get_current_user)):
 
 
 @router.get("/model/exposure")
-async def get_model_exposure(user: TelegramUser = Depends(get_current_user)):
-    """Returns views per day for the last 7 days."""
+async def get_model_exposure(
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    user: TelegramUser = Depends(get_current_user)
+):
+    """Returns views per day for the last 7 days or a full month."""
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Solo para modelos")
     
@@ -164,33 +186,80 @@ async def get_model_exposure(user: TelegramUser = Depends(get_current_user)):
         model_res = db.client.table("models").select("id").eq("telegram_id", user.id).single().execute()
         model_id = model_res.data['id']
         
-        # Calculate daily counts for the last 7 days
-        # In a real high-traffic app, we'd use a grouped query, 
-        # but for now let's do a simple count per day or a clever range query.
-        seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
-        
-        views_res = db.client.table("profile_views") \
-            .select("viewed_at") \
-            .eq("model_id", model_id) \
-            .gte("viewed_at", seven_days_ago) \
-            .execute()
-        
-        # Group by day in Python for simplicity
         days = {}
-        # Pre-fill last 7 days with 0
-        for i in range(7):
-            d = (datetime.utcnow() - timedelta(days=i)).strftime('%Y-%m-%d')
-            days[d] = 0
+        if month and year:
+            import calendar
+            _, last_day = calendar.monthrange(year, month)
+            start_date = datetime(year, month, 1).isoformat()
+            end_date = datetime(year, month, last_day, 23, 59, 59).isoformat()
             
+            # Pre-fill month
+            for i in range(1, last_day + 1):
+                d = f"{year}-{month:02d}-{i:02d}"
+                days[d] = 0
+            
+            views_res = db.client.table("profile_views") \
+                .select("viewed_at") \
+                .eq("model_id", model_id) \
+                .gte("viewed_at", start_date) \
+                .lte("viewed_at", end_date) \
+                .execute()
+        else:
+            # Last 7 days
+            seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
+            # Pre-fill
+            for i in range(7):
+                d = (datetime.utcnow() - timedelta(days=i)).strftime('%Y-%m-%d')
+                days[d] = 0
+                
+            views_res = db.client.table("profile_views") \
+                .select("viewed_at") \
+                .eq("model_id", model_id) \
+                .gte("viewed_at", seven_days_ago) \
+                .execute()
+        
         for v in views_res.data:
             d = v['viewed_at'].split('T')[0]
             if d in days:
                 days[d] += 1
                 
-        # Convert to list of points (sorted by date)
         sorted_days = sorted(days.items())
         return [count for date, count in sorted_days]
         
     except Exception as e:
         print(f"[Analytics] Error fetching exposure: {e}")
-        return [0, 0, 0, 0, 0, 0, 0]
+        return []
+
+@router.get("/model/visitors")
+async def get_model_visitors(user: TelegramUser = Depends(get_current_user)):
+    """Returns list of recent visitors with country info."""
+    if user.role != "model":
+        raise HTTPException(status_code=403, detail="Solo para modelos")
+    
+    try:
+        model_res = db.client.table("models").select("id").eq("telegram_id", user.id).single().execute()
+        model_id = model_res.data['id']
+        
+        # Get recent views with client/visitor info
+        # Joining with clients table to get country_code and username
+        res = db.client.table("profile_views") \
+            .select("id, viewed_at, visitor_id, viewer_ip, clients(username, country_code)") \
+            .eq("model_id", model_id) \
+            .order("viewed_at", desc=True) \
+            .limit(50) \
+            .execute()
+            
+        visitors = []
+        for v in res.data:
+            client = v.get('clients') or {}
+            visitors.append({
+                "viewed_at": v['viewed_at'],
+                "username": client.get('username') or "Visitante Anónimo",
+                "country_code": client.get('country_code'),
+                "ip": v['viewer_ip'] if user.role == "admin" else None # IP only for admin security
+            })
+            
+        return visitors
+    except Exception as e:
+        print(f"[Analytics] Error fetching visitors: {e}")
+        return []
