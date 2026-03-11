@@ -27,7 +27,7 @@ COACH_MODEL_PRINCIPAL = "mistralai/mistral-large"
 COACH_MODEL_FALLBACK = "google/gemini-2.5-flash"
 COACH_TEMP = 0.75
 COACH_MAX_TOKENS = 3500
-REGENERATION_COOLDOWN_DAYS = 7
+REGENERATION_COOLDOWN_DAYS = 0 # Temporalmente 0 para facilitar pruebas
 
 # Efemerides y Fechas Especiales (Knowledge Base para el Coach)
 FECHAS_ESPECIALES = [
