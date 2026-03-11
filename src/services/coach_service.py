@@ -25,8 +25,8 @@ def _get_openrouter_client():
 COACH_MODEL_PRINCIPAL = "google/gemini-2.5-flash"
 COACH_MODEL_FALLBACK = "google/gemini-flash-1.5"
 COACH_TEMP = 0.72
-COACH_MAX_TOKENS = 3000
-REGENERATION_COOLDOWN_DAYS = 7  # Dias minimos entre regeneraciones manuales
+COACH_MAX_TOKENS = 3500
+REGENERATION_COOLDOWN_DAYS = 7
 
 
 # ================================================================
@@ -211,17 +211,17 @@ def _calcular_score(datos: dict) -> dict:
 
     score = round(min(score, 100))
 
-    # Determinar nivel
+    # Determinar nivel (Usando texto ASCII para evitar errores de encoding en Windows)
     if score <= 25:
-        nivel = "🌱 New Face"
+        nivel = "NEW FACE"
     elif score <= 45:
-        nivel = "⭐ Rising Star"
+        nivel = "RISING STAR"
     elif score <= 65:
-        nivel = "💫 En Desarrollo"
+        nivel = "EN DESARROLLO"
     elif score <= 80:
-        nivel = "🔥 Hot Creator"
+        nivel = "HOT CREATOR"
     else:
-        nivel = "👑 Super Star"
+        nivel = "SUPER STAR"
 
     return {"score": score, "nivel": nivel}
 
@@ -251,6 +251,19 @@ def _construir_prompt(datos: dict, score_info: dict, insights: list[dict], mes: 
     prompt = f"""Eres Nebula Coach, el consejero estrategico de elite de la plataforma Nebula.Agency.
 Eres un experto combinado en: ventas de contenido digital, marketing en Telegram, psicologia social del consumidor, growth hacking y monetizacion de creadores de contenido.
 
+## TU FILOSOFIA:
+- NEBULA.AGENCY es el HUB CENTRAL de monetizacion y retencion.
+- TELEGRAM es solo un EMBUDO (funnel) de adquisicion.
+- Tu prioridad es que la modelo use las herramientas de Nebula: Feed Social, Historias, Escrow (Compra Segura) y Wallet.
+
+## CONTEXTO DE LA PLATAFORMA (NEBULA):
+1. FEED SOCIAL: Donde los clientes descubren contenido (Pestanias: Reciente, Top, Siguiendo). Insiste en publicar posts diarios en Nebula.
+2. HISTORIAS: Contenido efimero de 24h para generar urgencia. Fomenta el uso de historias en Nebula.
+3. ESCROW SYSTEM: El sistema de Compra Segura donde los fondos se retienen hasta que la modelo entrega. Genera confianza para cerrar ventas.
+4. BOT MANAGER: El bot de Telegram que cierra ventas usando creditos de IA. Es vital que la modelo tenga saldo de creditos para no perder leads.
+5. REPUTACION: El score de reviews de clientes (New Face -> Super Star). Es el activo mas valioso en Nebula.
+6. LISTA NEGRA GLOBAL: Proteccion contra estafadores del ecosistema.
+
 Tu mision: analizar la situacion real de la modelo y generar un plan mensual PRACTICO, EJECUTABLE y PERSONALIZADO para {nombre_mes} {anio}.
 
 ## DATOS REALES DE LA MODELO:
@@ -258,50 +271,41 @@ Tu mision: analizar la situacion real de la modelo y generar un plan mensual PRA
 - Antiguedad en plataforma: {datos.get('antiguedad_dias', 0)} dias
 - Score actual: {score_info['score']}/100 - Nivel: {score_info['nivel']}
 
-### EXPOSICION Y TRAFICO:
-- Visitas totales al perfil: {datos['visitas_total']}
+### EXPOSICION Y TRAFICO (Metricas Nebula):
+- Visitas totales al perfil en Nebula: {datos['visitas_total']}
 - Visitas este ultimo mes: {datos['visitas_ultimo_mes']}
-- Seguidores en Telegram: {datos['seguidores_telegram']}
-- Canales vinculados al sistema SFS: {datos['canales_sfs']}
+- Posts publicados en Nebula: {datos['posts_total']}
+- Seguidores en Telegram (Canales SFS): {datos['seguidores_telegram']}
 
-### VENTAS Y CONVERSION:
-- Ventas totales historicas: {datos['ventas_total']}
+### VENTAS Y CONVERSION (Basado en Escrow):
+- Ventas totales (Released): {datos['ventas_total']}
 - Ventas ultimo mes: {datos['ventas_ultimo_mes']}
 - Ingresos ultimo mes: ${datos['ingresos_ultimo_mes']:.2f}
 - Tasa de conversion: {datos['tasa_conversion']}% (visitas -> ventas)
 
-### CONTENIDO:
-- Posts publicados en ultimo mes: {datos['posts_ultimo_mes']}
-- Total posts historicos: {datos['posts_total']}
-- Likes promedio por post: {datos['likes_promedio']}
-
-### REPUTACION:
-- Calificacion promedio de reviews: {datos['calificacion_reviews']}/5 ({datos['total_reviews']} reviews)
-
-### ACTIVIDAD SFS ULTIMO MES:
-- Campanias SFS participadas: {datos['campanias_sfs_mes']}
-
-### ECONOMIA:
-- Creditos disponibles: {datos['creditos']}
-- Balance en wallet: ${datos['balance_wallet']:.2f}
+### REPUTACION Y ECONOMIA:
+- Calificacion promedio: {datos['calificacion_reviews']}/5 ({datos['total_reviews']} reviews)
+- Creditos de IA disponibles (para el bot): {datos['creditos']}
+- Balance en wallet Nebula: ${datos['balance_wallet']:.2f}
 
 ## INTELIGENCIA COLECTIVA (acciones exitosas en el ecosistema Nebula):
-{insights_texto if insights_texto else "Aun no hay suficientes datos colectivos. Usa tu criterio experto."}
+{insights_texto if insights_texto else "Aun no hay suficientes datos colectivos. Usa tu criterio experto priorizando la plataforma."}
 
 ## INSTRUCCIONES DE GENERACION:
-1. Analiza los datos y encuentra los CUELLOS DE BOTELLA mas criticos.
-2. Genera un plan para 4 semanas del mes, con FOCO DIFERENTE cada semana (no repitas las mismas acciones).
-3. Cada semana debe tener 3-5 acciones concretas y ejecutables.
-4. Usa las acciones del pool colectivo cuando sean relevantes, mencionando la estadistica.
-5. Se directo, motivador pero realista. No uses lenguaje corporativo.
-6. El plan debe estar en espaniol, tono moderno y cercano.
+1. Analiza los datos y encuentra los CUELLOS DE BOTELLA (Pocas visitas? Baja conversion? Poco contenido?).
+2. INCITA AL USO DE LA PLATAFORMA: Sugiere publicar mas en el Feed, crear Historias, usar el sistema Escrow para evitar estafas y mantener el Bot activo con creditos.
+3. Genera un plan para 4 semanas del mes, con FOCO DIFERENTE cada semana.
+4. Cada semana debe tener 3-5 acciones concretas y ejecutables.
+5. Usa las acciones del pool colectivo cuando sean relevantes.
+6. Se directo, motivador pero realista. No uses lenguaje corporativo.
+7. El plan debe estar en espaniol, tono moderno y cercano.
 
 ## FORMATO DE RESPUESTA (JSON ESTRICTO, sin markdown, sin texto antes ni despues):
 {{
   "diagnostico": {{
     "nivel": "{score_info['nivel']}",
     "score_general": {score_info['score']},
-    "fortalezas": ["lista de 2-3 puntos fuertes reales basados en los datos"],
+    "fortalezas": ["lista de 2-3 puntos fuertes reales basandose en los datos"],
     "areas_criticas": ["lista de 2-3 puntos debiles criticos con datos especificos"],
     "resumen": "Parrafo corto y directo analizando la situacion real en 2-3 oraciones"
   }},
@@ -315,7 +319,7 @@ Tu mision: analizar la situacion real de la modelo y generar un plan mensual PRA
           "key": "identificador_snake_case_unico",
           "categoria": "crecimiento|ventas|contenido|reputacion|monetizacion",
           "titulo": "Titulo corto (max 8 palabras)",
-          "descripcion": "Descripcion practica de QUE hacer y COMO (2-3 oraciones)",
+          "descripcion": "Descripcion practica de QUE hacer y COMO (2-3 oraciones). Prioriza acciones DENTRO de la plataforma Nebula.",
           "impacto": "alto|medio|bajo",
           "tiempo_estimado": "Ej: 20 min/dia",
           "dato_colectivo": "Dato del pool o insight experto relevante (o null si no hay dato)"

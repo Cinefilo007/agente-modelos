@@ -85,11 +85,11 @@ const AccionCard = ({ accion, planId, onFeedback, feedbackMap }) => {
                         </div>
                     </div>
 
-                    {/* Expandir descripción */}
+                    {/* Expandir descripcion */}
                     {expandida && (
                         <div className="mt-3 space-y-2 animate-in fade-in duration-200">
                             <p className="text-sm text-gray-400 leading-relaxed">{accion.descripcion}</p>
-                            {accion.dato_colectivo && (
+                            {accion.dato_colectivo && accion.dato_colectivo !== 'null' && (
                                 <div className="flex items-start gap-2 p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
                                     <Users size={13} className="text-purple-400 mt-0.5 shrink-0" />
                                     <p className="text-[11px] text-purple-300 leading-relaxed italic">
@@ -130,8 +130,8 @@ const AccionCard = ({ accion, planId, onFeedback, feedbackMap }) => {
                             </div>
                         ) : (
                             <div className={`flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-xl ${resultado === 'success'
-                                    ? 'text-green-400 bg-green-500/10'
-                                    : 'text-red-400 bg-red-500/10'
+                                ? 'text-green-400 bg-green-500/10'
+                                : 'text-red-400 bg-red-500/10'
                                 }`}>
                                 {resultado === 'success' ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
                                 {resultado === 'success' ? 'Completado' : 'No funcionó'}
@@ -349,8 +349,8 @@ export default function NebulaCoachPanel() {
                         key={s.numero}
                         onClick={() => setSemanaActiva(s.numero)}
                         className={`shrink-0 flex flex-col items-center px-5 py-3 rounded-2xl transition-all text-sm font-bold active:scale-95 ${semanaActiva === s.numero
-                                ? 'bg-white text-black shadow-xl'
-                                : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
+                            ? 'bg-white text-black shadow-xl'
+                            : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
                             }`}
                     >
                         <span className="text-[9px] uppercase tracking-wider opacity-60">Semana</span>
