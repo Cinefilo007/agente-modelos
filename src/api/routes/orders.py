@@ -16,7 +16,7 @@ async def get_my_purchases(user: TelegramUser = Depends(get_current_user)):
             .execute()
         return res.data or []
     except Exception as e:
-        print(f"[Orders] Error fetching purchases: {e}")
+        print(f"[Orders] Error fetching purchases (User {user.user_id}): {e}")
         raise HTTPException(status_code=500, detail="Error al recuperar compras")
 
 @router.get("/my-sales")
@@ -26,34 +26,31 @@ async def get_my_sales(user: TelegramUser = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Solo las modelos pueden ver sus ventas")
     
     try:
-        # Get model ID
-        model_res = db.client.table("models").select("id").eq("telegram_id", user.id).single().execute()
-        model_id = model_res.data['id']
-
+        # En el sistema Nebula, si el rol es 'model', user.user_id es el UUID de la tabla models
         res = db.client.table("orders") \
-            .select("*, clients(username, artistic_name, avatar_url), model_services(title)") \
-            .eq("model_id", model_id) \
+            .select("*, clients(username, avatar_url), model_services(title)") \
+            .eq("model_id", user.user_id) \
             .order("created_at", desc=True) \
             .execute()
         return res.data or []
     except Exception as e:
-        print(f"[Orders] Error fetching sales: {e}")
+        print(f"[Orders] Error fetching sales (Model {user.user_id}): {e}")
         raise HTTPException(status_code=500, detail="Error al recuperar ventas")
 
 @router.get("/{order_id}")
 async def get_order_details(order_id: str, user: TelegramUser = Depends(get_current_user)):
     """Get full details of a specific order (Digital Delivery Note)."""
     try:
+        # Nota: Eliminamos artistic_name del join de clients ya que esa tabla no tiene ese campo
         res = db.client.table("orders") \
-            .select("*, models(id, username, artistic_name, avatar_url, telegram_id), clients(id, username, artistic_name, avatar_url, telegram_id), model_services(*), model_service_options(*)") \
+            .select("*, models(id, username, artistic_name, avatar_url, telegram_id), clients(id, username, avatar_url, telegram_id), model_services(*), model_service_options(*)") \
             .eq("id", order_id) \
             .single().execute()
         
         if not res.data:
             raise HTTPException(status_code=404, detail="Orden no encontrada")
         
-        order = res.data
-        return order
+        return res.data
     except Exception as e:
         print(f"[Orders] Error fetching order {order_id}: {e}")
         raise HTTPException(status_code=500, detail="Error al recuperar detalles de la orden")
