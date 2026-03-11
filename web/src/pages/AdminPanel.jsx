@@ -260,7 +260,7 @@ export default function AdminPanel() {
 
                         return (
                             <div className="absolute inset-0">
-                                <svg viewBox={`0 0 ${width} 100`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                                <svg viewBox={`-5 0 ${width + 10} 100`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
                                     <defs>
                                         <linearGradient id="viewGrad" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.15" />
@@ -272,10 +272,25 @@ export default function AdminPanel() {
                                         </linearGradient>
                                     </defs>
 
-                                    {/* Grid Lines (Horizontal) */}
-                                    {[0, 25, 50, 75].map(v => (
-                                        <line key={v} x1="0" y1={v * height / 100} x2={width} y2={v * height / 100} stroke="white" strokeOpacity="0.03" strokeWidth="0.5" />
-                                    ))}
+                                    {/* Grid Lines (Horizontal) and Y-Axis Labels */}
+                                    {[0, 25, 50, 75, 100].map(v => {
+                                        const yPos = (1 - v / 100) * height;
+                                        return (
+                                            <React.Fragment key={v}>
+                                                <line x1="0" y1={yPos} x2={width} y2={yPos} stroke="white" strokeOpacity="0.05" strokeWidth="0.3" />
+
+                                                {/* Y-Axis Views (Left) */}
+                                                <text x="-2" y={yPos} textAnchor="end" dominantBaseline="middle" fill="#60A5FA" fillOpacity="0.5" style={{ fontSize: '3.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
+                                                    {Math.round((v / 100) * maxViews)}
+                                                </text>
+
+                                                {/* Y-Axis Income (Right) */}
+                                                <text x={width + 2} y={yPos} textAnchor="start" dominantBaseline="middle" fill="#4ADE80" fillOpacity="0.5" style={{ fontSize: '3.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
+                                                    ${Math.round((v / 100) * maxRevenue)}
+                                                </text>
+                                            </React.Fragment>
+                                        );
+                                    })}
 
                                     {/* Areas */}
                                     <path d={getArea(viewPoints)} fill="url(#viewGrad)" />
@@ -291,7 +306,7 @@ export default function AdminPanel() {
                                         const x = (i / (labels.length - 1)) * width;
                                         const day = label.split('-')[2];
                                         return (
-                                            <text key={i} x={x} y={98} textAnchor="middle" fill="white" fillOpacity="0.3" style={{ fontSize: '3px', fontWeight: 'bold', fontFamily: 'Inter' }}>
+                                            <text key={i} x={x} y={98} textAnchor="middle" fill="white" fillOpacity="0.6" style={{ fontSize: '4.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
                                                 {day}
                                             </text>
                                         );
