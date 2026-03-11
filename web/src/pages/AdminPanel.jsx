@@ -402,14 +402,42 @@ export default function AdminPanel() {
     const renderBotConfig = () => (
         <div className="animate-in fade-in duration-500 space-y-5">
             <h2 className="text-xl font-bold flex items-center gap-2"><Sparkles size={24} style={{ color: themeColor }} /> Configuración del Bot</h2>
+
             <div className="bg-card/40 border border-white/5 rounded-3xl p-6">
                 <label className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2"><DollarSign size={16} /> Lista de Precios</label>
-                <textarea name="prices" value={config.prices} onChange={handleInputChange} rows={4} className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:border-white/30" />
+                <textarea name="prices" value={config.prices} onChange={handleInputChange} rows={4} placeholder="Ej: Fotos: $10, Videos: $25..." className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:border-white/30" />
             </div>
+
             <div className="bg-card/40 border border-white/5 rounded-3xl p-6">
                 <label className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2"><FileText size={16} /> Personalidad</label>
-                <textarea name="personality" value={config.personality} onChange={handleInputChange} rows={5} className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:border-white/30" />
+                <textarea name="personality" value={config.personality} onChange={handleInputChange} rows={5} placeholder="Describe la personalidad del bot..." className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:border-white/30" />
             </div>
+
+            <div className="bg-card/40 border border-white/5 rounded-3xl p-6">
+                <label className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2"><Sparkles size={16} /> Rasgos Físicos</label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                    {tags.map(tag => (
+                        <span key={tag} className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border border-white/10 bg-white/5 text-white/80">
+                            {tag}
+                            <button onClick={() => removeTag(tag)} className="hover:text-red-400 transition-colors ml-1 leading-none">&times;</button>
+                        </span>
+                    ))}
+                </div>
+                <input
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={handleTagKeyDown}
+                    placeholder="Escribe un rasgo y presiona Enter..."
+                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm focus:outline-none focus:border-white/30"
+                />
+                <p className="text-[10px] text-muted-foreground/50 mt-2">Presiona Enter, coma o espacio para agregar un rasgo.</p>
+            </div>
+
+            <div className="bg-card/40 border border-white/5 rounded-3xl p-6">
+                <label className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2"><CreditCard size={16} /> Métodos de Pago</label>
+                <textarea name="paymentMethods" value={config.paymentMethods} onChange={handleInputChange} rows={4} placeholder="Ej: PayPal, Zelle, Binance..." className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:border-white/30" />
+            </div>
+
             <button onClick={handleSaveBotConfig} disabled={saving} className="w-full py-5 rounded-3xl font-bold text-white flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50" style={{ backgroundColor: themeColor }}>
                 {saving ? <Loader className="animate-spin" /> : <Save size={20} />}
                 {saving ? 'Guardando...' : 'Guardar Entrenamiento'}
