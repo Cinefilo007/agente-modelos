@@ -281,18 +281,18 @@ export default function AdminPanel() {
                                     <path d={getArea(viewPoints)} fill="url(#viewGrad)" />
                                     <path d={getArea(revenuePoints)} fill="url(#revGrad)" />
 
-                                    {/* Lines - Ultrafine and Elegant */}
-                                    <path d={getPath(viewPoints)} fill="none" stroke="#60A5FA" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d={getPath(revenuePoints)} fill="none" stroke="#4ADE80" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1 2" />
+                                    {/* Lines - Minimalist Fine Lines */}
+                                    <path d={getPath(viewPoints)} fill="none" stroke="#60A5FA" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d={getPath(revenuePoints)} fill="none" stroke="#4ADE80" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1 2" />
 
-                                    {/* Peak Values - Direct Labels */}
+                                    {/* Peak Values - Elegant & Small */}
                                     {viewPoints.map((p, i) => {
                                         const val = views[i];
                                         // Show if it's a "peak" (higher than neighbors) and > 0
                                         const isPeak = val > 0 && (i === 0 || val >= views[i - 1]) && (i === views.length - 1 || val >= views[i + 1]);
                                         if (!isPeak) return null;
                                         return (
-                                            <text key={`v-${i}`} x={p.x} y={p.y - 2} textAnchor="middle" fill="#60A5FA" style={{ fontSize: '2.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
+                                            <text key={`v-${i}`} x={p.x} y={p.y - 3} textAnchor="middle" fill="#60A5FA" style={{ fontSize: '3px', fontWeight: '400', fontFamily: 'inherit' }}>
                                                 {val}
                                             </text>
                                         );
@@ -304,19 +304,19 @@ export default function AdminPanel() {
                                         const isPeak = val > 0 && (i === 0 || val >= revenue[i - 1]) && (i === revenue.length - 1 || val >= revenue[i + 1]);
                                         if (!isPeak) return null;
                                         return (
-                                            <text key={`r-${i}`} x={p.x} y={p.y - 2} textAnchor="middle" fill="#4ADE80" style={{ fontSize: '2.5px', fontWeight: 'bold', fontFamily: 'Inter' }}>
+                                            <text key={`r-${i}`} x={p.x} y={p.y - 3} textAnchor="middle" fill="#4ADE80" style={{ fontSize: '3px', fontWeight: '400', fontFamily: 'inherit' }}>
                                                 ${val}
                                             </text>
                                         );
                                     })}
 
-                                    {/* X-Axis Labels - Lighter Font */}
+                                    {/* X-Axis Labels - Concordant Font */}
                                     {labels.map((label, i) => {
                                         if (i % labelStep !== 0 && i !== labels.length - 1) return null;
                                         const x = (i / (labels.length - 1)) * width;
                                         const day = label.split('-')[2];
                                         return (
-                                            <text key={i} x={x} y={98} textAnchor="middle" fill="white" fillOpacity="0.2" style={{ fontSize: '3.5px', fontWeight: '500', fontFamily: 'Inter', letterSpacing: '0.1em' }}>
+                                            <text key={i} x={x} y={98} textAnchor="middle" fill="white" fillOpacity="0.3" style={{ fontSize: '3.5px', fontWeight: '400', fontFamily: 'inherit', letterSpacing: '0.05em' }}>
                                                 {day}
                                             </text>
                                         );
