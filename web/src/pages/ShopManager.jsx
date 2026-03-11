@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Plus, Trash2, Save, ShoppingBag, ArrowLeft,
-    Zap, AlertCircle, LayoutGrid, DollarSign,
-    ChevronRight, Loader, CheckCircle2
+    ChevronRight, Loader, CheckCircle2, History, FileText, ShoppingBag, Plus, Trash2, Save, ArrowLeft,
+    Zap, AlertCircle, LayoutGrid, DollarSign
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import { cn } from '../lib/utils';
+import clsx from 'clsx';
 
 const CATEGORIES = [
     { id: 'packs', label: 'Packs (Fotos/Videos)' },
@@ -28,6 +28,8 @@ export default function ShopManager() {
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
+    const [activeTab, setActiveTab] = useState('services'); // 'services' or 'sales'
+    const [sales, setSales] = useState([]);
     const [editingService, setEditingService] = useState(null);
 
     // Form State
@@ -44,7 +46,17 @@ export default function ShopManager() {
 
     useEffect(() => {
         fetchMyServices();
+        fetchMySales();
     }, []);
+
+    const fetchMySales = async () => {
+        try {
+            const { data } = await api.get('/orders/my-sales');
+            setSales(data || []);
+        } catch (err) {
+            console.error("Error fetching sales:", err);
+        }
+    };
 
     const fetchMyServices = async () => {
         setLoading(true);
@@ -100,7 +112,6 @@ export default function ShopManager() {
         e.preventDefault();
         setSaving(true);
         try {
-            // Transform prices to numbers
             const payload = {
                 ...formData,
                 options: formData.options.map(opt => ({
@@ -114,7 +125,6 @@ export default function ShopManager() {
             setIsCreating(false);
             setEditingService(null);
             fetchMyServices();
-            // Reset Form
             setFormData({
                 category: 'packs',
                 title: '',
@@ -151,7 +161,6 @@ export default function ShopManager() {
 
     return (
         <div className="min-h-screen bg-transparent pb-32 pt-6 px-4 animate-in fade-in duration-500">
-            {/* Header */}
             <div className="flex items-center justify-between mb-8 max-w-2xl mx-auto">
                 <div className="flex items-center gap-3">
                     <button
@@ -165,20 +174,36 @@ export default function ShopManager() {
                         <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Configuración de Servicios</p>
                     </div>
                 </div>
-                {!isCreating && (
-                    <button
-                        onClick={() => setIsCreating(true)}
-                        className="p-3 rounded-2xl bg-primary text-white shadow-lg active:scale-95 transition-transform"
-                        style={{ backgroundColor: themeColor }}
-                    >
-                        <Plus size={24} />
-                    </button>
-                )}
             </div>
+
+            {!isCreating && (
+                <div className="flex gap-2 mb-8 max-w-2xl mx-auto p-1 bg-white/5 rounded-2xl">
+                    <button
+                        onClick={() => setActiveTab('services')}
+                        className={clsx(
+                            "flex-1 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all",
+                            activeTab === 'services' ? "bg-white/10 text-white shadow-lg" : "text-muted-foreground hover:text-white"
+                        )}
+                    >
+                        <ShoppingBag size={14} /> Mis Servicios
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('sales')}
+                        className={clsx(
+                            "flex-1 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all relative",
+                            activeTab === 'sales' ? "bg-white/10 text-white shadow-lg" : "text-muted-foreground hover:text-white"
+                        )}
+                    >
+                        <History size={14} /> Mis Ventas
+                        {sales.filter(s => s.status === 'pending' || s.delivery_status === 'pending').length > 0 && (
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-black"></span>
+                        )}
+                    </button>
+                </div>
+            )}
 
             {isCreating ? (
                 <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-                    {/* Basic Info */}
                     <section className="space-y-4">
                         <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground uppercase tracking-tighter">
                             <LayoutGrid size={16} /> Información General
@@ -217,8 +242,6 @@ export default function ShopManager() {
                             </div>
                         </div>
                     </section>
-
-                    {/* Pricing Options */}
                     <section className="space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground uppercase tracking-tighter">
@@ -230,146 +253,88 @@ export default function ShopManager() {
                         </div>
                         <div className="space-y-3">
                             {formData.options.map((opt, i) => (
-                                <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-3 relative animate-in zoom-in-95 duration-200">
+                                <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-3 relative">
                                     {formData.options.length > 1 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveOption(i)}
-                                            className="absolute top-4 right-4 p-1 text-red-500/50 hover:text-red-500 transition-colors"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        <button type="button" onClick={() => handleRemoveOption(i)} className="absolute top-4 right-4 p-1 text-red-500/50 hover:text-red-500"><Trash2 size={16} /></button>
                                     )}
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="col-span-2">
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase">Etiqueta (Ej: 15 Minutos)</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-xs text-white"
-                                                value={opt.label}
-                                                onChange={e => handleOptionChange(i, 'label', e.target.value)}
-                                            />
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase">Etiqueta</label>
+                                            <input type="text" required className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-xs text-white" value={opt.label} onChange={e => handleOptionChange(i, 'label', e.target.value)} />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-500 uppercase">Precio ($)</label>
-                                            <input
-                                                type="number"
-                                                required
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-xs text-white"
-                                                value={opt.price}
-                                                onChange={e => handleOptionChange(i, 'price', e.target.value)}
-                                            />
+                                            <input type="number" required className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-xs text-white" value={opt.price} onChange={e => handleOptionChange(i, 'price', e.target.value)} />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase">Unidad (Ej: fotos)</label>
-                                            <input
-                                                type="text"
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-xs text-white"
-                                                value={opt.unit}
-                                                placeholder="opcional"
-                                                onChange={e => handleOptionChange(i, 'unit', e.target.value)}
-                                            />
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase">Unidad</label>
+                                            <input type="text" className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-xs text-white" value={opt.unit} placeholder="opcional" onChange={e => handleOptionChange(i, 'unit', e.target.value)} />
                                         </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </section>
-
-                    {/* Rules & Benefits */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <section className="space-y-4">
-                            <div className="flex items-center justify-between text-sm font-bold text-muted-foreground uppercase tracking-tighter">
-                                <span className="flex items-center gap-2"><Zap size={16} className="text-yellow-400" /> Beneficios</span>
-                                <button type="button" onClick={() => handleAddTag('benefits')} className="p-1.5 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"><Plus size={14} /></button>
-                            </div>
-                            <div className="bg-card/40 backdrop-blur-sm border border-white/5 rounded-[32px] p-6 min-h-[120px] space-y-2 shadow-xl">
-                                {formData.benefits.length === 0 && <p className="text-[10px] text-muted-foreground/30 text-center py-4 italic">No hay beneficios añadidos</p>}
-                                {formData.benefits.map((b, i) => (
-                                    <div key={i} className="flex justify-between items-center text-xs text-gray-300 bg-white/5 rounded-xl px-4 py-2.5 border border-white/5 group">
-                                        <span className="flex items-center gap-2 font-medium"><CheckCircle2 size={12} className="text-green-500" /> {b}</span>
-                                        <button type="button" onClick={() => handleRemoveTag('benefits', i)} className="text-red-400 opacity-0 group-hover:opacity-60 transition-opacity"><Trash2 size={12} /></button>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-
-                        <section className="space-y-4">
-                            <div className="flex items-center justify-between text-sm font-bold text-muted-foreground uppercase tracking-tighter">
-                                <span className="flex items-center gap-2"><AlertCircle size={16} className="text-red-400" /> Reglas</span>
-                                <button type="button" onClick={() => handleAddTag('rules')} className="p-1.5 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"><Plus size={14} /></button>
-                            </div>
-                            <div className="bg-card/40 backdrop-blur-sm border border-white/5 rounded-[32px] p-6 min-h-[120px] space-y-2 shadow-xl">
-                                {formData.rules.length === 0 && <p className="text-[10px] text-muted-foreground/30 text-center py-4 italic">No hay reglas añadidas</p>}
-                                {formData.rules.map((r, i) => (
-                                    <div key={i} className="flex justify-between items-center text-xs text-gray-300 bg-white/5 rounded-xl px-4 py-2.5 border border-white/5 group">
-                                        <span className="flex items-center gap-2 font-medium"><AlertCircle size={12} className="text-red-400" /> {r}</span>
-                                        <button type="button" onClick={() => handleRemoveTag('rules', i)} className="text-red-400 opacity-0 group-hover:opacity-60 transition-opacity"><Trash2 size={12} /></button>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="w-full py-5 rounded-[32px] bg-primary text-white font-black text-lg shadow-2xl transition-all active:scale-[0.98] disabled:opacity-50 hover:brightness-110 flex items-center justify-center gap-3"
-                        style={{ backgroundColor: themeColor, boxShadow: `0 15px 40px -10px ${themeColor}80` }}
-                    >
+                    <button type="submit" disabled={saving} className="w-full py-5 rounded-[32px] bg-primary text-white font-black text-lg shadow-2xl" style={{ backgroundColor: themeColor }}>
                         {saving ? <Loader className="animate-spin" /> : <Save size={20} />}
                         {saving ? 'Guardando...' : 'Publicar Servicio Digital'}
                     </button>
                 </form>
-            ) : (
+            ) : activeTab === 'services' ? (
                 <div className="max-w-2xl mx-auto space-y-4">
+                    <button onClick={() => setIsCreating(true)} className="w-full p-4 mb-4 rounded-3xl border-2 border-dashed border-white/10 text-muted-foreground hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center gap-2 group">
+                        <Plus size={20} />
+                        <span className="font-bold text-sm text-white">Añadir Nuevo Servicio</span>
+                    </button>
                     {services.length === 0 ? (
                         <div className="text-center py-20 opacity-40">
                             <ShoppingBag size={64} className="mx-auto mb-4" />
                             <p className="font-bold">No tienes servicios activos</p>
-                            <p className="text-sm">Empieza creando uno arriba.</p>
                         </div>
                     ) : (
                         services.map((service) => (
-                            <div key={service.id} className="bg-card/40 border border-white/10 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:border-white/20 transition-colors">
+                            <div key={service.id} className="bg-card/40 border border-white/10 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 group">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-bold text-lg text-white">{service.title}</h3>
-                                        <span className={cn(
-                                            "text-[9px] uppercase font-bold px-2 py-0.5 rounded-full border",
-                                            service.is_active ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"
-                                        )}>
+                                        <span className={cn("text-[9px] uppercase font-bold px-2 py-0.5 rounded-full border", service.is_active ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20")}>
                                             {service.is_active ? 'Activo' : 'Inactivo'}
                                         </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground line-clamp-1 mb-3">{service.description}</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {service.model_service_options?.map(opt => (
-                                            <span key={opt.id} className="bg-white/5 border border-white/5 text-[10px] px-2.5 py-1.5 rounded-xl text-white/80 font-medium">
-                                                {opt.label}: <span className="text-green-400 font-bold ml-1">${opt.price}</span>
-                                            </span>
-                                        ))}
+                                </div>
+                                <button onClick={() => handleDelete(service.id)} className="p-3 bg-red-500/10 text-red-400 rounded-2xl"><Trash2 size={20} /></button>
+                            </div>
+                        ))
+                    )}
+                </div>
+            ) : (
+                <div className="max-w-2xl mx-auto space-y-4">
+                    {sales.length === 0 ? (
+                        <div className="text-center py-20 opacity-40">
+                            <History size={64} className="mx-auto mb-4" />
+                            <p className="font-bold">No tienes ventas registradas</p>
+                        </div>
+                    ) : (
+                        sales.map((sale) => (
+                            <Link key={sale.id} to={`/order/${sale.id}`} className="bg-card/40 border border-white/10 rounded-3xl p-5 flex items-center gap-4 hover:border-white/20 transition-all group">
+                                <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-400"><ShoppingBag size={24} /></div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <h4 className="font-bold text-white text-sm truncate">{sale.model_services?.title || "Servicio Digital"}</h4>
+                                        <span className="text-xs font-black text-white ml-2">${Number(sale.amount).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={clsx("text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md", sale.status === 'COMPLETED' ? "bg-green-500/10 text-green-400" : "bg-blue-500/10 text-blue-400")}>{sale.status}</span>
+                                        <span className="text-[9px] text-muted-foreground font-bold">{sale.payment_method === 'escrow' ? 'Nebula Escrow' : 'Pago Directo'}</span>
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => handleDelete(service.id)}
-                                        className="p-3 bg-red-500/10 text-red-400 rounded-2xl hover:bg-red-500/20 transition-colors"
-                                    >
-                                        <Trash2 size={20} />
-                                    </button>
-                                    {/* Edit could be implemented later, for now we let them delete and recreate */}
-                                </div>
-                            </div>
+                                <ChevronRight size={18} />
+                            </Link>
                         ))
                     )}
                 </div>
             )}
         </div>
     );
-}
-
-function Info({ size, className }) {
-    return <AlertCircle size={size} className={className} />;
 }

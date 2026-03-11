@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import {
-    ShieldCheck, Lock, CheckCircle, AlertTriangle, ArrowLeft,
-    Clock, Wallet, MessageSquare, Send, ExternalLink, HelpCircle
+    Clock, Wallet, MessageSquare, Send, ExternalLink, HelpCircle, FileText
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -126,15 +125,20 @@ export default function ServiceCheckout() {
     };
 
     const handleGoToChat = () => {
+        const orderInfo = lastOrderId ? `\nID Orden: ${lastOrderId}` : '';
         const msg = encodeURIComponent(
             `Hola ${service.modelName}! He seleccionado el servicio: "${service.title}" (${selectedOption.label}). \n\n` +
             (paymentMethod === 'escrow'
-                ? `Acabo de pagar vía ESCROW. Por favor confírmame cuando puedas iniciar. \nID Orden: ${lastOrderId}`
+                ? `Acabo de pagar vía ESCROW. Por favor confírmame cuando puedas iniciar. ${orderInfo}`
                 : `Me gustaría coordinar el pago directo para este servicio. ¿Me compartes tus datos de pago?`)
         );
         const username = service.modelUsername.replace('@', '');
         window.open(`https://t.me/${username}?text=${msg}`, '_blank');
-        navigate('/me');
+        // No navegar inmediatamente para que el usuario pueda ver la nota de entrega si quiere
+    };
+
+    const handleViewOrder = () => {
+        if (lastOrderId) navigate(`/order/${lastOrderId}`);
     };
 
     return (
@@ -318,15 +322,24 @@ export default function ServiceCheckout() {
                         </p>
                     </div>
 
-                    <button
-                        onClick={handleGoToChat}
-                        className="w-full py-5 rounded-2xl font-black text-lg bg-primary text-primary-foreground shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
-                        style={{ backgroundColor: themeColor }}
-                    >
-                        <MessageSquare size={24} /> Ir al Chat de la Modelo
-                    </button>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={handleGoToChat}
+                            className="w-full py-5 rounded-2xl font-black text-lg bg-primary text-primary-foreground shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                            style={{ backgroundColor: themeColor }}
+                        >
+                            <MessageSquare size={24} /> Ir al Chat de la Modelo
+                        </button>
 
-                    <p className="mt-4 text-[10px] text-muted-foreground uppercase font-bold tracking-widest flex items-center justify-center gap-1 opacity-50">
+                        <button
+                            onClick={handleViewOrder}
+                            className="w-full py-4 rounded-2xl font-bold text-sm bg-white/10 text-white flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
+                        >
+                            <FileText size={18} /> Ver Nota de Entrega Digital
+                        </button>
+                    </div>
+
+                    <p className="mt-6 text-[10px] text-muted-foreground uppercase font-bold tracking-widest flex items-center justify-center gap-1 opacity-50">
                         ID DE ORDEN: {lastOrderId}
                     </p>
                 </div>
@@ -343,12 +356,21 @@ export default function ServiceCheckout() {
                         Solicitud de compra registrada. Ahora coordina los detalles y el medio de pago directamente con la modelo.
                     </p>
 
-                    <button
-                        onClick={handleGoToChat}
-                        className="w-full py-5 rounded-2xl font-black text-lg bg-amber-500 text-black shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
-                    >
-                        Ir al Chat (Enviar Solicitud)
-                    </button>
+                    <div className="flex flex-col gap-3 w-full">
+                        <button
+                            onClick={handleGoToChat}
+                            className="w-full py-5 rounded-2xl font-black text-lg bg-amber-500 text-black shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                        >
+                            Ir al Chat (Enviar Solicitud)
+                        </button>
+
+                        <button
+                            onClick={handleViewOrder}
+                            className="w-full py-4 rounded-2xl font-bold text-sm bg-white/10 text-white flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
+                        >
+                            <FileText size={18} /> Ver Nota de Entrega
+                        </button>
+                    </div>
                 </div>
             )}
 

@@ -110,7 +110,7 @@ async def release_escrow_funds(
     try:
         # 1. Verify ownership (The caller must be the client of the order)
         # We could move this check inside RPC, but good to check here cheaply.
-        order_res = db.client.table("escrow_orders").select("client_id, status").eq("id", request.escrow_id).execute()
+        order_res = db.client.table("orders").select("client_id, status").eq("id", request.escrow_id).execute()
         
         if not order_res.data:
             raise HTTPException(status_code=404, detail="Orden no encontrada")
@@ -163,7 +163,7 @@ async def submit_escrow_review(
     """
     try:
         # 1. Verify order status is COMPLETED
-        order_res = db.client.table("escrow_orders").select("model_id, client_id, status").eq("id", request.escrow_id).single().execute()
+        order_res = db.client.table("orders").select("model_id, client_id, status").eq("id", request.escrow_id).single().execute()
         if not order_res.data:
             raise HTTPException(status_code=404, detail="Orden no encontrada")
         
@@ -176,7 +176,7 @@ async def submit_escrow_review(
 
         # 2. Insert Review
         review_data = {
-            "escrow_id": request.escrow_id,
+            "order_id": request.escrow_id,
             "client_id": user.user_id,
             "model_id": order["model_id"],
             "rating": request.rating,
@@ -184,17 +184,17 @@ async def submit_escrow_review(
         }
         
         # Check if already reviewed
-        existing = db.client.table("escrow_reviews").select("id").eq("escrow_id", request.escrow_id).maybe_single().execute()
+        existing = db.client.table("order_reviews").select("id").eq("order_id", request.escrow_id).maybe_single().execute()
         if existing.data:
             # Update existing? No, typically one per order.
              raise HTTPException(status_code=400, detail="Ya has dejado una reseña para esta orden")
 
-        db.client.table("escrow_reviews").insert(review_data).execute()
+        db.client.table("order_reviews").insert(review_data).execute()
 
         # 3. Update Model reputation (Average)
         # We can do this via an RPC or a simple query/update
-        # For now, let's keep it simple: Select avg(rating) from escrow_reviews where model_id = ...
-        stats = db.client.table("escrow_reviews").select("rating").eq("model_id", order["model_id"]).execute()
+        # For now, let's keep it simple: Select avg(rating) from order_reviews where model_id = ...
+        stats = db.client.table("order_reviews").select("rating").eq("model_id", order["model_id"]).execute()
         if stats.data:
             ratings = [r['rating'] for r in stats.data]
             avg_score = sum(ratings) / len(ratings)

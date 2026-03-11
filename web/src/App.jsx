@@ -24,6 +24,8 @@ import AdminGifts from './pages/AdminGifts';
 import ClientProfile from './pages/ClientProfile';
 import ServiceCheckout from './pages/ServiceCheckout';
 import ServiceInvoicePage from './pages/ServiceInvoicePage';
+import OrderDetails from './pages/OrderDetails';
+import Support from './pages/Support';
 import ShopManager from './pages/ShopManager';
 import Onboarding from './pages/Onboarding';
 import InstallPWA from './components/pwa/InstallPWA';
@@ -172,6 +174,8 @@ function App() {
                   <Route path="post/:id" element={<PostDetail />} />
                   <Route path="service/:serviceId" element={<ServiceInvoicePage />} />
                   <Route path="checkout" element={<ServiceCheckout />} />
+                  <Route path="order/:orderId" element={<OrderDetails />} />
+                  <Route path="support" element={<Support />} />
                   <Route path="shop-manager" element={<ShopManager />} />
                   <Route path="profile" element={<Navigate to="/me" replace />} />
                   <Route path="me" element={<Profile />} />

@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Wallet, Star, Clock, ShieldCheck, ChevronRight,
-    CreditCard, ArrowUpRight, History, Settings, LogOut, Edit3
+    CreditCard, ArrowUpRight, History, Settings, LogOut, Edit3, FileText
 } from 'lucide-react';
 import { Avatar } from '../components/ui/Avatar';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../api/axios';
-import { useEffect } from 'react';
 import { isOnline as checkOnline } from '../utils/date';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import clsx from 'clsx';
 
 export default function ClientProfile() {
     const { themeColor } = useTheme();
@@ -19,17 +19,20 @@ export default function ClientProfile() {
     const [balance, setBalance] = useState({ balance: 0, currency: 'USDT' });
     const [following, setFollowing] = useState([]);
     const [recentActivity, setRecentActivity] = useState([]);
+    const [myPurchases, setMyPurchases] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [balRes, followRes, txRes] = await Promise.all([
+                const [balRes, followRes, txRes, purchaseRes] = await Promise.all([
                     api.get('/wallet/balance').catch(() => ({ data: { balance: 0, currency: 'USDT' } })),
                     api.get('/interactions/following/me').catch(() => ({ data: [] })),
-                    api.get('/wallet/history?page=1&limit=3').catch(() => ({ data: { transactions: [] } }))
+                    api.get('/wallet/history?page=1&limit=3').catch(() => ({ data: { transactions: [] } })),
+                    api.get('/orders/my-purchases').catch(() => ({ data: [] }))
                 ]);
                 setBalance(balRes.data);
+                setMyPurchases(purchaseRes.data || []);
 
                 // Parse following models
                 const formattedFollowing = (followRes.data || []).map(f => ({
@@ -53,6 +56,8 @@ export default function ClientProfile() {
     }, []);
 
     if (!user) return null;
+
+    const name = user.username || user.first_name || "Usuario";
 
     return (
         <div className="min-h-screen pb-24 bg-background text-foreground font-sans relative">
@@ -96,7 +101,7 @@ export default function ClientProfile() {
                     </div>
                 </div>
 
-                {/* WALLET CARD (Telegram Native Style) */}
+                {/* WALLET CARD */}
                 <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-700 rounded-3xl p-6 text-white shadow-[0_10px_40px_rgba(59,130,246,0.3)] mb-10 relative overflow-hidden border border-white/10">
                     <div className="absolute top-0 right-0 p-6 opacity-5 transform translate-x-4 -translate-y-4">
                         <Wallet size={120} />
@@ -116,6 +121,48 @@ export default function ClientProfile() {
                                 <History size={18} /> Historial
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                {/* My Purchases */}
+                <div className="mb-10">
+                    <div className="flex justify-between items-center mb-5 px-1">
+                        <h3 className="font-bold text-lg text-white tracking-tight flex items-center gap-2">
+                            <FileText size={20} className="text-blue-400" /> Mis Compras
+                        </h3>
+                    </div>
+                    <div className="space-y-3">
+                        {myPurchases.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-4 italic text-center bg-white/5 rounded-3xl">No has realizado compras aún.</p>
+                        ) : (
+                            myPurchases.map((order) => (
+                                <Link
+                                    key={order.id}
+                                    to={`/order/${order.id}`}
+                                    className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors border border-transparent hover:border-white/5 group"
+                                >
+                                    <Avatar src={order.models?.avatar_url} size="sm" />
+                                    <div className="flex-1">
+                                        <div className="flex justify-between">
+                                            <h4 className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors truncate max-w-[150px]">
+                                                {order.model_services?.title || "Servicio"}
+                                            </h4>
+                                            <span className="text-[10px] font-black text-white/50">${Number(order.amount).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className={clsx(
+                                                "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md",
+                                                (order.status === 'COMPLETED' || order.status === 'completed') ? "bg-green-500/10 text-green-400" : "bg-blue-500/10 text-blue-400"
+                                            )}>
+                                                {order.status}
+                                            </span>
+                                            <span className="text-[8px] text-muted-foreground">{format(new Date(order.created_at), "d MMM", { locale: es })}</span>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={14} className="text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                                </Link>
+                            ))
+                        )}
                     </div>
                 </div>
 
