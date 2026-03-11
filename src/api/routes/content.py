@@ -409,7 +409,7 @@ async def get_feed(
         logger.error(f"Critical error in get_feed: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Error fetching feed data")
+        return []
 
 @router.get("/post/{post_id}")
 async def get_post_detail(
