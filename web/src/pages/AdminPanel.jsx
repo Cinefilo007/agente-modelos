@@ -162,22 +162,24 @@ export default function AdminPanel() {
 
     const renderAnalytics = () => (
         <div className="animate-in fade-in duration-500">
-            <div className="mb-6 px-1">
-                <p className="text-muted-foreground">Hola, <span className="text-foreground font-semibold">{stats.model_name || 'Modelo'}</span> 👋</p>
-                <p className="text-xs text-muted-foreground/60">Aquí tienes el resumen de tu rendimiento esta semana.</p>
-            </div>
-
-            <div className="flex items-center justify-center gap-6 mb-8 bg-card/20 border border-white/5 p-4 rounded-2xl">
-                <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400">
-                    <ChevronLeft />
-                </button>
-                <div className="text-center min-w-[140px]">
-                    <span className="block text-xs uppercase tracking-widest font-black text-blue-400 mb-0.5">{selectedYear}</span>
-                    <span className="block text-lg font-bold text-white capitalize">{getMonthName(selectedMonth)}</span>
+            <div className="flex items-center justify-between mb-8 px-1">
+                <div>
+                    <p className="text-muted-foreground">Hola, <span className="text-foreground font-semibold">{stats.model_name || 'Modelo'}</span> 👋</p>
+                    <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest font-black mt-1">Panel de Control Premium</p>
                 </div>
-                <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400">
-                    <ChevronRight />
-                </button>
+
+                <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-1.5 rounded-2xl shadow-xl backdrop-blur-md">
+                    <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-xl transition-all text-gray-400 active:scale-90">
+                        <ChevronLeft size={18} />
+                    </button>
+                    <div className="text-center px-2 min-w-[100px]">
+                        <span className="block text-[9px] uppercase tracking-tighter font-black text-blue-400 leading-none">{selectedYear}</span>
+                        <span className="block text-sm font-bold text-white capitalize">{getMonthName(selectedMonth)}</span>
+                    </div>
+                    <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/10 rounded-xl transition-all text-gray-400 active:scale-90">
+                        <ChevronRight size={18} />
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -230,16 +232,17 @@ export default function AdminPanel() {
                     </div>
                 </div>
 
-                <div className="h-56 w-full relative mt-4">
+                <div className="h-64 w-full relative mt-4">
                     {exposure && exposure.views && exposure.views.length > 0 ? (() => {
                         const views = exposure.views;
                         const revenue = exposure.revenue;
+                        const labels = exposure.labels || [];
 
                         const maxViews = Math.max(...views, 5);
                         const maxRevenue = Math.max(...revenue, 10);
 
                         const width = 100;
-                        const height = 100;
+                        const height = 85; // Reserve space for labels
 
                         const getPoints = (data, max) => data.map((val, i) => ({
                             x: (i / (data.length - 1)) * width,
@@ -252,41 +255,65 @@ export default function AdminPanel() {
                         const getPath = (pts) => pts.map((p, i) => (i === 0 ? `M ${p.x},${p.y}` : `L ${p.x},${p.y}`)).join(' ');
                         const getArea = (pts) => `${getPath(pts)} L ${width},${height} L 0,${height} Z`;
 
+                        // Sample labels to show (e.g., every 5 days or every day for week)
+                        const labelStep = views.length > 10 ? Math.floor(views.length / 6) : 1;
+
                         return (
                             <div className="absolute inset-0">
-                                <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                                <svg viewBox={`0 0 ${width} 100`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
                                     <defs>
                                         <linearGradient id="viewGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.2" />
+                                            <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.15" />
                                             <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
                                         </linearGradient>
                                         <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.1" />
+                                            <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.08" />
                                             <stop offset="100%" stopColor="#4ADE80" stopOpacity="0" />
                                         </linearGradient>
                                     </defs>
+
+                                    {/* Grid Lines (Horizontal) */}
+                                    {[0, 25, 50, 75].map(v => (
+                                        <line key={v} x1="0" y1={v * height / 100} x2={width} y2={v * height / 100} stroke="white" strokeOpacity="0.03" strokeWidth="0.5" />
+                                    ))}
 
                                     {/* Areas */}
                                     <path d={getArea(viewPoints)} fill="url(#viewGrad)" />
                                     <path d={getArea(revenuePoints)} fill="url(#revGrad)" />
 
-                                    {/* Lines */}
-                                    <path d={getPath(viewPoints)} fill="none" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d={getPath(revenuePoints)} fill="none" stroke="#4ADE80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1 3" />
+                                    {/* Lines - Thinner and Elegant */}
+                                    <path d={getPath(viewPoints)} fill="none" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d={getPath(revenuePoints)} fill="none" stroke="#4ADE80" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2 3" />
+
+                                    {/* X-Axis Labels */}
+                                    {labels.map((label, i) => {
+                                        if (i % labelStep !== 0 && i !== labels.length - 1) return null;
+                                        const x = (i / (labels.length - 1)) * width;
+                                        const day = label.split('-')[2];
+                                        return (
+                                            <text key={i} x={x} y={98} textAnchor="middle" fill="white" fillOpacity="0.3" style={{ fontSize: '3px', fontWeight: 'bold', fontFamily: 'Inter' }}>
+                                                {day}
+                                            </text>
+                                        );
+                                    })}
                                 </svg>
 
-                                {/* Tooltip for last day */}
-                                <div className="absolute top-0 right-0 text-right space-y-1 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-2.5">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Hoy</p>
-                                    <div className="flex justify-between gap-4">
-                                        <span className="text-[11px] text-blue-400 font-black">{views[views.length - 1]} VISITAS</span>
-                                        <span className="text-[11px] text-green-400 font-black">${revenue[revenue.length - 1]} USD</span>
+                                {/* Info Badge */}
+                                <div className="absolute top-2 right-2 flex flex-col items-end gap-1.5 pointer-events-none grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all">
+                                    <div className="bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-2">
+                                        <span className="text-[9px] text-blue-400 font-black uppercase">Visitas: {views[views.length - 1]}</span>
+                                    </div>
+                                    <div className="bg-green-500/10 border border-green-500/20 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-2">
+                                        <span className="text-[9px] text-green-400 font-black uppercase">Ingresos: ${revenue[revenue.length - 1]}</span>
                                     </div>
                                 </div>
                             </div>
                         );
                     })() : (
-                        <div className="flex items-center justify-center h-full text-xs text-gray-500 uppercase tracking-widest font-black opacity-20">Sincronizando datos...</div>
+                        <div className="flex flex-col items-center justify-center h-full opacity-30 gap-3 grayscale">
+                            <Loader className="animate-spin" size={24} />
+                            <span className="text-[10px] uppercase tracking-widest font-black">Cargando Analíticas Duales...</span>
+                        </div>
                     )}
                 </div>
             </div>
