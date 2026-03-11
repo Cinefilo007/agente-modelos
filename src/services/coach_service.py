@@ -22,12 +22,23 @@ def _get_openrouter_client():
     return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
 
 # Constantes
-COACH_MODEL_PRINCIPAL = "google/gemini-2.5-flash"
-COACH_MODEL_FALLBACK = "google/gemini-flash-1.5"
-COACH_TEMP = 0.72
+# Cambiado a Mistral Large para mejor manejo de contenido adulto/sugerente sin bloqueos
+COACH_MODEL_PRINCIPAL = "mistralai/mistral-large" 
+COACH_MODEL_FALLBACK = "google/gemini-2.5-flash"
+COACH_TEMP = 0.75
 COACH_MAX_TOKENS = 3500
 REGENERATION_COOLDOWN_DAYS = 7
 
+# Efemerides y Fechas Especiales (Knowledge Base para el Coach)
+FECHAS_ESPECIALES = [
+    {"mes": 1, "dia": 1, "evento": "Anio Nuevo", "estrategia": "Contenido de nuevos comienzos y deseos."},
+    {"mes": 2, "dia": 14, "evento": "San Valentin", "estrategia": "Maximo foco en ventas de contenido romantico/sugerente y packs de pareja."},
+    {"mes": 3, "dia": 8, "evento": "Dia de la Mujer", "estrategia": "Empoderamiento y contenido especial dedicado a las seguidoras o mensajes de fuerza."},
+    {"mes": 7, "dia": 4, "evento": "Verano / Holidays", "estrategia": "Contenido exterior, sol, playa y frescura."},
+    {"mes": 10, "dia": 31, "evento": "Halloween", "estrategia": "Disfraces, contenido tematico 'oscuro' y juegos de rol."},
+    {"mes": 11, "dia": 25, "evento": "Black Friday", "estrategia": "Ofertas agresivas en suscripciones o contenido premium."},
+    {"mes": 12, "dia": 24, "evento": "Nochebuena/Navidad", "estrategia": "Regalos especiales, tematica navideña y agradecimiento."},
+]
 
 # ================================================================
 # 1. RECOLECCION DE DATOS DE LA MODELO
@@ -211,7 +222,7 @@ def _calcular_score(datos: dict) -> dict:
 
     score = round(min(score, 100))
 
-    # Determinar nivel (Usando texto ASCII para evitar errores de encoding en Windows)
+    # Determinar nivel (ASCII puro)
     if score <= 25:
         nivel = "NEW FACE"
     elif score <= 45:
@@ -232,6 +243,15 @@ def _calcular_score(datos: dict) -> dict:
 
 def _construir_prompt(datos: dict, score_info: dict, insights: list[dict], mes: int, anio: int) -> str:
     """Construye el prompt contextual para la IA."""
+    ahora = datetime.utcnow()
+    fecha_actual_str = ahora.strftime("%d de %B de %Y")
+    
+    # Identificar eventos proximos
+    eventos_proximos = []
+    for efem in FECHAS_ESPECIALES:
+        if efem["mes"] == mes:
+            eventos_proximos.append(f"{efem['evento']} ({efem['dia']}/{efem['mes']}): {efem['estrategia']}")
+
     meses_es = {
         1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
         5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
@@ -248,86 +268,75 @@ def _construir_prompt(datos: dict, score_info: dict, insights: list[dict], mes: 
             for i in top_exitosas if i.get("tasa_exito") is not None
         ])
 
-    prompt = f"""Eres Nebula Coach, el consejero estrategico de elite de la plataforma Nebula.Agency.
-Eres un experto combinado en: ventas de contenido digital, marketing en Telegram, psicologia social del consumidor, growth hacking y monetizacion de creadores de contenido.
+    prompt = f"""Eres Nebula Coach, el consejero estrategico y Director Creativo Visual de Nebula.Agency.
+Eres un experto en: marketing de contenido adulto sugerente, psicologia del consumidor, estetica visual y growth hacking.
+
+## TU NUEVA PERSONALIDAD:
+- Eres un DIRECTOR CREATIVO. No solo das marketing, das ASESORIA VISUAL (iluminacion, encuadre, narrativa).
+- Eres un ESTRATEGA TEMPORAL. Sabes que dia es hoy y que festividades vienen para maximizar ventas.
+- El contenido que asesoras es CONTENIDO ADULTO SUGERENTE (boudoir, lenceria, artistic nude). Tu lenguaje es profesional, tentador y enfocado en exclusividad.
+
+## CONTEXTO TEMPORAL:
+- Fecha de hoy: {fecha_actual_str}
+- Eventos especiales para {nombre_mes}:
+{chr(10).join(eventos_proximos) if eventos_proximos else "No hay eventos mayores este mes, enfocate en contenido evergreen de alta calidad."}
 
 ## TU FILOSOFIA:
-- NEBULA.AGENCY es el HUB CENTRAL de monetizacion y retencion.
-- TELEGRAM es solo un EMBUDO (funnel) de adquisicion.
-- Tu prioridad es que la modelo use las herramientas de Nebula: Feed Social, Historias, Escrow (Compra Segura) y Wallet.
-
-## CONTEXTO DE LA PLATAFORMA (NEBULA):
-1. FEED SOCIAL: Donde los clientes descubren contenido (Pestanias: Reciente, Top, Siguiendo). Insiste en publicar posts diarios en Nebula.
-2. HISTORIAS: Contenido efimero de 24h para generar urgencia. Fomenta el uso de historias en Nebula.
-3. ESCROW SYSTEM: El sistema de Compra Segura donde los fondos se retienen hasta que la modelo entrega. Genera confianza para cerrar ventas.
-4. BOT MANAGER: El bot de Telegram que cierra ventas usando creditos de IA. Es vital que la modelo tenga saldo de creditos para no perder leads.
-5. REPUTACION: El score de reviews de clientes (New Face -> Super Star). Es el activo mas valioso en Nebula.
-6. LISTA NEGRA GLOBAL: Proteccion contra estafadores del ecosistema.
+- NEBULA.AGENCY es el HUB CENTRAL de monetizacion.
+- Tu prioridad es que la modelo use las herramientas de Nebula: Feed Social, Historias y Escrow.
 
 Tu mision: analizar la situacion real de la modelo y generar un plan mensual PRACTICO, EJECUTABLE y PERSONALIZADO para {nombre_mes} {anio}.
 
 ## DATOS REALES DE LA MODELO:
 - Nombre artistico: {datos.get('nombre_artistico', 'Modelo')}
-- Antiguedad en plataforma: {datos.get('antiguedad_dias', 0)} dias
-- Score actual: {score_info['score']}/100 - Nivel: {score_info['nivel']}
+- Antiguedad: {datos.get('antiguedad_dias', 0)} dias
+- Score: {score_info['score']}/100 - Nivel: {score_info['nivel']}
 
-### EXPOSICION Y TRAFICO (Metricas Nebula):
-- Visitas totales al perfil en Nebula: {datos['visitas_total']}
-- Visitas este ultimo mes: {datos['visitas_ultimo_mes']}
-- Posts publicados en Nebula: {datos['posts_total']}
-- Seguidores en Telegram (Canales SFS): {datos['seguidores_telegram']}
+### METRICAS CLAVE:
+- Visitas mensuales: {datos['visitas_ultimo_mes']}
+- Ventas mensuales: {datos['ventas_ultimo_mes']} (${datos['ingresos_ultimo_mes']:.2f})
+- Conversion: {datos['tasa_conversion']}%
+- Calificacion: {datos['calificacion_reviews']}/5
+- Creditos IA (Bot): {datos['creditos']}
 
-### VENTAS Y CONVERSION (Basado en Escrow):
-- Ventas totales (Released): {datos['ventas_total']}
-- Ventas ultimo mes: {datos['ventas_ultimo_mes']}
-- Ingresos ultimo mes: ${datos['ingresos_ultimo_mes']:.2f}
-- Tasa de conversion: {datos['tasa_conversion']}% (visitas -> ventas)
-
-### REPUTACION Y ECONOMIA:
-- Calificacion promedio: {datos['calificacion_reviews']}/5 ({datos['total_reviews']} reviews)
-- Creditos de IA disponibles (para el bot): {datos['creditos']}
-- Balance en wallet Nebula: ${datos['balance_wallet']:.2f}
-
-## INTELIGENCIA COLECTIVA (acciones exitosas en el ecosistema Nebula):
-{insights_texto if insights_texto else "Aun no hay suficientes datos colectivos. Usa tu criterio experto priorizando la plataforma."}
+## INTELIGENCIA COLECTIVA:
+{insights_texto if insights_texto else "Aun no hay suficientes datos colectivos."}
 
 ## INSTRUCCIONES DE GENERACION:
-1. Analiza los datos y encuentra los CUELLOS DE BOTELLA (Pocas visitas? Baja conversion? Poco contenido?).
-2. INCITA AL USO DE LA PLATAFORMA: Sugiere publicar mas en el Feed, crear Historias, usar el sistema Escrow para evitar estafas y mantener el Bot activo con creditos.
-3. Genera un plan para 4 semanas del mes, con FOCO DIFERENTE cada semana.
-4. Cada semana debe tener 3-5 acciones concretas y ejecutables.
-5. Usa las acciones del pool colectivo cuando sean relevantes.
-6. Se directo, motivador pero realista. No uses lenguaje corporativo.
-7. El plan debe estar en espaniol, tono moderno y cercano.
+1. IDENTIFICA EL CUELLO DE BOTELLA.
+2. CONSEJOS VISUALES EXPERTOS: En cada semana, incluye al menos una accion de MEJORA VISUAL (ej: 'Iluminacion lateral para resaltar curvas', 'Narrativa de lenceria roja para San Valentin').
+3. APROVECHA LA TEMPORALIDAD: Si hay eventos proximos, el plan DEBE girar en torno a ellos.
+4. INCITA AL USO DE NEBULA: Sugiere publicar en Feed e Historias.
+5. Los planes para contenido adulto deben ser sugerentes y profesionales, enfocados en el deseo del cliente y exclusividad.
 
-## FORMATO DE RESPUESTA (JSON ESTRICTO, sin markdown, sin texto antes ni despues):
+## FORMATO DE RESPUESTA (JSON ESTRICTO):
 {{
   "diagnostico": {{
     "nivel": "{score_info['nivel']}",
     "score_general": {score_info['score']},
-    "fortalezas": ["lista de 2-3 puntos fuertes reales basandose en los datos"],
-    "areas_criticas": ["lista de 2-3 puntos debiles criticos con datos especificos"],
-    "resumen": "Parrafo corto y directo analizando la situacion real en 2-3 oraciones"
+    "fortalezas": ["..."],
+    "areas_criticas": ["..."],
+    "resumen": "..."
   }},
-  "meta_del_mes": "Meta principal y especifica para este mes (con numero medible)",
+  "meta_del_mes": "...",
   "semanas": [
     {{
       "numero": 1,
-      "foco": "Nombre del foco estrategico de esta semana",
+      "foco": "...",
       "acciones": [
         {{
-          "key": "identificador_snake_case_unico",
+          "key": "...",
           "categoria": "crecimiento|ventas|contenido|reputacion|monetizacion",
-          "titulo": "Titulo corto (max 8 palabras)",
-          "descripcion": "Descripcion practica de QUE hacer y COMO (2-3 oraciones). Prioriza acciones DENTRO de la plataforma Nebula.",
+          "titulo": "...",
+          "descripcion": "DEBE incluir detalles de CÓMO producir el contenido visualmente.",
           "impacto": "alto|medio|bajo",
-          "tiempo_estimado": "Ej: 20 min/dia",
-          "dato_colectivo": "Dato del pool o insight experto relevante (o null si no hay dato)"
+          "tiempo_estimado": "...",
+          "dato_colectivo": "..."
         }}
       ]
     }}
   ],
-  "mensaje_motivacional": "Mensaje personalizado, genuino y alentador. Max 2 oraciones."
+  "mensaje_motivacional": "..."
 }}"""
     return prompt
 
@@ -348,7 +357,7 @@ def _llamar_ia_y_parsear(prompt: str) -> dict:
                 temperature=COACH_TEMP,
                 max_tokens=COACH_MAX_TOKENS,
                 messages=[
-                    {"role": "system", "content": "Eres Nebula Coach. SIEMPRE responde con JSON puro valido, sin markdown ni texto extra."},
+                    {"role": "system", "content": "Eres Nebula Coach. SIEMPRE responde con JSON puro valido. Eres experto en marketing adulto sugerente."},
                     {"role": "user", "content": prompt}
                 ],
                 extra_headers={
@@ -358,7 +367,7 @@ def _llamar_ia_y_parsear(prompt: str) -> dict:
             )
             contenido = resp.choices[0].message.content.strip()
 
-            # Limpiar posible markdown
+            # Limpiar markdown
             if contenido.startswith("```"):
                 contenido = contenido.split("```")[1]
                 if contenido.startswith("json"):
@@ -371,12 +380,10 @@ def _llamar_ia_y_parsear(prompt: str) -> dict:
             return plan
         except json.JSONDecodeError as e:
             logger.error(f"[Coach] Error parseando JSON de {modelo}: {e}")
-            logger.error(f"[Coach] Contenido recibido: {contenido[:500] if 'contenido' in dir() else 'N/A'}")
             continue
         except Exception as e:
             import traceback
             logger.error(f"[Coach] Error llamando a {modelo}: {e}")
-            logger.error(traceback.format_exc())
             continue
 
     raise RuntimeError("No se pudo generar el plan. Ambos modelos de IA fallaron.")
@@ -387,20 +394,7 @@ def _llamar_ia_y_parsear(prompt: str) -> dict:
 # ================================================================
 
 def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = False) -> dict:
-    """
-    Genera (o recupera cached) el plan mensual de la modelo.
-    
-    Args:
-        db: Instancia de base de datos Supabase.
-        model_id: UUID de la modelo.
-        mes: Mes del plan (1-12).
-        anio: Anio del plan.
-        forzar: Si True, regenera aunque exista (con validacion de cooldown).
-    
-    Returns:
-        dict con el plan completo + metadata.
-    """
-    # 1. Verificar si ya existe un plan para este mes (defensivo ante tabla inexistente)
+    """Genera (o recupera cached) el plan mensual de la modelo."""
     existing_data = None
     existing_id = None
 
@@ -408,26 +402,14 @@ def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = 
         existing_res = db.client.table("coach_plans").select("*").eq("model_id", model_id).eq(
             "month", mes).eq("year", anio).maybe_single().execute()
 
-        # Defensa contra None en la respuesta
-        if existing_res is None:
-            logger.error("[Coach] execute() retorno None - ¿La migracion SQL fue aplicada?")
-        elif existing_res.data:
+        if existing_res and existing_res.data:
             existing_data = existing_res.data
             existing_id = existing_res.data.get("id")
     except Exception as e:
-        import traceback
         logger.error(f"[Coach] Error consultando coach_plans: {e}")
-        logger.error(f"[Coach] ¿Aplicaste la migracion db/024_nebula_coach.sql en Supabase?")
-        logger.error(traceback.format_exc())
-        raise RuntimeError(
-            f"Error de base de datos consultando coach_plans. "
-            f"Asegurate de ejecutar la migracion SQL 024_nebula_coach.sql en Supabase. "
-            f"Detalle: {str(e)}"
-        )
+        raise RuntimeError(f"Error de base de datos consultando coach_plans: {str(e)}")
 
-    # 2. Retornar plan cacheado si existe y no se fuerza regeneracion
     if existing_data and not forzar:
-        logger.info(f"[Coach] Retornando plan cacheado para modelo {model_id} ({mes}/{anio})")
         return {
             "plan": existing_data["plan_data"],
             "generado_en": existing_data["generated_at"],
@@ -435,26 +417,20 @@ def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = 
             "desde_cache": True
         }
 
-    # 3. Validar cooldown de regeneracion manual
     if existing_data and forzar:
         last_regen = existing_data.get("last_regenerated_at")
         if last_regen:
             try:
                 last_dt = datetime.fromisoformat(last_regen.replace("Z", "+00:00"))
                 ahora = datetime.utcnow().replace(tzinfo=last_dt.tzinfo)
-                dias_desde_regen = (ahora - last_dt).days
-                if dias_desde_regen < REGENERATION_COOLDOWN_DAYS:
-                    dias_restantes = REGENERATION_COOLDOWN_DAYS - dias_desde_regen
-                    raise ValueError(
-                        f"Puedes regenerar el plan en {dias_restantes} dia(s). "
-                        f"El cooldown es de {REGENERATION_COOLDOWN_DAYS} dias."
-                    )
+                if (ahora - last_dt).days < REGENERATION_COOLDOWN_DAYS:
+                    dias_restantes = REGENERATION_COOLDOWN_DAYS - (ahora - last_dt).days
+                    raise ValueError(f"Puedes regenerar el plan en {dias_restantes} dia(s).")
             except ValueError:
                 raise
             except Exception:
-                pass  # Si no se puede parsear la fecha, permitir regeneracion
+                pass
 
-    # 4. Recolectar datos y generar plan con IA
     logger.info(f"[Coach] Recolectando datos para modelo {model_id}...")
     datos = _recolectar_datos_modelo(db, model_id)
     insights = _obtener_insights_colectivos(db)
@@ -463,11 +439,9 @@ def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = 
     prompt = _construir_prompt(datos, score_info, insights, mes, anio)
     plan = _llamar_ia_y_parsear(prompt)
 
-    # 5. Guardar en DB (upsert)
     ahora_iso = datetime.utcnow().isoformat()
     try:
         if existing_data and existing_id:
-            # Actualizar plan existente (regeneracion)
             db.client.table("coach_plans").update({
                 "plan_data": plan,
                 "last_regenerated_at": ahora_iso,
@@ -475,7 +449,6 @@ def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = 
             }).eq("id", existing_id).execute()
             regeneraciones = existing_data.get("regenerated_count", 0) + 1
         else:
-            # Crear nuevo plan
             db.client.table("coach_plans").insert({
                 "model_id": model_id,
                 "month": mes,
@@ -486,33 +459,23 @@ def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = 
             }).execute()
             regeneraciones = 0
     except Exception as e:
-        import traceback
-        logger.error(f"[Coach] Error guardando plan en DB: {e}")
-        logger.error(traceback.format_exc())
-        # El plan YA fue generado por la IA - lo retornamos igual aunque no se pudo guardar
-        logger.warning("[Coach] Retornando plan sin persistencia (error de guardado)")
+        logger.error(f"[Coach] Error guardando plan: {e}")
+        regeneraciones = 0
 
     return {
         "plan": plan,
         "generado_en": ahora_iso,
-        "regeneraciones": regeneraciones if 'regeneraciones' in dir() else 0,
+        "regeneraciones": regeneraciones,
         "desde_cache": False,
         "score": score_info["score"],
         "nivel": score_info["nivel"]
     }
-
-
-# ================================================================
-# 7. REGISTRO DE FEEDBACK
-# ================================================================
 
 def registrar_feedback(db, model_id: str, plan_id: str, action_key: str,
                        action_category: str, result: str, notes: str = None) -> dict:
     """Registra el resultado de una accion del plan."""
     try:
         ahora = datetime.utcnow().isoformat()
-
-        # Upsert: actualizar si existe, insertar si no
         existing = db.client.table("coach_feedback").select("id").eq(
             "plan_id", plan_id).eq("action_key", action_key).maybe_single().execute()
 
@@ -522,30 +485,19 @@ def registrar_feedback(db, model_id: str, plan_id: str, action_key: str,
                 "notes": notes,
                 "updated_at": ahora
             }).eq("id", existing.data["id"]).execute()
-            return {"status": "updated", "action_key": action_key}
         else:
             db.client.table("coach_feedback").insert({
-                "model_id": model_id,
-                "plan_id": plan_id,
-                "action_key": action_key,
-                "action_category": action_category,
-                "result": result,
-                "notes": notes,
-                "created_at": ahora,
-                "updated_at": ahora
+                "model_id": model_id, "plan_id": plan_id, "action_key": action_key,
+                "action_category": action_category, "result": result, "notes": notes,
+                "created_at": ahora, "updated_at": ahora
             }).execute()
-            return {"status": "created", "action_key": action_key}
+        return {"status": "ok", "action_key": action_key}
     except Exception as e:
         logger.error(f"[Coach] Error registrando feedback: {e}")
         raise
 
-
-# ================================================================
-# 8. OBTENER INSIGHTS PARA EL FRONTEND
-# ================================================================
-
 def obtener_insights_publicos(db) -> list[dict]:
-    """Retorna insights colectivos formateados para mostrar en el frontend."""
+    """Retorna insights colectivos formateados."""
     insights = _obtener_insights_colectivos(db)
     return [
         {

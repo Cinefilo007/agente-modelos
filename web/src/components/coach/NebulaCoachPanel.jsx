@@ -4,8 +4,9 @@ import { useToast } from '../../context/ToastContext';
 import {
     Brain, Sparkles, CheckCircle2, XCircle, Clock, ChevronDown,
     ChevronUp, RefreshCw, TrendingUp, Zap, Target, Star,
-    BarChart2, MessageSquare, ShoppingBag, Loader, AlertCircle, Users
+    BarChart2, MessageSquare, ShoppingBag, Loader, AlertCircle, Users, Plus
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // ================================================================
 // ICONO DE CATEGORÍA
@@ -154,7 +155,7 @@ export default function NebulaCoachPanel() {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
     const [semanaActiva, setSemanaActiva] = useState(1);
-    const [feedbackMap, setFeedbackMap] = useState({}); // { action_key: 'success' | 'failure' }
+    const navigate = useNavigate();
     const [insights, setInsights] = useState([]);
 
     const obtenerPlan = useCallback(async (forzar = false) => {
@@ -285,6 +286,12 @@ export default function NebulaCoachPanel() {
                         <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
                             {plan.diagnostico?.resumen}
                         </p>
+                        <button
+                            onClick={() => navigate('/create-post')}
+                            className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-xs font-bold shadow-lg shadow-purple-500/20 active:scale-95 transition-all"
+                        >
+                            <Plus size={14} /> Publicar Nuevo Post
+                        </button>
                     </div>
 
                     {/* Score Circle */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, MoreVertical, Trash2, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, MoreVertical, Trash2, Eye, Plus } from 'lucide-react';
 import api from '../../api/axios';
 import { useToast } from '../../context/ToastContext';
 import clsx from 'clsx';
@@ -110,6 +110,12 @@ export default function PostCalendar() {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <button
+                        onClick={() => navigate('/create-post')}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-bold shadow-lg shadow-pink-500/20 active:scale-95 transition-all mr-2"
+                    >
+                        <Plus size={14} /> Crear Publicación
+                    </button>
                     <button onClick={prevMonth} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400"><ChevronLeft size={20} /></button>
                     <button onClick={nextMonth} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400"><ChevronRight size={20} /></button>
                 </div>
