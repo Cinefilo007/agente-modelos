@@ -96,14 +96,14 @@ async def obtener_plan_mensual(
             "mes": mes,
             "año": año
         }
-    except coach_service.RuntimeError as e:
+    except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[Coach] Error inesperado: {e}")
         import traceback
-        traceback.print_exc()
+        print(f"[Coach] Error inesperado: {e}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error generando el plan: {str(e)}")
 
 
@@ -151,7 +151,9 @@ async def regenerar_plan_mensual(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
         print(f"[Coach] Error en regeneración: {e}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error regenerando el plan: {str(e)}")
 
 

@@ -22,8 +22,8 @@ def _get_openrouter_client():
     return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
 
 # Constantes
-COACH_MODEL_PRINCIPAL = "google/gemini-flash-1.5"
-COACH_MODEL_FALLBACK = "meta-llama/llama-3.3-70b-instruct"
+COACH_MODEL_PRINCIPAL = "google/gemini-2.5-flash-preview"
+COACH_MODEL_FALLBACK = "google/gemini-flash-1.5"
 COACH_TEMP = 0.72
 COACH_MAX_TOKENS = 3000
 REGENERATION_COOLDOWN_DAYS = 7  # Días mínimos entre regeneraciones manuales
@@ -362,9 +362,12 @@ def _llamar_ia_y_parsear(prompt: str) -> dict:
             return plan
         except json.JSONDecodeError as e:
             logger.error(f"[Coach] Error parseando JSON de {modelo}: {e}")
+            logger.error(f"[Coach] Contenido recibido: {contenido[:500] if 'contenido' in dir() else 'N/A'}")
             continue
         except Exception as e:
+            import traceback
             logger.error(f"[Coach] Error llamando a {modelo}: {e}")
+            logger.error(traceback.format_exc())
             continue
 
     raise RuntimeError("No se pudo generar el plan. Ambos modelos de IA fallaron.")

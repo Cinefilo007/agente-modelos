@@ -125,8 +125,8 @@ El score se calcula en base a:
 
 ## 7. Modelo de IA
 
-- **Modelo principal**: `google/gemini-flash-1.5` (rápido, económico, suficientemente potente)
-- **Fallback**: `meta-llama/llama-3.3-70b-instruct` si Gemini falla
+- **Modelo principal**: `google/gemini-2.5-flash-preview` (el más capaz y rápido de Gemini)
+- **Fallback**: `google/gemini-flash-1.5` si el modelo principal falla
 - **Temperatura**: 0.7 (balance entre creatividad y coherencia)
 - **Max tokens**: 2500 (suficiente para el plan JSON completo)
 
