@@ -22,7 +22,7 @@ def _get_openrouter_client():
     return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
 
 # Constantes
-COACH_MODEL_PRINCIPAL = "google/gemini-2.5-flash" 
+COACH_MODEL_PRINCIPAL = "google/gemini-2.0-flash-001" 
 COACH_MODEL_FALLBACK = "mistralai/mistral-large"
 COACH_TEMP = 0.75
 COACH_MAX_TOKENS = 3500
@@ -233,9 +233,12 @@ def _llamar_ia_y_parsear(prompt: str) -> dict:
 
 def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = False) -> dict:
     try:
-        if not forzar:
-            res = db.client.table("coach_plans").select("*").eq("model_id", model_id).eq("month", mes).eq("year", anio).maybe_single().execute()
-            if res and res.data:
+        existing_id = None
+        res = db.client.table("coach_plans").select("id, plan_data, generated_at").eq("model_id", model_id).eq("month", mes).eq("year", anio).maybe_single().execute()
+        
+        if res and res.data:
+            existing_id = res.data["id"]
+            if not forzar:
                 return {"plan": res.data["plan_data"], "generado_en": res.data["generated_at"], "desde_cache": True}
         
         datos = _recolectar_datos_modelo(db, model_id)
@@ -244,9 +247,13 @@ def generar_plan_mensual(db, model_id: str, mes: int, anio: int, forzar: bool = 
         plan = _llamar_ia_y_parsear(prompt)
         
         ahora = datetime.utcnow().isoformat()
-        db.client.table("coach_plans").upsert({
+        payload = {
             "model_id": model_id, "month": mes, "year": anio, "plan_data": plan, "generated_at": ahora, "last_regenerated_at": ahora
-        }).execute()
+        }
+        if existing_id:
+            payload["id"] = existing_id # Esto asegura que el UPSERT reconozca el registro existente
+
+        db.client.table("coach_plans").upsert(payload).execute()
         
         return {"plan": plan, "generado_en": ahora, "desde_cache": False, "score": score_info["score"], "nivel": score_info["nivel"]}
     except Exception as e:
