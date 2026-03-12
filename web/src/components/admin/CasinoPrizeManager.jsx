@@ -15,7 +15,7 @@ export default function CasinoPrizeManager() {
     const [newPrize, setNewPrize] = useState({
         prize_name: '',
         prize_type: 'custom_service',
-        probability: 0.1,
+        probability: 10,
         prize_value_json: {}
     });
 
@@ -75,9 +75,10 @@ export default function CasinoPrizeManager() {
 
         setAdding(true);
         try {
-            await api.post('/casino/model/prizes', newPrize);
+            const payload = { ...newPrize, probability: newPrize.probability / 100 };
+            await api.post('/casino/model/prizes', payload);
             showToast("Premio añadido correctamente", "success");
-            setNewPrize({ prize_name: '', prize_type: 'custom_service', probability: 0.1, prize_value_json: {} });
+            setNewPrize({ prize_name: '', prize_type: 'custom_service', probability: 10, prize_value_json: {} });
             fetchPrizes();
         } catch (err) {
             showToast(err.response?.data?.detail || "Error al añadir premio", "error");
@@ -218,16 +219,19 @@ export default function CasinoPrizeManager() {
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-muted-foreground uppercase ml-1">Probabilidad (0-1)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    max="1"
-                                    value={newPrize.probability}
-                                    onChange={(e) => setNewPrize({ ...newPrize, probability: parseFloat(e.target.value) })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none"
-                                />
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase ml-1">Probabilidad (0-100%)</label>
+                                <div className="relative mt-1">
+                                    <input
+                                        type="number"
+                                        step="1"
+                                        min="0"
+                                        max="100"
+                                        value={newPrize.probability}
+                                        onChange={(e) => setNewPrize({ ...newPrize, probability: parseFloat(e.target.value) || 0 })}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 pr-8 text-sm focus:outline-none"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 font-bold">%</span>
+                                </div>
                             </div>
                         </div>
                         <button

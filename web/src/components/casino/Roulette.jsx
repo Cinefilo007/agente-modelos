@@ -118,7 +118,7 @@ export function Roulette({ prizes, onSpin, isSpinning, result, themeColor, onFin
                         radiusLineWidth={1}
                         fontSize={14}
                         textDistance={65}
-                        spinDuration={0.8}
+                        spinDuration={1.2}
                     />
                 </div>
 

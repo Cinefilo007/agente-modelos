@@ -456,20 +456,34 @@ export default function AdminPanel() {
                 <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Panel de Control</h1>
             </div>
 
-            <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-2">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={clsx(
-                            "flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all active:scale-95 whitespace-nowrap",
-                            activeTab === tab.id ? "bg-white text-black shadow-xl" : "bg-white/5 text-muted-foreground hover:bg-white/10"
-                        )}
-                    >
-                        <tab.icon size={16} />
-                        {tab.label}
-                    </button>
-                ))}
+            <div className="relative mb-8 group flex items-center">
+                <button
+                    onClick={() => { document.getElementById('admin-tabs').scrollBy({ left: -200, behavior: 'smooth' }); }}
+                    className="absolute left-0 z-10 p-2 bg-black/80 rounded-full border border-white/10 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity -ml-4"
+                >
+                    <ChevronLeft size={16} />
+                </button>
+                <div id="admin-tabs" className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mx-1 flex-1 relative scroll-smooth">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={clsx(
+                                "flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all active:scale-95 whitespace-nowrap",
+                                activeTab === tab.id ? "bg-white text-black shadow-xl" : "bg-white/5 text-muted-foreground hover:bg-white/10"
+                            )}
+                        >
+                            <tab.icon size={16} />
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+                <button
+                    onClick={() => { document.getElementById('admin-tabs').scrollBy({ left: 200, behavior: 'smooth' }); }}
+                    className="absolute right-0 z-10 p-2 bg-black/80 rounded-full border border-white/10 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity -mr-4"
+                >
+                    <ChevronRight size={16} />
+                </button>
             </div>
 
             <div className="pb-10">
