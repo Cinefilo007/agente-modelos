@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Wheel } from 'react-custom-roulette';
 import './Roulette.css';
 
-export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, onFinished }) {
+export function Roulette({ prizes, onSpin, isSpinning, result, themeColor, onFinished }) {
     const [audioReady, setAudioReady] = useState(false);
     const [mustSpin, setMustSpin] = useState(false);
 
@@ -23,6 +23,11 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
         }
     };
 
+    const winnerIndex = useMemo(() => {
+        if (!result) return null;
+        return result.won ? prizes.findIndex(p => p.prize_name === result.prize) : -1;
+    }, [result, prizes]);
+
     // Logical slices mapping for the library
     const data = useMemo(() => {
         if (!prizes.length) return [{ option: 'Cargando...', style: { backgroundColor: '#1a1425', textColor: '#ffffff' } }];
@@ -36,8 +41,11 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
         for (let i = 0; i < totalSlices; i++) {
             const prizeIndexForPos = prizePositions.indexOf(i);
             if (prizeIndexForPos !== -1) {
+                let text = prizes[prizeIndexForPos].prize_name;
+                if (text.length > 12) text = text.substring(0, 10) + '...'; // Truncate long text
+
                 items.push({
-                    option: prizes[prizeIndexForPos].prize_name,
+                    option: text,
                     style: { backgroundColor: i % 2 === 0 ? '#3a007d' : '#002b5c', textColor: 'white' }
                 });
             } else {
@@ -52,23 +60,33 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
 
     // Map `winnerIndex` (out of N prizes) to the 24-slice index
     const mappedWinningIndex = useMemo(() => {
-        if (winnerIndex === null || winnerIndex === undefined || winnerIndex === -1) return 0;
+        if (winnerIndex === null || winnerIndex === undefined) return 0;
 
         const totalSlices = 24;
         const prizeCount = prizes.length;
         const step = totalSlices / prizeCount;
         const prizePositions = prizes.map((_, idx) => Math.floor(idx * step));
+
+        if (winnerIndex === -1) {
+            // Pick a random empty slice index (not in prizePositions)
+            const emptySlices = [];
+            for (let i = 0; i < totalSlices; i++) {
+                if (!prizePositions.includes(i)) emptySlices.push(i);
+            }
+            return emptySlices[Math.floor(Math.random() * emptySlices.length)] || 0;
+        }
+
         return prizePositions[winnerIndex] || 0;
     }, [winnerIndex, prizes]);
 
     useEffect(() => {
-        // Trigger spin when logic says to
-        if (isSpinning && winnerIndex !== null && winnerIndex !== undefined && winnerIndex !== -1 && !mustSpin) {
+        // Trigger spin when result arrives
+        if (isSpinning && result && !mustSpin) {
             if (!audioReady) setAudioReady(true);
             setMustSpin(true);
             playSound('tick'); // Starting sound
         }
-    }, [isSpinning, winnerIndex]);
+    }, [isSpinning, result, mustSpin]);
 
     return (
         <div className="roulette-container">
@@ -97,7 +115,7 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
                         radiusLineColor="rgba(255,255,255,0.05)"
                         radiusLineWidth={1}
                         fontSize={14}
-                        textDistance={75}
+                        textDistance={65}
                         spinDuration={0.8}
                     />
                 </div>

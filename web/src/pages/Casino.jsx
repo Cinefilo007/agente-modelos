@@ -160,7 +160,7 @@ function Casino() {
                                 prizes={prizes}
                                 onSpin={handleSpin}
                                 isSpinning={betting}
-                                winnerIndex={result?.won ? prizes.findIndex(p => p.prize_name === result.prize) : (result ? -1 : null)}
+                                result={result}
                                 themeColor={themeColor}
                                 onFinished={handleGameFinished}
                             />

@@ -1,7 +1,8 @@
 .roulette-container {
     position: relative;
-    width: 310px;
-    height: 440px;
+    width: 100%;
+    max-width: 440px;
+    height: auto;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -11,14 +12,14 @@
 
 .roulette-static-base {
     position: relative;
-    width: 310px;
-    height: 310px;
+    width: 100%;
+    aspect-ratio: 1 / 1;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     /* Subtle 3D shadow for 2D base */
-    box-shadow: 
+    box-shadow:
         0 20px 40px rgba(0, 0, 0, 0.8),
         inset 0 0 20px rgba(255, 255, 255, 0.05);
 }
@@ -44,7 +45,7 @@
 
 /* Botón Externo */
 .roulette-external-controls {
-    margin-top: 30px;
+    margin-top: 40px;
     z-index: 200;
     width: 100%;
     display: flex;
@@ -53,7 +54,7 @@
 
 .roulette-spin-btn-external {
     position: relative;
-    width: 200px;
+    width: 240px;
     padding: 18px;
     border-radius: 50px;
     color: white;
