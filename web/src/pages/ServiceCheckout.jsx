@@ -86,15 +86,16 @@ export default function ServiceCheckout() {
             setStatus('processing');
 
             try {
-                // Original escrow creation call
-                const res = await api.post('/escrow/create', {
+                // Unified order creation call
+                const res = await api.post('/shop/order', {
                     model_id: service.modelId,
                     service_id: service.id,
-                    amount: totalAmount
+                    option_id: service.optionId,
+                    payment_method: 'escrow'
                 });
 
-                if (res.data.success) {
-                    setLastOrderId(res.data.escrow_id);
+                if (res.data) {
+                    setLastOrderId(res.data.id);
                     setStatus('held');
                 }
             } catch (e) {

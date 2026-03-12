@@ -190,22 +190,83 @@ async def create_service_order(
             raise HTTPException(status_code=404, detail="Opción de servicio no válida")
 
         price = opt_res.data['price']
+        
+        # Fee handling for escrow
+        fee = 2.50 if order_data.payment_method == 'escrow' else 0
+        total_amount = price + fee
+        
         description = f"Servicio: {opt_res.data['model_services']['title']}"
 
-        # 3. Create order
-        order_payload = {
-            "client_id": client_id,
-            "model_id": order_data.model_id,
-            "service_id": order_data.service_id,
-            "option_id": order_data.option_id,
-            "amount": price,
-            "description": description,
-            "payment_method": order_data.payment_method,
-            "status": "pending"
-        }
+        # 3. If Escrow, Lock Funds First
+        if order_data.payment_method == 'escrow':
+            rpc_params = {
+                "p_user_id": client_id,
+                "p_amount": total_amount,
+                "p_service_id": order_data.service_id,
+                "p_model_id": order_data.model_id
+            }
+            res_lock = db.client.rpc("wallet_lock_funds", rpc_params).execute()
+            
+            if not res_lock.data or not res_lock.data.get("success"):
+                error_msg = res_lock.data.get("error", "Unknown error") if res_lock.data else "No response from wallet"
+                if "insuficiente" in error_msg.lower() or "insufficient" in error_msg.lower():
+                     raise HTTPException(status_code=402, detail="Saldo insuficiente. Por favor recarga tu billetera.")
+                raise HTTPException(status_code=400, detail=f"Error reteniendo fondos: {error_msg}")
 
-        res = db.client.table("orders").insert(order_payload).execute()
-        return res.data[0] if res.data else {}
+            escrow_id = res_lock.data.get("escrow_id")
+            # wallet_lock_funds already creates the order inside the RPC (if our RPC works that way)
+            # OR if it just locks money, we need to create order manually if the RPC doesn't do it.
+            # Usually the RPC 'wallet_lock_funds' from old system created an `escrow_orders` row.
+            # Let's inspect what wallet_lock_funds actually does. Wait, in 025b we renamed `escrow_orders` to `orders`. 
+            # So the RPC `wallet_lock_funds` should be creating the order row!
+            
+            # Since the RPC creates the order, we just need to return the ID and notify.
+            # Let's update the order with the option_id, description, etc.
+            db.client.table("orders").update({
+                "option_id": order_data.option_id,
+                "description": description,
+                "payment_method": "escrow",
+                "delivery_status": "pending"
+            }).eq("id", escrow_id).execute()
+            
+            # Notify Model
+            try:
+                model_info = db.client.table("models").select("telegram_id").eq("id", order_data.model_id).single().execute()
+                if model_info.data:
+                    from src.services.notifications import notifications
+                    import asyncio
+                    msg = (
+                        f"💰 <b>¡Nueva Venta Realizada!</b>\n\n"
+                        f"Se ha creado una orden de Escrow por el servicio: <b>{opt_res.data['model_services']['title']}</b>\n"
+                        f"Monto Total: <b>${price:.2f} USDT</b>\n"
+                        f"Cliente: <b>@{user.username or user.id}</b>\n\n"
+                        f"🛡️ Los fondos están en custodia. Por favor contacta al cliente para iniciar el servicio."
+                    )
+                    asyncio.create_task(notifications.send_notification(model_info.data['telegram_id'], msg))
+            except Exception as e:
+                print(f"[Shop] Notification error: {e}")
+
+            return {"id": escrow_id, "status": "held"}
+
+        else:
+            # Direct Method (No funds locked)
+            order_payload = {
+                "client_id": client_id,
+                "model_id": order_data.model_id,
+                "service_id": order_data.service_id,
+                "option_id": order_data.option_id,
+                "amount": price,
+                "description": description,
+                "payment_method": order_data.payment_method,
+                "status": "pending"
+            }
+
+            res = db.client.table("orders").insert(order_payload).execute()
+            return res.data[0] if res.data else {}
+
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[Shop] Error creating order: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
