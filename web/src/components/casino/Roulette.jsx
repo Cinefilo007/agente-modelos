@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { Wheel } from 'react-custom-roulette';
 import './Roulette.css';
 
 export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, onFinished }) {
-    const controls = useAnimation();
-    const [lastRotation, setLastRotation] = useState(0);
-    const [lastTickAngle, setLastTickAngle] = useState(0);
-
     const [audioReady, setAudioReady] = useState(false);
+    const [mustSpin, setMustSpin] = useState(false);
 
     // Audio effects Setup
     const playSound = (type) => {
@@ -20,21 +17,19 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
             };
             const audio = new Audio(sounds[type]);
             audio.volume = type === 'tick' ? 0.2 : 0.5;
-            audio.play().catch(e => { }); // Silently fail to avoid console clutter
+            audio.play().catch(e => { });
         } catch (e) {
             // Silently fail to avoid console clutter
         }
     };
 
-    // Logical slices (Equitable Distribution V4)
-    const allSlices = useMemo(() => {
-        let items = [];
-        if (!prizes.length) return items;
+    // Logical slices mapping for the library
+    const data = useMemo(() => {
+        if (!prizes.length) return [{ option: 'Cargando...', style: { backgroundColor: '#1a1425', textColor: '#ffffff' } }];
 
+        let items = [];
         const totalSlices = 24;
         const prizeCount = prizes.length;
-
-        // Calculate even steps for rewards
         const step = totalSlices / prizeCount;
         const prizePositions = prizes.map((_, idx) => Math.floor(idx * step));
 
@@ -42,180 +37,84 @@ export function Roulette({ prizes, onSpin, isSpinning, winnerIndex, themeColor, 
             const prizeIndexForPos = prizePositions.indexOf(i);
             if (prizeIndexForPos !== -1) {
                 items.push({
-                    ...prizes[prizeIndexForPos],
-                    isPrize: true,
-                    originalIndex: prizeIndexForPos,
-                    wheelNumber: Math.floor(Math.random() * 36) + 1
+                    option: prizes[prizeIndexForPos].prize_name,
+                    style: { backgroundColor: i % 2 === 0 ? '#3a007d' : '#002b5c', textColor: 'white' }
                 });
             } else {
                 items.push({
-                    prize_name: '',
-                    isPrize: false,
-                    wheelNumber: Math.floor(Math.random() * 36) + 1
+                    option: '', // Empty slize for blanks
+                    style: { backgroundColor: i % 2 === 0 ? '#1a1425' : '#120d1a', textColor: 'white' }
                 });
             }
         }
-
-        const angle = 360 / items.length;
-        return items.map((item, i) => {
-            const startAngle = i * angle;
-            const endAngle = (i + 1) * angle;
-            const rad1 = ((startAngle - 90) * Math.PI) / 180;
-            const rad2 = ((endAngle - 90) * Math.PI) / 180;
-            const x1 = 50 + 50 * Math.cos(rad1);
-            const y1 = 50 + 50 * Math.sin(rad1);
-            const x2 = 50 + 50 * Math.cos(rad2);
-            const y2 = 50 + 50 * Math.sin(rad2);
-
-            const pathData = `M 50 50 L ${x1} ${y1} A 50 50 0 0 1 ${x2} ${y2} Z`;
-
-            return {
-                ...item,
-                path: pathData,
-                color: item.isPrize ? (i % 2 === 0 ? 'url(#purpleSlice)' : 'url(#blueSlice)') : (i % 2 === 0 ? '#1a1425' : '#120d1a'),
-                labelAngle: startAngle + angle / 2,
-                angleSize: angle
-            };
-        });
+        return items;
     }, [prizes]);
 
+    // Map `winnerIndex` (out of N prizes) to the 24-slice index
+    const mappedWinningIndex = useMemo(() => {
+        if (winnerIndex === null || winnerIndex === undefined || winnerIndex === -1) return 0;
+
+        const totalSlices = 24;
+        const prizeCount = prizes.length;
+        const step = totalSlices / prizeCount;
+        const prizePositions = prizes.map((_, idx) => Math.floor(idx * step));
+        return prizePositions[winnerIndex] || 0;
+    }, [winnerIndex, prizes]);
+
     useEffect(() => {
-        // ONLY trigger if winnerIndex is valid AND we are actively betting/spinning
-        if (winnerIndex !== null && winnerIndex !== undefined && isSpinning) {
+        // Trigger spin when logic says to
+        if (isSpinning && winnerIndex !== null && winnerIndex !== undefined && winnerIndex !== -1 && !mustSpin) {
             if (!audioReady) setAudioReady(true);
-            const mappedIndex = allSlices.findIndex(s => s.originalIndex === winnerIndex && s.isPrize);
-            const targetIndex = mappedIndex !== -1 ? mappedIndex : allSlices.findIndex(s => !s.isPrize);
-            spinTo(targetIndex);
+            setMustSpin(true);
+            playSound('tick'); // Starting sound
         }
-    }, [winnerIndex, isSpinning, allSlices]); // Adding isSpinning as dependency ensures it only runs when the game is "Active"
-
-    const spinTo = async (index) => {
-        if (allSlices.length === 0) return;
-
-        const sliceSize = 360 / allSlices.length;
-        const randomOffset = (Math.random() - 0.5) * (sliceSize * 0.5);
-
-        // UNIDIRECTIONAL (Always Clockwise)
-        // Find how many degrees we need to reach the target slice
-        const currentMod = lastRotation % 360;
-        const targetInner = 360 - (index * sliceSize) - (sliceSize / 2) + randomOffset;
-
-        // Calculate the shortest positive distance to the target position
-        let diff = (targetInner - currentMod);
-        while (diff < 0) diff += 360; // Ensure distance is positive
-
-        // Total rotation = current + several full laps + the positive diff
-        const totalRotation = lastRotation + (360 * 12) + diff;
-
-        await controls.start({
-            rotate: totalRotation,
-            transition: {
-                duration: 9,
-                ease: [0.12, 0, 0.1, 1],
-            }
-        });
-
-        const won = allSlices[index].isPrize;
-        playSound(won ? 'win' : 'lose');
-        setLastRotation(totalRotation);
-        if (onFinished) onFinished(won);
-    };
+    }, [isSpinning, winnerIndex]);
 
     return (
         <div className="roulette-container">
-            {/* Base Estática con Sombras y Brillos */}
+            {/* Base Estática con Sombras */}
             <div className="roulette-static-base" style={{ borderColor: `${themeColor}44` }}>
-                {/* Outer Neon Ring (Static) */}
-                <svg viewBox="0 0 100 100" className="roulette-static-overlay">
-                    <defs>
-                        <filter id="glow-static">
-                            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                            <feMerge>
-                                <feMergeNode in="coloredBlur" />
-                                <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                        </filter>
-                    </defs>
-                    <circle cx="50" cy="50" r="48.5" fill="none" stroke={themeColor} strokeWidth="1" filter="url(#glow-static)" opacity="0.6">
-                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="3s" repeatCount="indefinite" />
-                    </circle>
-                </svg>
+
+                {/* Wheel Integration */}
+                <div className="roulette-wheel-wrapper">
+                    <Wheel
+                        mustStartSpinning={mustSpin}
+                        prizeNumber={mappedWinningIndex}
+                        data={data}
+                        onStopSpinning={() => {
+                            setMustSpin(false);
+                            const won = winnerIndex !== -1 && winnerIndex !== null;
+                            playSound(won ? 'win' : 'lose');
+                            if (onFinished) onFinished(won);
+                        }}
+                        backgroundColors={['#1a1425', '#120d1a']}
+                        textColors={['#ffffff']}
+                        outerBorderColor={themeColor}
+                        outerBorderWidth={6}
+                        innerRadius={15}
+                        innerBorderColor="#0a0714"
+                        innerBorderWidth={15}
+                        radiusLineColor="rgba(255,255,255,0.05)"
+                        radiusLineWidth={1}
+                        fontSize={14}
+                        textDistance={75}
+                        spinDuration={0.8}
+                    />
+                </div>
 
                 {/* Glass Gloss Effect (Static) */}
                 <div className="roulette-glass-shine"></div>
-
-                <motion.div
-                    className="roulette-wheel-plate"
-                    animate={controls}
-                    style={{ rotate: lastRotation }}
-                    onUpdate={(latest) => {
-                        const rot = typeof latest.rotate === 'number' ? latest.rotate : lastRotation;
-                        const step = 360 / allSlices.length;
-                        if (Math.floor(rot / step) !== Math.floor(lastTickAngle / step)) {
-                            if (isSpinning) playSound('tick');
-                            setLastTickAngle(rot);
-                        }
-                    }}
-                >
-                    <svg viewBox="0 0 100 100" className="roulette-svg">
-                        <defs>
-                            {/* Vibrancy Gradients */}
-                            <linearGradient id="purpleSlice" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" style={{ stopColor: '#3a007d', stopOpacity: 1 }} />
-                                <stop offset="100%" style={{ stopColor: '#5e00c9', stopOpacity: 1 }} />
-                            </linearGradient>
-                            <linearGradient id="blueSlice" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" style={{ stopColor: '#002b5c', stopOpacity: 1 }} />
-                                <stop offset="100%" style={{ stopColor: '#004daa', stopOpacity: 1 }} />
-                            </linearGradient>
-                        </defs>
-
-                        {allSlices.map((slice, i) => (
-                            <g key={i}>
-                                <path
-                                    d={slice.path}
-                                    fill={slice.isPrize ? (i % 2 === 0 ? 'url(#purpleSlice)' : 'url(#blueSlice)') : (i % 2 === 0 ? '#1a1425' : '#120d1a')}
-                                    stroke="rgba(255,255,255,0.12)"
-                                    strokeWidth="0.15"
-                                />
-                                <g transform={`rotate(${slice.labelAngle} 50 50)`}>
-                                    {slice.isPrize && (
-                                        <text
-                                            x="50"
-                                            y="28" // Radial distance from center
-                                            fill="#fff"
-                                            fontSize="2.8"
-                                            fontWeight="900"
-                                            textAnchor="middle"
-                                            dominantBaseline="middle" // Center relative to the radial line
-                                            transform="rotate(-90 50 28)"
-                                            style={{ textShadow: '0 0 12px rgba(255,255,255,0.7)', letterSpacing: '0.4px' }}
-                                        >
-                                            {slice.prize_name}
-                                        </text>
-                                    )}
-                                </g>
-                            </g>
-                        ))}
-                    </svg>
-                </motion.div>
-
-                {/* Static Center Hub */}
-                <div className="roulette-center-hub">
-                    <div className="hub-outer" style={{ borderColor: themeColor }}></div>
-                    <div className="hub-inner"></div>
-                </div>
-            </div>
-
-            {/* Pointer (Static) */}
-            <div className="roulette-pointer-wrapper">
-                <div className="roulette-v-pointer" style={{ filter: `drop-shadow(0 0 10px ${themeColor})` }}></div>
             </div>
 
             {/* EXTERNAL PLAY BUTTON (outside the 3D base area) */}
             <div className="roulette-external-controls">
                 <button
-                    onClick={() => !isSpinning && onSpin()}
+                    onClick={() => {
+                        if (!isSpinning) {
+                            if (!audioReady) setAudioReady(true);
+                            onSpin();
+                        }
+                    }}
                     className="roulette-spin-btn-external"
                     disabled={isSpinning || prizes.length === 0}
                     style={{ backgroundColor: themeColor, '--btn-theme': themeColor }}
