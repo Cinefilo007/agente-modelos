@@ -9,13 +9,14 @@ import { useToast } from '../context/ToastContext';
 import { Avatar } from '../components/ui/Avatar';
 import api from '../api/axios';
 import clsx from 'clsx';
+import { useAuth } from '../context/AuthContext';
 
 export default function OrderDetails() {
     const { orderId } = useParams();
     const navigate = useNavigate();
     const { themeColor } = useTheme();
     const { showToast } = useToast();
-    // Wait, showToast error below
+    const { user } = useAuth();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -66,6 +67,20 @@ export default function OrderDetails() {
         }
     };
 
+    const handleCompleteDirect = async () => {
+        if (!window.confirm("¿Confirmas que el servicio fue realizado y completado? Esto te permitirá dejar una reseña.")) return;
+        try {
+            const res = await api.post(`/orders/${orderId}/complete-direct`);
+            if (res.data.status === 'success') {
+                setOrder({ ...order, status: 'COMPLETED' });
+                showToast("Orden marcada como completada.", "success");
+                setShowReviewModal(true);
+            }
+        } catch (e) {
+            showToast("Error al completar la orden.", "error");
+        }
+    };
+
     const handleSubmitReview = async () => {
         setSubmittingReview(true);
         try {
@@ -99,7 +114,8 @@ export default function OrderDetails() {
         </div>
     );
 
-    const isModel = order.model_id === order.models.id; // Correct check depending on how ids are sent
+    const isModel = user?.user_id === order.model_id;
+    const isClient = user?.user_id === order.client_id;
     const isCompleted = order.status === 'COMPLETED' || order.status === 'completed';
     const isHeld = order.status === 'HELD' || order.status === 'held';
     const isDirect = order.payment_method === 'direct';
@@ -174,39 +190,47 @@ export default function OrderDetails() {
 
             {/* Action Buttons */}
             <div className="fixed bottom-0 left-0 w-full p-4 bg-black/80 backdrop-blur-xl border-t border-white/5 space-y-3">
-                {isHeld && order.delivery_status !== 'shipped' && order.role === 'model' && (
+                {isHeld && order.delivery_status !== 'shipped' && isModel && (
                     <button
                         onClick={handleMarkAsShipped}
                         className="w-full py-4 rounded-2xl font-black text-lg bg-primary text-primary-foreground shadow-2xl flex items-center justify-center gap-2"
                         style={{ backgroundColor: themeColor }}
                     >
-                        Mark as Performed
+                        Marcar como Realizado
                     </button>
                 )}
 
-                {isHeld && order.delivery_status === 'shipped' && (
+                {isHeld && order.delivery_status === 'shipped' && isClient && (
                     <button
                         onClick={handleReleaseFunds}
                         className="w-full py-4 rounded-2xl font-black text-lg bg-green-500 text-black shadow-2xl flex items-center justify-center gap-2"
                     >
-                        Confirm Delivery & Release Funds
+                        Confirmar y Liberar Pago
                     </button>
                 )}
 
-                {isCompleted && (
+                {isCompleted && isClient && (
                     <button
                         onClick={() => setShowReviewModal(true)}
                         className="w-full py-4 rounded-2xl font-black text-lg border-2 border-primary text-primary flex items-center justify-center gap-2"
                         style={{ color: themeColor, borderColor: themeColor }}
                     >
-                        Leave Review
+                        Dejar Reseña a la Modelo
                     </button>
                 )}
 
-                {!isCompleted && isDirect && (
-                    <p className="text-[10px] text-muted-foreground text-center font-bold px-6">
-                        Recuerda marcar el servicio como completado una vez que recibas el pago directo.
-                    </p>
+                {!isCompleted && isDirect && isClient && (
+                    <div className="space-y-3 px-2">
+                        <p className="text-[10px] text-muted-foreground text-center font-bold">
+                            Recuerda marcar el servicio como completado una vez finalizado o tras haber pagado.
+                        </p>
+                        <button
+                            onClick={handleCompleteDirect}
+                            className="w-full py-4 rounded-2xl font-black text-md bg-amber-500 text-black shadow-lg flex items-center justify-center gap-2"
+                        >
+                            <CheckCircle size={20} /> Marcar como Completado
+                        </button>
+                    </div>
                 )}
             </div>
 

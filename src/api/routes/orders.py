@@ -159,3 +159,29 @@ async def submit_order_review(request: dict, user: TelegramUser = Depends(get_cu
         return {"status": "success", "message": "Reseña guardada"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{order_id}/complete-direct")
+async def complete_direct_order(order_id: str, user: TelegramUser = Depends(get_current_user)):
+    """Client marks a direct payment order as completed."""
+    try:
+        # 1. Get Order
+        order_res = db.client.table("orders").select("client_id, payment_method, status").eq("id", order_id).single().execute()
+        if not order_res.data:
+            raise HTTPException(status_code=404, detail="Orden no encontrada")
+        
+        order = order_res.data
+        if order['client_id'] != user.user_id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para completar esta orden")    
+        if order['payment_method'] != 'direct':
+            raise HTTPException(status_code=400, detail="Este endpoint es solo para pagos directos")
+        if order['status'] == 'COMPLETED':
+             return {"status": "success", "message": "La orden ya estaba completada"}
+
+        # 2. Update Order Status
+        db.client.table("orders").update({"status": "COMPLETED", "delivery_status": "delivered"}).eq("id", order_id).execute()
+
+        return {"status": "success", "message": "Orden marcada como completada"}
+
+    except Exception as e:
+        print(f"[Orders] Error completing direct order {order_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

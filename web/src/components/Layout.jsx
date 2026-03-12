@@ -45,10 +45,14 @@ export default function Layout() {
         );
     };
 
-    const mainTabs = ['/', '/explore', '/notifications', '/me'];
-    const showNav = !!user && mainTabs.some(tab =>
-        location.pathname === tab || (tab !== '/' && location.pathname.startsWith(tab))
-    );
+    // Rutas donde NO queremos que aparezca el BottomNav
+    const hiddenNavPaths = ['/checkout', '/post', '/create-post', '/create-story', '/order', '/service', '/onboarding', '/wallet', '/edit-profile', '/support'];
+
+    // Verificamos si la ruta actual empieza con alguna de las rutas ocultas
+    const isHiddenPath = hiddenNavPaths.some(path => location.pathname.startsWith(path));
+
+    // Mostramos la nav si el usuario está conectado y no estamos en una ruta oculta
+    const showNav = !!user && !isHiddenPath;
 
     // Prevent right click globally
     React.useEffect(() => {
