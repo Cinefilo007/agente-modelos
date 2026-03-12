@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import {
-    Clock, Wallet, MessageSquare, Send, ExternalLink, HelpCircle, FileText
+    Clock, Wallet, MessageSquare, Send, ExternalLink, HelpCircle, FileText,
+    ArrowLeft, ShieldCheck, Lock, AlertTriangle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
