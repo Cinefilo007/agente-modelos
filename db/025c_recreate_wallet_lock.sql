@@ -15,8 +15,8 @@ DECLARE
     v_order_id UUID;
     v_status TEXT;
 BEGIN
-    -- 1. Verificar balance del cliente
-    SELECT wallet_balance INTO v_balance FROM clients WHERE id = p_user_id FOR UPDATE;
+    -- 1. Verificar balance del cliente desde la tabla wallets
+    SELECT balance INTO v_balance FROM wallets WHERE user_id = p_user_id FOR UPDATE;
     
     IF v_balance IS NULL THEN
         RETURN json_build_object('success', false, 'error', 'Cliente no encontrado');
@@ -26,9 +26,8 @@ BEGIN
         RETURN json_build_object('success', false, 'error', 'Saldo insuficiente en la billetera');
     END IF;
     
-    -- 2. Deducir saldo e incrementarlo en un ledger de retenidos si existiera 
-    -- (Por simplicidad lo deducimos de wallet_balance, ya que wallet_release lo suma a la modelo)
-    UPDATE clients SET wallet_balance = wallet_balance - p_amount WHERE id = p_user_id;
+    -- 2. Deducir saldo e incrementarlo en locked_balance
+    UPDATE wallets SET balance = balance - p_amount, locked_balance = COALESCE(locked_balance, 0) + p_amount WHERE user_id = p_user_id;
     
     -- 3. Crear la orden retenida (Escrow)
     -- NOTA IMPORTANTE: Usamos 'orders' y no 'escrow_orders'
