@@ -5,6 +5,7 @@ import './Roulette.css';
 export function Roulette({ prizes, onSpin, isSpinning, result, themeColor, onFinished }) {
     const [audioReady, setAudioReady] = useState(false);
     const [mustSpin, setMustSpin] = useState(false);
+    const [spinningResult, setSpinningResult] = useState(null);
 
     // Audio effects Setup
     const playSound = (type) => {
@@ -80,13 +81,14 @@ export function Roulette({ prizes, onSpin, isSpinning, result, themeColor, onFin
     }, [winnerIndex, prizes]);
 
     useEffect(() => {
-        // Trigger spin when result arrives
-        if (isSpinning && result && !mustSpin) {
+        // Trigger spin when a NEW result arrives
+        if (isSpinning && result && result !== spinningResult) {
+            setSpinningResult(result);
             if (!audioReady) setAudioReady(true);
             setMustSpin(true);
             playSound('tick'); // Starting sound
         }
-    }, [isSpinning, result, mustSpin]);
+    }, [isSpinning, result, spinningResult]);
 
     return (
         <div className="roulette-container">

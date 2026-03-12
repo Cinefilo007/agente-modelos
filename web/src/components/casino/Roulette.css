@@ -1,8 +1,6 @@
 .roulette-container {
     position: relative;
     width: 100%;
-    max-width: 440px;
-    height: auto;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -12,8 +10,8 @@
 
 .roulette-static-base {
     position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
+    width: min(90vw, 400px);
+    height: min(90vw, 400px);
     display: flex;
     align-items: center;
     justify-content: center;
