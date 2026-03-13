@@ -198,9 +198,10 @@ const LandingPage = () => {
                         <p className="text-gray-500 max-w-2xl mx-auto">Ofrecemos el abanico más amplio de opciones para que tu contenido genere beneficios reales.</p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-6">
+                    <div className="grid md:grid-cols-4 gap-6">
                         <Feature icon={Coins} title="Billetera Crypto" desc="Descentralizada, sin bloqueos y con las mejores tasas." />
-                        <Feature icon={CircleDollarSign} title="Propinas por Post" desc="Tus fans pueden premiar tu contenido con monedas ($0.25 USD c/u)." />
+                        <Feature icon={CircleDollarSign} title="Propinas por Post" desc="Tus fans pueden premiar tu contenido con monedas acumulativas." />
+                        <Feature icon={TrendingUp} title="Casino Online" desc="Tus fans prueban su suerte para ganar tus servicios VIP." />
                         <Feature icon={Lock} title="Ventas P2P" desc="Ofrece tus servicios VIP con pagos asegurados mediante nuestro Sistema Escrow." />
                     </div>
                 </div>
