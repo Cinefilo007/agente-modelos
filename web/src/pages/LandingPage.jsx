@@ -7,8 +7,8 @@ import { useToast } from '../context/ToastContext';
 import {
     Shield, Zap, Heart, Globe, Lock, Star, ChevronRight,
     TrendingUp, Users, DollarSign, Bot, X, Check,
-    Database, Coins, Gift, MessageSquare, Repeat,
-    Activity, Cpu, Briefcase, UserCheck
+    Database, Coins, MessageSquare,
+    Activity, Cpu, Briefcase, UserCheck, CircleDollarSign
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -198,11 +198,10 @@ const LandingPage = () => {
                         <p className="text-gray-500 max-w-2xl mx-auto">Ofrecemos el abanico más amplio de opciones para que tu contenido genere beneficios reales.</p>
                     </div>
 
-                    <div className="grid md:grid-cols-4 gap-6">
+                    <div className="grid md:grid-cols-3 gap-6">
                         <Feature icon={Coins} title="Billetera Crypto" desc="Descentralizada, sin bloqueos y con las mejores tasas." />
-                        <Feature icon={Gift} title="Regalos & Tips" desc="Tus fans pueden premiar cada post con monedas y regalos exclusivos." />
-                        <Feature icon={TrendingUp} title="Casino P2P" desc="Tus fans prueban su suerte para ganar tus servicios VIP." />
-                        <Feature icon={Repeat} title="Venta P2P" desc="Sistema de intercambio de contenido seguro fuera de la web." />
+                        <Feature icon={CircleDollarSign} title="Propinas por Post" desc="Tus fans pueden premiar tu contenido con monedas ($0.25 USD c/u)." />
+                        <Feature icon={Lock} title="Ventas P2P" desc="Ofrece tus servicios VIP con pagos asegurados mediante nuestro Sistema Escrow." />
                     </div>
                 </div>
             </section>
@@ -234,9 +233,14 @@ const LandingPage = () => {
                                 nebula="Pagos Crypto/P2P instantáneos y 100% tuyos."
                             />
                             <TableRow
-                                pain="Baneos en Telegram"
-                                trad="Pierdes tu canal por políticas estrictas."
-                                nebula="Plataforma propia anti-baneo con IA integrada."
+                                pain="Estafadores Habituales"
+                                trad="Clientes que hacen perder tiempo y desaparecen."
+                                nebula="Lista Negra Global compartida entre toda la red."
+                            />
+                            <TableRow
+                                pain="Cierre Inesperado (Baneo)"
+                                trad="Telegram borra tu cuenta/canal de la noche a la mañana."
+                                nebula="Plataforma propia anti-baneo con IA integrada que salva a tu comunidad."
                             />
                             <TableRow
                                 pain="Crecimiento"
@@ -317,9 +321,9 @@ const LandingPage = () => {
                         gestiona todo automáticamente entre canales verificados. **Tráfico garantizado.**
                     </p>
                     <div className="pt-8">
-                        <button onClick={scrollToLogin} className="px-12 py-6 bg-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all">
+                        <a href="https://t.me/nebula_sfs_bot" target="_blank" rel="noopener noreferrer" className="inline-block px-12 py-6 bg-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all">
                             Vincular mi Canal
-                        </button>
+                        </a>
                     </div>
                 </div>
             </section>
@@ -329,11 +333,13 @@ const LandingPage = () => {
                 <div className="container mx-auto px-6">
                     <div className="max-w-4xl mx-auto space-y-12">
                         <h2 className="text-6xl md:text-9xl font-black tracking-tighter mix-blend-difference mb-12">Es Tu Momento.</h2>
-                        <div className="flex flex-col items-center gap-8 border border-white/10 p-16 rounded-[4rem] bg-black/40 backdrop-blur-3xl shadow-[0_0_100px_rgba(168,85,247,0.1)]">
+                        <div className="flex flex-col items-center gap-8 border border-white/10 p-8 md:p-16 rounded-[4rem] bg-black/40 backdrop-blur-3xl shadow-[0_0_100px_rgba(168,85,247,0.1)] mx-4 md:mx-0">
                             <p className="text-xl text-gray-400 font-bold max-w-xl">Únete a la elite que ya está operando en el futuro de Telegram.</p>
-                            <div ref={telegramWrapperRef} className="transform scale-125 hover:scale-135 transition-transform duration-500"></div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-600 flex items-center gap-4">
-                                <Lock className="w-3 h-3" /> Conexión Directa & Encriptada
+                            <div className="w-full max-w-[300px] overflow-hidden rounded-xl">
+                                <div ref={telegramWrapperRef} className="w-full flex justify-center transform md:scale-125 md:hover:scale-135 transition-transform duration-500"></div>
+                            </div>
+                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] md:tracking-[0.5em] text-gray-600 flex items-center gap-2 md:gap-4 text-center">
+                                <Lock className="w-3 h-3 flex-shrink-0" /> Conexión Directa & Encriptada
                             </span>
                         </div>
                     </div>
