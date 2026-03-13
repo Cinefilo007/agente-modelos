@@ -97,5 +97,9 @@ El backend expone una API RESTful documentada automáticamente en `/docs`.
 > [!CAUTION]
 > **CONFLICTO DE INSTANCIAS**: Dado que el bot se despliega en Railway, **NUNCA** mantener una instancia local del bot (`python src/main.py`) corriendo simultáneamente. Esto causa conflictos de `getUpdates` con Telegram. Si es necesario probar localmente, detener inmediatamente el proceso al finalizar.
 
+## 7. Estado de Funcionalidades UI/UX (Actualización)
+-   **Web3 / TON Storage / NFTs**: Pausado/Oculto temporalmente en la comunicación principal (Landing Page) para evitar fricción. El enfoque actual de marketing es la protección contra baneos de Telegram, el Casino Interactivo y el Chat Manager IA.
+-   **Regalos (Gifts) en el Feed**: Botón interactivo oculto temporalmente en las vistas `FeedPostCard` y `PostDetail` para trabajar en ello más adelante.
+
 ---
-*Última Actualización: 11 de Febrero de 2026*
+*Última Actualización: 12 de Marzo de 2026*

@@ -413,7 +413,7 @@ export default function PostDetail() {
                             </motion.button>
                         </div>
 
-                        <button
+                        {/* <button
                             onClick={() => requireAuth(() => { if (currentUser?.role !== 'model') setShowGiftSelector(true); })}
                             className={clsx(
                                 "flex items-center gap-2 text-[var(--text-primary)] transition-all group",
@@ -426,7 +426,7 @@ export default function PostDetail() {
                                 (currentUser?.role !== 'model' && currentUser?.role !== 'admin') && "group-hover:drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]"
                             )} />
                             <span className="text-sm font-bold opacity-90">{giftsCount}</span>
-                        </button>
+                        </button> */}
                         <div className="flex-1"></div>
                         {/* Share button removed */}
                     </div>

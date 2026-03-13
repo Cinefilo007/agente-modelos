@@ -144,18 +144,17 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* Features Grid - IA & Blockchain */}
+            {/* Features Grid - IA & Casino */}
             <section className="py-32 relative z-10 bg-black/40" id="ia">
                 <div className="container mx-auto px-6">
                     <div className="grid lg:grid-cols-2 gap-24 items-center">
                         <div className="space-y-8">
                             <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
                                 IA que <span className="text-purple-500 text-glow">Vende</span>, <br />
-                                Blockchain que <span className="text-indigo-500 text-glow">Protege</span>.
+                                Ecosistema que <span className="text-indigo-500 text-glow">Protege</span>.
                             </h2>
                             <p className="text-lg text-gray-500 leading-relaxed">
-                                Tu asistente personal no solo responde, **cierra ventas 24/7** con una personalidad calibrada.
-                                Además, tus fotos son procesadas por una IA de retoque estético para que cada post sea perfecto.
+                                Telegram está recrudeciendo sus políticas sobre el contenido para adultos, cerrando canales, grupos y cuentas todos los días. <strong className="text-white">Nuestra plataforma es la solución definitiva.</strong> Todo tu negocio protegido y operando desde un entorno seguro anti-baneos, donde sacamos el máximo jugo de la app.
                             </p>
                             <div className="grid sm:grid-cols-2 gap-8 pt-8">
                                 <div className="space-y-4">
@@ -163,28 +162,28 @@ const LandingPage = () => {
                                         <Cpu className="w-6 h-6" />
                                     </div>
                                     <h4 className="font-bold">Chat Manager IA</h4>
-                                    <p className="text-sm text-gray-500 italic">Interacción real, ventas automáticas.</p>
+                                    <p className="text-sm text-gray-500 italic">Un asistente que cierra ventas 24/7 y protege tu red.</p>
                                 </div>
                                 <div className="space-y-4">
-                                    <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                                    <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-400 border border-yellow-500/20">
                                         <Database className="w-6 h-6" />
                                     </div>
-                                    <h4 className="font-bold">TON Storage</h4>
-                                    <p className="text-sm text-gray-500 italic">Almacenamiento descentralizado e inmutable.</p>
+                                    <h4 className="font-bold">Casino Interactivo</h4>
+                                    <p className="text-sm text-gray-500 italic">Monetiza la suerte de tus fans con juegos integrados.</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="grid gap-6">
                             <Card
-                                icon={Star}
-                                title="NFTs en TON"
-                                desc="Convierte tu contenido en activos digitales únicos. Propiedad certificada y subastas con regalías perpetuas."
+                                icon={Globe}
+                                title="Red Social Anti-Baneo"
+                                desc="Stories, Feed y Perfiles blindados dentro de Telegram. Crea una comunidad fuerte e inmune a los cierres masivos."
                             />
                             <Card
-                                icon={Globe}
-                                title="Red Social Interna"
-                                desc="Stories, Feed y Perfiles dentro de Telegram. Una comunidad real para que te promociones como nunca antes."
+                                icon={Star}
+                                title="Monetización Total"
+                                desc="Pagos, propinas, suscripciones VIP y juegos de casino para exprimir cada interacción al máximo, de forma segura."
                             />
                         </div>
                     </div>
@@ -235,9 +234,9 @@ const LandingPage = () => {
                                 nebula="Pagos Crypto/P2P instantáneos y 100% tuyos."
                             />
                             <TableRow
-                                pain="Filtraciones"
-                                trad="Tus fotos robadas en minutos."
-                                nebula="TON Storage + NFTs con propiedad verificada."
+                                pain="Baneos en Telegram"
+                                trad="Pierdes tu canal por políticas estrictas."
+                                nebula="Plataforma propia anti-baneo con IA integrada."
                             />
                             <TableRow
                                 pain="Crecimiento"

@@ -404,7 +404,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             <span className="text-sm font-bold">{commentCount}</span>
                         </button>
 
-                        <button
+                        {/* <button
                             onClick={() => requireAuth(() => { if (user?.role !== 'model') setShowGiftSelector(true); })}
                             className={clsx(
                                 "flex items-center gap-1.5 text-white transition-all group",
@@ -417,7 +417,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                                 user?.role !== 'model' && "group-hover:drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]"
                             )} />
                             <span className="text-sm font-bold">{post.gifts_count || 0}</span>
-                        </button>
+                        </button> */}
                     </div>
 
                     <div className="relative mb-3">
