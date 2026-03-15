@@ -106,192 +106,159 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     if (!user) return null; // Safety check
 
     return (
-        <div className="relative pb-4" style={{ '--theme-glow': themeColor || '#e81cff' }}>
+        <div className="relative pb-4 font-sans" style={{ '--theme-glow': themeColor || '#b829e3' }}>
             {/* Global background effects for the profile container */}
-            <div className="absolute inset-0 bg-background overflow-hidden -z-10">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--theme-glow)] opacity-10 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500 opacity-10 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
+            <div className="absolute inset-0 bg-[#0a0a0a] overflow-hidden -z-10">
+                {/* Subtle top glow */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[var(--theme-glow)] opacity-[0.03] blur-[100px] rounded-full pointer-events-none" />
             </div>
 
             {/* Cover Image */}
-            <div className="h-72 w-full overflow-hidden relative">
+            <div className="h-56 md:h-72 w-full overflow-hidden relative">
                 <img
                     src={user.cover_url || user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab'}
                     alt="Cover"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover opacity-80"
                 />
-                {/* Gradient overlay for smooth transition to dark theme */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+                {/* Gradient overlay for smooth transition to dark background */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent"></div>
             </div>
 
-            {/* Content Container (Offset & Glassmorphism) */}
-            <div className="px-4 md:px-8 -mt-24 relative z-10 max-w-5xl mx-auto font-sans">
-                {/* Profile Photo Offset to Left */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-4">
-                    <div className="relative group flex-shrink-0 mb-4 md:mb-0">
+            {/* Content Container */}
+            <div className="px-5 md:px-8 -mt-20 relative z-10 max-w-5xl mx-auto flex flex-col">
+
+                {/* Top Row: Avatar + Stats */}
+                <div className="flex items-end justify-between mb-4 w-full">
+                    {/* Profile Photo */}
+                    <div className="relative group flex-shrink-0 z-20">
                         {/* Glowing aura behind avatar */}
-                        <div className="absolute inset-0 rounded-full blur-[14px] opacity-60 transform group-hover:scale-105 transition-transform duration-500 bg-[var(--theme-glow)]"></div>
+                        <div className="absolute inset-0 rounded-full blur-[10px] opacity-70 transform group-hover:scale-105 transition-transform duration-500 bg-[var(--theme-glow)]"></div>
                         <Avatar
                             src={user.avatar_url || user.avatar}
                             name={user.artistic_name || user.full_name || user.name}
                             alt={user.full_name || user.name}
                             size="xl"
                             isOnline={checkOnline(user.last_seen)}
-                            className="w-32 h-32 md:w-40 md:h-40 relative z-10 shadow-2xl"
-                            style={{ border: `4px solid rgba(255, 255, 255, 0.1)`, backgroundColor: '#111' }}
+                            className="w-24 h-24 md:w-32 md:h-32 relative z-10 shadow-2xl"
+                            style={{ border: `3px solid var(--theme-glow)`, backgroundColor: '#111' }}
                         />
                     </div>
 
-                    {/* Desktop Actions */}
-                    <div className="hidden md:flex gap-3 relative z-20">
-                        {customActions ? customActions : !isOwnProfile && (
-                            <>
-                                <Link to={`/casino/${user.username || user.id}`}>
-                                    <Button
-                                        className="h-12 bg-white/5 backdrop-blur-md border border-white/10 text-foreground hover:bg-white/10 gap-2 rounded-xl px-6 shadow-lg transition-all hover:border-white/20"
-                                        variant="ghost"
-                                    >
-                                        <Gamepad2 size={18} className="text-purple-400" />
-                                        <span>Probar suerte</span>
-                                    </Button>
-                                </Link>
-                                <Button
-                                    onClick={handleSubscribe}
-                                    disabled={loadingFollow}
-                                    className="h-12 rounded-xl px-8 font-semibold shadow-xl transition-shadow relative overflow-hidden"
-                                    style={!isFollowing ? { backgroundColor: 'var(--theme-glow)', color: '#fff' } : {}}
-                                    variant={isFollowing ? "outline" : "primary"}
-                                >
-                                    {loadingFollow ? <Loader size={18} className="animate-spin text-center w-full" /> : (isFollowing ? "Siguiendo" : "Suscribirse")}
-                                </Button>
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {/* Info & Glass Stats */}
-                <div className="flex flex-col w-full">
-                    {/* Artistic Name & Username */}
-                    <div className="mb-4">
-                        <h1 className="text-3xl font-extrabold text-foreground drop-shadow-md flex items-center gap-2 mb-1 tracking-tight">
-                            {user.artistic_name || user.full_name || user.name}
-                            {user.is_verified && <CheckCircle2 size={24} className="text-[#3897f0] fill-[#3897f0] shrink-0" />}
-                        </h1>
-                        <p className="text-muted-foreground font-medium tracking-wide">
-                            @{user.username}
-                        </p>
-                    </div>
-
-                    {/* Bio Section with Minimal Typography */}
-                    {(user.bio_short || user.bio) && (
-                        <div className="mb-5 max-w-2xl">
-                            <p className="text-foreground/80 text-sm md:text-base leading-relaxed font-light">
-                                {user.bio_short || user.bio}
-                            </p>
+                    {/* Stats */}
+                    <div className="flex gap-4 md:gap-8 mb-2 pb-1">
+                        <div className="flex flex-col items-center">
+                            <span className="text-[9px] text-white/50 tracking-widest font-bold uppercase mb-0.5">Followers</span>
+                            <span className="font-bold text-lg md:text-xl text-white">
+                                {user.followers_count >= 1000 ? (user.followers_count / 1000).toFixed(1) + 'M' : (user.followers_count || '1.2M')}
+                            </span>
                         </div>
-                    )}
-
-                    {/* Social Links (Clean Text with Icons) */}
-                    {socialLinks.length > 0 && (
-                        <div className="flex flex-wrap gap-4 mb-6">
-                            {socialLinks.map((link) => (
-                                <a
-                                    key={link.id}
-                                    href={link.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 text-sm font-medium text-white/70 hover:text-white transition-colors duration-200"
-                                    style={{ '--hover-color': link.color }}
-                                >
-                                    {React.cloneElement(link.icon, { size: 16 })}
-                                    <span className="capitalize">{link.label}</span>
-                                </a>
-                            ))}
+                        <div className="flex flex-col items-center">
+                            <span className="text-[9px] text-white/50 tracking-widest font-bold uppercase mb-0.5">Likes</span>
+                            <span className="font-bold text-lg md:text-xl text-cyan-400">
+                                {user.total_likes >= 1000 ? '+' + (user.total_likes / 1000).toFixed(0) + 'k' : (user.total_likes ? '+' + user.total_likes : '+12%')}
+                            </span>
                         </div>
-                    )}
-
-                    {/* Services/Niches Badges with Glowing Borders */}
-                    <div className="flex flex-wrap gap-2 mb-6">
-                        {/* Mock data until we integrate it with the backend model */}
-                        {['Contenido Exclusivo', 'Chat VIP', 'Videollamada', 'GFE'].map((service, index) => (
-                            <div 
-                                key={index} 
-                                className="px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase backdrop-blur-md bg-white/5 border border-white/10 text-white/90 shadow-[0_0_10px_rgba(255,255,255,0.05)] hover:border-[var(--theme-glow)] hover:shadow-[0_0_15px_var(--theme-glow)] transition-all cursor-default"
-                            >
-                                {service}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Stats Horizontal Bar (Glass Background) */}
-                    <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center justify-between w-full shadow-2xl overflow-hidden relative">
-                        {/* Subtle inner glow for the stats card */}
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-white/10 to-transparent opacity-20 pointer-events-none"></div>
-                        
-                        <div className="flex-1 flex flex-col items-center border-r border-white/5">
-                            <span className="font-extrabold text-xl md:text-2xl text-foreground !leading-none">{user.followers_count >= 1000 ? (user.followers_count / 1000).toFixed(1) + 'k' : (user.followers_count || 0)}</span>
-                            <span className="text-[10px] text-white/50 uppercase tracking-[0.2em] font-semibold mt-1">Seguidores</span>
-                        </div>
-                        <div className="flex-1 flex flex-col items-center border-r border-white/5">
-                            <span className="font-extrabold text-xl md:text-2xl text-[var(--theme-glow)] !leading-none flex items-center gap-1">
+                        <div className="flex flex-col items-center">
+                            <span className="text-[9px] text-white/50 tracking-widest font-bold uppercase mb-0.5">Rating</span>
+                            <span className="font-bold text-lg md:text-xl text-white flex items-center gap-1">
                                 {(user.reputation_score !== undefined && user.reputation_score !== null)
                                     ? parseFloat(user.reputation_score).toFixed(1)
-                                    : '5.0'} <Star size={16} className="fill-[var(--theme-glow)]" />
+                                    : '4.9'}
+                                <Star size={12} className="fill-[var(--theme-glow)] text-[var(--theme-glow)] ml-0.5" />
                             </span>
-                            <span className="text-[10px] text-white/50 uppercase tracking-[0.2em] font-semibold mt-1">Rating</span>
-                        </div>
-                        <div className="flex-1 flex flex-col items-center">
-                            <span className="font-extrabold text-xl md:text-2xl text-foreground !leading-none">{user.total_likes >= 1000 ? (user.total_likes / 1000).toFixed(1) + 'k' : (user.total_likes || 0)}</span>
-                            <span className="text-[10px] text-white/50 uppercase tracking-[0.2em] font-semibold mt-1">Likes</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Actions Button Row (Mobile Only) */}
-                <div className="flex md:hidden gap-3 mt-6 w-full relative z-20">
-                    {customActions ? (
-                        <div className="grid grid-cols-2 gap-3 w-full">
-                            {customActions}
+                {/* Name, Title & Follow Button Row */}
+                <div className="flex items-center justify-between mb-4 w-full">
+                    <div>
+                        <h1 className="text-2xl font-bold text-white flex items-center gap-2 tracking-tight">
+                            {user.artistic_name || user.full_name || user.name || 'Elena Vance'}
+                            {user.is_verified && <CheckCircle2 size={18} className="text-[var(--theme-glow)] fill-[var(--theme-glow)] text-black shrink-0" />}
+                        </h1>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-white/80 font-medium tracking-wide">Elite Creator & Model</span>
+                            <span className="w-1 h-1 rounded-full bg-white/30"></span>
+                            <span className="text-xs text-white/50 flex items-center gap-1">
+                                <Globe size={10} /> United States 🇺🇸
+                            </span>
                         </div>
-                    ) : !isOwnProfile ? (
-                        <>
-                            <Link to={`/casino/${user.username || user.id}`} className="flex-1">
-                                <Button
-                                    className="w-full h-14 bg-white/5 backdrop-blur-2xl border border-white/10 text-foreground gap-2 rounded-2xl shadow-lg transition-all"
-                                    variant="ghost"
-                                >
-                                    <Gamepad2 size={20} className="text-purple-400" />
-                                    <span className="text-sm font-semibold">Probar suerte</span>
-                                </Button>
-                            </Link>
-                            <Button
-                                onClick={handleSubscribe}
-                                disabled={loadingFollow}
-                                className="flex-1 rounded-2xl h-14 text-sm font-bold shadow-xl shadow-[var(--theme-glow)]/20 hover:shadow-[var(--theme-glow)]/40 transition-shadow"
-                                variant={isFollowing ? "outline" : "primary"}
-                                style={!isFollowing ? { backgroundColor: 'var(--theme-glow)', color: '#fff', border: 'none' } : {}}
-                            >
-                                {loadingFollow ? <Loader size={18} className="animate-spin" /> : (isFollowing ? "Siguiendo" : "Suscribirse")}
-                            </Button>
-                            <Button className="w-14 h-14 rounded-2xl bg-white/5 backdrop-blur-2xl border border-white/10 text-foreground flex items-center justify-center shadow-lg" variant="ghost">
-                                <Mail size={22} className="text-white/80" />
-                            </Button>
-                        </>
-                    ) : (
-                        <div className="grid grid-cols-2 gap-3 w-full">
-                            <Link to="/edit-profile" className="flex-1">
-                                <Button className="w-full h-14 bg-white/5 backdrop-blur-2xl border border-white/10 text-foreground gap-2 text-sm font-bold rounded-2xl shadow-lg transition-all" variant="ghost">
-                                    <Edit3 size={18} className="text-white/80" /> <span>Editar Perfil</span>
-                                </Button>
-                            </Link>
-                            <Link to="/admin" className="flex-1">
-                                <Button className="w-full h-14 bg-white/5 backdrop-blur-2xl border border-white/10 text-foreground gap-2 text-sm font-bold rounded-2xl shadow-lg transition-all" variant="ghost">
-                                    <LayoutDashboard size={18} className="text-[var(--theme-glow)]" /> <span>Panel Admin</span>
-                                </Button>
-                            </Link>
-                        </div>
+                    </div>
+
+                    {/* Follow Action */}
+                    {!isOwnProfile && (
+                        <Button
+                            onClick={handleSubscribe}
+                            disabled={loadingFollow}
+                            className="rounded-full px-6 py-2 h-auto text-xs font-bold transition-all"
+                            style={!isFollowing ? { backgroundColor: 'var(--theme-glow)', color: '#fff', border: 'none' } : {}}
+                            variant={isFollowing ? "outline" : "primary"}
+                        >
+                            {loadingFollow ? <Loader size={14} className="animate-spin" /> : (isFollowing ? "FOLLOWING" : "FOLLOW")}
+                        </Button>
                     )}
                 </div>
+
+                {/* Bio Section */}
+                <div className="mb-5 max-w-lg">
+                    <p className="text-white/60 text-sm leading-relaxed font-light">
+                        {user.bio_short || user.bio || 'Redefining the digital aesthetic. High-fashion projects and exclusive digital content. 📍 Based in New York / Paris.'}
+                    </p>
+                </div>
+
+                {/* Social Icons Row */}
+                <div className="flex flex-wrap gap-3 mb-6">
+                    {socialLinks.length > 0 ? socialLinks.map((link) => (
+                        <a
+                            key={link.id}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                        >
+                            {React.cloneElement(link.icon, { size: 16 })}
+                        </a>
+                    )) : (
+                        // Mock icons for design alignment if no data
+                        <>
+                            {['instagram', 'twitter', 'onlyfans', 'mail', 'website'].map((mock, i) => (
+                                <div key={i} className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center text-white/50">
+                                    {getSocialIcon(mock, 16)}
+                                </div>
+                            ))}
+                        </>
+                    )}
+                </div>
+
+                {/* Services/Niches Badges */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                    {['GFE', 'VIDEO-CALL', 'VIP-CHAT', 'PHOTO SHOOT'].map((service, index) => (
+                        <div
+                            key={index}
+                            className="px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#1a1a1a] text-white/70 border border-white/5 flex items-center gap-2"
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--theme-glow)]"></span>
+                            {service}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Additional Buttons (Own Profile) */}
+                {isOwnProfile && (
+                    <div className="flex gap-3 mb-6">
+                        <Link to="/edit-profile" className="flex-1">
+                            <Button className="w-full h-12 bg-white/5 border border-white/10 text-white gap-2 text-sm font-bold rounded-2xl transition-all hover:bg-white/10" variant="ghost">
+                                <Edit3 size={16} /> Editar Perfil
+                            </Button>
+                        </Link>
+                        <Link to="/admin" className="flex-1">
+                            <Button className="w-full h-12 bg-white/5 border border-white/10 text-white gap-2 text-sm font-bold rounded-2xl transition-all hover:bg-white/10" variant="ghost">
+                                <LayoutDashboard size={16} className="text-[var(--theme-glow)]" /> Panel Admin
+                            </Button>
+                        </Link>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -286,13 +286,16 @@ function Profile() {
 
             {/* Floating Customization Button (Magic Wand) */}
             {isOwnProfile && (
-                <div className="fixed bottom-24 right-6 z-50">
+                <div className="fixed bottom-24 right-5 z-50">
                     <button
-                        className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center hover:scale-110 hover:bg-white/20 transition-all group"
+                        className="w-14 h-14 rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-2xl"
                         onClick={() => document.getElementById('theme-customizer-modal')?.showModal()}
-                        style={{ boxShadow: `0 0 20px ${themeColor}40` }}
+                        style={{
+                            backgroundColor: themeColor || '#e81cff',
+                            boxShadow: `0 0 25px ${themeColor || '#e81cff'}80`
+                        }}
                     >
-                        <Wand2 size={24} className="text-white group-hover:text-[var(--theme-glow)] transition-colors" style={{ '--theme-glow': themeColor }} />
+                        <Wand2 size={24} className="text-white" />
                     </button>
                     {/* El modal ThemeCustomizer se montará aquí (componente a implementar o placeholder) */}
                     <ThemeCustomizer user={profileUser} />

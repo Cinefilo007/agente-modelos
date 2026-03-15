@@ -38,11 +38,12 @@ export function StoryCarousel({ stories, onOpenStory, title }) {
                             className="flex flex-col items-center gap-1 min-w-[72px] group"
                         >
                             <div
-                                className="p-[2px] rounded-full"
+                                className="p-[2px] rounded-full transition-shadow duration-300"
                                 style={{
                                     background: story.viewed
-                                        ? '#374151'
-                                        : `linear-gradient(45deg, #F59E0B, ${themeColor})`
+                                        ? '#333'
+                                        : themeColor || '#e81cff',
+                                    boxShadow: story.viewed ? 'none' : `0 0 10px ${themeColor || '#e81cff'}80`
                                 }}
                             >
                                 <div className="p-[2px] bg-black rounded-full w-[64px] h-[64px] overflow-hidden">
@@ -62,8 +63,8 @@ export function StoryCarousel({ stories, onOpenStory, title }) {
                                     )}
                                 </div>
                             </div>
-                            <span className="text-xs text-gray-300 truncate w-full text-center">
-                                {timeAgo(story.created_at)}
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-white/70 truncate w-full text-center mt-1">
+                                {story.is_saved ? story.title || 'STORY' : timeAgo(story.created_at)}
                             </span>
                         </button>
                     ))}
