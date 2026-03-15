@@ -7,9 +7,10 @@ import StoryViewer from '../components/profile/StoryViewer';
 import ClientProfile from './ClientProfile'; // Import Client View
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck, Gamepad2 } from 'lucide-react';
+import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck, Gamepad2, Wand2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
+import { ThemeCustomizer } from '../components/profile/ThemeCustomizer'; // Panel de personalización
 
 function Profile() {
     const { username } = useParams(); // username or ID if we change routing
@@ -281,6 +282,21 @@ function Profile() {
                         setSelectedStory(null);
                     }}
                 />
+            )}
+
+            {/* Floating Customization Button (Magic Wand) */}
+            {isOwnProfile && (
+                <div className="fixed bottom-24 right-6 z-50">
+                    <button
+                        className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center hover:scale-110 hover:bg-white/20 transition-all group"
+                        onClick={() => document.getElementById('theme-customizer-modal')?.showModal()}
+                        style={{ boxShadow: `0 0 20px ${themeColor}40` }}
+                    >
+                        <Wand2 size={24} className="text-white group-hover:text-[var(--theme-glow)] transition-colors" style={{ '--theme-glow': themeColor }} />
+                    </button>
+                    {/* El modal ThemeCustomizer se montará aquí (componente a implementar o placeholder) */}
+                    <ThemeCustomizer user={profileUser} />
+                </div>
             )}
         </div>
     );
