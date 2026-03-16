@@ -343,7 +343,7 @@ async def get_public_profile(identifier: str):
 async def get_models_for_explore(
     filter: str = "all",
     q: Optional[str] = None,
-    user: Optional[TelegramUser] = Depends(get_current_user)
+    user: Optional[TelegramUser] = Depends(get_current_user_optional)
 ):
     """
     Get list of models for the explore page with filters and search.

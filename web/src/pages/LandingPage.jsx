@@ -231,9 +231,11 @@ const LandingPage = () => {
                         <button onClick={scrollToLogin} className={`px-10 py-5 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-[0_20px_40px_-10px_rgba(255,255,255,0.2)] ${viewMode === 'fan' ? 'hover:bg-pink-600 hover:text-white' : 'hover:bg-purple-600 hover:text-white'}`}>
                             {viewMode === 'fan' ? 'Explorar Ahora' : 'Empezar Imperio'}
                         </button>
-                        <button onClick={() => window.open('https://t.me/' + botUsername, '_blank')} className="px-10 py-5 bg-white/5 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all backdrop-blur-sm flex items-center justify-center gap-3">
-                            <Bot className="w-5 h-5" /> {viewMode === 'fan' ? 'Ir al Bot' : 'Probar Demo'}
-                        </button>
+                        {viewMode === 'creator' && (
+                            <button onClick={() => window.open('https://t.me/' + botUsername, '_blank')} className="px-10 py-5 bg-white/5 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all backdrop-blur-sm flex items-center justify-center gap-3">
+                                <Bot className="w-5 h-5" /> Probar Demo
+                            </button>
+                        )}
                     </div>
                 </div>
             </section>
@@ -370,7 +372,12 @@ const LandingPage = () => {
                     <div className="grid md:grid-cols-4 gap-6">
                         <Feature icon={CircleDollarSign} title="Billetes Escrow" desc="Protección mutua en cada transacción." color={viewMode === 'fan' ? 'pink' : 'purple'} />
                         <Feature icon={Coins} title="Crypto Nativo" desc="Binance Pay y USDT integrados." color={viewMode === 'fan' ? 'pink' : 'purple'} />
-                        <Feature icon={Zap} title="Retiros Flash" desc="Tus ganancias a tu wallet en minutos." color={viewMode === 'fan' ? 'pink' : 'purple'} />
+                        <Feature
+                            icon={viewMode === 'fan' ? Shield : Zap}
+                            title={viewMode === 'fan' ? "Privacidad 100%" : "Retiros Flash"}
+                            desc={viewMode === 'fan' ? "Sin rastros en tu banco ni estados de cuenta." : "Tus ganancias a tu wallet en minutos."}
+                            color={viewMode === 'fan' ? 'pink' : 'purple'}
+                        />
                         <Feature icon={Lock} title="Anti-Baneo" desc="Sin rastros en estados de cuenta." color={viewMode === 'fan' ? 'pink' : 'purple'} />
                     </div>
                 </div>
@@ -386,8 +393,8 @@ const LandingPage = () => {
                         <div className={`flex flex-col items-center gap-10 border p-8 md:p-16 rounded-[4rem] bg-black/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden ${viewMode === 'fan' ? 'border-pink-500/10 shadow-pink-500/5' : 'border-purple-500/10 shadow-purple-500/5'}`}>
                             <div className={`absolute top-0 right-0 w-64 h-64 blur-[100px] opacity-20 -mr-32 -mt-32 rounded-full ${viewMode === 'fan' ? 'bg-pink-500' : 'bg-purple-500'}`}></div>
                             <p className="text-xl text-gray-400 font-bold max-w-xl">Únete a la elite que ya está operando en el futuro de Telegram.</p>
-                            <div className="w-full max-w-[300px] overflow-hidden rounded-2xl bg-white/5 p-4 border border-white/10 group">
-                                <div ref={telegramWrapperRef} className="w-full flex justify-center scale-110 group-hover:scale-125 transition-transform duration-500"></div>
+                            <div className="w-full max-w-[320px] sm:max-w-[400px] overflow-hidden rounded-3xl bg-white/5 p-6 border border-white/10 group flex justify-center">
+                                <div ref={telegramWrapperRef} className="w-full flex justify-center scale-90 sm:scale-110 transition-transform duration-500 origin-center"></div>
                             </div>
                             <div className="flex flex-col gap-4">
                                 <span className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-600 flex items-center justify-center gap-3">
