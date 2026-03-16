@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Configuración de costos
-COSTO_RETOQUE = 1.0  # 1 USDT (o Crédito)
-COSTO_FONDO = 2.0    # 2 USDT (o Crédito)
+COSTO_RETOQUE = 1
+COSTO_FONDO = 2
 
 @router.post("/touch-up")
 async def ai_touch_up(
@@ -26,7 +26,7 @@ async def ai_touch_up(
     if not model_res.data:
         raise HTTPException(status_code=404, detail="Modelo no encontrada")
     
-    balance = float(model_res.data.get("credits_balance", 0.0))
+    balance = int(model_res.data.get("credits_balance", 0))
     if balance < COSTO_RETOQUE:
         raise HTTPException(status_code=400, detail="Créditos insuficientes para el retoque")
 
@@ -70,7 +70,7 @@ async def ai_change_background(
 
     # 1. Verificar balance de créditos
     model_res = db.client.table("models").select("credits_balance").eq("id", user.user_id).single().execute()
-    balance = float(model_res.data.get("credits_balance", 0.0))
+    balance = int(model_res.data.get("credits_balance", 0))
     
     if balance < COSTO_FONDO:
         raise HTTPException(status_code=400, detail="Créditos insuficientes para cambiar el fondo")
