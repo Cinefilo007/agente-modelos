@@ -149,7 +149,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     </div>
 
                     {/* Stats Card */}
-                    <div className="flex-grow ml-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 mb-1 grid grid-cols-3 gap-1">
+                    <div className="flex-grow ml-4 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-3 mb-1 grid grid-cols-3 gap-1">
                         <div className="text-center">
                             <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-tighter">Followers</p>
                             <p className="text-sm font-bold text-white leading-tight mt-0.5">
@@ -272,21 +272,25 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     <div className="flex gap-3 mt-4 mb-2">
                         <button
                             onClick={handleMessageClick}
-                            className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all group shadow-lg"
+                            className="flex-1 h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl px-3 flex items-center justify-center transition-all group shadow-lg gap-2.5"
                         >
-                            <MessageCircle size={22} className="text-white mb-1 group-hover:scale-110 transition-transform" />
-                            <span className="text-white font-bold text-sm">Privado</span>
-                            <span className="text-slate-400 text-[10px]">Acordar servicio</span>
+                            <MessageCircle size={20} className="text-white group-hover:scale-110 transition-transform flex-shrink-0" />
+                            <div className="flex flex-col items-start leading-none mt-px">
+                                <span className="text-white font-bold text-[13px] md:text-sm">Privado</span>
+                                <span className="text-slate-400 text-[9px] mt-1 uppercase tracking-wider">Acordar servicio</span>
+                            </div>
                         </button>
 
                         {isFollowing && (
                             <Link to={`/casino/${user.username}`} className="flex-1">
                                 <button
-                                    className="w-full h-full bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-2xl p-3 flex flex-col items-center justify-center transition-all group shadow-lg shadow-yellow-500/5"
+                                    className="w-full h-12 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-2xl px-3 flex items-center justify-center transition-all group shadow-lg shadow-yellow-500/5 gap-2.5"
                                 >
-                                    <Gamepad2 size={24} className="text-yellow-500 mb-0.5 group-hover:scale-110 transition-transform" />
-                                    <span className="text-yellow-500 font-bold text-sm">Casino</span>
-                                    <span className="text-yellow-500/70 text-[10px]">Jugar y ganar</span>
+                                    <Gamepad2 size={20} className="text-yellow-500 group-hover:scale-110 transition-transform flex-shrink-0" />
+                                    <div className="flex flex-col items-start leading-none mt-px">
+                                        <span className="text-yellow-500 font-bold text-[13px] md:text-sm">Casino</span>
+                                        <span className="text-yellow-500/70 text-[9px] mt-1 uppercase tracking-wider">Jugar y ganar</span>
+                                    </div>
                                 </button>
                             </Link>
                         )}

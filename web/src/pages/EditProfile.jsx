@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, Camera, Image as ImageIcon, Loader } from 'lucide-react';
+import { ArrowLeft, Camera, Image as ImageIcon, Loader, X } from 'lucide-react';
 import { Avatar } from '../components/ui/Avatar';
 import { SocialLinkEditor } from '../components/profile/SocialLinkEditor';
 import api from '../api/axios';
@@ -21,7 +21,8 @@ function EditProfile() {
         username: '',
         bio_short: '',
         social_links: [], // Array of { network, url, icon }
-        services_text: '', // String para el input
+        services: [], // Array de tags
+        services_text: '', // String para el input en curso
         cover_url: '',
         avatar_url: ''
     });
@@ -53,7 +54,8 @@ function EditProfile() {
                     username: data.username || '',
                     bio_short: data.bio_short || '',
                     social_links: links,
-                    services_text: (data.services || []).join(', '),
+                    services: data.services || [],
+                    services_text: '',
                     cover_url: data.cover_url || '',
                     avatar_url: data.avatar_url || ''
                 });
@@ -106,7 +108,7 @@ function EditProfile() {
             const { data } = await api.put('/profile/me', {
                 bio_short: formData.bio_short,
                 social_links: formData.social_links,
-                services: formData.services_text.split(',').map(s => s.trim()).filter(Boolean),
+                services: [...(formData.services || []), ...(formData.services_text ? formData.services_text.split(',').map(s => s.trim()).filter(Boolean) : [])],
                 artistic_name: formData.artistic_name,
                 avatar_url: formData.avatar_url,
                 cover_url: formData.cover_url
@@ -119,6 +121,13 @@ function EditProfile() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const removeService = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            services: prev.services.filter((_, i) => i !== index)
+        }));
     };
 
     if (loading) {
@@ -232,14 +241,53 @@ function EditProfile() {
 
                     <div>
                         <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase">Etiquetas de Servicios</label>
-                        <input
-                            type="text"
-                            value={formData.services_text}
-                            onChange={(e) => setFormData({ ...formData, services_text: e.target.value })}
-                            className="w-full bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-xl p-3 text-[var(--text-primary)] focus:border-[var(--text-primary)]/50 focus:outline-none transition-colors"
-                            placeholder="Ej. GFE, VIP Chat, Video Call"
-                        />
-                        <p className="text-[10px] text-slate-500 mt-1">Separa los servicios por comas</p>
+                        <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-xl p-2 transition-colors focus-within:border-[var(--text-primary)]/50 min-h-[50px] flex flex-wrap gap-2 items-center">
+                            {(formData.services || []).map((service, idx) => (
+                                <span key={idx} className="bg-[var(--theme-glow)] text-white text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5 font-semibold shadow-sm">
+                                    {service}
+                                    <button type="button" onClick={() => removeService(idx)} className="hover:text-red-300 transition-colors">
+                                        <X size={14} />
+                                    </button>
+                                </span>
+                            ))}
+                            <input
+                                type="text"
+                                value={formData.services_text}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val.includes(',')) {
+                                        const newTags = val.split(',').map(s => s.trim()).filter(Boolean);
+                                        if (newTags.length > 0) {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                services: [...(prev.services || []), ...newTags],
+                                                services_text: ''
+                                            }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, services_text: '' }));
+                                        }
+                                    } else {
+                                        setFormData(prev => ({ ...prev, services_text: val }));
+                                    }
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const val = formData.services_text.trim();
+                                        if (val) {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                services: [...(prev.services || []), val],
+                                                services_text: ''
+                                            }));
+                                        }
+                                    }
+                                }}
+                                className="flex-1 bg-transparent min-w-[120px] text-[var(--text-primary)] focus:outline-none text-sm p-1"
+                                placeholder={formData.services?.length === 0 ? "Ej. GFE, VIP Chat (escribe una coma para agregar)" : "Añadir más..."}
+                            />
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-1">Escribe un servicio y usa una coma (,) o Enter para agregarlo.</p>
                     </div>
 
                     {/* Social Links Section */}
