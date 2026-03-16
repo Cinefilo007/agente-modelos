@@ -5,9 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import {
-    Shield, Zap, Heart, Globe, Lock, Star, ChevronRight,
-    Bot, Check, Database, Coins, MessageSquare,
-    Activity, Cpu, UserCheck, CircleDollarSign, Users
+    Activity, Cpu, UserCheck, CircleDollarSign, Users,
+    TrendingUp, Calendar, Sparkles, BarChart3, Quote, Share2
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -240,7 +239,23 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* --- FAN ONLY: MODEL PREVIEW --- */}
+            {/* --- GROWTH TICKER (CREATORS ONLY) --- */}
+            {viewMode === 'creator' && (
+                <div className="relative z-10 py-6 bg-purple-600/5 border-y border-purple-500/10 overflow-hidden whitespace-nowrap">
+                    <div className="flex animate-marquee gap-12 text-[10px] font-black uppercase tracking-[0.3em] text-purple-400">
+                        <span>🚀 +2,400% Crecimiento Promedio</span>
+                        <span>💎 $14,200 Pagados Hoy</span>
+                        <span>📈 1.2M Impresiones Semanales</span>
+                        <span>🛡️ 0 Baneos Reportados</span>
+                        <span>🔥 +500 Solicitudes Nuevas</span>
+                        <span>🚀 +2,400% Crecimiento Promedio</span>
+                        <span>💎 $14,200 Pagados Hoy</span>
+                        <span>📈 1.2M Impresiones Semanales</span>
+                        <span>🛡️ 0 Baneos Reportados</span>
+                        <span>🔥 +500 Solicitudes Nuevas</span>
+                    </div>
+                </div>
+            )}
             {viewMode === 'fan' && (
                 <section className="py-24 relative z-10" id="models">
                     <div className="container mx-auto px-6">
@@ -308,18 +323,18 @@ const LandingPage = () => {
                                     <p className="text-sm text-gray-500 italic">{viewMode === 'fan' ? 'Contenido que el dinero no puede comprar.' : 'Cierra ventas 24/7 de forma automatizada.'}</p>
                                 </div>
                                 <div className="space-y-4">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${viewMode === 'fan' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>
-                                        {viewMode === 'fan' ? <Zap className="w-6 h-6" /> : <Database className="w-6 h-6" />}
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${viewMode === 'fan' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`}>
+                                        {viewMode === 'fan' ? <Zap className="w-6 h-6" /> : <TrendingUp className="w-6 h-6" />}
                                     </div>
-                                    <h4 className="font-bold">{viewMode === 'fan' ? 'Soporte 24/7' : 'Casino Integrado'}</h4>
-                                    <p className="text-sm text-gray-500 italic">{viewMode === 'fan' ? 'Atención personalizada para tus dudas.' : 'Monetiza con juegos la suerte de tus fans.'}</p>
+                                    <h4 className="font-bold">{viewMode === 'fan' ? 'Soporte 24/7' : 'Agente de Crecimiento IA'}</h4>
+                                    <p className="text-sm text-gray-500 italic">{viewMode === 'fan' ? 'Atención personalizada para tus dudas.' : 'Estrategias personalizadas para tu perfil.'}</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="grid gap-6">
-                            <Card icon={viewMode === 'fan' ? UserCheck : Globe} title={viewMode === 'fan' ? "Reviews Reales" : "Red Social Anti-Baneo"} desc={viewMode === 'fan' ? "Lee testimonios de otros usuarios verificados." : "Stories y Feed blindados dentro de Telegram."} color={viewMode === 'fan' ? 'pink' : 'purple'} />
-                            <Card icon={viewMode === 'fan' ? Shield : Star} title={viewMode === 'fan' ? "Pagos Escrow" : "Monetización VIP"} desc={viewMode === 'fan' ? "Tu dinero seguro hasta que recibas el servicio." : "Suscripciones y propinas protegidas."} color={viewMode === 'fan' ? 'pink' : 'purple'} />
+                            <Card icon={viewMode === 'fan' ? UserCheck : Calendar} title={viewMode === 'fan' ? "Reviews Reales" : "Programación Inteligente"} desc={viewMode === 'fan' ? "Lee testimonios de otros usuarios verificados." : "Agenda tus posts y contenido 24/7 sin esfuerzo."} color={viewMode === 'fan' ? 'pink' : 'purple'} />
+                            <Card icon={viewMode === 'fan' ? Shield : Sparkles} title={viewMode === 'fan' ? "Pagos Escrow" : "IA Photo Enhancer"} desc={viewMode === 'fan' ? "Tu dinero seguro hasta que recibas el servicio." : "Mejora y retoca tus fotos con IA en segundos."} color={viewMode === 'fan' ? 'pink' : 'purple'} />
                         </div>
                     </div>
                 </div>
@@ -384,6 +399,29 @@ const LandingPage = () => {
                                 <TableRow pain="Cierre Inesperado" trad="Telegram borra tu cuenta/canal de la noche a la mañana." nebula="Plataforma propia anti-baneo con IA integrada." />
                                 <TableRow pain="Crecimiento" trad="Mendigar seguidores y pagar promos dudosas." nebula="Feed Colaborativo + SFS Automatizado." />
                             </div>
+
+                            {/* Growth Graph */}
+                            <div className="p-8 bg-black/40 border border-white/5 rounded-3xl backdrop-blur-3xl space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="font-bold text-lg flex items-center gap-2">
+                                        <BarChart3 className="w-5 h-5 text-purple-500" /> Crecimiento con Nebula
+                                    </h4>
+                                    <span className="text-xs font-black text-green-500">+12,400% ROI</span>
+                                </div>
+                                <div className="h-48 w-full flex items-end gap-1">
+                                    {[20, 35, 25, 45, 30, 60, 40, 80, 50, 100].map((h, i) => (
+                                        <div
+                                            key={i}
+                                            className="flex-1 bg-gradient-to-t from-purple-900/40 to-purple-500/60 rounded-t-md transition-all hover:to-purple-400"
+                                            style={{ height: `${h}%` }}
+                                        ></div>
+                                    ))}
+                                </div>
+                                <div className="flex justify-between text-[10px] text-gray-600 font-bold uppercase tracking-widest">
+                                    <span>Semana 1 (Tradicional)</span>
+                                    <span>Semana 10 (Nebula)</span>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-12 mt-24">
@@ -419,10 +457,42 @@ const LandingPage = () => {
                             desc={viewMode === 'fan' ? "Sin rastros en tu banco ni estados de cuenta." : "Tus ganancias a tu wallet en minutos."}
                             color={viewMode === 'fan' ? 'pink' : 'purple'}
                         />
-                        <Feature icon={Lock} title="Anti-Baneo" desc="Sin rastros en estados de cuenta." color={viewMode === 'fan' ? 'pink' : 'purple'} />
+                        <Feature icon={viewMode === 'fan' ? Lock : Database} title={viewMode === 'fan' ? "Anti-Baneo" : "Casino Integrado"} desc={viewMode === 'fan' ? "Sin rastros en estados de cuenta." : "Monetiza la suerte de tus fans."} color={viewMode === 'fan' ? 'pink' : 'purple'} />
                     </div>
                 </div>
             </section>
+
+            {/* --- TESTIMONIALS SECTION (CREATORS) --- */}
+            {viewMode === 'creator' && (
+                <section className="py-32 relative z-10 bg-black/20">
+                    <div className="container mx-auto px-6 space-y-16">
+                        <div className="text-center space-y-4">
+                            <h2 className="text-4xl font-black uppercase tracking-widest">Voces del Éxito</h2>
+                            <p className="text-gray-500">Lo que dicen las estrellas que ya brillan con Nebula.</p>
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-8">
+                            <Testimonial
+                                name="Elena V."
+                                role="Modelo Elite"
+                                text="Desde que activé el Agente IA, mis ingresos subieron un 400% y por fin puedo dormir tranquila sin responder mensajes 24/7."
+                                image="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop"
+                            />
+                            <Testimonial
+                                name="Carla M."
+                                role="Creadora de Contenido"
+                                text="El sistema de SFS automatizado es una locura. Mi comunidad creció de 5k a 50k en solo dos meses sin gastar un dólar en promos."
+                                image="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop"
+                            />
+                            <Testimonial
+                                name="Sofia K."
+                                role="Modelo Independiente"
+                                text="La protección anti-baneo me salvó. Telegram me cerró 3 canales antes de entrar a Nebula. Aquí mi negocio es blindado."
+                                image="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop"
+                            />
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* --- FINAL CTA --- */}
             <section className="py-48 relative text-center z-10" id="login">
@@ -468,9 +538,13 @@ const LandingPage = () => {
 
             <style>{`
                 .text-glow { filter: drop-shadow(0 0 10px currentColor); }
-                @keyframes fade-in-up {
-                    from { opacity: 0; transform: translateY(30px); }
-                    to { opacity: 1; transform: translateY(0); }
+                @keyframes marquee {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+                .animate-marquee {
+                    display: inline-flex;
+                    animation: marquee 30s linear infinite;
                 }
                 .animate-fade-in-up { animation: fade-in-up 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 html { scroll-behavior: smooth; }
@@ -508,6 +582,20 @@ const TableRow = ({ pain, trad, nebula }) => (
         <div className="col-span-4 text-[10px] sm:text-xs font-bold text-gray-300 flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,1)] shrink-0"></div>
             {nebula}
+        </div>
+    </div>
+);
+
+const Testimonial = ({ name, role, text, image }) => (
+    <div className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/5 space-y-6 relative overflow-hidden group">
+        <Quote className="absolute top-6 right-8 w-12 h-12 text-purple-500/10" />
+        <p className="text-gray-400 italic leading-relaxed relative z-10">"{text}"</p>
+        <div className="flex items-center gap-4 pt-4">
+            <img src={image} alt={name} className="w-12 h-12 rounded-full object-cover border border-purple-500/30" />
+            <div className="text-left">
+                <h4 className="font-bold text-sm">{name}</h4>
+                <p className="text-[10px] text-purple-500 uppercase font-black tracking-widest">{role}</p>
+            </div>
         </div>
     </div>
 );
