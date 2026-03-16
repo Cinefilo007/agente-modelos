@@ -160,6 +160,7 @@ class StartProfileUpdate(BaseModel):
     artistic_name: Optional[str] = None
     bio_short: Optional[str] = None
     social_links: Optional[List[Dict[str, str]]] = None # List of {network, url, icon}
+    services: Optional[List[str]] = None
     cover_url: Optional[str] = None
     avatar_url: Optional[str] = None
     terms_accepted: Optional[bool] = None
@@ -252,6 +253,9 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
     if "social_links" in updates and table == "models":
         # Convert Pydantic model to dict for JSONB
         updates["social_links"] = updates["social_links"]
+        
+    if "services" in updates and table == "models":
+        updates["services"] = updates["services"]
     
     # Map flat fields to config_ JSONB columns
     if "prices" in updates:
@@ -292,7 +296,7 @@ async def get_public_profile(identifier: str):
         is_uuid = False
         
     query = db.client.table("models") \
-        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links, last_seen")
+        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links, services, last_seen, country, is_verified")
         
     if is_uuid:
         query = query.eq("id", identifier)

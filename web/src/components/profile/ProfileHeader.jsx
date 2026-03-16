@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook, CheckCircle2, Gamepad2 } from 'lucide-react';
+import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook, CheckCircle2, Gamepad2, MessageCircle, UserCheck } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import { isOnline as checkOnline } from '../../utils/date';
 
 export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const { themeColor } = useTheme();
+    const { user: currentUser } = useAuth();
+    const navigate = useNavigate();
     const [isFollowing, setIsFollowing] = useState(false);
     const [loadingFollow, setLoadingFollow] = useState(false);
+    const [showMessageAlert, setShowMessageAlert] = useState(false);
 
     // Fetch follow status if not own profile
     useEffect(() => {
@@ -42,6 +46,15 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             console.error("Error toggling follow:", err);
         } finally {
             setLoadingFollow(false);
+        }
+    };
+
+    const handleMessageClick = () => {
+        if (currentUser?.role === 'client') {
+            setShowMessageAlert(true);
+        } else {
+            // Ir al chat o mensajes directamente si no es cliente
+            navigate(`/messages/${user.username || user.id}`);
         }
     };
 
@@ -110,7 +123,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             {/* Cover Image Container */}
             <div className="relative w-full h-56">
                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${user.cover_url || user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab'}')` }}></div>
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
             </div>
 
             {/* Content Container */}
@@ -175,19 +188,40 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
                         {/* Follow Action */}
                         {!isOwnProfile && (
-                            <button
-                                onClick={handleSubscribe}
-                                disabled={loadingFollow}
-                                className="transition-all text-white px-5 py-2 rounded-full text-xs font-bold shadow-lg flex items-center justify-center min-w-[80px]"
-                                style={{
-                                    backgroundColor: isFollowing ? 'transparent' : 'var(--theme-glow)',
-                                    border: isFollowing ? '1px solid var(--theme-glow)' : 'none',
-                                    color: isFollowing ? 'var(--theme-glow)' : '#fff',
-                                    boxShadow: isFollowing ? 'none' : '0 10px 15px -3px rgba(184, 41, 227, 0.2)'
-                                }}
-                            >
-                                {loadingFollow ? <Loader size={14} className="animate-spin" /> : (isFollowing ? "FOLLOWING" : "FOLLOW")}
-                            </button>
+                            <div className="flex items-center gap-2 mt-2 md:mt-0">
+                                <button
+                                    onClick={handleMessageClick}
+                                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors flex-shrink-0 border border-white/10"
+                                >
+                                    <MessageCircle size={18} />
+                                </button>
+
+                                {isFollowing && (
+                                    <Link to={`/casino/${user.username}`}>
+                                        <button
+                                            className="h-10 px-4 rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 hover:bg-yellow-500/30 flex items-center justify-center transition-colors font-bold text-xs shadow-lg shadow-yellow-500/10"
+                                        >
+                                            <Gamepad2 size={16} className="mr-1.5" /> Casino
+                                        </button>
+                                    </Link>
+                                )}
+
+                                <button
+                                    onClick={handleSubscribe}
+                                    disabled={loadingFollow}
+                                    className="transition-all text-white h-10 px-5 rounded-full text-xs font-bold shadow-lg flex items-center justify-center min-w-[100px]"
+                                    style={{
+                                        backgroundColor: isFollowing ? 'transparent' : 'var(--theme-glow)',
+                                        border: isFollowing ? '1px solid var(--theme-glow)' : 'none',
+                                        color: isFollowing ? 'var(--theme-glow)' : '#fff',
+                                        boxShadow: isFollowing ? 'none' : '0 10px 15px -3px rgba(184, 41, 227, 0.2)'
+                                    }}
+                                >
+                                    {loadingFollow ? <Loader size={14} className="animate-spin" /> : (
+                                        isFollowing ? <UserCheck size={18} /> : "FOLLOW"
+                                    )}
+                                </button>
+                            </div>
                         )}
                     </div>
 
@@ -257,6 +291,41 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     </div>
                 )}
             </div>
+
+            {/* Modal de Alerta de Mensaje */}
+            {showMessageAlert && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-[#111] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+                        <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+                            <MessageCircle className="text-red-500" size={24} />
+                        </div>
+                        <h3 className="text-lg font-bold text-white text-center mb-2">Aviso Importante</h3>
+                        <p className="text-sm text-slate-300 text-center mb-6 leading-relaxed">
+                            Solo se aceptan chats para adquirir algún servicio o solicitar información.
+                            <br /><br />
+                            <strong className="text-red-400">Se le advierte que puede entrar a la lista negra y ser expulsado de la app si molesta a las modelos.</strong>
+                        </p>
+                        <div className="flex gap-3">
+                            <Button
+                                variant="ghost"
+                                className="flex-1 bg-white/5 hover:bg-white/10 text-white"
+                                onClick={() => setShowMessageAlert(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold border-none"
+                                onClick={() => {
+                                    setShowMessageAlert(false);
+                                    navigate(`/messages/${user.username || user.id}`);
+                                }}
+                            >
+                                Entendido
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
