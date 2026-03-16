@@ -141,10 +141,7 @@ function App() {
                   </PublicRoute>
                 } />
 
-                {/* Perfiles Públicos Generales de la App*/}
-                <Route path="/:username" element={
-                  <Profile />
-                } />
+                {/* Perfiles Públicos Generales de la App removidos de aquí */}
 
                 {/* Admin Route - Separate Layout potentially? Or same? Let's use separate for focus */}
                 <Route path="/admin" element={
@@ -163,28 +160,27 @@ function App() {
                 <Route path="/promotions" element={<Promotions />} />
                 <Route path="/promotions/advertiser/:userId" element={<AdvertiserProfile />} />
 
-                {/* Protected Routes */}
-                <Route path="/" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<Feed />} />
-                  <Route path="explore" element={<Explore />} />
-                  <Route path="reviews" element={<Reviews />} />
-                  <Route path="notifications" element={<Notifications />} />
-                  <Route path="edit-profile" element={<EditProfile />} />
-                  <Route path="create-post" element={<CreatePost />} />
-                  <Route path="create-story" element={<CreateStory />} />
-                  <Route path="post/:id" element={<PostDetail />} />
-                  <Route path="service/:serviceId" element={<ServiceInvoicePage />} />
-                  <Route path="checkout" element={<ServiceCheckout />} />
-                  <Route path="order/:orderId" element={<OrderDetails />} />
-                  <Route path="support" element={<Support />} />
-                  <Route path="shop-manager" element={<ShopManager />} />
-                  <Route path="profile" element={<Navigate to="/me" replace />} />
-                  <Route path="me" element={<Profile />} />
-                  <Route path="casino/:username" element={<Casino />} />
+                {/* Main App with Navigation (Public + Protected) */}
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                  <Route path="explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
+                  <Route path="reviews" element={<ProtectedRoute><Reviews /></ProtectedRoute>} />
+                  <Route path="notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                  <Route path="edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                  <Route path="create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+                  <Route path="create-story" element={<ProtectedRoute><CreateStory /></ProtectedRoute>} />
+                  <Route path="post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+                  <Route path="service/:serviceId" element={<ProtectedRoute><ServiceInvoicePage /></ProtectedRoute>} />
+                  <Route path="checkout" element={<ProtectedRoute><ServiceCheckout /></ProtectedRoute>} />
+                  <Route path="order/:orderId" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
+                  <Route path="support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+                  <Route path="shop-manager" element={<ProtectedRoute><ShopManager /></ProtectedRoute>} />
+                  <Route path="profile" element={<ProtectedRoute><Navigate to="/me" replace /></ProtectedRoute>} />
+                  <Route path="me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="casino/:username" element={<ProtectedRoute><Casino /></ProtectedRoute>} />
+
+                  {/* Public Profile */}
+                  <Route path=":username" element={<Profile />} />
                 </Route>
 
                 {/* Onboarding Route */}

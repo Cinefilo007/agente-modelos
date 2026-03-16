@@ -65,6 +65,7 @@ function Feed() {
                     created_at: p.created_at,
                     user: {
                         id: p.models?.id || p.model_id, // Use ID for link
+                        username: p.models?.username,   // IMPORTANT: Pass username for clean URLs
                         name: p.models?.full_name || p.models?.username || 'Unknown',
                         artistic_name: p.models?.artistic_name, // Support artistic name
                         avatar: p.models?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.models?.username || 'User'}`,
