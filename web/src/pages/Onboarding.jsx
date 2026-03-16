@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -37,11 +37,23 @@ const Onboarding = () => {
     const [creatorBirthDate, setCreatorBirthDate] = useState('');
     const [verificationPhoto, setVerificationPhoto] = useState(null);
 
+    useEffect(() => {
+        // Auto-select role if chosen in Landing Page
+        const intendedRole = localStorage.getItem('intendedRole');
+        if (intendedRole && step === 'select_role') {
+            if (intendedRole === 'creator') {
+                setStep('creator_flow');
+            } else if (intendedRole === 'fan') {
+                setStep('fan_flow');
+            }
+            localStorage.removeItem('intendedRole'); // Clean up
+        }
+    }, [step, user, navigate]); // Added user and navigate to deps for safety
+
     const handleFanSubmit = async (e) => {
         e.preventDefault();
         setError(null);
 
-        // Age check logic remains same
         const birth = new Date(birthDate);
         const today = new Date();
         let age = today.getFullYear() - birth.getFullYear();

@@ -11,7 +11,7 @@ from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 router = APIRouter()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-ADMIN_ID = 1123020118 # Hardcoded admin ID
+ADMIN_ID = os.getenv("ADMIN_TELEGRAM_ID") # Using environment variable instead of hardcoded ID
 
 @router.post("/heartbeat")
 async def heartbeat(user: TelegramUser = Depends(get_current_user)):
