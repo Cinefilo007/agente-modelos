@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import {
     Shield, Zap, Heart, Globe, Lock, Star, ChevronRight,
     Bot, Check, Database, Coins, MessageSquare,
-    Activity, Cpu, UserCheck, CircleDollarSign
+    Activity, Cpu, UserCheck, CircleDollarSign, Users
 } from 'lucide-react';
 
 const LandingPage = () => {
