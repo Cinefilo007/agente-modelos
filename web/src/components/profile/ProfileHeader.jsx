@@ -134,8 +134,10 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             {/* Cover Image Container */}
             <div className="relative w-full h-64 md:h-72">
                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${user.cover_url || user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab'}')` }}></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a060e] via-[#0a060e]/60 to-transparent"></div>
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent"></div>
+                {/* Desvanecimiento suave unicamente en el borde inferior para mezclarse con el fondo */}
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0a060e] to-transparent"></div>
+                {/* Linea extra para asegurar que no quede un borde duro de anti-aliasing */}
+                <div className="absolute inset-x-0 -bottom-[1px] h-1 bg-[#0a060e]"></div>
             </div>
 
             {/* Content Container */}
@@ -190,9 +192,9 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                             <h1 className="text-2xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
                                 {user.artistic_name || user.full_name || user.name || 'Elena Vance'}
                                 {user.is_verified && (
-                                    <svg viewBox="0 0 24 24" className="w-5 h-5 text-blue-500 fill-current ml-1" aria-label="Verificado">
-                                        <path d="M11.53.513c.278-.291.737-.291 1.015 0l2.213 2.316c.159.167.38.257.61.242l3.193-.207c.4-.026.745.275.772.677l.215 3.203c.015.231.11.45.274.611l2.365 2.302c.296.288.296.756 0 1.044l-2.365 2.302c-.164.161-.259.38-.274.611l-.215 3.203c-.027.402-.372.703-.772.677l-3.193-.207c-.23-.015-.45.075-.61.242L12.545 20.44a.715.715 0 0 1-1.015 0l-2.213-2.316a.856.856 0 0 0-.61-.242l-3.193.207a.717.717 0 0 1-.772-.677l-.215-3.203a.857.857 0 0 0-.274-.611L1.888 11.29a.738.738 0 0 1 0-1.044l2.365-2.302c.164-.161.259-.38.274-.611l.215-3.203a.717.717 0 0 1 .772-.677l3.193.207c.23.015.45-.075.61-.242L11.53.513z"></path>
-                                        <path fill="#fff" d="m10.119 14.881-2.905-2.906a.75.75 0 0 0-1.06 1.061l3.435 3.435a.75.75 0 0 0 1.06 0l7.636-7.636a.75.75 0 1 0-1.06-1.061z"></path>
+                                    <svg viewBox="0 0 24 24" className="w-[22px] h-[22px] ml-1" aria-label="Verificado">
+                                        <path fill="#1D9BF0" d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.923-3.998-.356 0-.698.05-1.024.136C14.77 2.15 13.486 1.5 12 1.5s-2.77.65-3.643 2.138c-.326-.086-.668-.136-1.024-.136-2.213 0-3.923 1.788-3.923 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.923 3.998.356 0 .698-.05 1.024-.136C9.23 21.85 10.514 22.5 12 22.5s2.77-.65 3.643-2.138c.326.086.668.136 1.024.136 2.213 0 3.923-1.788 3.923-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6z"></path>
+                                        <path fill="#FFF" d="M10.236 15.655L6.442 11.85c-.407-.406-1.066-.406-1.472 0-.407.406-.407 1.065 0 1.47l4.53 4.542c.404.406 1.063.406 1.47 0l9.31-9.33c.406-.407.406-1.066 0-1.472-.407-.407-1.065-.407-1.472 0l-8.57 8.595z"></path>
                                     </svg>
                                 )}
                             </h1>
@@ -263,13 +265,13 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                 {user.services && user.services.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-1.5 mb-2">
                         {user.services.map((service, index) => {
-                            const dotColors = ['bg-accent-magenta', 'bg-accent-blue', 'bg-[var(--theme-glow)]', 'bg-white'];
+                            const dotColors = ['bg-pink-400', 'bg-cyan-400', 'bg-emerald-400', 'bg-amber-400', 'bg-violet-400'];
                             return (
                                 <div
                                     key={index}
                                     className="bg-white/5 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full flex items-center gap-1.5"
                                 >
-                                    <div className={`w-1 h-1 rounded-full ${dotColors[index % dotColors.length]}`} style={index === 2 ? { backgroundColor: 'var(--theme-glow)' } : {}}></div>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${dotColors[index % dotColors.length]} shadow-[0_0_8px_currentColor]`}></div>
                                     <span className="text-[10px] font-bold text-slate-200 tracking-wide uppercase">{service}</span>
                                 </div>
                             );
