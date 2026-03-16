@@ -114,6 +114,7 @@ function EditProfile() {
                 cover_url: formData.cover_url
             });
             console.log("Profile updated:", data);
+            showToast("Perfil actualizado correctamente", "success");
             navigate(`/profile/${formData.username || user.username}`);
         } catch (error) {
             console.error("Error updating profile:", error);

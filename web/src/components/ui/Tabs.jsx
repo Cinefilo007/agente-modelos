@@ -7,13 +7,13 @@ export function Tabs({ tabs, activeTab, onChange }) {
 
     return (
         <div className="mt-6">
-            <div className="flex border-b border-white/5 gap-8 overflow-x-auto no-scrollbar w-full">
+            <div className="flex justify-center border-b border-white/5 gap-8 overflow-x-auto no-scrollbar w-full px-4">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => onChange(tab.id)}
                         className={twMerge(
-                            'pb-3 text-sm font-semibold transition-colors relative flex justify-center items-center whitespace-nowrap',
+                            'pb-3 text-sm font-semibold transition-colors relative flex justify-center items-center whitespace-nowrap px-2',
                             activeTab === tab.id
                                 ? 'text-white font-bold'
                                 : 'text-slate-500 hover:text-slate-300'

@@ -11,9 +11,9 @@ export function ProfileContent({ posts, onPostClick, modelId, isOwnProfile, user
     const navigate = useNavigate();
 
     const tabs = [
-        { id: 'posts', label: 'Gallery' },
-        { id: 'shop', label: 'Services' },
-        { id: 'reviews', label: 'Reviews' },
+        { id: 'posts', label: 'Galería' },
+        { id: 'shop', label: 'Servicios' },
+        { id: 'reviews', label: 'Reseñas' },
     ];
 
     return (

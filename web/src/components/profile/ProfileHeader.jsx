@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook, CheckCircle2, Gamepad2, MessageCircle, UserCheck, MoreVertical } from 'lucide-react';
+import { Edit3, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook, CheckCircle2, Gamepad2, MessageCircle, UserCheck, MoreVertical, MapPin, Diamond } from 'lucide-react';
+
+const OnlyFansIcon = (props) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 6.628 5.373 12 12 12 6.628 0 12-5.372 12-12C24 5.373 18.627 0 12 0zm0 1.831A10.169 10.169 0 111.831 12 10.18 10.18 0 0112 1.831zM9.542 5.31A4.238 4.238 0 1013.781 9.55a4.238 4.238 0 00-4.239-4.24zm0 1.484a2.753 2.753 0 11-2.754 2.755A2.754 2.754 0 019.542 6.794zm7.558 2.067a.465.465 0 10.465.465.465.465 0 00-.465-.465zm-.005 3.32a.465.465 0 10.465.465.465.465 0 00-.465-.465zM12 12v6.625l-2.073-2.077h2.073z" />
+    </svg>
+);
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Link, useNavigate } from 'react-router-dom';
@@ -72,7 +78,9 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             case 'twitch': return <Twitch size={size} />;
             case 'linkedin': return <Linkedin size={size} />;
             case 'github': return <Github size={size} />;
-            case 'onlyfans': return <Star size={size} />;
+            case 'onlyfans': return <OnlyFansIcon width={size} height={size} />;
+            case 'fansly': return <Diamond size={size} />;
+            case 'patreon': return <Heart size={size} />;
             case 'website': return <Globe size={size} />;
             default: return <LinkIcon size={size} />;
         }
@@ -89,6 +97,8 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             case 'linkedin': return '#0A66C2';
             case 'github': return '#333333';
             case 'onlyfans': return '#00AFF0';
+            case 'fansly': return '#00AEF0';
+            case 'patreon': return '#FF424D';
             default: return '#10B981'; // Website green
         }
     };
@@ -124,7 +134,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             {/* Cover Image Container */}
             <div className="relative w-full h-64 md:h-72">
                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${user.cover_url || user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab'}')` }}></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)]/80 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a060e] via-[#0a060e]/60 to-transparent"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent"></div>
             </div>
 
@@ -188,7 +198,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                             </h1>
                             <div className="flex items-center gap-3 mt-0.5">
                                 <p className="text-slate-300 text-[13px] flex items-center gap-1">
-                                    <Globe size={14} className="text-[var(--theme-glow)]" /> {user.country || 'Ubicación Desconocida'}
+                                    <MapPin size={14} className="text-[var(--theme-glow)]" /> {user.country || 'Ubicación Desconocida'}
                                 </p>
                             </div>
                         </div>
