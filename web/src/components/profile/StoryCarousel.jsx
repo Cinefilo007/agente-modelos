@@ -63,8 +63,8 @@ export function StoryCarousel({ stories, onOpenStory, title }) {
                                     )}
                                 </div>
                             </div>
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-white/70 truncate w-full text-center mt-1">
-                                {story.is_saved ? story.title || 'STORY' : timeAgo(story.created_at)}
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white/80 truncate w-full text-center mt-1">
+                                {story.is_saved ? (story.title || 'STORY') : (story.models?.artistic_name || story.models?.username || 'MODELO')}
                             </span>
                         </button>
                     ))}
