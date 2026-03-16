@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Body
 from pydantic import BaseModel
 from typing import Optional, Dict, List
-from src.api.dependencies import get_current_user, TelegramUser
+from src.api.dependencies import get_current_user, get_current_user_optional, TelegramUser
 from src.services.database import db
 from src.services.storage import upload_file
 import os
