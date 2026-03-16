@@ -361,6 +361,47 @@ const LandingPage = () => {
                 </div>
             </section>
 
+            {/* --- CREATOR ONLY: COMPARISON --- */}
+            {viewMode === 'creator' && (
+                <section className="py-32 relative z-10 bg-white/[0.02]" id="vision">
+                    <div className="container mx-auto px-6">
+                        <div className="max-w-5xl mx-auto space-y-16">
+                            <div className="text-center space-y-4">
+                                <h2 className="text-4xl font-black uppercase tracking-widest text-glow">Nebula vs Tradicional</h2>
+                                <p className="text-gray-500">Eliminamos tus puntos de dolor para que solo te preocupes de brillar.</p>
+                            </div>
+
+                            <div className="border border-white/5 bg-black/40 rounded-[2rem] overflow-hidden backdrop-blur-3xl shadow-2xl">
+                                <div className="grid grid-cols-12 p-8 border-b border-white/5 font-black text-[10px] uppercase tracking-[0.2em] text-gray-500">
+                                    <div className="col-span-4">Punto de Dolor</div>
+                                    <div className="col-span-4 text-center">Modo Tradicional</div>
+                                    <div className="col-span-4 text-center text-purple-500 font-glow">Efecto Nebula</div>
+                                </div>
+
+                                <TableRow pain="Mensajes Agobiantes" trad="Responder 500 DMs a mano. Agotamiento total." nebula="IA Manager cierra ventas mientras duermes." />
+                                <TableRow pain="Seguridad Financiera" trad="Comisiones del 20%+ y baneos de bancos." nebula="Pagos Crypto/P2P instantáneos y 100% tuyos." />
+                                <TableRow pain="Estafadores Habituales" trad="Clientes que hacen perder tiempo y desaparecen." nebula="Lista Negra Global compartida entre toda la red." />
+                                <TableRow pain="Cierre Inesperado" trad="Telegram borra tu cuenta/canal de la noche a la mañana." nebula="Plataforma propia anti-baneo con IA integrada." />
+                                <TableRow pain="Crecimiento" trad="Mendigar seguidores y pagar promos dudosas." nebula="Feed Colaborativo + SFS Automatizado." />
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-12 mt-24">
+                            <div className="p-12 rounded-[2rem] bg-gradient-to-br from-purple-900/10 to-transparent border border-purple-500/10 space-y-6 group hover:bg-purple-900/20 transition-all">
+                                <Users className="w-12 h-12 text-purple-500 group-hover:scale-110 transition-transform" />
+                                <h3 className="text-3xl font-black">Feed Colaborativo</h3>
+                                <p className="text-gray-500 leading-relaxed">Aquí no importa si tienes 0 o 1M de seguidores. Todas tienen la oportunidad de darse a conocer orgánicamente.</p>
+                            </div>
+                            <div className="p-12 rounded-[2rem] bg-gradient-to-br from-red-900/10 to-transparent border border-red-500/10 space-y-6 group hover:bg-red-900/20 transition-all" id="safety">
+                                <Shield className="w-12 h-12 text-red-500 group-hover:scale-110 transition-transform" />
+                                <h3 className="text-3xl font-black">Lista Negra Global</h3>
+                                <p className="text-gray-500 leading-relaxed">Si se meten con una, se meten con todas. Los estafadores quedan excluidos de todo el ecosistema automáticamente.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* --- ECONOMY SECTION --- */}
             <section className="py-32 relative z-10" id="economy">
                 <div className="container mx-auto px-6 text-center space-y-16">
@@ -456,6 +497,17 @@ const Feature = ({ icon: Icon, title, desc, color }) => (
         <div className="space-y-2">
             <h4 className="font-black uppercase tracking-tighter text-lg">{title}</h4>
             <p className="text-xs text-gray-500 leading-normal">{desc}</p>
+        </div>
+    </div>
+);
+
+const TableRow = ({ pain, trad, nebula }) => (
+    <div className="grid grid-cols-12 p-8 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors items-center gap-4 text-left">
+        <div className="col-span-4 font-black text-[10px] sm:text-xs uppercase tracking-widest text-white/50">{pain}</div>
+        <div className="col-span-4 text-[10px] sm:text-xs text-gray-600 line-through decoration-red-900/50">{trad}</div>
+        <div className="col-span-4 text-[10px] sm:text-xs font-bold text-gray-300 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,1)] shrink-0"></div>
+            {nebula}
         </div>
     </div>
 );
