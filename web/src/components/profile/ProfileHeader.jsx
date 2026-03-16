@@ -3,7 +3,7 @@ import { Edit3, Globe, Lock, Mail, LayoutDashboard, Share2, TrendingUp, DollarSi
 
 import {
     SiInstagram, SiX, SiFacebook, SiYoutube,
-    SiTiktok, SiTwitch, SiOnlyfans, SiFansly, SiPatreon
+    SiTiktok, SiTwitch, SiOnlyfans, SiPatreon
 } from '@icons-pack/react-simple-icons';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
@@ -78,7 +78,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             case 'linkedin': return <Linkedin size={size} color="#0A66C2" />;
             case 'github': return <Github size={size} className="text-white" />;
             case 'onlyfans': return <SiOnlyfans size={size} color="#00AFF0" />;
-            case 'fansly': return <SiFansly size={size} color="#00AEF0" />;
+            case 'fansly': return <Diamond size={size} color="#00AEF0" />;
             case 'patreon': return <SiPatreon size={size} color="#FF424D" />;
             case 'youtube': return <SiYoutube size={size} color="#FF0000" />;
             case 'website': return <Globe size={size} color="#10B981" />;

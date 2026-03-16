@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
     Globe, Linkedin, Github, Link as LinkIcon,
-    Plus, Trash2, X
+    Plus, Trash2, X, Diamond
 } from 'lucide-react';
 import {
     SiInstagram, SiX, SiFacebook, SiYoutube,
-    SiTiktok, SiTwitch, SiOnlyfans, SiFansly, SiPatreon
+    SiTiktok, SiTwitch, SiOnlyfans, SiPatreon
 } from '@icons-pack/react-simple-icons';
 
 const AVAILABLE_ICONS = [
@@ -16,7 +16,7 @@ const AVAILABLE_ICONS = [
     { id: 'youtube', icon: SiYoutube, label: 'YouTube', color: '#FF0000' },
     { id: 'twitch', icon: SiTwitch, label: 'Twitch', color: '#9146FF' },
     { id: 'onlyfans', icon: SiOnlyfans, label: 'OnlyFans', color: '#00AFF0' },
-    { id: 'fansly', icon: SiFansly, label: 'Fansly', color: '#00AEF0' },
+    { id: 'fansly', icon: Diamond, label: 'Fansly', color: '#00AEF0' },
     { id: 'patreon', icon: SiPatreon, label: 'Patreon', color: '#FF424D' },
     { id: 'website', icon: Globe, label: 'Website', color: '#10B981' }, // Default color for globe
     { id: 'linkedin', icon: Linkedin, label: 'LinkedIn', color: '#0A66C2' },
