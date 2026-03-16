@@ -22,7 +22,7 @@ async def ai_touch_up(
         raise HTTPException(status_code=403, detail="Solo las modelos pueden usar esta herramienta")
 
     # 1. Verificar balance de créditos en tabla models
-    model_res = db.client.table("models").select("credits_balance").eq("telegram_id", user.user_id).single().execute()
+    model_res = db.client.table("models").select("credits_balance").eq("id", user.user_id).single().execute()
     if not model_res.data:
         raise HTTPException(status_code=404, detail="Modelo no encontrada")
     
@@ -41,7 +41,7 @@ async def ai_touch_up(
             raise HTTPException(status_code=500, detail="Error al procesar la imagen con IA")
 
         # 4. Descontar créditos
-        db.client.table("models").update({"credits_balance": balance - COSTO_RETOQUE}).eq("telegram_id", user.user_id).execute()
+        db.client.table("models").update({"credits_balance": balance - COSTO_RETOQUE}).eq("id", user.user_id).execute()
         
         # 5. Registrar transacción (Ledger)
         db.client.table("crypto_transactions").insert({
@@ -69,7 +69,7 @@ async def ai_change_background(
         raise HTTPException(status_code=403, detail="Solo las modelos pueden usar esta herramienta")
 
     # 1. Verificar balance de créditos
-    model_res = db.client.table("models").select("credits_balance").eq("telegram_id", user.user_id).single().execute()
+    model_res = db.client.table("models").select("credits_balance").eq("id", user.user_id).single().execute()
     balance = float(model_res.data.get("credits_balance", 0.0))
     
     if balance < COSTO_FONDO:
@@ -86,7 +86,7 @@ async def ai_change_background(
             raise HTTPException(status_code=500, detail="Error al procesar el fondo con IA")
 
         # 4. Descontar créditos
-        db.client.table("models").update({"credits_balance": balance - COSTO_FONDO}).eq("telegram_id", user.user_id).execute()
+        db.client.table("models").update({"credits_balance": balance - COSTO_FONDO}).eq("id", user.user_id).execute()
         
         # 5. Registrar transacción
         db.client.table("crypto_transactions").insert({
