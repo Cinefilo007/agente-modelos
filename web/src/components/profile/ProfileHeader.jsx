@@ -13,11 +13,13 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import { isOnline as checkOnline } from '../../utils/date';
 import { AuthRequiredModal } from '../auth/AuthRequiredModal';
+import { useToast } from '../../context/ToastContext';
 
 export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const { themeColor } = useTheme();
     const { user: currentUser } = useAuth();
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [isFollowing, setIsFollowing] = useState(false);
     const [loadingFollow, setLoadingFollow] = useState(false);
     const [showMessageAlert, setShowMessageAlert] = useState(false);
@@ -71,6 +73,22 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             // Abrir Telegram directamente si no es cliente
             const tgUsername = user.username ? user.username.replace('@', '') : user.id;
             window.open(`https://t.me/${tgUsername}`, '_blank');
+        }
+    };
+
+    const handleShare = () => {
+        const url = window.location.href;
+        if (navigator.share) {
+            navigator.share({
+                title: `Perfil de ${user.artistic_name || user.full_name}`,
+                url: url
+            }).catch(() => {
+                navigator.clipboard.writeText(url);
+                showToast("Enlace copiado al portapapeles", "success");
+            });
+        } else {
+            navigator.clipboard.writeText(url);
+            showToast("Enlace copiado al portapapeles", "success");
         }
     };
 
@@ -135,6 +153,14 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                 <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0a060e] to-transparent"></div>
                 {/* Linea extra para asegurar que no quede un borde duro de anti-aliasing */}
                 <div className="absolute inset-x-0 -bottom-[1px] h-1 bg-[#0a060e]"></div>
+
+                {/* Share Button over cover */}
+                <button
+                    onClick={handleShare}
+                    className="absolute top-4 right-4 p-2.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white hover:bg-black/60 transition-all z-20 group active:scale-95"
+                >
+                    <Share2 size={20} className="group-hover:scale-110 transition-transform" />
+                </button>
             </div>
 
             {/* Content Container */}
@@ -225,7 +251,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     </div>
 
                     {/* Bio Section */}
-                    <p className="mt-3 text-slate-400 leading-snug text-sm max-w-[90%]">
+                    <p className="mt-3 text-slate-400 leading-snug text-sm w-full pr-4">
                         {user.bio_short || user.bio || 'Redefining the digital aesthetic. High-fashion projects and exclusive digital content. 📍 Based in New York / Paris.'}
                     </p>
                 </div>
@@ -260,7 +286,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
                 {/* Services/Niches Badges */}
                 {user.services && user.services.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-1.5 mb-2">
+                    <div className="mt-4 flex flex-wrap gap-2 mb-2 w-full pr-4">
                         {user.services.map((service, index) => {
                             const dotColors = ['bg-pink-400', 'bg-cyan-400', 'bg-emerald-400', 'bg-amber-400', 'bg-violet-400'];
                             return (
