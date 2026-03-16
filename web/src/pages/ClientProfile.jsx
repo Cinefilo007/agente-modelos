@@ -7,9 +7,12 @@ import { Avatar } from '../components/ui/Avatar';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import api from '../api/axios';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { isOnline as checkOnline } from '../utils/date';
 
 export default function ClientProfile() {
-    const { themeColor } = useTheme();
     const { user, logout } = useAuth();
     const { showToast } = useToast();
     const [balance, setBalance] = useState({ balance: 0, currency: 'USDT' });
