@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import List, Optional
 from src.services.database import db
-from src.api.dependencies import get_current_user, TelegramUser
+from src.api.dependencies import get_current_user, get_current_user_optional, TelegramUser
 from datetime import datetime, timedelta
 
 router = APIRouter()
@@ -14,7 +14,7 @@ class ViewRecord(BaseModel):
 # --- Routes ---
 
 @router.post("/view")
-async def record_view(data: ViewRecord, request: Request, user: Optional[TelegramUser] = Depends(get_current_user)):
+async def record_view(data: ViewRecord, request: Request, user: Optional[TelegramUser] = Depends(get_current_user_optional)):
     """Records a profile view."""
     try:
         # 1. Get client UUID if user is authenticated as client

@@ -32,7 +32,7 @@ function Profile() {
         username === 'me' ||
         username === 'profile' ||
         (currentUser && (
-            username === currentUser.username ||
+            username.toLowerCase() === currentUser.username?.toLowerCase() ||
             String(username) === String(currentUser.id) ||
             String(username) === String(currentUser.telegram_id)
         ));

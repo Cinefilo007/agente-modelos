@@ -67,13 +67,24 @@ export const AuthProvider = ({ children }) => {
                     }
                 } catch (err) {
                     console.error("[Auth] Error validando sesión contra el servidor:", err.response?.status, err.response?.data?.detail);
-                    // Si el servidor dice que no estamos autorizados o el usuario no existe, limpiamos todo
-                    if (err.response?.status === 401 || err.response?.status === 404) {
-                        console.warn("[Auth] Sesión no válida, forzando cierre de sesión.");
+
+                    // Si el servidor dice explícitamente que el token no vale, limpiamos.
+                    if (err.response?.status === 401) {
+                        console.warn("[Auth] Sesión no válida por el servidor, limpiando.");
                         logout();
+                    } else if (err.response?.status === 404) {
+                        // Perfil no encontrado (pudo ser borrado o error de sync temporal)
+                        console.warn("[Auth] Perfil no encontrado en el servidor.");
+                        // No cerramos sesión inmediatamente por un 404 de perfil, podríar ser una falla temporal del API
+                        // Pero notificamos que no tenemos usuario.
                     } else {
-                        // Otros errores (red, 500) - quizá no cerrar sesión pero dejar de cargar
-                        console.error("[Auth] Error de comunicación, no se pudo validar la sesión.");
+                        // Errores de red o 500 - Mantenemos los datos locales por ahora por resiliencia
+                        console.error("[Auth] Error de comunicación, manteniendo sesión local si existe.");
+                        if (storedUserStr) {
+                            try {
+                                setUser(JSON.parse(storedUserStr));
+                            } catch (e) { }
+                        }
                     }
                 }
             } else {
