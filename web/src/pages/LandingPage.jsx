@@ -8,7 +8,7 @@ import {
     Shield, Zap, Heart, Globe, Lock, Star, ChevronRight,
     Bot, Check, Database, Coins, MessageSquare,
     Activity, Cpu, UserCheck, CircleDollarSign, Users,
-    TrendingUp, Calendar, Sparkles, BarChart3, Quote, Share2
+    TrendingUp, Calendar, Sparkles, BarChart3, Quote, Share2, ArrowRight, Eye
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -459,6 +459,79 @@ const LandingPage = () => {
                 </section>
             )}
 
+            {/* --- CREATOR ONLY: SFS AUTOMATION SECTION --- */}
+            {viewMode === 'creator' && (
+                <section className="py-32 relative z-10 bg-black/40" id="sfs">
+                    <div className="container mx-auto px-6 space-y-24">
+                        <div className="grid lg:grid-cols-2 gap-16 items-center">
+                            <div className="space-y-8">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase tracking-widest">
+                                    <Bot className="w-3 h-3" /> Automatización Total
+                                </div>
+                                <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
+                                    SFS <span className="text-purple-500 text-glow">Automático</span>. <br />Tráfico Infinito.
+                                </h2>
+                                <p className="text-lg text-gray-500 leading-relaxed">
+                                    Olvida el tedioso trabajo de coordinar promociones. Nuestro **Bot Escrow SFS** toma el control total: publica en los canales de la red, trackea métricas de clicks en tiempo real y elimina los posts automáticamente al finalizar el periodo.
+                                </p>
+                                <ul className="space-y-4 pt-4">
+                                    <li className="flex items-center gap-3 text-sm font-bold text-gray-400">
+                                        <Check className="w-5 h-5 text-green-500" /> Publicación Programada sin intervención
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm font-bold text-gray-400">
+                                        <Check className="w-5 h-5 text-green-500" /> Trackeo de Clicks e Impresiones Real
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm font-bold text-gray-400">
+                                        <Check className="w-5 h-5 text-green-500" /> Eliminación Automática (Ghosting Safe)
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div className="grid gap-6">
+                                <SFSChannelCard
+                                    username="@VexyModel"
+                                    before="840"
+                                    after="15.4k"
+                                    growth="+1,733%"
+                                />
+                                <SFSChannelCard
+                                    username="@GlowPrincess"
+                                    before="1.2k"
+                                    after="32k"
+                                    growth="+2,566%"
+                                    featured={true}
+                                />
+                                <SFSChannelCard
+                                    username="@DeepVibes"
+                                    before="450"
+                                    after="8.9k"
+                                    growth="+1,877%"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Metrics Explainer */}
+                        <div className="grid md:grid-cols-3 gap-8">
+                            <div className="p-8 bg-white/[0.02] border border-white/5 rounded-3xl space-y-4 shadow-xl">
+                                <div className="text-2xl font-black text-white/50">01</div>
+                                <h4 className="font-bold">Publicación Inteligente</h4>
+                                <p className="text-xs text-gray-500 leading-normal">El bot elige los mejores horarios para postear tu contenido en los canales de modelos con audiencias similares.</p>
+                            </div>
+                            <div className="p-8 bg-white/[0.02] border border-white/5 rounded-3xl space-y-4 shadow-xl text-glow">
+                                <div className="text-2xl font-black text-white/50">02</div>
+                                <h4 className="font-bold">Métricas de Transparencia</h4>
+                                <p className="text-xs text-gray-500 leading-normal">Acceso a un panel donde ves cuántos usuarios reales han hecho click en tu link desde cada canal aliado.</p>
+                            </div>
+                            <div className="p-8 bg-white/[0.02] border border-white/5 rounded-3xl space-y-4 shadow-xl">
+                                <div className="text-2xl font-black text-white/50">03</div>
+                                <h4 className="font-bold">Ciclo de Limpieza</h4>
+                                <p className="text-xs text-gray-500 leading-normal">Para mantener la estética de los canales, el bot borra automáticamente las promociones pasadas las 24h.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* --- ECONOMY SECTION --- */}
             <section className="py-32 relative z-10" id="economy">
                 <div className="container mx-auto px-6 text-center space-y-16">
@@ -639,5 +712,31 @@ const StatItem = ({ icon: Icon, label, color }) => {
         </div>
     );
 };
+
+const SFSChannelCard = ({ username, before, after, growth, featured = false }) => (
+    <div className={`p-6 rounded-3xl border transition-all ${featured ? 'bg-purple-600/10 border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.1)]' : 'bg-white/[0.02] border-white/5'}`}>
+        <div className="flex justify-between items-center mb-6">
+            <span className="font-black text-xs uppercase tracking-widest text-white/80">{username}</span>
+            <span className="text-[10px] font-black px-2 py-1 bg-green-500/10 text-green-500 rounded-lg">{growth}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Antes (Orgánico)</span>
+                <div className="flex items-center gap-2">
+                    <Eye className="w-3 h-3 text-gray-600" />
+                    <span className="text-lg font-black text-gray-600">{before}</span>
+                </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-white/20" />
+            <div className="space-y-1 text-right">
+                <span className="text-[8px] font-black text-purple-500 uppercase tracking-widest">Después (SFS Automático)</span>
+                <div className="flex items-center gap-2 justify-end">
+                    <span className="text-2xl font-black text-white text-glow">{after}</span>
+                    <Eye className="w-4 h-4 text-purple-400" />
+                </div>
+            </div>
+        </div>
+    </div>
+);
 
 export default LandingPage;
