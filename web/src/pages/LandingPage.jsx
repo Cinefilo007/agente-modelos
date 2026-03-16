@@ -228,7 +228,7 @@ const LandingPage = () => {
                             : "No inventamos la rueda, solo la hacemos girar a la velocidad de la luz. Potenciamos cada funcionalidad nativa para crear el ecosistema de monetización definitiva."}
                     </p>
 
-                    <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8 pb-12">
                         <button onClick={scrollToLogin} className={`px-10 py-5 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-[0_20px_40px_-10px_rgba(255,255,255,0.2)] ${viewMode === 'fan' ? 'hover:bg-pink-600 hover:text-white' : 'hover:bg-purple-600 hover:text-white'}`}>
                             {viewMode === 'fan' ? 'Explorar Ahora' : 'Empezar Imperio'}
                         </button>
@@ -243,20 +243,37 @@ const LandingPage = () => {
 
             {/* --- GROWTH TICKER (CREATORS ONLY) --- */}
             {viewMode === 'creator' && (
-                <div className="relative z-10 py-6 bg-purple-600/5 border-y border-purple-500/10 overflow-hidden whitespace-nowrap">
-                    <div className="flex animate-marquee gap-12 text-[10px] font-black uppercase tracking-[0.3em] text-purple-400">
-                        <span>🚀 +2,400% Crecimiento Promedio</span>
-                        <span>💎 $14,200 Pagados Hoy</span>
-                        <span>📈 1.2M Impresiones Semanales</span>
-                        <span>🛡️ 0 Baneos Reportados</span>
-                        <span>🔥 +500 Solicitudes Nuevas</span>
-                        <span>🚀 +2,400% Crecimiento Promedio</span>
-                        <span>💎 $14,200 Pagados Hoy</span>
-                        <span>📈 1.2M Impresiones Semanales</span>
-                        <span>🛡️ 0 Baneos Reportados</span>
-                        <span>🔥 +500 Solicitudes Nuevas</span>
+                <section className="relative z-10 py-12 mb-20 bg-gradient-to-r from-transparent via-purple-500/[0.03] to-transparent border-y border-white/5">
+                    <div className="container mx-auto px-6">
+                        <div className="flex flex-wrap justify-center md:justify-around gap-y-8 gap-x-12 md:gap-x-0">
+                            <StatItem
+                                icon={TrendingUp}
+                                label="+2,400% Crecimiento"
+                                color="purple"
+                            />
+                            <StatItem
+                                icon={CircleDollarSign}
+                                label="$14,200 Pagados Hoy"
+                                color="green"
+                            />
+                            <StatItem
+                                icon={Activity}
+                                label="1.2M Impresiones"
+                                color="blue"
+                            />
+                            <StatItem
+                                icon={Shield}
+                                label="0 Baneos Reportados"
+                                color="indigo"
+                            />
+                            <StatItem
+                                icon={Users}
+                                label="+500 Solicitudes"
+                                color="pink"
+                            />
+                        </div>
                     </div>
-                </div>
+                </section>
             )}
             {viewMode === 'fan' && (
                 <section className="py-24 relative z-10" id="models">
@@ -601,5 +618,26 @@ const Testimonial = ({ name, role, text, image }) => (
         </div>
     </div>
 );
+
+const StatItem = ({ icon: Icon, label, color }) => {
+    const colorClasses = {
+        purple: 'text-purple-400',
+        green: 'text-green-400',
+        blue: 'text-blue-400',
+        indigo: 'text-indigo-400',
+        pink: 'text-pink-400'
+    };
+
+    return (
+        <div className="flex items-center gap-3 group">
+            <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 group-hover:border-white/20 transition-all ${colorClasses[color]}`}>
+                <Icon className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 group-hover:text-white transition-colors">
+                {label}
+            </span>
+        </div>
+    );
+};
 
 export default LandingPage;
