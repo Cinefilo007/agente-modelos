@@ -69,14 +69,14 @@ class AIEditorService:
 
             # PASO 2: Generar nuevo fondo e integrar iluminación (Compositing)
             # Fooocus Image-to-Image permite blending fotorealista y acepta desactivar el filtro NSFW
-            enhanced_prompt = f"{background_prompt}, highly detailed background, cinematic lighting, perfectly matched lighting on the person, raw photography, 8k resolution, photorealistic"
+            enhanced_prompt = f"{background_prompt}, highly detailed background, cinematic lighting, perfectly matched lighting on the person, raw photography, 8k resolution, photorealistic, preserve exact original body posture and identity, maintain exact subject contours"
             
             res_comp = await fal_client.subscribe_async(
                 "fal-ai/fooocus",
                 arguments={
                     "prompt": enhanced_prompt,
                     "image_url": bg_removed_url,
-                    "image_weight": 0.85, # Alto para preservar la identidad 100%
+                    "image_weight": 1.0, # Máximo para preservar la identidad y postura 100%
                     "performance": "Quality",
                     "sync_mode": True,
                     "enable_safety_checker": False # Desactiva el filtro censurador
