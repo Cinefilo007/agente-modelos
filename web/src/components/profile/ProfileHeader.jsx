@@ -195,56 +195,22 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
                         {/* Follow Action */}
                         {!isOwnProfile && (
-                            <div className="relative flex items-center mt-2 md:mt-0" ref={actionMenuRef}>
-                                {/* Mobile Menu Trigger (visible solo en pantallas pequeñas si hay muchos botones) */}
-                                <div className="md:hidden">
-                                    <button
-                                        onClick={() => setShowActionMenu(!showActionMenu)}
-                                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors border border-white/10"
-                                    >
-                                        <MoreVertical size={20} />
-                                    </button>
-                                </div>
-
-                                {/* Acciones (visibles en desktop, o en dropdown en mobile) */}
-                                <div className={`
-                                    absolute right-0 top-12 flex-col gap-2 p-2 rounded-xl bg-[#111]/95 backdrop-blur-xl border border-white/10 shadow-2xl z-50 min-w-[150px]
-                                    md:static md:flex-row md:p-0 md:bg-transparent md:border-none md:shadow-none md:flex
-                                    ${showActionMenu ? 'flex' : 'hidden md:flex'}
-                                `}>
-                                    <button
-                                        onClick={handleMessageClick}
-                                        className="w-full md:w-10 md:h-10 px-3 md:px-0 py-2 md:py-0 rounded-lg md:rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center md:justify-center text-white transition-colors border border-white/10 gap-2 text-sm font-semibold"
-                                    >
-                                        <MessageCircle size={18} /> <span className="md:hidden">Mensaje</span>
-                                    </button>
-
-                                    {isFollowing && (
-                                        <Link to={`/casino/${user.username}`} className="w-full md:w-auto">
-                                            <button
-                                                className="w-full md:h-10 px-4 py-2 md:py-0 rounded-lg md:rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 hover:bg-yellow-500/30 flex items-center justify-center transition-colors font-bold text-sm md:text-xs shadow-lg shadow-yellow-500/10 gap-2"
-                                            >
-                                                <Gamepad2 size={16} className="mr-1.5 hidden md:block" /> Casino
-                                            </button>
-                                        </Link>
+                            <div className="mt-2 md:mt-0">
+                                <button
+                                    onClick={handleSubscribe}
+                                    disabled={loadingFollow}
+                                    className="transition-all text-white h-9 px-5 rounded-full text-xs font-bold shadow-lg flex items-center justify-center min-w-[100px]"
+                                    style={{
+                                        backgroundColor: isFollowing ? 'transparent' : 'var(--theme-glow)',
+                                        border: isFollowing ? '1px solid var(--theme-glow)' : 'none',
+                                        color: isFollowing ? 'var(--theme-glow)' : '#fff',
+                                        boxShadow: isFollowing ? 'none' : '0 10px 15px -3px rgba(184, 41, 227, 0.2)'
+                                    }}
+                                >
+                                    {loadingFollow ? <Loader size={14} className="animate-spin" /> : (
+                                        isFollowing ? <><UserCheck size={16} className="mr-1.5" /> SIGUIENDO</> : "FOLLOW"
                                     )}
-
-                                    <button
-                                        onClick={handleSubscribe}
-                                        disabled={loadingFollow}
-                                        className="w-full transition-all text-white py-2 md:h-10 px-5 rounded-lg md:rounded-full text-sm md:text-xs font-bold shadow-lg flex items-center justify-center gap-2"
-                                        style={{
-                                            backgroundColor: isFollowing ? 'transparent' : 'var(--theme-glow)',
-                                            border: isFollowing ? '1px solid var(--theme-glow)' : 'none',
-                                            color: isFollowing ? 'var(--theme-glow)' : '#fff',
-                                            boxShadow: isFollowing ? 'none' : '0 10px 15px -3px rgba(184, 41, 227, 0.2)'
-                                        }}
-                                    >
-                                        {loadingFollow ? <Loader size={14} className="animate-spin" /> : (
-                                            isFollowing ? <><UserCheck size={18} /> <span className="md:hidden">Siguiendo</span></> : "FOLLOW"
-                                        )}
-                                    </button>
-                                </div>
+                                </button>
                             </div>
                         )}
                     </div>
