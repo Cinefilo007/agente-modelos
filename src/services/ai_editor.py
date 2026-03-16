@@ -15,28 +15,28 @@ class AIEditorService:
 
     async def retouch_image(self, image_url: str) -> str:
         """
-        Realiza un retoque general para eliminar imperfecciones.
-        Usa Fooocus Inpainting con un prompt de mejora de piel.
+        Realiza un retoque general para eliminar imperfecciones y mejorar la piel.
+        Utiliza el modelo especializado de FAL que preserva la identidad del sujeto.
+        Este modelo es más seguro y no altera los rasgos distintivos.
         """
-        # Nota: En una implementación real, podríamos necesitar una máscara.
-        # Por ahora, Fooocus puede intentar mejorar la imagen completa o 
-        # podemos usar un modelo de 'image-to-image' con bajo denoising.
-        
-        # Ejemplo con Fooocus (ajustar según disponibilidad de modelos en FAL)
-        result = await fal_client.subscribe_async(
-            "fal-ai/fooocus",
-            arguments={
-                "input_image_url": image_url,
-                "prompt": "extreme high quality, professional skin retouch, flawless skin, remove blemishes and marks, 8k resolution",
-                "negative_prompt": "blurry, low quality, distorted, extra limbs, bad anatomy",
-                "performance": "Quality",
-                "style_selections": ["Professional Photo"]
-            }
-        )
-        # Fooocus retorna una lista de imágenes
-        if result and "images" in result and len(result["images"]) > 0:
-            return result["images"][0]["url"]
-        return None
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            result = await fal_client.subscribe_async(
+                "fal-ai/image-editing/face-enhancement",
+                arguments={
+                    "image_url": image_url
+                }
+            )
+            
+            if result and "images" in result and len(result["images"]) > 0:
+                return result["images"][0]["url"]
+            return None
+
+        except Exception as e:
+            logger.error(f"Error calling fal-ai face-enhancement: {e}")
+            return None
 
     async def change_background(self, image_url: str, background_prompt: str) -> str:
         """
