@@ -21,7 +21,7 @@ function EditProfile() {
         username: '',
         bio_short: '',
         social_links: [], // Array of { network, url, icon }
-        services: [], // Array de strings
+        services_text: '', // String para el input
         cover_url: '',
         avatar_url: ''
     });
@@ -53,7 +53,7 @@ function EditProfile() {
                     username: data.username || '',
                     bio_short: data.bio_short || '',
                     social_links: links,
-                    services: data.services || [],
+                    services_text: (data.services || []).join(', '),
                     cover_url: data.cover_url || '',
                     avatar_url: data.avatar_url || ''
                 });
@@ -106,7 +106,7 @@ function EditProfile() {
             const { data } = await api.put('/profile/me', {
                 bio_short: formData.bio_short,
                 social_links: formData.social_links,
-                services: formData.services,
+                services: formData.services_text.split(',').map(s => s.trim()).filter(Boolean),
                 artistic_name: formData.artistic_name,
                 avatar_url: formData.avatar_url,
                 cover_url: formData.cover_url
@@ -234,8 +234,8 @@ function EditProfile() {
                         <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase">Etiquetas de Servicios</label>
                         <input
                             type="text"
-                            value={formData.services.join(', ')}
-                            onChange={(e) => setFormData({ ...formData, services: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                            value={formData.services_text}
+                            onChange={(e) => setFormData({ ...formData, services_text: e.target.value })}
                             className="w-full bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-xl p-3 text-[var(--text-primary)] focus:border-[var(--text-primary)]/50 focus:outline-none transition-colors"
                             placeholder="Ej. GFE, VIP Chat, Video Call"
                         />

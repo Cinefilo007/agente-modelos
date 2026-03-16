@@ -15,18 +15,6 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const [isFollowing, setIsFollowing] = useState(false);
     const [loadingFollow, setLoadingFollow] = useState(false);
     const [showMessageAlert, setShowMessageAlert] = useState(false);
-    const [showActionMenu, setShowActionMenu] = useState(false);
-    const actionMenuRef = useRef(null);
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
-                setShowActionMenu(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     // Fetch follow status if not own profile
     useEffect(() => {
@@ -296,20 +284,48 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                 </div>
 
                 {/* Services/Niches Badges */}
-                <div className="mt-4 flex flex-wrap gap-1.5 mb-2">
-                    {(user.services && user.services.length > 0 ? user.services : ['GFE', 'VIDEO CALL', 'VIP CHAT', 'PHOTO SHOOT']).map((service, index) => {
-                        const dotColors = ['bg-accent-magenta', 'bg-accent-blue', 'bg-[var(--theme-glow)]', 'bg-white'];
-                        return (
-                            <div
-                                key={index}
-                                className="bg-white/5 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full flex items-center gap-1.5"
-                            >
-                                <div className={`w-1 h-1 rounded-full ${dotColors[index % dotColors.length]}`} style={index === 2 ? { backgroundColor: 'var(--theme-glow)' } : {}}></div>
-                                <span className="text-[10px] font-bold text-slate-200 tracking-wide uppercase">{service}</span>
-                            </div>
-                        );
-                    })}
-                </div>
+                {user.services && user.services.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-1.5 mb-2">
+                        {user.services.map((service, index) => {
+                            const dotColors = ['bg-accent-magenta', 'bg-accent-blue', 'bg-[var(--theme-glow)]', 'bg-white'];
+                            return (
+                                <div
+                                    key={index}
+                                    className="bg-white/5 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full flex items-center gap-1.5"
+                                >
+                                    <div className={`w-1 h-1 rounded-full ${dotColors[index % dotColors.length]}`} style={index === 2 ? { backgroundColor: 'var(--theme-glow)' } : {}}></div>
+                                    <span className="text-[10px] font-bold text-slate-200 tracking-wide uppercase">{service}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Main Action Buttons (Client View - Below Services) */}
+                {!isOwnProfile && (
+                    <div className="flex gap-3 mt-4 mb-2">
+                        <button
+                            onClick={handleMessageClick}
+                            className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all group shadow-lg"
+                        >
+                            <MessageCircle size={22} className="text-white mb-1 group-hover:scale-110 transition-transform" />
+                            <span className="text-white font-bold text-sm">Privado</span>
+                            <span className="text-slate-400 text-[10px]">Acordar servicio</span>
+                        </button>
+
+                        {isFollowing && (
+                            <Link to={`/casino/${user.username}`} className="flex-1">
+                                <button
+                                    className="w-full h-full bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-2xl p-3 flex flex-col items-center justify-center transition-all group shadow-lg shadow-yellow-500/5"
+                                >
+                                    <Gamepad2 size={24} className="text-yellow-500 mb-0.5 group-hover:scale-110 transition-transform" />
+                                    <span className="text-yellow-500 font-bold text-sm">Casino</span>
+                                    <span className="text-yellow-500/70 text-[10px]">Jugar y ganar</span>
+                                </button>
+                            </Link>
+                        )}
+                    </div>
+                )}
 
                 {/* Additional Buttons (Own Profile) */}
                 {isOwnProfile && (
