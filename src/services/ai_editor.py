@@ -44,7 +44,7 @@ class AIEditorService:
         """
         # 1. Remover fondo con Bria
         removal_result = await fal_client.subscribe_async(
-            "fal-ai/bria/background-removal",
+            "fal-ai/bria/background/remove",
             arguments={
                 "image_url": image_url
             }
