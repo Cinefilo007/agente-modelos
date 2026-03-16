@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Edit3, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook, CheckCircle2, Gamepad2, MessageCircle, UserCheck, MoreVertical, MapPin, Diamond } from 'lucide-react';
+import { Edit3, Globe, Lock, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Linkedin, Github, Link as LinkIcon, CheckCircle2, Gamepad2, MessageCircle, UserCheck, MoreVertical, MapPin, Diamond } from 'lucide-react';
 
-const OnlyFansIcon = (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-        <path d="M12 0C5.373 0 0 5.373 0 12c0 6.628 5.373 12 12 12 6.628 0 12-5.372 12-12C24 5.373 18.627 0 12 0zm0 1.831A10.169 10.169 0 111.831 12 10.18 10.18 0 0112 1.831zM9.542 5.31A4.238 4.238 0 1013.781 9.55a4.238 4.238 0 00-4.239-4.24zm0 1.484a2.753 2.753 0 11-2.754 2.755A2.754 2.754 0 019.542 6.794zm7.558 2.067a.465.465 0 10.465.465.465.465 0 00-.465-.465zm-.005 3.32a.465.465 0 10.465.465.465.465 0 00-.465-.465zM12 12v6.625l-2.073-2.077h2.073z" />
-    </svg>
-);
+import {
+    SiInstagram, SiX, SiFacebook, SiYoutube,
+    SiTiktok, SiTwitch, SiOnlyfans, SiFansly, SiPatreon
+} from '@icons-pack/react-simple-icons';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Link, useNavigate } from 'react-router-dom';
@@ -71,36 +70,24 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     // Icon Mapping (Should match SocialLinkEditor)
     const getSocialIcon = (network, size = 18) => {
         switch (network) {
-            case 'instagram': return <Instagram size={size} />;
-            case 'twitter': return <Twitter size={size} />;
-            case 'facebook': return <Facebook size={size} />;
-            case 'tiktok': return <Music2 size={size} />;
-            case 'twitch': return <Twitch size={size} />;
-            case 'linkedin': return <Linkedin size={size} />;
-            case 'github': return <Github size={size} />;
-            case 'onlyfans': return <OnlyFansIcon width={size} height={size} />;
-            case 'fansly': return <Diamond size={size} />;
-            case 'patreon': return <Heart size={size} />;
-            case 'website': return <Globe size={size} />;
+            case 'instagram': return <SiInstagram size={size} color="#E1306C" />;
+            case 'twitter': return <SiX size={size} className="text-white" />;
+            case 'facebook': return <SiFacebook size={size} color="#1877F2" />;
+            case 'tiktok': return <SiTiktok size={size} className="text-white" />;
+            case 'twitch': return <SiTwitch size={size} color="#9146FF" />;
+            case 'linkedin': return <Linkedin size={size} color="#0A66C2" />;
+            case 'github': return <Github size={size} className="text-white" />;
+            case 'onlyfans': return <SiOnlyfans size={size} color="#00AFF0" />;
+            case 'fansly': return <SiFansly size={size} color="#00AEF0" />;
+            case 'patreon': return <SiPatreon size={size} color="#FF424D" />;
+            case 'youtube': return <SiYoutube size={size} color="#FF0000" />;
+            case 'website': return <Globe size={size} color="#10B981" />;
             default: return <LinkIcon size={size} />;
         }
     };
 
     const getSocialColor = (network) => {
-        switch (network) {
-            case 'instagram': return '#E1306C';
-            case 'twitter': return '#1DA1F2';
-            case 'facebook': return '#1877F2';
-            case 'youtube': return '#FF0000';
-            case 'tiktok': return '#000000';
-            case 'twitch': return '#9146FF';
-            case 'linkedin': return '#0A66C2';
-            case 'github': return '#333333';
-            case 'onlyfans': return '#00AFF0';
-            case 'fansly': return '#00AEF0';
-            case 'patreon': return '#FF424D';
-            default: return '#10B981'; // Website green
-        }
+        return 'transparent'; // Removemos esto porque react-simple-icons lo pintamos desde adentro. Pero para la caja exterior, retornamos transparente o #111
     };
 
     if (user && user.social_links) {
@@ -244,7 +231,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                             className="flex-shrink-0"
                         >
                             <div className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center hover:bg-white/20 transition-colors">
-                                {React.cloneElement(link.icon, { size: 18, color: link.color })}
+                                {React.cloneElement(link.icon, { size: 18 })}
                             </div>
                         </a>
                     )) : (

@@ -1,30 +1,27 @@
 import React, { useState } from 'react';
 import {
-    Instagram, Twitter, Facebook, Youtube, Globe,
-    Linkedin, Github, Twitch, Music2, Link as LinkIcon,
-    Plus, Trash2, X, Heart, Diamond
+    Globe, Linkedin, Github, Link as LinkIcon,
+    Plus, Trash2, X
 } from 'lucide-react';
-
-const OnlyFansIcon = (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-        <path d="M12 0C5.373 0 0 5.373 0 12c0 6.628 5.373 12 12 12 6.628 0 12-5.372 12-12C24 5.373 18.627 0 12 0zm0 1.831A10.169 10.169 0 111.831 12 10.18 10.18 0 0112 1.831zM9.542 5.31A4.238 4.238 0 1013.781 9.55a4.238 4.238 0 00-4.239-4.24zm0 1.484a2.753 2.753 0 11-2.754 2.755A2.754 2.754 0 019.542 6.794zm7.558 2.067a.465.465 0 10.465.465.465.465 0 00-.465-.465zm-.005 3.32a.465.465 0 10.465.465.465.465 0 00-.465-.465zM12 12v6.625l-2.073-2.077h2.073z" />
-    </svg>
-);
+import {
+    SiInstagram, SiX, SiFacebook, SiYoutube,
+    SiTiktok, SiTwitch, SiOnlyfans, SiFansly, SiPatreon
+} from '@icons-pack/react-simple-icons';
 
 const AVAILABLE_ICONS = [
-    { id: 'instagram', icon: Instagram, label: 'Instagram', color: 'text-pink-500' },
-    { id: 'twitter', icon: Twitter, label: 'Twitter / X', color: 'text-blue-400' },
-    { id: 'facebook', icon: Facebook, label: 'Facebook', color: 'text-blue-600' },
-    { id: 'tiktok', icon: Music2, label: 'TikTok', color: 'text-black dark:text-white' },
-    { id: 'youtube', icon: Youtube, label: 'YouTube', color: 'text-red-500' },
-    { id: 'twitch', icon: Twitch, label: 'Twitch', color: 'text-purple-500' },
-    { id: 'onlyfans', icon: OnlyFansIcon, label: 'OnlyFans', color: 'text-[#00AFF0]' },
-    { id: 'fansly', icon: Diamond, label: 'Fansly', color: 'text-[#00AEF0]' },
-    { id: 'patreon', icon: Heart, label: 'Patreon', color: 'text-[#FF424D]' },
-    { id: 'website', icon: Globe, label: 'Website', color: 'text-green-500' },
-    { id: 'linkedin', icon: Linkedin, label: 'LinkedIn', color: 'text-blue-700' },
-    { id: 'github', icon: Github, label: 'GitHub', color: 'text-gray-800 dark:text-white' },
-    { id: 'other', icon: LinkIcon, label: 'Otro', color: 'text-gray-500' },
+    { id: 'instagram', icon: SiInstagram, label: 'Instagram', color: '#E1306C' },
+    { id: 'twitter', icon: SiX, label: 'X (Twitter)', color: '#000000' }, // o text-white segun tema
+    { id: 'facebook', icon: SiFacebook, label: 'Facebook', color: '#1877F2' },
+    { id: 'tiktok', icon: SiTiktok, label: 'TikTok', color: '#000000' },
+    { id: 'youtube', icon: SiYoutube, label: 'YouTube', color: '#FF0000' },
+    { id: 'twitch', icon: SiTwitch, label: 'Twitch', color: '#9146FF' },
+    { id: 'onlyfans', icon: SiOnlyfans, label: 'OnlyFans', color: '#00AFF0' },
+    { id: 'fansly', icon: SiFansly, label: 'Fansly', color: '#00AEF0' },
+    { id: 'patreon', icon: SiPatreon, label: 'Patreon', color: '#FF424D' },
+    { id: 'website', icon: Globe, label: 'Website', color: '#10B981' }, // Default color for globe
+    { id: 'linkedin', icon: Linkedin, label: 'LinkedIn', color: '#0A66C2' },
+    { id: 'github', icon: Github, label: 'GitHub', color: '#333333' },
+    { id: 'other', icon: LinkIcon, label: 'Otro', color: '#6B7280' },
 ];
 
 export function SocialLinkEditor({ links = [], onChange }) {
@@ -67,7 +64,7 @@ export function SocialLinkEditor({ links = [], onChange }) {
                                 onClick={() => setIsSelectorOpen(isSelectorOpen === index ? null : index)}
                                 className="w-10 h-10 rounded-lg bg-[var(--card-bg)] border border-[var(--glass-border)] flex items-center justify-center hover:bg-[var(--glass-border)] transition-colors flex-shrink-0"
                             >
-                                <SelectedIcon size={20} className={SelectedIconObj.color} />
+                                <SelectedIcon size={20} color={SelectedIconObj.id === 'tiktok' || SelectedIconObj.id === 'twitter' || SelectedIconObj.id === 'github' ? 'currentColor' : SelectedIconObj.color} className={SelectedIconObj.id === 'tiktok' || SelectedIconObj.id === 'twitter' || SelectedIconObj.id === 'github' ? 'text-[var(--text-primary)]' : ''} />
                             </button>
 
                             {/* Icon Selector Dropdown */}
@@ -88,7 +85,7 @@ export function SocialLinkEditor({ links = [], onChange }) {
                                             className={`p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-white/10 transition-colors ${link.network === item.id ? 'bg-white/10 ring-1 ring-white/20' : ''}`}
                                             title={item.label}
                                         >
-                                            <item.icon size={20} className={item.color} />
+                                            <item.icon size={20} color={item.id === 'tiktok' || item.id === 'twitter' || item.id === 'github' ? 'currentColor' : item.color} className={item.id === 'tiktok' || item.id === 'twitter' || item.id === 'github' ? 'text-[var(--text-primary)]' : ''} />
                                             {/* <span className="text-[9px] truncate w-full text-center opacity-70">{item.label}</span> */}
                                         </button>
                                     ))}
