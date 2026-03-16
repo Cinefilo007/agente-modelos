@@ -247,11 +247,11 @@ const LandingPage = () => {
                         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
                             <div className="space-y-4">
                                 <h2 className="text-4xl md:text-5xl font-black tracking-tighter">Nuestras Estrellas</h2>
-                                <p className="text-gray-500 max-w-xl">Modelos verificadas biográficamente con perfiles 100% reales y reviews de clientes satisfechos.</p>
+                                <p className="text-gray-500 max-w-xl">
+                                    Modelos verificadas biográficamente con perfiles 100% reales.
+                                    Explora nuestro <span className="text-pink-500 font-bold">Feed General</span> para ver los posts de todas nuestras modelos y sumérgete en la diversión.
+                                </p>
                             </div>
-                            <button onClick={() => navigate('/explore')} className="px-6 py-3 rounded-xl bg-pink-600/10 text-pink-400 border border-pink-500/20 font-bold text-xs uppercase tracking-widest hover:bg-pink-600 hover:text-white transition-all">
-                                Ver Todas
-                            </button>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
