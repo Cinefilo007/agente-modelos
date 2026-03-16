@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Sparkles, Image as ImageIcon, Palmtree, Shovel, Wand2, Loader2, Check, X, RefreshCw, AlertCircle } from 'lucide-react';
+import { Sparkles, Image as ImageIcon, Palmtree, Shovel, Wand2, Loader2, Check, X, RefreshCw, AlertCircle, Download, Coins } from 'lucide-react';
 import api from '../../api/axios';
 import { useToast } from '../../context/ToastContext';
 import { Button } from '../ui/Button';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 export function AIPhotoEditor({ originalImage, onApply, onClose }) {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -12,6 +13,7 @@ export function AIPhotoEditor({ originalImage, onApply, onClose }) {
     const [bgPrompt, setBgPrompt] = useState('playa paradisíaca al atardecer, estilo cine');
     const { showToast } = useToast();
     const { themeColor } = useTheme();
+    const { user, updateUser } = useAuth();
 
     const handleAction = async (type) => {
         setIsProcessing(true);
@@ -31,6 +33,9 @@ export function AIPhotoEditor({ originalImage, onApply, onClose }) {
             });
 
             setProcessedImage(response.data.processed_url);
+            if (response.data.new_balance !== undefined) {
+                updateUser({ credits_balance: response.data.new_balance });
+            }
             showToast("Imagen procesada con éxito", "success");
         } catch (error) {
             console.error("Error processing AI image:", error);
@@ -54,9 +59,12 @@ export function AIPhotoEditor({ originalImage, onApply, onClose }) {
                 <Button variant="ghost" className="p-2" onClick={onClose}><X size={24} /></Button>
                 <h2 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
                     <Sparkles size={18} className="text-yellow-400" />
-                    Editor Mágico IA
+                    Editor IA
                 </h2>
-                <div className="w-10" />
+                <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
+                    <Coins size={14} className="text-yellow-400" />
+                    <span className="text-xs font-bold text-yellow-400">{user?.credits_balance || 0}</span>
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 max-w-2xl mx-auto w-full">
@@ -170,11 +178,10 @@ export function AIPhotoEditor({ originalImage, onApply, onClose }) {
 
                 {/* Apply Result */}
                 {processedImage && !isProcessing && (
-                    <div className="space-y-4 pt-4 animate-in fade-in duration-500">
+                    <div className="space-y-3 pt-4 animate-in fade-in duration-500">
                         <Button
                             className="w-full py-4 rounded-2xl text-base"
                             onClick={async () => {
-                                // Convertir URL a Blob para que onApply lo maneje como File
                                 try {
                                     const response = await fetch(processedImage);
                                     const blob = await response.blob();
@@ -188,13 +195,39 @@ export function AIPhotoEditor({ originalImage, onApply, onClose }) {
                         >
                             <Check size={20} /> Usar esta foto para mi post
                         </Button>
-                        <Button
-                            variant="secondary"
-                            className="w-full py-3"
-                            onClick={() => setProcessedImage(null)}
-                        >
-                            Cancelar y volver a editar
-                        </Button>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Button
+                                variant="secondary"
+                                className="w-full py-3 text-sm flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10"
+                                onClick={async () => {
+                                    try {
+                                        const response = await fetch(processedImage);
+                                        const blob = await response.blob();
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.style.display = 'none';
+                                        a.href = url;
+                                        a.download = `ai_edit_${Date.now()}.jpg`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        window.URL.revokeObjectURL(url);
+                                        showToast("Descarga iniciada", "success");
+                                    } catch (e) {
+                                        showToast("Error al descargar la imagen", "error");
+                                    }
+                                }}
+                            >
+                                <Download size={16} /> Descargar Foto
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                className="w-full py-3 text-sm flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10"
+                                onClick={() => setProcessedImage(null)}
+                            >
+                                <RefreshCw size={16} /> Volver a editar
+                            </Button>
+                        </div>
                     </div>
                 )}
             </div>

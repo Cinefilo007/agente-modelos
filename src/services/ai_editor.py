@@ -48,11 +48,14 @@ class AIEditorService:
         
         try:
             # Usar directamente el modelo de reemplazo de fondo de FAL
+            # Añadimos instrucciones rigurosas para blending e iluminación
+            enhanced_prompt = f"{background_prompt}. The person must seamlessly blend into this environment. Match the lighting, shadows, color temperature, and cinematic color grading of that specific background onto the person perfectly."
+            
             result = await fal_client.subscribe_async(
                 "fal-ai/image-editing/background-change",
                 arguments={
                     "image_url": image_url,
-                    "prompt": background_prompt
+                    "prompt": enhanced_prompt
                 }
             )
             

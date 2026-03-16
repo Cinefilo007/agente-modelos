@@ -21,14 +21,14 @@ async def ai_touch_up(
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Solo las modelos pueden usar esta herramienta")
 
-    # 1. Verificar balance
-    wallet_res = db.client.table("wallets").select("balance").eq("user_id", user.user_id).single().execute()
-    if not wallet_res.data:
-        raise HTTPException(status_code=404, detail="Billetera no encontrada")
+    # 1. Verificar balance de créditos en tabla models
+    model_res = db.client.table("models").select("credits_balance").eq("telegram_id", user.user_id).single().execute()
+    if not model_res.data:
+        raise HTTPException(status_code=404, detail="Modelo no encontrada")
     
-    balance = float(wallet_res.data["balance"])
+    balance = float(model_res.data.get("credits_balance", 0.0))
     if balance < COSTO_RETOQUE:
-        raise HTTPException(status_code=400, detail="Saldo insuficiente para el retoque")
+        raise HTTPException(status_code=400, detail="Créditos insuficientes para el retoque")
 
     # 2. Subir imagen original temporalmente para FAL
     temp_url = await upload_file(image, bucket_name="temp_ai")
@@ -41,14 +41,14 @@ async def ai_touch_up(
             raise HTTPException(status_code=500, detail="Error al procesar la imagen con IA")
 
         # 4. Descontar créditos
-        db.client.table("wallets").update({"balance": balance - COSTO_RETOQUE}).eq("user_id", user.user_id).execute()
+        db.client.table("models").update({"credits_balance": balance - COSTO_RETOQUE}).eq("telegram_id", user.user_id).execute()
         
-        # 5. Registrar transacción
+        # 5. Registrar transacción (Ledger)
         db.client.table("crypto_transactions").insert({
             "user_id": user.user_id,
             "type": "AI_EDIT",
             "amount": COSTO_RETOQUE,
-            "currency": "USDT",
+            "currency": "CREDITS",
             "status": "COMPLETED",
             "details": {"action": "touch_up", "original": temp_url}
         }).execute()
@@ -68,12 +68,12 @@ async def ai_change_background(
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Solo las modelos pueden usar esta herramienta")
 
-    # 1. Verificar balance
-    wallet_res = db.client.table("wallets").select("balance").eq("user_id", user.user_id).single().execute()
-    balance = float(wallet_res.data["balance"])
+    # 1. Verificar balance de créditos
+    model_res = db.client.table("models").select("credits_balance").eq("telegram_id", user.user_id).single().execute()
+    balance = float(model_res.data.get("credits_balance", 0.0))
     
     if balance < COSTO_FONDO:
-        raise HTTPException(status_code=400, detail="Saldo insuficiente para cambiar el fondo")
+        raise HTTPException(status_code=400, detail="Créditos insuficientes para cambiar el fondo")
 
     # 2. Subir imagen original
     temp_url = await upload_file(image, bucket_name="temp_ai")
@@ -86,14 +86,14 @@ async def ai_change_background(
             raise HTTPException(status_code=500, detail="Error al procesar el fondo con IA")
 
         # 4. Descontar créditos
-        db.client.table("wallets").update({"balance": balance - COSTO_FONDO}).eq("user_id", user.user_id).execute()
+        db.client.table("models").update({"credits_balance": balance - COSTO_FONDO}).eq("telegram_id", user.user_id).execute()
         
         # 5. Registrar transacción
         db.client.table("crypto_transactions").insert({
             "user_id": user.user_id,
             "type": "AI_EDIT",
             "amount": COSTO_FONDO,
-            "currency": "USDT",
+            "currency": "CREDITS",
             "status": "COMPLETED",
             "details": {"action": "change_background", "prompt": background_prompt, "original": temp_url}
         }).execute()
