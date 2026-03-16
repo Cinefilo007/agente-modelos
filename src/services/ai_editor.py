@@ -29,7 +29,9 @@ class AIEditorService:
                 "fal-ai/image-editing/retouch",
                 arguments={
                     "image_url": image_url,
-                    "prompt": "perfect flawless cinematic skin, remove all acne, remove all stretch marks, remove all body and face scars, remove dark circles under eyes, high end beauty retouching, highly detailed skin texture, preserve original facial identity perfectly"
+                    "prompt": "perfect flawless cinematic skin, remove all acne, remove all stretch marks, remove all body and face scars, remove dark circles under eyes, high end beauty retouching, highly detailed skin texture, preserve original facial identity perfectly",
+                    "sync_mode": True,
+                    "enable_safety_checker": False
                 }
             )
             
@@ -58,7 +60,9 @@ class AIEditorService:
                 "fal-ai/image-editing/background-change",
                 arguments={
                     "image_url": image_url,
-                    "prompt": enhanced_prompt
+                    "prompt": enhanced_prompt,
+                    "sync_mode": True,
+                    "enable_safety_checker": False
                 }
             )
             
