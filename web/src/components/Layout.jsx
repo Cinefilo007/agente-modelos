@@ -147,10 +147,9 @@ export default function Layout() {
                 </main>
 
                 {/* Bottom Navigation Bar */}
-                {/* Bottom Nav Mobile */}
                 {user && (
-                    <nav className="lg:hidden fixed bottom-0 w-full bg-[var(--surface-color)]/80 backdrop-blur-xl border-t border-[var(--glass-border)] pb-safe z-50">
-                        <div className="flex justify-around items-center h-16 max-w-md mx-auto px-4">
+                    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center bg-[var(--surface-color)]/90 backdrop-blur-xl border-t border-[var(--glass-border)] pb-safe">
+                        <nav className="flex justify-around items-center h-16 w-full max-w-[768px] px-4">
                             <NavItem to="/" icon={Home} label="Inicio" badge={hasNewPosts ? 1 : 0} />
                             <NavItem to="/explore" icon={Compass} label="Explorar" />
 
@@ -186,8 +185,8 @@ export default function Layout() {
                                 icon={User}
                                 label={user?.role === 'admin' ? "Admin" : "Perfil"}
                             />
-                        </div>
-                    </nav>
+                        </nav>
+                    </div>
                 )}
             </div>
         </div>

@@ -13,7 +13,7 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-me")
 ALGORITHM = "HS256"
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/telegram")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/telegram", auto_error=False)
 
 class TelegramUser(BaseModel):
     id: int # Telegram ID

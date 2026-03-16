@@ -92,10 +92,13 @@ function Profile() {
 
     useEffect(() => {
         if (!isMe && profileUser?.id) {
-            // Record view for analytics
-            api.post('/analytics/view', { model_id: profileUser.id }).catch(() => { });
+            // Record view for analytics only if logged in (to prevent 401 redirects)
+            if (currentUser) {
+                api.post('/analytics/view', { model_id: profileUser.id }).catch(() => { });
+            }
 
             const checkFollow = async () => {
+                if (!currentUser) return; // PREVENT 401 REDIRECT FOR VISITORS
                 try {
                     const { data } = await api.get(`/interactions/followers/status/${profileUser.id}`);
                     setIsFollowing(data.is_following);

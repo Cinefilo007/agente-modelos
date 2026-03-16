@@ -23,7 +23,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
     // Fetch follow status if not own profile
     useEffect(() => {
-        if (!isOwnProfile && user?.id) {
+        if (!isOwnProfile && user?.id && currentUser) {
             const checkFollow = async () => {
                 try {
                     const { data } = await api.get(`/interactions/followers/status/${user.id}`);
@@ -34,7 +34,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             };
             checkFollow();
         }
-    }, [isOwnProfile, user?.id]);
+    }, [isOwnProfile, user?.id, currentUser]);
 
     const handleSubscribe = async () => {
         if (!user?.id) return;
