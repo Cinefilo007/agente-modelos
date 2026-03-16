@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import {
+    Shield, Zap, Heart, Globe, Lock, Star, ChevronRight,
+    Bot, Check, Database, Coins, MessageSquare,
     Activity, Cpu, UserCheck, CircleDollarSign, Users,
     TrendingUp, Calendar, Sparkles, BarChart3, Quote, Share2
 } from 'lucide-react';
