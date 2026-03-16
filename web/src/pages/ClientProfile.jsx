@@ -6,21 +6,42 @@ import {
 import { Avatar } from '../components/ui/Avatar';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import api from '../api/axios';
-import { isOnline as checkOnline } from '../utils/date';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import clsx from 'clsx';
+import { useToast } from '../context/ToastContext';
 
 export default function ClientProfile() {
     const { themeColor } = useTheme();
     const { user, logout } = useAuth();
+    const { showToast } = useToast();
     const [balance, setBalance] = useState({ balance: 0, currency: 'USDT' });
     const [following, setFollowing] = useState([]);
     const [recentActivity, setRecentActivity] = useState([]);
     const [myPurchases, setMyPurchases] = useState([]);
     const navigate = useNavigate();
+
+    const handleAvatarUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'avatar');
+
+        try {
+            showToast("Subiendo avatar...", "info");
+            const { data } = await api.post('/profile/upload-image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            // Actualizar en la base de datos del cliente
+            await api.put('/profile/me', { avatar_url: data.url });
+
+            showToast("Avatar actualizado con éxito", "success");
+            window.location.reload();
+        } catch (err) {
+            console.error("Error uploading avatar:", err);
+            showToast("Error al subir el avatar", "error");
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -60,34 +81,34 @@ export default function ClientProfile() {
     const name = user.username || user.first_name || "Usuario";
 
     return (
-        <div className="min-h-screen pb-24 bg-[#0a0a0c] text-foreground font-sans relative overflow-x-hidden">
+        <div className="min-h-screen pb-24 bg-[#0a060e] text-white font-sans relative overflow-x-hidden">
 
-            {/* Noble Background Accents */}
+            {/* fondo unificado con el perfil de modelo */}
             <div className="absolute top-0 left-0 w-full h-[500px] overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full"></div>
-                <div className="absolute top-[10%] right-[-5%] w-[30%] h-[30%] bg-purple-600/10 blur-[100px] rounded-full"></div>
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[120px] rounded-full"></div>
+                <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-blue-600/10 blur-[100px] rounded-full"></div>
             </div>
 
             <div className="px-4 pt-12 relative z-10 w-full max-w-lg mx-auto">
 
                 {/* 1. IDENTITY SECTION (Glassmorphism) */}
-                <div className="flex flex-col items-center mb-8 bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative">
+                <div className="flex flex-col items-center mb-8 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative">
                     <div className="relative -mt-20 mb-6 group">
-                        {/* Dynamic Glow */}
-                        <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-3xl transform group-hover:scale-125 transition-all duration-700 opacity-50"></div>
+                        <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-3xl transform group-hover:scale-125 transition-all duration-700 opacity-50"></div>
 
-                        <div className="relative p-1 rounded-full bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                        <div className="relative p-1 rounded-full bg-gradient-to-tr from-purple-500 via-blue-500 to-pink-500 shadow-[0_0_30px_rgba(184,41,227,0.3)]">
                             <Avatar
                                 src={user.avatar_url || user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}`}
                                 name={name}
                                 size="xl"
-                                className="w-28 h-28 border-4 border-[#0a0a0c] relative z-10"
+                                className="w-28 h-28 border-4 border-[#0a060e] relative z-10"
                             />
                         </div>
 
-                        <button className="absolute bottom-1 right-1 p-2.5 bg-white text-black rounded-full shadow-xl hover:scale-110 transition-transform z-20">
+                        <label className="absolute bottom-1 right-1 p-2.5 bg-white text-black rounded-full shadow-xl hover:scale-110 transition-transform z-20 cursor-pointer">
                             <Edit3 size={14} strokeWidth={3} />
-                        </button>
+                            <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                        </label>
                     </div>
 
                     <div className="text-center">
@@ -103,20 +124,20 @@ export default function ClientProfile() {
 
                 {/* 2. STATS ROW (Real Data) */}
                 <div className="grid grid-cols-3 gap-3 mb-8">
-                    <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center text-center">
-                        <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1">Nivel</span>
-                        <div className="text-lg font-black text-white">VIP 4</div>
-                        <div className="text-[8px] font-bold text-blue-400 mt-1 uppercase">Pro Gamer</div>
+                    <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center text-center text-glow-purple">
+                        <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1">Reputación</span>
+                        <div className="text-lg font-black text-white">{user.global_reputation || 0}</div>
+                        <div className="text-[8px] font-bold text-purple-400 mt-1 uppercase tracking-tight">Exp Points</div>
                     </div>
                     <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center text-center">
                         <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1">Invertido</span>
                         <div className="text-lg font-black text-white text-glow">${myPurchases.reduce((acc, curr) => acc + Number(curr.amount), 0).toFixed(0)}</div>
-                        <div className="text-[8px] font-bold text-gray-500 mt-1 uppercase">Total</div>
+                        <div className="text-[8px] font-bold text-gray-500 mt-1 uppercase tracking-tight">Nebula USD</div>
                     </div>
-                    <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center text-center text-glow-purple">
-                        <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1">Siguiendo</span>
+                    <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center text-center">
+                        <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1">Favoritas</span>
                         <div className="text-lg font-black text-white">{following.length}</div>
-                        <div className="text-[8px] font-bold text-purple-400 mt-1 uppercase">Modelos</div>
+                        <div className="text-[8px] font-bold text-blue-400 mt-1 uppercase tracking-tight">Modelos</div>
                     </div>
                 </div>
 
@@ -159,7 +180,53 @@ export default function ClientProfile() {
                     </div>
                 </div>
 
-                {/* 4. FOLLOWING LIST (Slider) */}
+                {/* 4. ESCROW SERVICES SECTION (New) */}
+                <div className="mb-10">
+                    <div className="flex justify-between items-center mb-6 px-1">
+                        <h3 className="font-black text-sm uppercase tracking-[0.2em] text-white/80">Servicios Escrow Activos</h3>
+                        <div className="bg-yellow-500/10 px-2.5 py-1 rounded-full border border-yellow-500/20 text-[10px] font-black text-yellow-500 uppercase tracking-widest">Protegido</div>
+                    </div>
+
+                    <div className="space-y-3">
+                        {myPurchases.filter(p => !['COMPLETED', 'completed', 'REJECTED', 'rejected'].includes(p.status)).length === 0 ? (
+                            <div className="p-8 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-3xl">
+                                <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest italic">No hay servicios en curso</p>
+                            </div>
+                        ) : (
+                            myPurchases.filter(p => !['COMPLETED', 'completed', 'REJECTED', 'rejected'].includes(p.status)).map((order) => (
+                                <Link
+                                    key={order.id}
+                                    to={`/order/${order.id}`}
+                                    className="flex items-center gap-4 p-5 bg-white/[0.03] border border-white/5 rounded-3xl hover:bg-white/[0.06] transition-all group"
+                                >
+                                    <Avatar src={order.models?.avatar_url} size="md" className="w-12 h-12" />
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h4 className="text-[11px] font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-widest truncate max-w-[120px]">
+                                                {order.model_services?.title || "Servicio Premium"}
+                                            </h4>
+                                            <span className="text-[11px] font-black text-white/70">${Number(order.amount).toFixed(0)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1.5 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
+                                                <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
+                                                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                            <span className="text-[9px] font-bold text-gray-600 uppercase italic">
+                                                {format(new Date(order.created_at), "d MMM", { locale: es })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={16} className="text-white/20 group-hover:translate-x-1 transition-all" />
+                                </Link>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* 5. FOLLOWING LIST (Slider) */}
                 <div className="mb-12">
                     <div className="flex justify-between items-center mb-6 px-1">
                         <h3 className="font-black text-sm uppercase tracking-[0.2em] text-white/80">Mis Favoritas</h3>
@@ -187,7 +254,7 @@ export default function ClientProfile() {
                                         )}
                                     </div>
                                     <span className="text-[9px] font-black uppercase tracking-widest text-white/40 group-hover:text-blue-400 transition-colors truncate w-full text-center">
-                                        {model.name.split(' ')[0]}
+                                        {model.name?.split(' ')[0]}
                                     </span>
                                 </div>
                             ))
@@ -232,18 +299,8 @@ export default function ClientProfile() {
                     </div>
                 </div>
 
-                {/* 6. SETTINGS MENU */}
-                <div className="space-y-3">
-                    <button className="w-full flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-3xl hover:bg-white/[0.05] transition-all group">
-                        <div className="flex items-center gap-5">
-                            <div className="p-3 bg-white/5 rounded-2xl text-white/40 group-hover:text-blue-400 group-hover:bg-blue-500/10 transition-all">
-                                <Settings size={18} />
-                            </div>
-                            <span className="text-xs font-black uppercase tracking-[0.2em] text-white/60 group-hover:text-white transition-colors">Configuración</span>
-                        </div>
-                        <ChevronRight size={14} className="text-white/20 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                    </button>
-
+                {/* 7. EXIT MENU */}
+                <div className="space-y-3 px-2">
                     <button
                         onClick={logout}
                         className="w-full flex items-center justify-between p-6 bg-red-500/5 border border-red-500/10 rounded-3xl hover:bg-red-500/10 transition-all group"
@@ -254,6 +311,7 @@ export default function ClientProfile() {
                             </div>
                             <span className="text-xs font-black uppercase tracking-[0.2em] text-red-500/60 group-hover:text-red-500 transition-colors">Finalizar Sesión</span>
                         </div>
+                        <ChevronRight size={14} className="text-red-500/20 group-hover:text-red-500 transition-all" />
                     </button>
                 </div>
 
