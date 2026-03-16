@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook, CheckCircle2, Gamepad2, MessageCircle, UserCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Edit3, Star, Instagram, Twitter, Globe, Lock, Heart, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Twitch, Linkedin, Github, Link as LinkIcon, Facebook, CheckCircle2, Gamepad2, MessageCircle, UserCheck, MoreVertical } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,6 +15,18 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const [isFollowing, setIsFollowing] = useState(false);
     const [loadingFollow, setLoadingFollow] = useState(false);
     const [showMessageAlert, setShowMessageAlert] = useState(false);
+    const [showActionMenu, setShowActionMenu] = useState(false);
+    const actionMenuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
+                setShowActionMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Fetch follow status if not own profile
     useEffect(() => {
@@ -53,8 +65,9 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
         if (currentUser?.role === 'client') {
             setShowMessageAlert(true);
         } else {
-            // Ir al chat o mensajes directamente si no es cliente
-            navigate(`/messages/${user.username || user.id}`);
+            // Abrir Telegram directamente si no es cliente
+            const tgUsername = user.username ? user.username.replace('@', '') : user.id;
+            window.open(`https://t.me/${tgUsername}`, '_blank');
         }
     };
 
@@ -121,9 +134,10 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     return (
         <div className="relative font-display text-slate-900 dark:text-slate-100 pb-4" style={{ '--theme-glow': themeColor || '#b829e3' }}>
             {/* Cover Image Container */}
-            <div className="relative w-full h-56">
+            <div className="relative w-full h-64 md:h-72">
                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${user.cover_url || user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab'}')` }}></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)]/80 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent"></div>
             </div>
 
             {/* Content Container */}
@@ -177,7 +191,12 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         <div>
                             <h1 className="text-2xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
                                 {user.artistic_name || user.full_name || user.name || 'Elena Vance'}
-                                {user.is_verified && <CheckCircle2 size={20} className="text-blue-500 fill-white" />}
+                                {user.is_verified && (
+                                    <svg viewBox="0 0 24 24" className="w-5 h-5 text-blue-500 fill-current ml-1" aria-label="Verificado">
+                                        <path d="M11.53.513c.278-.291.737-.291 1.015 0l2.213 2.316c.159.167.38.257.61.242l3.193-.207c.4-.026.745.275.772.677l.215 3.203c.015.231.11.45.274.611l2.365 2.302c.296.288.296.756 0 1.044l-2.365 2.302c-.164.161-.259.38-.274.611l-.215 3.203c-.027.402-.372.703-.772.677l-3.193-.207c-.23-.015-.45.075-.61.242L12.545 20.44a.715.715 0 0 1-1.015 0l-2.213-2.316a.856.856 0 0 0-.61-.242l-3.193.207a.717.717 0 0 1-.772-.677l-.215-3.203a.857.857 0 0 0-.274-.611L1.888 11.29a.738.738 0 0 1 0-1.044l2.365-2.302c.164-.161.259-.38.274-.611l.215-3.203a.717.717 0 0 1 .772-.677l3.193.207c.23.015.45-.075.61-.242L11.53.513z"></path>
+                                        <path fill="#fff" d="m10.119 14.881-2.905-2.906a.75.75 0 0 0-1.06 1.061l3.435 3.435a.75.75 0 0 0 1.06 0l7.636-7.636a.75.75 0 1 0-1.06-1.061z"></path>
+                                    </svg>
+                                )}
                             </h1>
                             <div className="flex items-center gap-3 mt-0.5">
                                 <p className="text-slate-300 text-[13px] flex items-center gap-1">
@@ -188,39 +207,56 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
                         {/* Follow Action */}
                         {!isOwnProfile && (
-                            <div className="flex items-center gap-2 mt-2 md:mt-0">
-                                <button
-                                    onClick={handleMessageClick}
-                                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors flex-shrink-0 border border-white/10"
-                                >
-                                    <MessageCircle size={18} />
-                                </button>
+                            <div className="relative flex items-center mt-2 md:mt-0" ref={actionMenuRef}>
+                                {/* Mobile Menu Trigger (visible solo en pantallas pequeñas si hay muchos botones) */}
+                                <div className="md:hidden">
+                                    <button
+                                        onClick={() => setShowActionMenu(!showActionMenu)}
+                                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors border border-white/10"
+                                    >
+                                        <MoreVertical size={20} />
+                                    </button>
+                                </div>
 
-                                {isFollowing && (
-                                    <Link to={`/casino/${user.username}`}>
-                                        <button
-                                            className="h-10 px-4 rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 hover:bg-yellow-500/30 flex items-center justify-center transition-colors font-bold text-xs shadow-lg shadow-yellow-500/10"
-                                        >
-                                            <Gamepad2 size={16} className="mr-1.5" /> Casino
-                                        </button>
-                                    </Link>
-                                )}
+                                {/* Acciones (visibles en desktop, o en dropdown en mobile) */}
+                                <div className={`
+                                    absolute right-0 top-12 flex-col gap-2 p-2 rounded-xl bg-[#111]/95 backdrop-blur-xl border border-white/10 shadow-2xl z-50 min-w-[150px]
+                                    md:static md:flex-row md:p-0 md:bg-transparent md:border-none md:shadow-none md:flex
+                                    ${showActionMenu ? 'flex' : 'hidden md:flex'}
+                                `}>
+                                    <button
+                                        onClick={handleMessageClick}
+                                        className="w-full md:w-10 md:h-10 px-3 md:px-0 py-2 md:py-0 rounded-lg md:rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center md:justify-center text-white transition-colors border border-white/10 gap-2 text-sm font-semibold"
+                                    >
+                                        <MessageCircle size={18} /> <span className="md:hidden">Mensaje</span>
+                                    </button>
 
-                                <button
-                                    onClick={handleSubscribe}
-                                    disabled={loadingFollow}
-                                    className="transition-all text-white h-10 px-5 rounded-full text-xs font-bold shadow-lg flex items-center justify-center min-w-[100px]"
-                                    style={{
-                                        backgroundColor: isFollowing ? 'transparent' : 'var(--theme-glow)',
-                                        border: isFollowing ? '1px solid var(--theme-glow)' : 'none',
-                                        color: isFollowing ? 'var(--theme-glow)' : '#fff',
-                                        boxShadow: isFollowing ? 'none' : '0 10px 15px -3px rgba(184, 41, 227, 0.2)'
-                                    }}
-                                >
-                                    {loadingFollow ? <Loader size={14} className="animate-spin" /> : (
-                                        isFollowing ? <UserCheck size={18} /> : "FOLLOW"
+                                    {isFollowing && (
+                                        <Link to={`/casino/${user.username}`} className="w-full md:w-auto">
+                                            <button
+                                                className="w-full md:h-10 px-4 py-2 md:py-0 rounded-lg md:rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 hover:bg-yellow-500/30 flex items-center justify-center transition-colors font-bold text-sm md:text-xs shadow-lg shadow-yellow-500/10 gap-2"
+                                            >
+                                                <Gamepad2 size={16} className="mr-1.5 hidden md:block" /> Casino
+                                            </button>
+                                        </Link>
                                     )}
-                                </button>
+
+                                    <button
+                                        onClick={handleSubscribe}
+                                        disabled={loadingFollow}
+                                        className="w-full transition-all text-white py-2 md:h-10 px-5 rounded-lg md:rounded-full text-sm md:text-xs font-bold shadow-lg flex items-center justify-center gap-2"
+                                        style={{
+                                            backgroundColor: isFollowing ? 'transparent' : 'var(--theme-glow)',
+                                            border: isFollowing ? '1px solid var(--theme-glow)' : 'none',
+                                            color: isFollowing ? 'var(--theme-glow)' : '#fff',
+                                            boxShadow: isFollowing ? 'none' : '0 10px 15px -3px rgba(184, 41, 227, 0.2)'
+                                        }}
+                                    >
+                                        {loadingFollow ? <Loader size={14} className="animate-spin" /> : (
+                                            isFollowing ? <><UserCheck size={18} /> <span className="md:hidden">Siguiendo</span></> : "FOLLOW"
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -317,7 +353,8 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold border-none"
                                 onClick={() => {
                                     setShowMessageAlert(false);
-                                    navigate(`/messages/${user.username || user.id}`);
+                                    const tgUsername = user.username ? user.username.replace('@', '') : user.id;
+                                    window.open(`https://t.me/${tgUsername}`, '_blank');
                                 }}
                             >
                                 Entendido
