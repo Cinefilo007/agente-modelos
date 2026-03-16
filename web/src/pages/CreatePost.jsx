@@ -481,7 +481,11 @@ function CreatePost() {
                                 type="datetime-local"
                                 value={scheduledAt}
                                 onChange={(e) => setScheduledAt(e.target.value)}
-                                min={new Date(Date.now() + 5 * 60000).toISOString().slice(0, 16)} // Min 5 min from now
+                                min={(() => {
+                                    const date = new Date(Date.now() + 5 * 60000); // Min 5 min from now
+                                    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+                                    return date.toISOString().slice(0, 16);
+                                })()}
                                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 accent-purple-500 color-scheme-dark"
                             />
                             {scheduledAt && (

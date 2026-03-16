@@ -52,13 +52,22 @@ class AIEditorService:
         logger = logging.getLogger(__name__)
         
         try:
+            # Traducir prompt a inglés para máxima precisión de la IA
+            try:
+                from deep_translator import GoogleTranslator
+                english_prompt = GoogleTranslator(source='auto', target='en').translate(background_prompt)
+                logger.info(f"Prompt traducido: '{background_prompt}' -> '{english_prompt}'")
+            except Exception as e:
+                logger.error(f"Error traduciendo prompt: {e}")
+                english_prompt = background_prompt
+
             # Reemplazar fondo de manera profesional preservando al sujeto 100% exacto
             # Bria replace-background integra iluminación de la escena sin alterar el avatar
             res = await fal_client.subscribe_async(
                 "fal-ai/bria/background/replace",
                 arguments={
                     "image_url": image_url,
-                    "prompt": background_prompt,
+                    "prompt": english_prompt,
                     "sync_mode": True,
                     "enable_safety_checker": False
                 }

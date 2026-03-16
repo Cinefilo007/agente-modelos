@@ -46,10 +46,14 @@ export function AIPhotoEditor({ originalImage, onApply, onClose }) {
     };
 
     const predefinedBackgrounds = [
-        { label: 'Playa', prompt: 'playa paradisíaca, arena blanca, palmeras, mar turquesa, luz dorada' },
-        { label: 'Lujo', prompt: 'apartamento de lujo en dubai, ventanales grandes, ciudad de noche, minimalista' },
-        { label: 'Estudio', prompt: 'estudio profesional de fotografía, fondo gris suave, iluminación de alta gama' },
-        { label: 'Calle', prompt: 'calle de parís de día, torre eiffel al fondo difuminada, estilo fashion' }
+        { label: 'Playa', prompt: 'playa paradisíaca, arena blanca, palmeras, mar turquesa, luz dorada al atardecer' },
+        { label: 'Lujo', prompt: 'apartamento de lujo en dubai, ventanales grandes, ciudad de noche, diseño minimalista moderno' },
+        { label: 'Estudio', prompt: 'estudio profesional de fotografía, fondo gris suave, iluminación de estudio de alta gama, softboxes' },
+        { label: 'Naturaleza', prompt: 'bosque encantado brillante, rayos de sol a través de las hojas, verde vibrante, mágico' },
+        { label: 'Urbano', prompt: 'calle de nueva york de noche, luces de neón desenfocadas, estilo cyberpunk, lluvia ligera' },
+        { label: 'Mansión', prompt: 'piscina infinita en una mansión de miami, palmeras, cielo azul despejado, sol brillante' },
+        { label: 'Cama', prompt: 'cama king size con sábanas de seda blanca, habitación lujosa de hotel de 5 estrellas, luz de mañana tenue' },
+        { label: 'Abstracto', prompt: 'fondo abstracto con luces led moradas y rosadas, humo sutil, ambiente de club nocturno premium' }
     ];
 
     return (

@@ -11,3 +11,4 @@ python-jose[cryptography]
 tonsdk
 aiohttp
 fal-client
+deep-translator
