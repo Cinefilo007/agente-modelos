@@ -52,39 +52,20 @@ class AIEditorService:
         logger = logging.getLogger(__name__)
         
         try:
-            # PASO 1: Remover fondo de manera segura preservando al sujeto
-            # Bria background removal es permisivo y excelente extrayendo a la persona
-            res_bg = await fal_client.subscribe_async(
-                "fal-ai/bria/background/remove",
-                arguments={"image_url": image_url}
-            )
-            
-            bg_removed_url = None
-            if res_bg and "image" in res_bg:
-                bg_removed_url = res_bg["image"]["url"]
-                
-            if not bg_removed_url:
-                logger.error("Failed to extract background")
-                return None
-
-            # PASO 2: Generar nuevo fondo e integrar iluminación (Compositing)
-            # Fooocus Image-to-Image permite blending fotorealista y acepta desactivar el filtro NSFW
-            enhanced_prompt = f"{background_prompt}, highly detailed background, cinematic lighting, perfectly matched lighting on the person, raw photography, 8k resolution, photorealistic, preserve exact original body posture and identity, maintain exact subject contours"
-            
-            res_comp = await fal_client.subscribe_async(
-                "fal-ai/fooocus",
+            # Reemplazar fondo de manera profesional preservando al sujeto 100% exacto
+            # Bria replace-background integra iluminación de la escena sin alterar el avatar
+            res = await fal_client.subscribe_async(
+                "fal-ai/bria/background/replace",
                 arguments={
-                    "prompt": enhanced_prompt,
-                    "image_url": bg_removed_url,
-                    "image_weight": 1.0, # Máximo para preservar la identidad y postura 100%
-                    "performance": "Quality",
+                    "image_url": image_url,
+                    "prompt": background_prompt,
                     "sync_mode": True,
-                    "enable_safety_checker": False # Desactiva el filtro censurador
+                    "enable_safety_checker": False
                 }
             )
             
-            if res_comp and "images" in res_comp and len(res_comp["images"]) > 0:
-                return res_comp["images"][0]["url"]
+            if res and "images" in res and len(res["images"]) > 0:
+                return res["images"][0]["url"]
                 
             return None
 
