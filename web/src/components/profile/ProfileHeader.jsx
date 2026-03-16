@@ -106,45 +106,50 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     if (!user) return null; // Safety check
 
     return (
-        <div className="relative font-display text-slate-900 dark:text-slate-100 min-h-screen pb-24" style={{ '--theme-glow': themeColor || '#b829e3' }}>
+        <div className="relative font-display text-slate-900 dark:text-slate-100 pb-4" style={{ '--theme-glow': themeColor || '#b829e3' }}>
             {/* Cover Image Container */}
             <div className="relative w-full h-56">
                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${user.cover_url || user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab'}')` }}></div>
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background-dark/95"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background"></div>
             </div>
 
             {/* Content Container */}
             <div className="px-5 -mt-20 relative z-10 max-w-5xl mx-auto">
 
                 {/* Top Row: Avatar + Stats */}
-                <div className="flex items-end gap-5 mb-4">
+                <div className="flex items-end justify-between mb-4 w-full">
                     {/* Profile Photo */}
-                    <div className="flex-shrink-0">
-                        <div className="p-1 rounded-full bg-gradient-to-tr from-[var(--theme-glow)] to-accent-magenta shadow-xl shadow-[var(--theme-glow)]/20">
-                            <div
-                                className="w-24 h-24 rounded-full border-4 border-background-dark bg-cover bg-center"
-                                style={{ backgroundImage: `url('${user.avatar_url || user.avatar}')` }}
-                            ></div>
-                        </div>
+                    <div className="relative group flex-shrink-0 z-20">
+                        {/* Glowing aura behind avatar */}
+                        <div className="absolute inset-0 rounded-full blur-[10px] opacity-70 transform group-hover:scale-105 transition-transform duration-500 bg-[var(--theme-glow)]"></div>
+                        <Avatar
+                            src={user.avatar_url || user.avatar}
+                            name={user.artistic_name || user.full_name || user.name}
+                            alt={user.full_name || user.name}
+                            size="xl"
+                            isOnline={checkOnline(user.last_seen)}
+                            className="w-24 h-24 md:w-32 md:h-32 relative z-10 shadow-2xl"
+                            style={{ border: `3px solid var(--theme-glow)`, backgroundColor: '#111' }}
+                        />
                     </div>
 
                     {/* Stats Card */}
-                    <div className="flex-grow bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 mb-1 grid grid-cols-3 gap-1">
+                    <div className="flex-grow ml-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 mb-1 grid grid-cols-3 gap-1">
                         <div className="text-center">
-                            <p className="text-[9px] text-slate-400 uppercase tracking-tighter">Followers</p>
-                            <p className="text-sm font-bold text-white leading-tight">
+                            <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-tighter">Followers</p>
+                            <p className="text-sm font-bold text-white leading-tight mt-0.5">
                                 {user.followers_count >= 1000 ? (user.followers_count / 1000).toFixed(1) + 'M' : (user.followers_count || '1.2M')}
                             </p>
                         </div>
                         <div className="text-center border-x border-white/10">
-                            <p className="text-[9px] text-slate-400 uppercase tracking-tighter">Likes</p>
-                            <p className="text-sm font-bold text-accent-blue leading-tight text-cyan-400">
+                            <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-tighter">Likes</p>
+                            <p className="text-sm font-bold text-accent-blue leading-tight text-cyan-400 mt-0.5">
                                 {user.total_likes >= 1000 ? '+' + (user.total_likes / 1000).toFixed(0) + 'k' : (user.total_likes ? '+' + user.total_likes : '+12%')}
                             </p>
                         </div>
                         <div className="text-center">
-                            <p className="text-[9px] text-slate-400 uppercase tracking-tighter">Rating</p>
-                            <p className="text-sm font-bold text-accent-magenta leading-tight" style={{ color: 'var(--theme-glow)' }}>
+                            <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-tighter">Rating</p>
+                            <p className="text-sm font-bold text-accent-magenta leading-tight mt-0.5" style={{ color: 'var(--theme-glow)' }}>
                                 {(user.reputation_score !== undefined && user.reputation_score !== null)
                                     ? parseFloat(user.reputation_score).toFixed(1)
                                     : '4.9'}
@@ -159,13 +164,11 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         <div>
                             <h1 className="text-2xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
                                 {user.artistic_name || user.full_name || user.name || 'Elena Vance'}
-                                {user.is_verified && <span className="material-symbols-outlined text-[var(--theme-glow)] text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>}
+                                {user.is_verified && <CheckCircle2 size={20} className="text-blue-500 fill-white" />}
                             </h1>
                             <div className="flex items-center gap-3 mt-0.5">
-                                <p className="text-slate-300 text-xs font-medium tracking-wide">Elite Creator & Model</p>
-                                <span className="w-1 h-1 rounded-full bg-slate-600"></span>
-                                <p className="text-slate-400 text-[11px] flex items-center gap-1">
-                                    <Globe size={12} className="text-slate-400" /> United States 🇺🇸
+                                <p className="text-slate-300 text-[13px] flex items-center gap-1">
+                                    <Globe size={14} className="text-[var(--theme-glow)]" /> {user.country || 'Ubicación Desconocida'}
                                 </p>
                             </div>
                         </div>
@@ -224,7 +227,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
                 {/* Services/Niches Badges */}
                 <div className="mt-4 flex flex-wrap gap-1.5 mb-2">
-                    {['GFE', 'VIDEO CALL', 'VIP CHAT', 'PHOTO SHOOT'].map((service, index) => {
+                    {(user.services && user.services.length > 0 ? user.services : ['GFE', 'VIDEO CALL', 'VIP CHAT', 'PHOTO SHOOT']).map((service, index) => {
                         const dotColors = ['bg-accent-magenta', 'bg-accent-blue', 'bg-[var(--theme-glow)]', 'bg-white'];
                         return (
                             <div
@@ -240,7 +243,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
                 {/* Additional Buttons (Own Profile) */}
                 {isOwnProfile && (
-                    <div className="flex gap-3 mb-6">
+                    <div className="flex gap-3 mb-2 mt-4">
                         <Link to="/edit-profile" className="flex-1">
                             <Button className="w-full h-12 bg-white/5 border border-white/10 text-white gap-2 text-sm font-bold rounded-2xl transition-all hover:bg-white/10" variant="ghost">
                                 <Edit3 size={16} /> Editar Perfil

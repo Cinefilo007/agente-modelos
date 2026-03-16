@@ -21,6 +21,7 @@ function EditProfile() {
         username: '',
         bio_short: '',
         social_links: [], // Array of { network, url, icon }
+        services: [], // Array de strings
         cover_url: '',
         avatar_url: ''
     });
@@ -52,6 +53,7 @@ function EditProfile() {
                     username: data.username || '',
                     bio_short: data.bio_short || '',
                     social_links: links,
+                    services: data.services || [],
                     cover_url: data.cover_url || '',
                     avatar_url: data.avatar_url || ''
                 });
@@ -104,6 +106,7 @@ function EditProfile() {
             const { data } = await api.put('/profile/me', {
                 bio_short: formData.bio_short,
                 social_links: formData.social_links,
+                services: formData.services,
                 artistic_name: formData.artistic_name,
                 avatar_url: formData.avatar_url,
                 cover_url: formData.cover_url
@@ -225,6 +228,18 @@ function EditProfile() {
                             className="w-full bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-xl p-3 text-[var(--text-primary)] focus:border-[var(--text-primary)]/50 focus:outline-none transition-colors min-h-[100px]"
                             placeholder="Cuéntanos sobre ti..."
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 uppercase">Etiquetas de Servicios</label>
+                        <input
+                            type="text"
+                            value={formData.services.join(', ')}
+                            onChange={(e) => setFormData({ ...formData, services: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                            className="w-full bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-xl p-3 text-[var(--text-primary)] focus:border-[var(--text-primary)]/50 focus:outline-none transition-colors"
+                            placeholder="Ej. GFE, VIP Chat, Video Call"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">Separa los servicios por comas</p>
                     </div>
 
                     {/* Social Links Section */}
