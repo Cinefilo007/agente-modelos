@@ -11,7 +11,6 @@ import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck, Gamepad2, Wan
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { ThemeCustomizer } from '../components/profile/ThemeCustomizer'; // Panel de personalización
-import { toast } from 'react-hot-toast';
 
 function Profile() {
     const { username } = useParams(); // username or ID if we change routing
