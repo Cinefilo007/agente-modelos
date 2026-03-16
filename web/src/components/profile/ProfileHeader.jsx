@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import { isOnline as checkOnline } from '../../utils/date';
+import { AuthRequiredModal } from '../auth/AuthRequiredModal';
 
 export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const { themeColor } = useTheme();
@@ -20,6 +21,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const [isFollowing, setIsFollowing] = useState(false);
     const [loadingFollow, setLoadingFollow] = useState(false);
     const [showMessageAlert, setShowMessageAlert] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     // Fetch follow status if not own profile
     useEffect(() => {
@@ -37,6 +39,10 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     }, [isOwnProfile, user?.id, currentUser]);
 
     const handleSubscribe = async () => {
+        if (!currentUser) {
+            setShowAuthModal(true);
+            return;
+        }
         if (!user?.id) return;
         setLoadingFollow(true);
         try {
@@ -55,6 +61,10 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     };
 
     const handleMessageClick = () => {
+        if (!currentUser) {
+            setShowAuthModal(true);
+            return;
+        }
         if (currentUser?.role === 'client') {
             setShowMessageAlert(true);
         } else {
@@ -348,6 +358,12 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     </div>
                 </div>
             )}
+
+            {/* Auth Required Modal */}
+            <AuthRequiredModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+            />
         </div>
     );
 }
