@@ -227,7 +227,9 @@ function CreatePost() {
             formData.append('external_links', JSON.stringify(links));
         }
         if (isScheduling && scheduledAt) {
-            formData.append('scheduled_at', scheduledAt);
+            // Convertir la fecha y hora seleccionada (local) a UTC absoluto (ISO)
+            const localDate = new Date(scheduledAt);
+            formData.append('scheduled_at', localDate.toISOString());
         }
 
         try {

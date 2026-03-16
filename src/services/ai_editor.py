@@ -23,9 +23,10 @@ class AIEditorService:
         logger = logging.getLogger(__name__)
 
         try:
-            # Usar el modelo de retoque avanzado y proveerle prompts rigurosos 
+            # PASO 1: Usar el modelo de retoque avanzado y proveerle prompts rigurosos 
             # para limpieza de imperfecciones corporales completas
-            result = await fal_client.subscribe_async(
+            logger.info("Iniciando Paso 1: Retoque Mágico")
+            res_retouch = await fal_client.subscribe_async(
                 "fal-ai/image-editing/retouch",
                 arguments={
                     "image_url": image_url,
@@ -35,12 +36,38 @@ class AIEditorService:
                 }
             )
             
-            if result and "images" in result and len(result["images"]) > 0:
-                return result["images"][0]["url"]
-            return None
+            retouched_url = None
+            if res_retouch and "images" in res_retouch and len(res_retouch["images"]) > 0:
+                retouched_url = res_retouch["images"][0]["url"]
+            
+            if not retouched_url:
+                logger.error("Error en Paso 1: No se generó imagen retocada")
+                return None
+
+            # PASO 2: Usar CCSR para escalar y recuperar todos los pixeles del fondo
+            # CCSR es excelente para restaurar rostros, texturas y subir la resolución final 2x
+            logger.info("Iniciando Paso 2: Mejora de Resolución con CCSR")
+            try:
+                res_upscale = await fal_client.subscribe_async(
+                    "fal-ai/ccsr",
+                    arguments={
+                        "image_url": retouched_url,
+                        "sync_mode": True,
+                        "enable_safety_checker": False # Desactiva filtros obstructivos
+                    }
+                )
+                
+                if res_upscale and "image" in res_upscale:
+                    return res_upscale["image"]["url"]
+            except Exception as upscale_e:
+                logger.error(f"Error procesando Upscale CCSR, retornando paso 1 como fallback: {upscale_e}")
+                # Fallback: si falla el upscaler por algo imprevisto, retorna al menos la foto retocada
+                return retouched_url
+                
+            return retouched_url
 
         except Exception as e:
-            logger.error(f"Error calling fal-ai face-enhancement: {e}")
+            logger.error(f"Error calling fal-ai face-enhancement pipeline: {e}")
             return None
 
     async def change_background(self, image_url: str, background_prompt: str) -> str:
