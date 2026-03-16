@@ -4,6 +4,7 @@ import { ProfileHeader } from '../components/profile/ProfileHeader';
 import { StoryCarousel } from '../components/profile/StoryCarousel';
 import { ProfileContent } from '../components/profile/ProfileContent';
 import StoryViewer from '../components/profile/StoryViewer';
+import { AuthRequiredModal } from '../components/auth/AuthRequiredModal';
 import ClientProfile from './ClientProfile'; // Import Client View
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -244,8 +245,10 @@ function Profile() {
                                 <StoryCarousel
                                     stories={activeStories}
                                     onOpenStory={(story) => {
-                                        const index = activeStories.findIndex(s => s.id === story.id);
-                                        setSelectedStory({ list: activeStories, activeIndex: index === -1 ? 0 : index });
+                                        requireAuth(() => {
+                                            const index = activeStories.findIndex(s => s.id === story.id);
+                                            setSelectedStory({ list: activeStories, activeIndex: index === -1 ? 0 : index });
+                                        });
                                     }}
                                     title="Historias de hoy"
                                 />
@@ -253,8 +256,10 @@ function Profile() {
                                     <StoryCarousel
                                         stories={savedStories}
                                         onOpenStory={(story) => {
-                                            const index = savedStories.findIndex(s => s.id === story.id);
-                                            setSelectedStory({ list: savedStories, activeIndex: index === -1 ? 0 : index });
+                                            requireAuth(() => {
+                                                const index = savedStories.findIndex(s => s.id === story.id);
+                                                setSelectedStory({ list: savedStories, activeIndex: index === -1 ? 0 : index });
+                                            });
                                         }}
                                         title="Destacados"
                                     />
@@ -305,6 +310,12 @@ function Profile() {
                     <ThemeCustomizer user={profileUser} />
                 </div>
             )}
+
+            {/* Auth Required Modal */}
+            <AuthRequiredModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+            />
         </div>
     );
 }
