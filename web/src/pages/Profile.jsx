@@ -7,10 +7,11 @@ import StoryViewer from '../components/profile/StoryViewer';
 import ClientProfile from './ClientProfile'; // Import Client View
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck, Gamepad2, Wand2 } from 'lucide-react';
+import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck, Gamepad2, Wand2, User, Lock } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { ThemeCustomizer } from '../components/profile/ThemeCustomizer'; // Panel de personalización
+import { toast } from 'react-hot-toast';
 
 function Profile() {
     const { username } = useParams(); // username or ID if we change routing
@@ -88,6 +89,7 @@ function Profile() {
     // --- HOOKS MUST BE BEFORE ANY RETURNS ---
     const [isFollowing, setIsFollowing] = useState(false);
     const [loadingFollow, setLoadingFollow] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     useEffect(() => {
         if (!isMe && profileUser?.id) {
@@ -108,11 +110,12 @@ function Profile() {
 
     const requireAuth = (callback) => {
         if (!currentUser) {
-            showToast("¡Únete a nuestra comunidad para interactuar!", "info");
-            setTimeout(() => navigate('/onboarding'), 2000);
+            setShowAuthModal(true);
             return;
         }
-        callback();
+        if (typeof callback === 'function') {
+            callback();
+        }
     };
 
     const handleSubscribe = async () => {
@@ -208,7 +211,6 @@ function Profile() {
                 customActions={CustomActions}
             />
 
-            {/* Stories Section */}
             {/* Stories Section */}
             {(stories.length > 0 || isOwnProfile) && (
                 <>

@@ -147,43 +147,46 @@ export default function Layout() {
                 </main>
 
                 {/* Bottom Navigation Bar */}
-                {showNav && (
-                    <nav className="absolute bottom-0 left-0 right-0 h-[60px] bg-background/80 backdrop-blur-xl border-t border-border flex items-center justify-between px-2 z-50 pb-safe">
-                        <NavItem to="/" icon={Home} label="Inicio" badge={hasNewPosts ? 1 : 0} />
-                        <NavItem to="/explore" icon={Compass} label="Explorar" />
+                {/* Bottom Nav Mobile */}
+                {user && (
+                    <nav className="lg:hidden fixed bottom-0 w-full bg-[var(--surface-color)]/80 backdrop-blur-xl border-t border-[var(--glass-border)] pb-safe z-50">
+                        <div className="flex justify-around items-center h-16 max-w-md mx-auto px-4">
+                            <NavItem to="/" icon={Home} label="Inicio" badge={hasNewPosts ? 1 : 0} />
+                            <NavItem to="/explore" icon={Compass} label="Explorar" />
 
-                        {/* Central Action Button (Models only, NOT Admin) */}
-                        {isModel && user?.role !== 'admin' && (
-                            <div className="relative -top-5 flex flex-col items-center justify-center w-[20%]">
-                                <Link to="/create-post">
-                                    <button
-                                        className="w-14 h-14 rounded-full flex items-center justify-center text-primary-foreground shadow-lg transform transition-transform active:scale-95 border-4 border-background"
-                                        style={{
-                                            background: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
-                                            boxShadow: `0 8px 20px -5px ${themeColor}88`
-                                        }}
-                                    >
-                                        <Plus size={28} strokeWidth={2.5} />
-                                    </button>
-                                </Link>
-                            </div>
-                        )}
+                            {/* Central Action Button (Models only, NOT Admin) */}
+                            {isModel && user?.role !== 'admin' && (
+                                <div className="relative -top-5 flex flex-col items-center justify-center w-[20%]">
+                                    <Link to="/create-post">
+                                        <button
+                                            className="w-14 h-14 rounded-full flex items-center justify-center text-primary-foreground shadow-lg transform transition-transform active:scale-95 border-4 border-background"
+                                            style={{
+                                                background: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
+                                                boxShadow: `0 8px 20px -5px ${themeColor}88`
+                                            }}
+                                        >
+                                            <Plus size={28} strokeWidth={2.5} />
+                                        </button>
+                                    </Link>
+                                </div>
+                            )}
 
-                        {/* Hide Notifications for Admin */}
-                        {user?.role !== 'admin' && (
+                            {/* Hide Notifications for Admin */}
+                            {user?.role !== 'admin' && (
+                                <NavItem
+                                    to="/notifications"
+                                    icon={Bell}
+                                    label="Alertas"
+                                    badge={unreadCount}
+                                />
+                            )}
+
                             <NavItem
-                                to="/notifications"
-                                icon={Bell}
-                                label="Alertas"
-                                badge={unreadCount}
+                                to={user?.role === 'admin' ? "/admin" : "/me"}
+                                icon={User}
+                                label={user?.role === 'admin' ? "Admin" : "Perfil"}
                             />
-                        )}
-
-                        <NavItem
-                            to={user?.role === 'admin' ? "/admin" : "/me"}
-                            icon={User}
-                            label={user?.role === 'admin' ? "Admin" : "Perfil"}
-                        />
+                        </div>
                     </nav>
                 )}
             </div>

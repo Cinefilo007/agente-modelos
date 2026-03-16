@@ -141,6 +141,11 @@ function App() {
                   </PublicRoute>
                 } />
 
+                {/* Perfiles Públicos Generales de la App*/}
+                <Route path="/:username" element={
+                  <Profile />
+                } />
+
                 {/* Admin Route - Separate Layout potentially? Or same? Let's use separate for focus */}
                 <Route path="/admin" element={
                   <ProtectedRoute>
@@ -179,7 +184,6 @@ function App() {
                   <Route path="shop-manager" element={<ShopManager />} />
                   <Route path="profile" element={<Navigate to="/me" replace />} />
                   <Route path="me" element={<Profile />} />
-                  <Route path=":username" element={<Profile />} />
                   <Route path="casino/:username" element={<Casino />} />
                 </Route>
 

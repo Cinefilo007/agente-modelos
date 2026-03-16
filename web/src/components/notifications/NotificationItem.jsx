@@ -11,7 +11,7 @@ export function NotificationItem({ notification, onRead }) {
 
     const handleActorClick = (e) => {
         e.stopPropagation();
-        navigate(`/profile/${actor.username}`);
+        navigate(`/${actor.username}`);
     };
 
     const handleContainerClick = () => {
@@ -20,7 +20,7 @@ export function NotificationItem({ notification, onRead }) {
         if (notification.target_id && notification.type !== 'follow') {
             navigate(`/post/${notification.target_id}`);
         } else {
-            navigate(`/profile/${actor.username}`);
+            navigate(`/${actor.username}`);
         }
     };
 

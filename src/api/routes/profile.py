@@ -269,6 +269,14 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
     if "payout_address" in updates:
         updates["payout_address"] = updates["payout_address"]
     
+    # Check if a username needs to be auto-generated because it's missing but we have a name
+    current_username = profile.data.get("username")
+    
+    if not current_username and ("artistic_name" in updates or "full_name" in updates):
+        base_name = updates.get("artistic_name") or updates.get("full_name")
+        if base_name:
+            updates["username"] = generate_unique_username(base_name, db.client)
+    
     if not updates:
         return {"message": "No changes detected"}
 
@@ -296,7 +304,7 @@ async def get_public_profile(identifier: str):
         is_uuid = False
         
     query = db.client.table("models") \
-        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links, services, last_seen, country, is_verified")
+        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links, services, last_seen, country, is_verified, config_prices, config_persona, config_physique, config_payments")
         
     if is_uuid:
         query = query.eq("id", identifier)

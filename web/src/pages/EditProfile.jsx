@@ -115,7 +115,7 @@ function EditProfile() {
             });
             console.log("Profile updated:", data);
             showToast("Perfil actualizado correctamente", "success");
-            navigate(`/profile/${formData.username || user.username}`);
+            navigate(`/${formData.username || user.username}`);
         } catch (error) {
             console.error("Error updating profile:", error);
             showToast("Error al actualizar el perfil", "error");

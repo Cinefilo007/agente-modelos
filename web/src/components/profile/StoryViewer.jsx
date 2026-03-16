@@ -207,7 +207,7 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user, onStoryDel
                         // Navigate logic would be here, but simpler to use an anchor/Link if possible or just window.location for now if hook not passed
                         // Let's assume passed user object might help or parent handles.
                         // Better: Just use a styled link if router context exists.
-                        window.location.href = `/profile/${storyUser.username || storyUser.id}`;
+                        window.location.href = `/${storyUser.username || storyUser.id}`;
                     }}
                     className="px-6 py-2 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-white/90 text-sm font-medium hover:bg-white/20 transition-all"
                 >
