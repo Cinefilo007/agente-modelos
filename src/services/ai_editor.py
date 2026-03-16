@@ -23,10 +23,13 @@ class AIEditorService:
         logger = logging.getLogger(__name__)
 
         try:
+            # Usar el modelo de retoque avanzado y proveerle prompts rigurosos 
+            # para limpieza de imperfecciones corporales completas
             result = await fal_client.subscribe_async(
-                "fal-ai/image-editing/face-enhancement",
+                "fal-ai/image-editing/retouch",
                 arguments={
-                    "image_url": image_url
+                    "image_url": image_url,
+                    "prompt": "perfect flawless cinematic skin, remove all acne, remove all stretch marks, remove all body and face scars, remove dark circles under eyes, high end beauty retouching, highly detailed skin texture, preserve original facial identity perfectly"
                 }
             )
             
