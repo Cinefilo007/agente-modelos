@@ -40,36 +40,29 @@ class AIEditorService:
 
     async def change_background(self, image_url: str, background_prompt: str) -> str:
         """
-        Remueve el fondo actual y genera uno nuevo basado en el prompt.
+        Remueve el fondo actual y genera uno nuevo basado en el prompt,
+        manteniendo a la persona u objeto principal intacto en la composición.
         """
-        # 1. Remover fondo con Bria
-        removal_result = await fal_client.subscribe_async(
-            "fal-ai/bria/background/remove",
-            arguments={
-                "image_url": image_url
-            }
-        )
+        import logging
+        logger = logging.getLogger(__name__)
         
-        if not removal_result or "image" not in removal_result:
+        try:
+            # Usar directamente el modelo de reemplazo de fondo de FAL
+            result = await fal_client.subscribe_async(
+                "fal-ai/image-editing/background-change",
+                arguments={
+                    "image_url": image_url,
+                    "prompt": background_prompt
+                }
+            )
+            
+            if result and "images" in result and len(result["images"]) > 0:
+                return result["images"][0]["url"]
+                
             return None
-            
-        fg_image_url = removal_result["image"]["url"]
-        
-        # 2. Componer con nuevo fondo usando Flux o similar
-        # En FAL, algunos modelos permiten 'inpainting' o 'outpainting' para esto.
-        # Usaremos Flux Realism para un fondo profesional.
-        final_result = await fal_client.subscribe_async(
-            "fal-ai/flux/schnell", # Usamos schnell por velocidad/costo
-            arguments={
-                "prompt": f"Professional photograph of a woman, {background_prompt}, high end lighting, bokeh, professional studio",
-                "image_url": fg_image_url, # Algunos modelos usan esto como base
-                # Nota: El flujo exacto puede variar según el modelo de composición en FAL
-            }
-        )
-        
-        if final_result and "images" in final_result and len(final_result["images"]) > 0:
-            return final_result["images"][0]["url"]
-            
-        return fg_image_url # Retornar al menos sin fondo si falla la composición
+
+        except Exception as e:
+            logger.error(f"Error calling fal-ai background-change: {e}")
+            return None
 
 ai_editor = AIEditorService()
