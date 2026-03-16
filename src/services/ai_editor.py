@@ -52,22 +52,39 @@ class AIEditorService:
         logger = logging.getLogger(__name__)
         
         try:
-            # Usar directamente el modelo de reemplazo de fondo de FAL
-            # Añadimos instrucciones rigurosas para blending e iluminación
-            enhanced_prompt = f"{background_prompt}. The person must seamlessly blend into this environment. Match the lighting, shadows, color temperature, and cinematic color grading of that specific background onto the person perfectly."
+            # PASO 1: Remover fondo de manera segura preservando al sujeto
+            # Bria background removal es permisivo y excelente extrayendo a la persona
+            res_bg = await fal_client.subscribe_async(
+                "fal-ai/bria/background/remove",
+                arguments={"image_url": image_url}
+            )
             
-            result = await fal_client.subscribe_async(
-                "fal-ai/image-editing/background-change",
+            bg_removed_url = None
+            if res_bg and "image" in res_bg:
+                bg_removed_url = res_bg["image"]["url"]
+                
+            if not bg_removed_url:
+                logger.error("Failed to extract background")
+                return None
+
+            # PASO 2: Generar nuevo fondo e integrar iluminación (Compositing)
+            # Fooocus Image-to-Image permite blending fotorealista y acepta desactivar el filtro NSFW
+            enhanced_prompt = f"{background_prompt}, highly detailed background, cinematic lighting, perfectly matched lighting on the person, raw photography, 8k resolution, photorealistic"
+            
+            res_comp = await fal_client.subscribe_async(
+                "fal-ai/fooocus",
                 arguments={
-                    "image_url": image_url,
                     "prompt": enhanced_prompt,
+                    "image_url": bg_removed_url,
+                    "image_weight": 0.85, # Alto para preservar la identidad 100%
+                    "performance": "Quality",
                     "sync_mode": True,
-                    "enable_safety_checker": False
+                    "enable_safety_checker": False # Desactiva el filtro censurador
                 }
             )
             
-            if result and "images" in result and len(result["images"]) > 0:
-                return result["images"][0]["url"]
+            if res_comp and "images" in res_comp and len(res_comp["images"]) > 0:
+                return res_comp["images"][0]["url"]
                 
             return None
 
