@@ -10,6 +10,7 @@ from jose import jwt
 from src.services.database import db
 from urllib.parse import parse_qsl
 import json
+from telegram import Bot
 
 router = APIRouter()
 
@@ -140,6 +141,22 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                     res = db.client.table("clients").insert(new_client).execute()
                     if res is not None and hasattr(res, 'data') and res.data and len(res.data) > 0:
                         user_data = res.data[0]
+                        
+                        # Notify Admin of NEW Fan
+                        if BOT_TOKEN and ADMIN_TELEGRAM_ID:
+                            try:
+                                bot = Bot(token=BOT_TOKEN)
+                                msg = (
+                                    f"🎯 *Nuevo Fan Registrado*\n\n"
+                                    f"👤 *Usuario:* @{username or 'Sin username'}\n"
+                                    f"🆔 *ID Telegram:* `{telegram_id}`\n"
+                                    f"📅 *Fecha:* {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                                )
+                                # Run in background or wait, since it's async we need await
+                                await bot.send_message(chat_id=ADMIN_TELEGRAM_ID, text=msg, parse_mode="Markdown")
+                                print(f"[Auth] Admin notified of new fan: {telegram_id}")
+                            except Exception as notify_err:
+                                print(f"[Auth] Notification failed: {notify_err}")
                     else:
                         print(f"[Backend Auth] Insertion failed for {telegram_id}. Response: {res}")
                         # Final retry select
