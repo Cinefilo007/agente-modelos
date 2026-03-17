@@ -459,6 +459,88 @@ const LandingPage = () => {
                 </section>
             )}
 
+            {/* --- CREATOR ONLY: ALL-IN-ONE PROFILE SECTION --- */}
+            {viewMode === 'creator' && (
+                <section className="py-32 relative z-10 overflow-hidden" id="profile-hub">
+                    <div className="container mx-auto px-6">
+                        <div className="grid lg:grid-cols-2 gap-20 items-center">
+                            <div className="order-2 lg:order-1 relative">
+                                {/* Decoración de fondo para la imagen */}
+                                <div className="absolute inset-0 bg-purple-500/10 blur-[100px] rounded-full -z-10"></div>
+                                <div className="relative border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-transform duration-700">
+                                    <img
+                                        src="/assets/landing/model-profile-preview.jpg"
+                                        alt="Nebula Model Profile"
+                                        className="w-full object-cover"
+                                    />
+                                    {/* Overlay de cristal en la imagen */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                                </div>
+
+                                {/* Tarjeta flotante de "Links" */}
+                                <div className="absolute -bottom-6 -right-6 md:right-10 bg-black/60 backdrop-blur-3xl border border-white/10 p-6 rounded-3xl shadow-2xl animate-bounce-slow">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                                <Share2 className="w-4 h-4 text-blue-400" />
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-white">Todos tus links</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="order-1 lg:order-2 space-y-10 text-left">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase tracking-widest">
+                                    <Sparkles className="w-3 h-3" /> Ecosistema Centralizado
+                                </div>
+
+                                <h2 className="text-4xl md:text-7xl font-black tracking-tighter leading-tight">
+                                    Tu Perfil. Tu Marca. <br />
+                                    <span className="text-purple-500 text-glow">Tu Ecosistema.</span>
+                                </h2>
+
+                                <p className="text-xl text-gray-500 leading-relaxed font-medium">
+                                    Olvida las páginas de links externas. Nebula es tu centro de operaciones todo-en-uno diseñado para convertir visitantes en clientes de alto valor.
+                                </p>
+
+                                <div className="grid gap-8">
+                                    <div className="flex gap-6 group">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-purple-500/20 group-hover:border-purple-500/30 transition-all">
+                                            <Globe className="w-6 h-6 text-purple-400" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h4 className="font-black uppercase tracking-widest text-sm">Social Hub Integrado</h4>
+                                            <p className="text-xs text-gray-500 leading-normal">Tus fans pueden saltar a tu TikTok, IG o X con un solo click sin salir de tu marca.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-6 group">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 group-hover:border-blue-500/30 transition-all">
+                                            <Activity className="w-6 h-6 text-blue-400" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h4 className="font-black uppercase tracking-widest text-sm">Etiquetas de Servicio</h4>
+                                            <p className="text-xs text-gray-500 leading-normal">Muestra qué ofreces al instante. Dick Rates, Sexting, Videollamadas... todo claro y directo.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-6 group">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-pink-500/20 group-hover:border-pink-500/30 transition-all">
+                                            <Star className="w-6 h-6 text-pink-400" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h4 className="font-black uppercase tracking-widest text-sm">Estética Premium</h4>
+                                            <p className="text-xs text-gray-500 leading-normal">Un diseño que proyecta exclusividad y atrae a los suscriptores dispuestos a invertir más en ti.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* --- CREATOR ONLY: SFS AUTOMATION SECTION --- */}
             {viewMode === 'creator' && (
                 <section className="py-32 relative z-10 bg-black/40" id="sfs">
@@ -629,6 +711,13 @@ const LandingPage = () => {
             </footer>
 
             <style>{`
+                @keyframes bounce-slow {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
+                }
+                .animate-bounce-slow {
+                    animation: bounce-slow 4s ease-in-out infinite;
+                }
                 .text-glow { filter: drop-shadow(0 0 10px currentColor); }
                 @keyframes marquee {
                     0% { transform: translateX(0); }
