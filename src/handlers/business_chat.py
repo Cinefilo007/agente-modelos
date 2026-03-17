@@ -99,9 +99,10 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         "==============================================\n"
         "INSTRUCCIONES CLAVE:\n"
         "1. Detecta la intención del cliente.\n"
-        "2. Si hay INTERÉS REAL (pregunta precios, quiere comprar, pide fotos), termina con: [INTENT: INTEREST].\n"
-        "3. Si NO hay interés o es un bot/troll, termina con: [INTENT: NO_INTEREST].\n"
-        "4. Responde en español, natural, estilo WhatsApp."
+        "2. DETECCIÓN DE IDIOMA: Responde SIEMPRE en el mismo idioma que te hable el cliente (Inglés, Portugués, etc).\n"
+        "3. Si hay INTERÉS REAL (pregunta precios, quiere comprar, pide fotos), termina con: [INTENT: INTEREST].\n"
+        "4. Si NO hay interés o es un bot/troll, termina con: [INTENT: NO_INTEREST].\n"
+        "5. Responde de forma natural, estilo WhatsApp."
     )
 
     # 5. Generar Respuesta
