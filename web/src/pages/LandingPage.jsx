@@ -10,6 +10,7 @@ import {
     Activity, Cpu, UserCheck, CircleDollarSign, Users,
     TrendingUp, Calendar, Sparkles, BarChart3, Quote, Share2, ArrowRight, Eye
 } from 'lucide-react';
+import modelProfilePreview from '../assets/landing/model-profile-preview.jpg';
 
 const LandingPage = () => {
     const { loginWithTelegram } = useAuth();
@@ -469,7 +470,7 @@ const LandingPage = () => {
                                 <div className="absolute inset-0 bg-purple-500/10 blur-[100px] rounded-full -z-10"></div>
                                 <div className="relative border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-transform duration-700">
                                     <img
-                                        src="/assets/landing/model-profile-preview.jpg"
+                                        src={modelProfilePreview}
                                         alt="Nebula Model Profile"
                                         className="w-full object-cover"
                                     />
