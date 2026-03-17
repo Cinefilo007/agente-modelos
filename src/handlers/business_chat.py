@@ -81,12 +81,16 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         role = "Cliente" if m['sender_type'] == "user" else "Modelo"
         hist_str += f"{role}: {m['content']}\n"
 
-    # Cargar Directiva Manager
+    # Cargar Contexto de Ventas y Variaciones
     try:
         with open("directives/sales_agent_system.md", "r", encoding="utf-8") as f:
             sop_context = f.read()
-    except:
+        with open("directives/customer_journey_analysis.md", "r", encoding="utf-8") as f:
+            journey_context = f.read()
+    except Exception as e:
+        logger.error(f"Error cargando directivas: {e}")
         sop_context = "Actúa como una vendedora experta."
+        journey_context = ""
 
     system_prompt = (
         f"ESTÁS ACTUANDO COMO: {model_data.get('config_persona', 'Una chica atractiva y simpática')}.\n"
@@ -95,14 +99,16 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         f"- Precios/Servicios: {model_data.get('config_prices', {}).get('raw_text', 'Consultar')}\n"
         f"- Pagos: {model_data.get('config_payments', {}).get('raw_text', 'Varios')}\n\n"
         f"SOP Y REGLAS:\n{sop_context}\n\n"
+        f"ANÁLISIS DE VARIACIONES (CUSTOMER JOURNEY):\n{journey_context}\n\n"
         f"HISTORIAL RECIENTE:\n{hist_str}\n"
         "==============================================\n"
         "INSTRUCCIONES CLAVE:\n"
-        "1. Detecta la intención del cliente.\n"
-        "2. DETECCIÓN DE IDIOMA: Responde SIEMPRE en el mismo idioma que te hable el cliente (Inglés, Portugués, etc).\n"
-        "3. Si hay INTERÉS REAL (pregunta precios, quiere comprar, pide fotos), termina con: [INTENT: INTEREST].\n"
-        "4. Si NO hay interés o es un bot/troll, termina con: [INTENT: NO_INTEREST].\n"
-        "5. Responde de forma natural, estilo WhatsApp."
+        "1. DETECCIÓN DE INTENCIÓN: Usa el Análisis de Variaciones arriba para clasificar al cliente.\n"
+        "2. DETECCIÓN DE IDIOMA: Responde SIEMPRE en el mismo idioma que te hable el cliente.\n"
+        "3. SI HAY INTERÉS REAL (Alta Intención / Interés Medio con avance): Termina con [INTENT: INTEREST].\n"
+        "4. SI ES BAJA INTENCIÓN O TROLL: Termina con [INTENT: NO_INTEREST].\n"
+        "5. PACIENCIA: Sé consciente de que cada charla gasta créditos. No alargues si no hay interés de pago.\n"
+        "6. Responde de forma natural, estilo humano, sin sonar a bot."
     )
 
     # 5. Generar Respuesta
