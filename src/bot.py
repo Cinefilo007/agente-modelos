@@ -39,6 +39,7 @@ def build_app():
     from src.handlers.onboarding import onboarding_handler
     from src.handlers.admin import admin_callback_handler
     from src.handlers.profile import show_profile, profile_handler
+    from src.handlers.business_chat import business_handler
     from src.handlers.credits import (
         list_packages, credit_purchase_callback, admin_credit_callback, admin_add_credits_command,
         admin_list_packages, admin_pkg_view_callback, admin_pkg_action_callback, create_pkg_handler,
@@ -55,6 +56,7 @@ def build_app():
     app.add_handler(create_pkg_handler)
     app.add_handler(edit_pkg_handler)   # Edit Package
     app.add_handler(edit_model_handler) # Edit Model Credits
+    app.add_handler(business_handler)   # Telegram Business Messages
 
     # 2. Command Handlers
     app.add_handler(CommandHandler("perfil", show_profile))

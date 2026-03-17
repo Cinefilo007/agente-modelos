@@ -31,6 +31,9 @@ class AIAgent:
             if model_type == "hunter":
                 model = self.HUNTER_MODEL
                 temp = self.HUNTER_TEMP
+            elif model_type == "manager":
+                model = self.MANAGER_MODEL
+                temp = self.MANAGER_TEMP
             else:
                 model = self.MANAGER_MODEL
                 temp = self.MANAGER_TEMP
@@ -42,7 +45,6 @@ class AIAgent:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
                 ],
-                # Optional: Add site headers for OpenRouter
                 extra_headers={
                     "HTTP-Referer": "https://agencymodelbot.local", 
                     "X-Title": "AgencyBot"
@@ -54,33 +56,35 @@ class AIAgent:
             return "Lo siento, tuve un error interno procesando eso."
 
     @staticmethod
-    def split_into_bubbles(text: str, max_chars=300) -> list[str]:
-        """Divide el texto en burbujas de chat naturales."""
+    def split_into_bubbles(text: str, max_chars=180) -> list[str]:
+        """Divide el texto en burbujas de chat naturales (estilo WhatsApp)."""
         if not text:
             return []
             
-        # Si es corto, return directo
-        if len(text) <= max_chars:
-            return [text]
+        # Limpiar tags de intención antes de fragmentar
+        clean_text = text.replace("[INTENT: INTEREST]", "").replace("[INTENT: NO_INTEREST]", "").strip()
+
+        if len(clean_text) <= max_chars:
+            return [clean_text]
 
         bubbles = []
         current_bubble = ""
         
-        # Split por oraciones (básico)
-        sentences = text.replace(". ", ".\n").split("\n")
+        # Split por oraciones o comas para que sea natural
+        parts = clean_text.replace(". ", ".|").replace(", ", ",|").split("|")
         
-        for sentence in sentences:
-            if len(current_bubble) + len(sentence) <= max_chars:
-                current_bubble += sentence + " "
+        for part in parts:
+            if len(current_bubble) + len(part) <= max_chars:
+                current_bubble += part + " "
             else:
                 if current_bubble:
                     bubbles.append(current_bubble.strip())
-                current_bubble = sentence + " "
+                current_bubble = part + " "
         
         if current_bubble:
             bubbles.append(current_bubble.strip())
             
-        return bubbles
+        return [b for b in bubbles if b.strip()]
 
 # Singleton
 ai_agent = AIAgent()

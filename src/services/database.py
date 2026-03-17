@@ -112,6 +112,11 @@ class Database:
                 "intent": intent,
                 "metadata": metadata or {}
             }
+            
+            # Si relation_id viene en metadata, sacarlo a nivel superior para la DB si la columna existe
+            if metadata and "relation_id" in metadata:
+                data["relation_id"] = metadata["relation_id"]
+                
             self.client.table("messages").insert(data).execute()
         except Exception as e:
             logger.error(f"Error logging message for model {model_id}: {e}")

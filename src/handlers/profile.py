@@ -27,7 +27,8 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💅 **Personalidad**: {model.get('config_persona', 'No definida')}\n"
         f"👙 **Físico**: {model.get('config_physique', 'No definido')}\n\n"
         f"💰 **Precios**: {model.get('config_prices', {}).get('raw_text', 'No definidos')}\n"
-        f"💳 **Pagos**: {model.get('config_payments', {}).get('raw_text', 'No definidos')}\n\n"
+        f"💳 **Pagos**: {model.get('config_payments', {}).get('raw_text', 'No definidos')}\n"
+        f"⏳ **Paciencia Bot**: `{model.get('config_patience', 10)} mensajes`\n\n"
         f"💎 **Créditos Disponibles**: `{model.get('credits_balance', 0)}`"
     )
 
@@ -36,6 +37,7 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("✏️ Editar Físico", callback_data="edit|config_physique")],
         [InlineKeyboardButton("✏️ Editar Precios", callback_data="edit|config_prices")],
         [InlineKeyboardButton("✏️ Editar Métodos de Pago", callback_data="edit|config_payments")],
+        [InlineKeyboardButton("⏳ Ajustar Paciencia Bot", callback_data="edit|config_patience")],
         [InlineKeyboardButton("💎 Recargar Créditos", callback_data="goto_credits")] # Hook to credits handler
     ]
     
@@ -60,7 +62,8 @@ async def profile_edit_callback(update: Update, context: ContextTypes.DEFAULT_TY
         "config_persona": "Personalidad",
         "config_physique": "Físico",
         "config_prices": "Lista de Precios",
-        "config_payments": "Métodos de Pago"
+        "config_payments": "Métodos de Pago",
+        "config_patience": "Paciencia del Bot (Número de mensajes)"
     }
     
     readable_name = field_names.get(field, field)
@@ -82,6 +85,13 @@ async def save_profile_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     updates = {}
     if field in ['config_prices', 'config_payments']:
         updates[field] = {"raw_text": new_text}
+    elif field == 'config_patience':
+        # Validar que sea un número
+        try:
+            updates[field] = int(re.sub(r'\D', '', new_text))
+        except:
+            await update.message.reply_text("❌ Por favor envía un número válido.")
+            return ConversationHandler.END
     else:
         updates[field] = new_text
         
