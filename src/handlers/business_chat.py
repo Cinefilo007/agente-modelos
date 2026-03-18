@@ -162,10 +162,14 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         )
         db.log_message(model_uuid, "bot", bubble, intent=intent, metadata={"relation_id": rel_data['id']})
 
-# Handler configurado específicamente para Telegram Business
+# Filtro para detectar EXCLUSIVAMENTE mensajes de Telegram Business
+class BusinessMessageFilter(filters.BaseFilter):
+    def filter(self, update: Update):
+        # Un mensaje de negocio tiene el atributo business_message poblado
+        return bool(getattr(update, 'business_message', None))
+
+# Handler configurado para negocio sin argumentos que causen crash en versiones antiguas
 business_handler = MessageHandler(
-    filters.TEXT & ~filters.COMMAND, 
-    handle_business_message,
-    message_updates=False,          # NO capturar mensajes privados normales
-    business_message_updates=True   # SÍ capturar mensajes de Telegram Business
+    BusinessMessageFilter() & filters.TEXT & ~filters.COMMAND, 
+    handle_business_message
 )
