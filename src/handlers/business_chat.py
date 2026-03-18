@@ -162,5 +162,9 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         )
         db.log_message(model_uuid, "bot", bubble, intent=intent, metadata={"relation_id": rel_data['id']})
 
-# Filtro para mensajes de negocio
-business_handler = MessageHandler(filters.ChatType.GROUPS | filters.ChatType.PRIVATE, handle_business_message)
+# Filtro personalizado para mensajes de negocio
+class BusinessFilter(filters.BaseFilter):
+    def filter(self, update: Update):
+        return bool(update.business_message)
+
+business_handler = MessageHandler(BusinessFilter(), handle_business_message)
