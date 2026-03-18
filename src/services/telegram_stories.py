@@ -39,26 +39,30 @@ async def post_to_telegram_story(model_id: str, media_url: str, media_type: str,
         logger.info(f"Intentando publicar historia para modelo {model_id} (Connection: {business_conn_id})")
         
         # Formatear la llamada segun la API de Telegram para Business Stories
+        # Ref: https://core.telegram.org/bots/api#poststory
         url = f"https://api.telegram.org/bot{token}/postStory"
         
-        data = {
-            "business_connection_id": business_conn_id,
-            "caption": final_caption
-        }
-        
+        # El objeto 'content' es requerido para definir la media
+        content_obj = {}
         if media_type == "video":
-            data["video"] = media_url
+            content_obj = {"type": "video", "video": media_url}
         else:
-            data["photo"] = media_url
+            content_obj = {"type": "photo", "photo": media_url}
+
+        payload = {
+            "business_connection_id": business_conn_id,
+            "content": content_obj,
+            "caption": final_caption,
+            "parse_mode": "HTML"
+        }
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, data=data)
+            response = await client.post(url, json=payload)
             res_json = response.json()
             
             if not res_json.get("ok"):
                 error_msg = res_json.get("description", "Unknown error")
                 logger.error(f"Error publicando historia en Telegram: {error_msg}")
-                # Aquí capturamos errores como "Premium required" o "Limit exceeded"
                 return False
             
             logger.info(f"Historia publicada exitosamente para modelo {model_id}")
