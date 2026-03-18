@@ -20,6 +20,7 @@ function CreatePost() {
     const [scheduledAt, setScheduledAt] = useState('');
     const [showLinkPanel, setShowLinkPanel] = useState(false);
     const [showAIEditor, setShowAIEditor] = useState(false);
+    const [publishToStory, setPublishToStory] = useState(false);
 
     // Video Edit State
     const [videoDuration, setVideoDuration] = useState(0);
@@ -230,6 +231,10 @@ function CreatePost() {
             // Convertir la fecha y hora seleccionada (local) a UTC absoluto (ISO)
             const localDate = new Date(scheduledAt);
             formData.append('scheduled_at', localDate.toISOString());
+        }
+
+        if (publishToStory) {
+            formData.append('publish_to_story', 'true');
         }
 
         try {
@@ -497,6 +502,58 @@ function CreatePost() {
                             )}
                         </div>
                     )}
+
+                    {/* --- PUBLICACIÓN EN HISTORIAS DE TELEGRAM --- */}
+                    <div className="bg-card/40 border border-white/10 rounded-2xl p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={clsx(
+                                    "p-2 rounded-xl transition-colors",
+                                    publishToStory ? "bg-blue-500/20 text-blue-400" : "bg-white/5 text-gray-500"
+                                )}>
+                                    <Sparkles size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xs font-bold text-white">Historia de Telegram</h3>
+                                    <p className="text-[10px] text-gray-500">Publicar también en mis historias</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setPublishToStory(!publishToStory)}
+                                className={clsx(
+                                    "w-12 h-6 rounded-full transition-all relative",
+                                    publishToStory ? "bg-blue-600" : "bg-white/10"
+                                )}
+                            >
+                                <div className={clsx(
+                                    "absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-md",
+                                    publishToStory ? "left-7" : "left-1"
+                                )} />
+                            </button>
+                        </div>
+
+                        {publishToStory && (
+                            <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-3 space-y-2 animate-in fade-in slide-in-from-top-1">
+                                <p className="text-[10px] text-blue-400 font-medium flex items-center gap-1.5">
+                                    <Sparkles size={12} /> Requisitos para publicar:
+                                </p>
+                                <ul className="space-y-1">
+                                    <li className="text-[10px] text-gray-400 flex items-start gap-2">
+                                        <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 flex-none" />
+                                        <span>Debes ser usuario **Telegram Premium**.</span>
+                                    </li>
+                                    <li className="text-[10px] text-gray-400 flex items-start gap-2">
+                                        <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 flex-none" />
+                                        <span>Debes tener el bot activado en **Telegram Business** (Ajustes > Chatbot).</span>
+                                    </li>
+                                    <li className="text-[10px] text-gray-400 flex items-start gap-2">
+                                        <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 flex-none" />
+                                        <span>Recuerda dar permiso para **Gestionar Historias**.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

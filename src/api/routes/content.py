@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Body
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Body, BackgroundTasks
 from typing import List, Optional
 from pydantic import BaseModel
 from src.api.dependencies import get_current_user, get_current_user_optional, TelegramUser
 from src.services.database import db
 from src.services.storage import upload_file
+from src.services.telegram_stories import post_to_telegram_story
 from datetime import datetime, timedelta
 import logging
 
@@ -36,6 +37,7 @@ import io
 
 @router.post("/posts")
 async def create_post(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     thumbnail: Optional[UploadFile] = File(None),
     caption: Optional[str] = Form(None),
@@ -44,6 +46,7 @@ async def create_post(
     start_time: float = Form(0),
     end_time: Optional[float] = Form(None),
     thumbnail_time: float = Form(0.1),
+    publish_to_story: bool = Form(False),
     user: TelegramUser = Depends(get_current_user)
 ):
     """Create a new post with file upload, now supporting links and scheduling."""
@@ -146,7 +149,19 @@ async def create_post(
     
     try:
         response = db.client.table("posts").insert(data).execute()
-        return response.data[0]
+        post_data = response.data[0]
+        
+        # Publicar en historias de Telegram si se solicita
+        if publish_to_story:
+            background_tasks.add_task(
+                post_to_telegram_story,
+                model_id=str(user.user_id),
+                media_url=public_url,
+                media_type=media_type,
+                caption=caption
+            )
+            
+        return post_data
     except Exception as e:
         logger.warning(f"Full post insert failed, retrying without new columns: {e}")
         # Base columns only fallback
@@ -158,7 +173,18 @@ async def create_post(
             "thumbnail_url": thumbnail_url
         }
         response = db.client.table("posts").insert(base_data).execute()
-        return response.data[0]
+        post_data = response.data[0]
+        
+        if publish_to_story:
+            background_tasks.add_task(
+                post_to_telegram_story,
+                model_id=str(user.user_id),
+                media_url=public_url,
+                media_type=media_type,
+                caption=caption
+            )
+            
+        return post_data
 
 @router.get("/posts/my-posts")
 async def get_my_posts(

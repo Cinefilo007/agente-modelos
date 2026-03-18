@@ -2,12 +2,61 @@ import logging
 import asyncio
 import re
 from telegram import Update, constants, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, MessageHandler, filters
+from telegram.ext import ContextTypes, MessageHandler, filters, BusinessConnectionHandler
 from src.services.database import db
 from src.services.ai_agent import ai_agent
 from src.handlers.admin import ADMIN_ID
 
 logger = logging.getLogger(__name__)
+
+async def handle_business_connection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handler para capturar cuando una modelo conecta/desconecta el bot a su cuenta Business.
+    """
+    conn = update.business_connection
+    if not conn:
+        return
+    
+    model_tg_id = conn.user.id
+    is_enabled = conn.is_enabled
+    connection_id = conn.id
+    
+    logger.info(f"Business connection update for {model_tg_id}: enabled={is_enabled}, id={connection_id}")
+    
+    if is_enabled:
+        # Guardar el connection_id en la base de datos para esta modelo
+        db.client.table("models").update({"business_connection_id": connection_id}).eq("telegram_id", model_tg_id).execute()
+    else:
+        # Limpiar si se desconecta
+        db.client.table("models").update({"business_connection_id": None}).eq("telegram_id", model_tg_id).execute()
+
+async def check_stories_permissions(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Comando para que la modelo verifique si el bot tiene permisos de historias.
+    """
+    user_tg_id = update.effective_user.id
+    
+    model = db.get_model(user_tg_id)
+    if not model:
+        await update.message.reply_text("❌ No estás registrada como modelo.")
+        return
+    
+    conn_id = model.get('business_connection_id')
+    if not conn_id:
+        await update.message.reply_text(
+            "❌ **No hay conexión de Telegram Business detectada.**\n\n"
+            "Para activar las historias automáticas:\n"
+            "1. Ve a Ajustes > Telegram Business > Chatbot.\n"
+            "2. Añade este bot y asegúrate de dar permiso para 'Gestionar Historias'."
+        )
+        return
+
+    await update.message.reply_text(
+        f"✅ **Conexión detectada**\n"
+        f"ID: `{conn_id}`\n\n"
+        f"El bot está listo para intentar publicar tus historias. "
+        f"Recuerda que debes ser **Telegram Premium** para que esta función sea efectiva."
+    )
 
 async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -237,3 +286,6 @@ business_handler = MessageHandler(
     BusinessMessageFilter() & filters.TEXT & ~filters.COMMAND, 
     handle_business_message
 )
+
+# Nuevo handler para conexiones business
+business_connection_handler = BusinessConnectionHandler(handle_business_connection)
