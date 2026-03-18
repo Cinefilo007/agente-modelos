@@ -29,11 +29,14 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     # Por ahora, buscaremos si existe una modelo con este ID de chat (simplificación para dev).
     # En producción, Telegram envía el business_connection_id que debe estar linkeado en la tabla 'models'.
     
-    # Buscamos la modelo por el chat_id donde llega el mensaje (asumiendo que es el chat de la modelo)
-    # TODO: Implementar mapeo real de business_connection_id
-    model = db.client.table("models").select("*").eq("status", "active").not_.is_("config_persona", "null").limit(1).execute()
-    if not model.data:
-        logger.warning(f"No se encontró modelo activa para manejar mensaje de negocio.")
+    # Buscamos la modelo por el chat_id donde llega el mensaje
+    try:
+        model = db.client.table("models").select("*").eq("status", "active").not_.is_("config_persona", "null").limit(1).execute()
+        if not model or not model.data:
+            logger.warning(f"No se encontró modelo activa para manejar mensaje de negocio.")
+            return
+    except Exception as e:
+        logger.error(f"Error consultando modelo en DB: {e}")
         return
     
     model_data = model.data[0]
@@ -51,21 +54,31 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     if not client_data:
         client_data = db.create_client_user(client_tg.id, client_tg.username or "Client")
     
-    res_rel = db.client.table("model_client_relations").select("*").eq("model_id", model_uuid).eq("client_id", client_data['id']).maybe_single().execute()
+    res_rel = db.client.table("model_client_relations").select("*").eq("model_id", model_uuid).eq("client_id", client_data['id']).execute()
     
-    if not res_rel.data:
-        # Nueva relación
-        rel_data = db.client.table("model_client_relations").insert({
-            "model_id": model_uuid,
-            "client_id": client_data['id'],
-            "status": "new"
-        }).execute().data[0]
+    if not res_rel or not res_rel.data:
+        try:
+            # Nueva relación
+            res_insert = db.client.table("model_client_relations").insert({
+                "model_id": model_uuid,
+                "client_id": client_data['id'],
+                "status": "new"
+            }).execute()
+            if not res_insert or not res_insert.data:
+                logger.error("Error creando relación model-client")
+                return
+            rel_data = res_insert.data[0]
+        except Exception as e:
+            logger.error(f"Excepción insertando relación: {e}")
+            return
     else:
-        rel_data = res_rel.data
+        rel_data = res_rel.data[0]
 
     # Contar mensajes en esta relación
     msg_count_res = db.client.table("messages").select("id", count="exact").eq("relation_id", rel_data['id']).execute()
-    msg_count = msg_count_res.count or 0
+    msg_count = 0
+    if msg_count_res and hasattr(msg_count_res, 'count'):
+        msg_count = msg_count_res.count or 0
     patience_limit = model_data.get('config_patience', 10)
 
     if msg_count >= (patience_limit * 2): # *2 porque contamos ida y vuelta
