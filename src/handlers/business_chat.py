@@ -31,7 +31,7 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     
     # Buscamos la modelo por el chat_id donde llega el mensaje (asumiendo que es el chat de la modelo)
     # TODO: Implementar mapeo real de business_connection_id
-    model = db.client.table("models").select("*").eq("status", "active").is_not("config_persona", "null").limit(1).execute()
+    model = db.client.table("models").select("*").eq("status", "active").not_.is_("config_persona", "null").limit(1).execute()
     if not model.data:
         logger.warning(f"No se encontró modelo activa para manejar mensaje de negocio.")
         return
