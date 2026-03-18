@@ -33,31 +33,36 @@ async def post_to_telegram_story(model_id: str, media_url: str, media_type: str,
         final_caption = final_caption.replace("{profile_link}", profile_link)
 
         # 4. Publicar Historia
-        # Nota: Usamos la API de Telegram directamente via httpx si el wrapper no tiene postStory exacto
-        # o intentamos via bot.post_story si PTB 21.1+ lo soporta.
-        
-        logger.info(f"Intentando publicar historia para modelo {model_id} (Connection: {business_conn_id})")
-        
-        # Formatear la llamada segun la API de Telegram para Business Stories
+        # Telegram Business requiere subir el archivo real como multipart/form-data para historias
         # Ref: https://core.telegram.org/bots/api#poststory
         url = f"https://api.telegram.org/bot{token}/postStory"
         
-        # El objeto 'content' es requerido para definir la media
-        content_obj = {}
-        if media_type == "video":
-            content_obj = {"type": "video", "video": media_url}
-        else:
-            content_obj = {"type": "photo", "photo": media_url}
-
-        payload = {
-            "business_connection_id": business_conn_id,
-            "content": content_obj,
-            "caption": final_caption,
-            "parse_mode": "HTML"
-        }
-
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload)
+            # 1. Descargar la media de Supabase
+            media_response = await client.get(media_url)
+            if media_response.status_code != 200:
+                logger.error(f"Error descargando media de Supabase: {media_response.status_code}")
+                return False
+            
+            media_content = media_response.content
+            filename = "story.mp4" if media_type == "video" else "story.jpg"
+            mime_type = "video/mp4" if media_type == "video" else "image/jpeg"
+
+            # 2. Preparar el payload multipart
+            # Nota: 'content' debe ser un string JSON en multipart o campos separados segun la API
+            # La API de postStory es especial: requiere business_connection_id y luego la media en el campo 'photo' o 'video'
+            
+            files = {
+                media_type: (filename, media_content, mime_type)
+            }
+            
+            data = {
+                "business_connection_id": business_conn_id,
+                "caption": final_caption,
+                "parse_mode": "HTML"
+            }
+
+            response = await client.post(url, data=data, files=files)
             res_json = response.json()
             
             if not res_json.get("ok"):
