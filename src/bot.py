@@ -39,7 +39,7 @@ def build_app():
     from src.handlers.onboarding import onboarding_handler
     from src.handlers.admin import admin_callback_handler
     from src.handlers.profile import show_profile, profile_handler
-    from src.handlers.business_chat import business_handler
+    from src.handlers.business_chat import business_handler, reset_chat_handler
     from src.handlers.credits import (
         list_packages, credit_purchase_callback, admin_credit_callback, admin_add_credits_command,
         admin_list_packages, admin_pkg_view_callback, admin_pkg_action_callback, create_pkg_handler,
@@ -64,6 +64,7 @@ def build_app():
     app.add_handler(CommandHandler("dar_creditos", admin_add_credits_command))
     app.add_handler(CommandHandler("paquetes", admin_list_packages))
     app.add_handler(CommandHandler("modelos", admin_list_models))
+    app.add_handler(CommandHandler("reset", reset_chat_handler))
 
     # 3. Specific Callback Handlers
     app.add_handler(CallbackQueryHandler(credit_purchase_callback, pattern="^buy_credit"))

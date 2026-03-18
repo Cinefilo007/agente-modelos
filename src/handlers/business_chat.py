@@ -175,6 +175,31 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         )
         db.log_message(model_uuid, "bot", bubble, intent=intent, metadata={"relation_id": rel_data['id']})
 
+async def reset_chat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Limpia el historial de chats y relaciones de la modelo (Solo para pruebas)."""
+    user_tg_id = update.effective_user.id
+    
+    # 1. Verificar si es una modelo
+    model_res = db.client.table("models").select("id").eq("telegram_id", user_tg_id).execute()
+    if not model_res or not model_res.data:
+        await update.message.reply_text("❌ Solo las modelos registradas pueden usar este comando.")
+        return
+
+    model_uuid = model_res.data[0]['id']
+    
+    try:
+        # 2. Borrar mensajes
+        db.client.table("messages").delete().eq("model_id", model_uuid).execute()
+        
+        # 3. Borrar relaciones
+        db.client.table("model_client_relations").delete().eq("model_id", model_uuid).execute()
+        
+        logger.info(f"Modelo {user_tg_id} reseteó su historial.")
+        await update.message.reply_text("✨ **Historial Limpiado**\nTodos tus chats y límites de paciencia han sido reseteados para nuevas pruebas.")
+    except Exception as e:
+        logger.error(f"Error en comando reset: {e}")
+        await update.message.reply_text("❌ Hubo un error al limpiar tu historial.")
+
 # Filtro para detectar EXCLUSIVAMENTE mensajes de Telegram Business
 class BusinessMessageFilter(filters.BaseFilter):
     def filter(self, update: Update):
