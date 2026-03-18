@@ -44,18 +44,21 @@ async def check_stories_permissions(update: Update, context: ContextTypes.DEFAUL
     conn_id = model.get('business_connection_id')
     if not conn_id:
         await update.message.reply_text(
-            "❌ **No hay conexión de Telegram Business detectada.**\n\n"
-            "Para activar las historias automáticas:\n"
-            "1. Ve a Ajustes > Telegram Business > Chatbot.\n"
-            "2. Añade este bot y asegúrate de dar permiso para 'Gestionar Historias'."
+            "❌ **Telegram Business no sincronizado**\n\n"
+            "Si ya activaste el bot en 'Ajustes > Telegram Business > Chatbot' y sigues viendo este mensaje, haz lo siguiente:\n\n"
+            "1️⃣ Ve a tus ajustes de **Telegram Business**.\n"
+            "2️⃣ Entra en **Chatbot**.\n"
+            "3️⃣ **Desactiva** este bot y vuelve a **activarlo** inmediatamente.\n"
+            "4️⃣ Regresa aquí y usa `/check_stories` de nuevo.\n\n"
+            "Esto forzará a Telegram a enviarme tus credenciales de negocio. 🚀"
         )
         return
 
     await update.message.reply_text(
-        f"✅ **Conexión detectada**\n"
-        f"ID: `{conn_id}`\n\n"
-        f"El bot está listo para intentar publicar tus historias. "
-        f"Recuerda que debes ser **Telegram Premium** para que esta función sea efectiva."
+        f"✅ **¡Todo listo!**\n"
+        f"Conexión Business: `{conn_id}`\n\n"
+        f"Ya puedes publicar historias automáticas desde tu panel web. "
+        f"Asegúrate de tener **Telegram Premium** activo en esta cuenta."
     )
 
 async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -73,24 +76,27 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     business_connection_id = business_msg.business_connection_id
 
     # 1. Identificar a la modelo dueña de la conexión
-    # Nota: El objeto business_message no dice directamente quién es la modelo,
-    # pero podemos inferirlo si guardamos la relación business_connection_id -> model_id en DB.
-    # Por ahora, buscaremos si existe una modelo con este ID de chat (simplificación para dev).
-    # En producción, Telegram envía el business_connection_id que debe estar linkeado en la tabla 'models'.
-    
-    # Buscamos la modelo por el chat_id donde llega el mensaje
+    # IMPORTANTE: Registramos el business_connection_id si no lo tenemos
+    # Buscamos la modelo por su telegram_id (que es el chat_id donde llega el mensaje en modo business)
     try:
-        model = db.client.table("models").select("*").eq("status", "active").not_.is_("config_persona", "null").limit(1).execute()
+        model = db.client.table("models").select("*").eq("telegram_id", chat_id).execute()
         if not model or not model.data:
-            logger.warning(f"No se encontró modelo activa para manejar mensaje de negocio.")
+            logger.warning(f"No se encontró modelo con telegram_id {chat_id} para manejar mensaje de negocio.")
             return
+        
+        model_data = model.data[0]
+        model_uuid = model_data['id']
+        model_tg_id = model_data['telegram_id']
+
+        # Si el ID de conexión en DB está vacío o es diferente, lo actualizamos automáticamente
+        if model_data.get('business_connection_id') != business_connection_id:
+            logger.info(f"Actualizando business_connection_id para modelo {model_tg_id}: {business_connection_id}")
+            db.client.table("models").update({"business_connection_id": business_connection_id}).eq("id", model_uuid).execute()
+            model_data['business_connection_id'] = business_connection_id
+
     except Exception as e:
-        logger.error(f"Error consultando modelo en DB: {e}")
+        logger.error(f"Error consultando/actualizando modelo en DB: {e}")
         return
-    
-    model_data = model.data[0]
-    model_uuid = model_data['id']
-    model_tg_id = model_data['telegram_id']
 
     # 2. Verificar Créditos
     if model_data.get('credits_balance', 0) <= 0:

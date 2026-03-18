@@ -33,6 +33,19 @@ function CreatePost() {
     const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [isDragging, setIsDragging] = useState(null); // 'start', 'end', or null
+    const [modelData, setModelData] = useState(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await api.get('/profile/me');
+                setModelData(res.data);
+            } catch (err) {
+                console.error("Error fetching profile for business check:", err);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     const fileInputRef = useRef(null);
     const videoRef = useRef(null);
@@ -544,13 +557,34 @@ function CreatePost() {
                                     </li>
                                     <li className="text-[10px] text-gray-400 flex items-start gap-2">
                                         <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 flex-none" />
-                                        <span>Debes tener el bot activado en **Telegram Business** (Ajustes > Chatbot).</span>
+                                        <span>Debes tener el bot activado en **Telegram Business** (Ajustes {" > "} Chatbot).</span>
                                     </li>
                                     <li className="text-[10px] text-gray-400 flex items-start gap-2">
                                         <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 flex-none" />
                                         <span>Recuerda dar permiso para **Gestionar Historias**.</span>
                                     </li>
                                 </ul>
+
+                                {/* Advertencia si no hay ID de conexión */}
+                                {modelData && !modelData.business_connection_id && (
+                                    <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
+                                        <div className="flex items-center gap-2 text-red-400">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                                            <p className="text-[10px] font-bold">Conexión no detectada</p>
+                                        </div>
+                                        <p className="text-[9px] text-gray-500 leading-relaxed">
+                                            Telegram no nos ha enviado tu conexión aún. Por favor ve al bot y usa el comando **/check_stories** para sincronizar.
+                                        </p>
+                                        <a
+                                            href="https://t.me/AgencyBot?start=sync_business"
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="block w-full text-center py-2 bg-white/5 hover:bg-white/10 rounded-lg text-blue-400 text-[10px] font-bold transition-colors border border-white/5"
+                                        >
+                                            Sincronizar en Telegram
+                                        </a>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
