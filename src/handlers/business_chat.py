@@ -116,12 +116,13 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         f"HISTORIAL RECIENTE:\n{hist_str}\n"
         "==============================================\n"
         "INSTRUCCIONES CLAVE:\n"
-        "1. DETECCIÓN DE INTENCIÓN: Usa el Análisis de Variaciones arriba para clasificar al cliente.\n"
-        "2. DETECCIÓN DE IDIOMA: Responde SIEMPRE en el mismo idioma que te hable el cliente.\n"
-        "3. SI HAY INTERÉS REAL (Alta Intención / Interés Medio con avance): Termina con [INTENT: INTEREST].\n"
-        "4. SI ES BAJA INTENCIÓN O TROLL: Termina con [INTENT: NO_INTEREST].\n"
-        "5. PACIENCIA: Sé consciente de que cada charla gasta créditos. No alargues si no hay interés de pago.\n"
-        "6. Responde de forma natural, estilo humano, sin sonar a bot."
+        "1. DETECCIÓN DE INTENCIÓN: Usa el Análisis de Variaciones para clasificar al cliente.\n"
+        "2. IMPORTANTE: Los saludos (Hola, ¿qué tal?, etc.) NO son baja intención; considéralos como inicio de interés.\n"
+        "3. SI HAY INTERÉS (Alta/Media o inicio amable): Termina con [INTENT: INTEREST].\n"
+        "4. SI ES TROLL O INSULTANTE: Termina con [INTENT: NO_INTEREST].\n"
+        "5. IDIOMA: Responde en el mismo idioma que el cliente.\n"
+        "6. PACIENCIA: Sé consciente de que cada charla gasta créditos.\n"
+        "7. Responde de forma natural, estilo humano, sin sonar a bot."
     )
 
     # 5. Generar Respuesta
@@ -139,11 +140,12 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     # 6. Enviar Notificación a la Modelo si hay Interés
     if intent == "interest":
         try:
+            clean_user = (client_tg.username or "Sin User").replace("_", "\\_")
             notif_text = (
                 f"🔥 **¡CLIENTE INTERESADO!**\n\n"
-                f"👤 **Cliente**: @{client_tg.username or 'Sin User'}\n"
-                f"💬 **Último mensaje**: {text[:100]}...\n\n"
-                f"¡Entra al chat para cerrar la venta!"
+                f"👤 **Cliente**: @{clean_user}\n"
+                f"💬 **Mensaje**: {text[:100]}...\n\n"
+                f"Entra al chat para cerrar la venta."
             )
             # Botón directo al chat (URL scheme de Telegram para chat específico si se tiene)
             # O simplemente avisar.
@@ -164,7 +166,11 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     bubbles = ai_agent.split_into_bubbles(ai_response)
     
     for bubble in bubbles:
-        await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING, business_connection_id=business_connection_id)
+        try:
+            await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING, business_connection_id=business_connection_id)
+        except Exception:
+            pass # Ignorar si falla la acción de escritura (no es vital)
+            
         await asyncio.sleep(len(bubble) * 0.04) # Simular escritura
         
         # Enviar vía Business
