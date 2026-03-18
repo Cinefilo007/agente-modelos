@@ -137,22 +137,34 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     elif "[INTENT: NO_INTEREST]" in ai_response:
         intent = "no_interest"
 
+    # REGLA DE SALVAGUARDA: Si es un saludo corto o mensaje cordial, forzar INTEREST
+    # Esto evita que la IA se ponga en modo ghosting por error en las pruebas
+    greeting_keywords = ['hola', 'buen', 'como estas', 'qué tal', 'saludos', 'info']
+    if len(text.strip()) < 30 and any(kw in text.lower() for kw in greeting_keywords):
+        logger.info(f"Regla de salvaguarda activada para '{text}': Forzando INTEREST.")
+        intent = "interest"
+
+    # 6. Enviar Notificación a la Modelo si hay Interés
     # 6. Enviar Notificación a la Modelo si hay Interés
     if intent == "interest":
         try:
-            # Escapar caracteres especiales para Markdown
-            def escape_md(text):
-                return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', str(text))
+            # Escapar caracteres para MarkdownV2 (PTB recomienda escapar casi todo)
+            def escape_md(t):
+                return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', str(t))
 
             clean_user = escape_md(client_tg.username or "Sin User")
             clean_text = escape_md(text[:100])
             
+            # Template limpio y debidamente escapado
             notif_text = (
-                f"🔥 *¡CLIENTE INTERESADO!*\n\n"
+                f"🔥 *CLIENTE INTERESADO*\n\n"
                 f"👤 *Cliente*: @{clean_user}\n"
-                f"💬 *Mensaje*: {clean_text}...\n\n"
-                f"¡Entra al chat para cerrar la venta!"
+                f"💬 *Mensaje*: {clean_text}\n\n"
+                f"Entra al chat para cerrar la venta"
             )
+            # Quitamos los signos de exclamación del template fijo o los escapamos
+            notif_text = notif_text.replace("!", "\\!")
+            
             await context.bot.send_message(chat_id=model_tg_id, text=notif_text, parse_mode="MarkdownV2")
         except Exception as e:
             logger.error(f"Error notificando a modelo {model_tg_id}: {e}")
