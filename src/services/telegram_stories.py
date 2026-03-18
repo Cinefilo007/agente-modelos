@@ -48,16 +48,25 @@ async def post_to_telegram_story(model_id: str, media_url: str, media_type: str,
             filename = "story.mp4" if media_type == "video" else "story.jpg"
             mime_type = "video/mp4" if media_type == "video" else "image/jpeg"
 
+            import json
+            
             # 2. Preparar el payload multipart
-            # Nota: 'content' debe ser un string JSON en multipart o campos separados segun la API
-            # La API de postStory es especial: requiere business_connection_id y luego la media en el campo 'photo' o 'video'
+            # La API postStory requiere un campo 'media' que es un InputMedia serializado
+            # que apunta al archivo mediante "attach://nombre"
+            media_attach_name = "media_file"
+            
+            media_obj = {
+                "type": media_type,
+                "media": f"attach://{media_attach_name}"
+            }
             
             files = {
-                media_type: (filename, media_content, mime_type)
+                media_attach_name: (filename, media_content, mime_type)
             }
             
             data = {
                 "business_connection_id": business_conn_id,
+                "media": json.dumps(media_obj),
                 "caption": final_caption,
                 "parse_mode": "HTML"
             }
