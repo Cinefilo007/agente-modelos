@@ -29,9 +29,13 @@ async def post_to_telegram_story(model_id: str, media_url: str, media_type: str,
         bot = Bot(token)
 
         # 3. Preparar el pie de foto
-        base_url = os.getenv('LANDING_URL', 'https://nebulaespace.site').rstrip('/')
-        # Corregir URL: quitar '@' del username si está presente
-        clean_username = model.get('username', '').lstrip('@')
+        import re
+        # Asegurar que base_url sea el dominio raíz (quitar /landing si existe)
+        raw_url = os.getenv('LANDING_URL', 'https://nebulaespace.site')
+        base_url = re.sub(r'/landing/?$', '', raw_url).rstrip('/')
+        
+        # Corregir URL: usar regex para quitar '@' del inicio del username
+        clean_username = re.sub(r'^@', '', model.get('username', ''))
         profile_link = f"{base_url}/{clean_username}"
         
         final_caption = caption or model.get('story_caption_template', 'Mira mi nuevo post! {profile_link}')

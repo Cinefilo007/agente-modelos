@@ -317,7 +317,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             <video
                                 ref={videoRef}
                                 src={post.media_url}
-                                className="w-full h-full object-contain"
+                                className="w-full h-full object-cover"
                                 loop
                                 muted={isMuted}
                                 playsInline
@@ -336,7 +336,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         <img
                             src={post.media_url || post.image}
                             alt="Post Content"
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-cover"
                         />
                     )}
                 </Link>

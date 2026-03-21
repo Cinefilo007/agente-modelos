@@ -249,6 +249,7 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
         raise HTTPException(status_code=404, detail=f"{user.role.capitalize()} profile not found.")
 
     updates = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    print(f"[DEBUG] Profile Update - Payload: {updates}")
     
     if "external_links" in updates and table == "models":
         # Convert Pydantic model to dict for JSONB
@@ -280,14 +281,19 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
     if not updates:
         return {"message": "No changes detected"}
 
-    response = db.client.table(table).update(updates).eq("telegram_id", user.id).execute()
-    
-    if not response or not response.data:
-        # Fallback to fetching the record if update didn't return data (depends on Postgres version/config)
-        profile = db.client.table(table).select("*").eq("telegram_id", user.id).single().execute()
-        return profile.data
-
-    return response.data[0]
+    try:
+        response = db.client.table(table).update(updates).eq("telegram_id", user.id).execute()
+        if not response or not response.data:
+            # Fallback to fetching the record
+            profile = db.client.table(table).select("*").eq("telegram_id", user.id).single().execute()
+            return profile.data
+        return response.data[0]
+    except Exception as e:
+        print(f"[ERROR] Database update failed for user {user.id}: {str(e)}")
+        # Raise better error if it's a field error
+        if "external_links" in str(e):
+             raise HTTPException(status_code=400, detail="Error de base de datos: La columna 'external_links' no existe en 'models'. Por favor ejecute la migración SQL.")
+        raise HTTPException(status_code=500, detail=f"Database update failed: {str(e)}")
 
 import uuid
 
