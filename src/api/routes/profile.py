@@ -79,7 +79,7 @@ async def apply_as_model(
             "birth_date": birth_date,
             "status": "verifying",
             "verification_video_id": verification_url, # Storing photo URL in existing column for now
-            "social_links": [{"network": "country", "url": country_code}] # Storing country in social_links or add column? generic 'config_persona' maybe?
+            "external_links": [{"network": "country", "url": country_code}] # Storing country in external_links
             # Let's verify schema. Using 'config_persona' for country temporarily or add to metadata.
         }
         
@@ -159,7 +159,7 @@ class StartProfileUpdate(BaseModel):
     # Let's start by adding artistic_name.
     artistic_name: Optional[str] = None
     bio_short: Optional[str] = None
-    social_links: Optional[List[Dict[str, str]]] = None # List of {network, url, icon}
+    external_links: Optional[List[Dict[str, str]]] = None # List of {network, url, icon}
     services: Optional[List[str]] = None
     cover_url: Optional[str] = None
     avatar_url: Optional[str] = None
@@ -250,9 +250,9 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
 
     updates = {k: v for k, v in update_data.model_dump().items() if v is not None}
     
-    if "social_links" in updates and table == "models":
+    if "external_links" in updates and table == "models":
         # Convert Pydantic model to dict for JSONB
-        updates["social_links"] = updates["social_links"]
+        updates["external_links"] = updates["external_links"]
         
     if "services" in updates and table == "models":
         updates["services"] = updates["services"]
@@ -304,7 +304,7 @@ async def get_public_profile(identifier: str):
         is_uuid = False
         
     query = db.client.table("models") \
-        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, social_links, services, last_seen, country, is_verified, config_prices, config_persona, config_physique, config_payments")
+        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, external_links, services, last_seen, country, is_verified, config_prices, config_persona, config_physique, config_payments")
         
     if is_uuid:
         query = query.eq("id", identifier)

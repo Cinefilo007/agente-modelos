@@ -118,8 +118,8 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
         return 'transparent'; // Removemos esto porque react-simple-icons lo pintamos desde adentro. Pero para la caja exterior, retornamos transparente o #111
     };
 
-    if (user && user.social_links) {
-        let links = user.social_links;
+    if (user && user.external_links) {
+        let links = user.external_links;
 
         // Handle legacy object format if strictly needed, but we prefer array now
         if (!Array.isArray(links) && typeof links === 'object') {
