@@ -3,7 +3,7 @@ import asyncio
 import httpx
 import os
 import io
-from telegram import Bot, InputMediaPhoto, InputMediaVideo
+from telegram import Bot, InputStoryContentPhoto, InputStoryContentVideo
 from src.services.database import db
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ async def post_to_telegram_story(model_id: str, media_url: str, media_type: str,
         final_caption = caption or model.get('story_caption_template', 'Mira mi nuevo post! {profile_link}')
         final_caption = final_caption.replace("{profile_link}", profile_link)
 
-        # 4. Publicar Historia vía PTB (Internamente maneja multipart y InputMedia)
+        # 4. Publicar Historia vía PTB (Internamente maneja multipart y InputStoryContent)
         logger.info(f"Intentando publicar historia nativa para modelo {model_id} (Conn: {business_conn_id})")
         
         async with httpx.AsyncClient() as client:
@@ -48,14 +48,16 @@ async def post_to_telegram_story(model_id: str, media_url: str, media_type: str,
         media_file.name = "story.mp4" if media_type == "video" else "story.jpg"
 
         if media_type == "video":
-            media = InputMediaVideo(media=media_file)
+            content = InputStoryContentVideo(video=media_file)
         else:
-            media = InputMediaPhoto(media=media_file)
+            content = InputStoryContentPhoto(photo=media_file)
 
-        # Usar el método nativo del bot
+        # Usar el método nativo del bot con los parámetros correctos para PTB 21.1+
+        # active_period: 86400 segundos = 24 horas (estándar de Telegram)
         result = await bot.post_story(
             business_connection_id=business_conn_id,
-            media=media,
+            content=content,
+            active_period=86400,
             caption=final_caption,
             parse_mode="HTML"
         )
