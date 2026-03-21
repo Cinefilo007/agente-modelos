@@ -144,7 +144,7 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user, onStoryDel
                     <video
                         ref={videoRef}
                         src={currentStory.media_url}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         autoPlay
                         muted={false}
                         playsInline
@@ -157,7 +157,7 @@ const StoryViewer = ({ stories, initialStoryIndex = 0, onClose, user, onStoryDel
                     <img
                         src={currentStory.media_url}
                         alt="Story"
-                        className="w-full h-full object-cover transform scale-125"
+                        className="w-full h-full object-contain"
                     />
                 )}
 
