@@ -40,5 +40,16 @@ async def main():
     except Exception as e:
         print(f"Error connecting or querying: {e}")
 
+    print("\nChecking 'posts' table schema...")
+    try:
+        response = supabase.table("posts").select("*").limit(1).execute()
+        if response.data:
+            post = response.data[0]
+            print(f"Keys in 'posts' table: {list(post.keys())}")
+        else:
+            print("⚠️ Table 'posts' is empty.")
+    except Exception as e:
+        print(f"Error checking 'posts': {e}")
+
 if __name__ == "__main__":
     asyncio.run(main())

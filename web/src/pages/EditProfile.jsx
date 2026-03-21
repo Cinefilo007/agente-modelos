@@ -20,7 +20,7 @@ function EditProfile() {
         full_name: '',
         username: '',
         bio_short: '',
-        external_links: [], // Array of { network, url, icon }
+        social_links: [], // Array of { network, url, icon }
         services: [], // Array de tags
         services_text: '', // String para el input en curso
         cover_url: '',
@@ -33,7 +33,7 @@ function EditProfile() {
             try {
                 const { data } = await api.get('/profile/me');
 
-                let links = data.external_links;
+                let links = data.social_links;
                 // Ensure links is an array
                 if (!Array.isArray(links)) {
                     if (links && typeof links === 'object') {
@@ -53,7 +53,7 @@ function EditProfile() {
                     artistic_name: data.artistic_name || '',
                     username: data.username || '',
                     bio_short: data.bio_short || '',
-                    external_links: links,
+                    social_links: links,
                     services: data.services || [],
                     services_text: '',
                     cover_url: data.cover_url || '',
@@ -107,7 +107,7 @@ function EditProfile() {
         try {
             const { data } = await api.put('/profile/me', {
                 bio_short: formData.bio_short,
-                external_links: formData.external_links,
+                social_links: formData.social_links,
                 services: [...(formData.services || []), ...(formData.services_text ? formData.services_text.split(',').map(s => s.trim()).filter(Boolean) : [])],
                 artistic_name: formData.artistic_name,
                 avatar_url: formData.avatar_url,
@@ -294,8 +294,8 @@ function EditProfile() {
                     {/* Social Links Section */}
                     <div className="bg-[var(--card-bg)]/30 p-4 rounded-xl border border-[var(--glass-border)]">
                         <SocialLinkEditor
-                            links={formData.external_links}
-                            onChange={(newLinks) => setFormData({ ...formData, external_links: newLinks })}
+                            links={formData.social_links}
+                            onChange={(newLinks) => setFormData({ ...formData, social_links: newLinks })}
                         />
                     </div>
                 </div>

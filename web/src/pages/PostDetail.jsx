@@ -349,22 +349,27 @@ export default function PostDetail() {
                     </p>
 
                     {/* Links Externos Elegantes */}
-                    {post.external_links && post.external_links.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-6">
-                            {post.external_links.map((lnk, idx) => (
-                                <a
-                                    key={idx}
-                                    href={lnk.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 px-4 py-2 bg-[var(--card-bg)] hover:bg-[var(--glass-border)] border border-[var(--glass-border)] rounded-full text-xs font-bold text-[var(--text-primary)] transition-all active:scale-95 group/link shadow-lg"
-                                >
-                                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                                    {lnk.label}
-                                </a>
-                            ))}
-                        </div>
-                    )}
+                    {(() => {
+                        const links = typeof post.external_links === 'string' ? JSON.parse(post.external_links) : (post.external_links || []);
+                        if (!links || links.length === 0) return null;
+
+                        return (
+                            <div className="flex flex-wrap gap-2 mb-6">
+                                {links.map((lnk, idx) => (
+                                    <a
+                                        key={idx}
+                                        href={lnk.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-4 py-2 bg-[var(--card-bg)] hover:bg-[var(--glass-border)] border border-[var(--glass-border)] rounded-full text-xs font-bold text-[var(--text-primary)] transition-all active:scale-95 group/link shadow-lg"
+                                    >
+                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                        {lnk.label}
+                                    </a>
+                                ))}
+                            </div>
+                        );
+                    })()}
 
                     {/* Stats Bar */}
                     <div className="flex items-center gap-6 py-3 border-y border-[var(--glass-border)]">

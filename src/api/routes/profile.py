@@ -159,7 +159,7 @@ class StartProfileUpdate(BaseModel):
     # Let's start by adding artistic_name.
     artistic_name: Optional[str] = None
     bio_short: Optional[str] = None
-    external_links: Optional[List[Dict[str, str]]] = None # List of {network, url, icon}
+    social_links: Optional[List[Dict[str, str]]] = None # List of {network, url, icon}
     services: Optional[List[str]] = None
     cover_url: Optional[str] = None
     avatar_url: Optional[str] = None
@@ -251,9 +251,9 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
     updates = {k: v for k, v in update_data.model_dump().items() if v is not None}
     print(f"[DEBUG] Profile Update - Payload: {updates}")
     
-    if "external_links" in updates and table == "models":
+    if "social_links" in updates and table == "models":
         # Convert Pydantic model to dict for JSONB
-        updates["external_links"] = updates["external_links"]
+        updates["social_links"] = updates["social_links"]
         
     if "services" in updates and table == "models":
         updates["services"] = updates["services"]
@@ -310,7 +310,7 @@ async def get_public_profile(identifier: str):
         is_uuid = False
         
     query = db.client.table("models") \
-        .select("id, full_name, artistic_name, username, bio_short, avatar_url, cover_url, followers_count, total_likes, reputation_score, external_links, services, last_seen, country, is_verified, config_prices, config_persona, config_physique, config_payments")
+        .select("*")
         
     if is_uuid:
         query = query.eq("id", identifier)
@@ -326,13 +326,14 @@ async def get_public_profile(identifier: str):
         
         if not model.data:
             raise HTTPException(status_code=404, detail="Profile not found")
+            
+        user_data = model.data
     except Exception as e:
         if isinstance(e, HTTPException):
             raise e
         print(f"[Profile] Error fetching {identifier}: {e}")
         raise HTTPException(status_code=500, detail="Error fetching profile")
 
-    user_data = model.data
     model_id = user_data['id'] # Ensure we have the ID for subsequent queries
 
     # Fetch posts count

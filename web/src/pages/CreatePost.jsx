@@ -221,6 +221,7 @@ function CreatePost() {
 
     const handleSubmit = async () => {
         if (!file) return;
+        console.log("[DEBUG] Submitting post with links:", links);
         setLoading(true);
 
         const formData = new FormData();

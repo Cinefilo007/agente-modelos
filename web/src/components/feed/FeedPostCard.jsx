@@ -447,23 +447,28 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                     </div>
 
                     {/* Links Externos Elegantes */}
-                    {post.external_links && post.external_links.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            {post.external_links.map((lnk, idx) => (
-                                <a
-                                    key={idx}
-                                    href={lnk.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full text-[11px] font-bold text-white transition-all active:scale-95 group/link"
-                                >
-                                    <ExternalLink size={12} className="text-blue-400 group-hover/link:text-blue-300" />
-                                    {lnk.label}
-                                </a>
-                            ))}
-                        </div>
-                    )}
+                    {(() => {
+                        const links = typeof post.external_links === 'string' ? JSON.parse(post.external_links) : (post.external_links || []);
+                        if (!links || links.length === 0) return null;
+
+                        return (
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {links.map((lnk, idx) => (
+                                    <a
+                                        key={idx}
+                                        href={lnk.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full text-[11px] font-bold text-white transition-all active:scale-95 group/link"
+                                    >
+                                        <ExternalLink size={12} className="text-blue-400 group-hover/link:text-blue-300" />
+                                        {lnk.label}
+                                    </a>
+                                ))}
+                            </div>
+                        );
+                    })()}
 
                     {/* Quick Comment Input - Simplified */}
                     {!isAdmin && (

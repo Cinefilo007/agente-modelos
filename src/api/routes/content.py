@@ -124,8 +124,11 @@ async def create_post(
     import json
     try:
         links_data = json.loads(external_links)
-    except:
+    except Exception as e:
+        print(f"[DEBUG] Error parsing links: {e}")
         links_data = []
+    
+    print(f"[DEBUG] Post creation links_data: {links_data}")
 
     if scheduled_at:
         try:
@@ -148,7 +151,9 @@ async def create_post(
     }
     
     try:
+        print(f"[DEBUG] Full Post Data: {data}")
         response = db.client.table("posts").insert(data).execute()
+        print(f"[DEBUG] Post insertion response: {response.data}")
         post_data = response.data[0]
         
         # Publicar en historias de Telegram si se solicita
