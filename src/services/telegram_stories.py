@@ -2,14 +2,15 @@ import logging
 import asyncio
 import httpx
 import os
-from telegram import Bot
+import io
+from telegram import Bot, InputMediaPhoto, InputMediaVideo
 from src.services.database import db
 
 logger = logging.getLogger(__name__)
 
 async def post_to_telegram_story(model_id: str, media_url: str, media_type: str, caption: str = None):
     """
-    Publica una historia en la cuenta de Telegram Business de la modelo.
+    Publica una historia en la cuenta de Telegram Business de la modelo usando PTB.
     """
     try:
         # 1. Obtener datos de la modelo
@@ -32,56 +33,39 @@ async def post_to_telegram_story(model_id: str, media_url: str, media_type: str,
         final_caption = caption or model.get('story_caption_template', 'Mira mi nuevo post! {profile_link}')
         final_caption = final_caption.replace("{profile_link}", profile_link)
 
-        # 4. Publicar Historia
-        # Telegram Business requiere subir el archivo real como multipart/form-data para historias
-        # Ref: https://core.telegram.org/bots/api#poststory
-        url = f"https://api.telegram.org/bot{token}/postStory"
+        # 4. Publicar Historia vía PTB (Internamente maneja multipart y InputMedia)
+        logger.info(f"Intentando publicar historia nativa para modelo {model_id} (Conn: {business_conn_id})")
         
         async with httpx.AsyncClient() as client:
-            # 1. Descargar la media de Supabase
             media_response = await client.get(media_url)
             if media_response.status_code != 200:
-                logger.error(f"Error descargando media de Supabase: {media_response.status_code}")
+                logger.error(f"Error descargando media: {media_response.status_code}")
                 return False
-            
             media_content = media_response.content
-            filename = "story.mp4" if media_type == "video" else "story.jpg"
-            mime_type = "video/mp4" if media_type == "video" else "image/jpeg"
 
-            import json
-            
-            # 2. Preparar el payload multipart
-            # La API postStory requiere un campo 'media' que es un InputMedia serializado
-            # que apunta al archivo mediante "attach://nombre"
-            media_attach_name = "media_file"
-            
-            media_obj = {
-                "type": media_type,
-                "media": f"attach://{media_attach_name}"
-            }
-            
-            files = {
-                media_attach_name: (filename, media_content, mime_type)
-            }
-            
-            data = {
-                "business_connection_id": business_conn_id,
-                "media": json.dumps(media_obj),
-                "caption": final_caption,
-                "parse_mode": "HTML"
-            }
+        # Convertir a objeto de archivo para PTB
+        media_file = io.BytesIO(media_content)
+        media_file.name = "story.mp4" if media_type == "video" else "story.jpg"
 
-            response = await client.post(url, data=data, files=files)
-            res_json = response.json()
-            
-            if not res_json.get("ok"):
-                error_msg = res_json.get("description", "Unknown error")
-                logger.error(f"Error publicando historia en Telegram: {error_msg}")
-                return False
-            
-            logger.info(f"Historia publicada exitosamente para modelo {model_id}")
+        if media_type == "video":
+            media = InputMediaVideo(media=media_file)
+        else:
+            media = InputMediaPhoto(media=media_file)
+
+        # Usar el método nativo del bot
+        result = await bot.post_story(
+            business_connection_id=business_conn_id,
+            media=media,
+            caption=final_caption,
+            parse_mode="HTML"
+        )
+
+        if result:
+            logger.info(f"Historia publicada exitosamente (ID: {result.id}) para modelo {model_id}")
             return True
+        
+        return False
 
     except Exception as e:
-        logger.error(f"Excepción en post_to_telegram_story: {e}")
+        logger.error(f"Error en post_to_telegram_story (PTB): {e}")
         return False
