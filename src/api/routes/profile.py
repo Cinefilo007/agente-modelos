@@ -5,10 +5,33 @@ from src.api.dependencies import get_current_user, get_current_user_optional, Te
 from src.services.database import db
 from src.services.storage import upload_file
 import os
+import re
+import random
+import string
+import json
 from datetime import datetime
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 
 router = APIRouter()
+
+def generate_unique_username(base_name: str, supabase_client):
+    """Genera un nombre de usuario único basado en el nombre artístico o real."""
+    clean_name = re.sub(r'[^a-zA-Z0-9]', '', base_name).lower()
+    if not clean_name:
+        clean_name = "model"
+    
+    candidate = clean_name
+    found = False
+    attempts = 0
+    while not found and attempts < 10:
+        response = supabase_client.table("models").select("username").eq("username", candidate).execute()
+        if not response.data:
+            found = True
+        else:
+            suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
+            candidate = f"{clean_name}_{suffix}"
+            attempts += 1
+    return candidate
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_TELEGRAM_ID") # Using environment variable instead of hardcoded ID
@@ -221,7 +244,6 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
             val_str = val.strip()
             if val_str.startswith('{"text":') and val_str.endswith('}'):
                 try:
-                    import json
                     return json.loads(val_str).get('text', '')
                 except:
                     pass
