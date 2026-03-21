@@ -29,7 +29,10 @@ async def post_to_telegram_story(model_id: str, media_url: str, media_type: str,
         bot = Bot(token)
 
         # 3. Preparar el pie de foto
-        profile_link = f"{os.getenv('LANDING_URL', '')}/{model.get('username', '')}"
+        # Corregir URL: quitar '/landing/' si está presente en la base o concatenar directamente
+        base_url = os.getenv('LANDING_URL', 'https://nebulaespace.site').rstrip('/')
+        profile_link = f"{base_url}/{model.get('username', '')}"
+        
         final_caption = caption or model.get('story_caption_template', 'Mira mi nuevo post! {profile_link}')
         final_caption = final_caption.replace("{profile_link}", profile_link)
 
@@ -54,12 +57,15 @@ async def post_to_telegram_story(model_id: str, media_url: str, media_type: str,
 
         # Usar el método nativo del bot con los parámetros correctos para PTB 21.1+
         # active_period: 86400 segundos = 24 horas (estándar de Telegram)
+        # post_to_chat_page=True: Guarda la historia en el perfil (permanente/archivada)
+        logger.info(f"Publicando historia en Telegram con caption: {final_caption[:50]}...")
         result = await bot.post_story(
             business_connection_id=business_conn_id,
             content=content,
             active_period=86400,
             caption=final_caption,
-            parse_mode="HTML"
+            parse_mode="HTML",
+            post_to_chat_page=True
         )
 
         if result:

@@ -63,6 +63,7 @@ function Feed() {
                     type: p.media_type,
                     timestamp: p.created_at, // Pass raw ISO string for timeAgo
                     created_at: p.created_at,
+                    external_links: p.external_links || [],
                     user: {
                         id: p.models?.id || p.model_id, // Use ID for link
                         username: p.models?.username,   // IMPORTANT: Pass username for clean URLs

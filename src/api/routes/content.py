@@ -158,15 +158,17 @@ async def create_post(
                 model_id=str(user.user_id),
                 media_url=public_url,
                 media_type=media_type,
-                caption=caption
+                caption=caption # Se usa el pie de foto original, el servicio añadirá el link del perfil
             )
             
         return post_data
     except Exception as e:
-        logger.warning(f"Full post insert failed, retrying without new columns: {e}")
-        # Base columns only fallback
-        base_data = {
-            "model_id": user.user_id,
+        logger.error(f"Error crítico insertando post: {e}")
+        # Intentar fallback solo si el error parece ser por columnas faltantes
+        if "external_links" in str(e) or "scheduled_at" in str(e):
+            logger.warning("Reintentando inserción sin nuevas columnas (external_links/scheduled_at)")
+            base_data = {
+                "model_id": user.user_id,
             "media_url": public_url,
             "media_type": media_type,
             "caption": caption,
