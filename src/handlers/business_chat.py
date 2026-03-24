@@ -71,7 +71,7 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     # 0.2: Muy literal, robótico, estricto con el prompt.
     # 0.7: Hablador, humano, creativo (Recomendado para OnlyFans/Scorts).
     # 0.9: Extremadamente asertivo y errático.
-    BOT_TEMPERATURE = 0.7
+    BOT_TEMPERATURE = 0.5
     # ====================
 
     business_msg = update.business_message
