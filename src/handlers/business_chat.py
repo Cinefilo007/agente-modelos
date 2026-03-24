@@ -104,6 +104,13 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         logger.error(f"Error consultando modelo en DB: {e}")
         return
 
+    # 1.5. Filtrar mensajes de la propia modelo (Outgoing)
+    # Si la modelo escribe manualmente, el bot no debe responderle a ella misma
+    if client_tg.id == model_tg_id:
+        # Aquí opcionalmente podríamos guardar el mensaje manual en la BD como 'assistant' para dar más contexto a la IA
+        # Pero por ahora solo lo ignoramos para evitar auto-respuestas.
+        return
+
     # 2. Verificar Créditos
     if model_data.get('credits_balance', 0) <= 0:
         logger.info(f"Modelo {model_tg_id} sin créditos. Bot Manager desactivado.")
