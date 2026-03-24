@@ -197,6 +197,11 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     
     ai_response = ai_agent.chat_completion("manager", system_prompt, text, history=ai_history, temperature=BOT_TEMPERATURE)
     
+    # === PURA FUERZA: Eliminar cualquier texto entre asteriscos (acciones de rol) ===
+    # El LLM a veces ignora la orden de no usar asteriscos, así que los borramos por código.
+    ai_response = re.sub(r'\*[^*]+\*', '', ai_response).strip()
+    # Limpiamos también si usa paréntesis para rol "(sonríe)" si es toda la frase, aunque el regex de asteriscos es el principal
+    
     # Procesar Intención
     intent = "chat"
     if "[NOTIFY]" in ai_response:
