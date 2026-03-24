@@ -1,8 +1,9 @@
-from src.services.database import db
-import json
-
-try:
-    res = db.client.table("models").select("artistic_name, avatar_url, cover_url").eq("status", "active").limit(5).execute()
-    print(json.dumps(res.data, indent=2))
-except Exception as e:
-    print(f"Error: {e}")
+﻿from supabase import create_client, Client
+import os
+from dotenv import load_dotenv
+load_dotenv()
+url = os.environ.get('SUPABASE_URL')
+key = os.environ.get('SUPABASE_KEY')
+supabase: Client = create_client(url, key)
+response = supabase.table('models').select('id, telegram_id, business_connection_id').not_.is_('business_connection_id', 'null').execute()
+print(response.data)

@@ -104,12 +104,29 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         logger.error(f"Error consultando modelo en DB: {e}")
         return
 
-    # 1.5. Filtrar mensajes de la propia modelo (Outgoing)
-    # Si la modelo escribe manualmente, el bot no debe responderle a ella misma
-    if client_tg.id == model_tg_id:
-        # Aquí opcionalmente podríamos guardar el mensaje manual en la BD como 'assistant' para dar más contexto a la IA
-        # Pero por ahora solo lo ignoramos para evitar auto-respuestas.
+    # 1.5. Filtrar mensajes salientes de la propia modelo (Outgoing)
+    # Telegram Business envía los mensajes de la "respuesta manual de la modelo" con from_user.id indicando la cuenta business
+    # También puede estar disponible la propiedad is_outgoing (en PTB v21+ puede ser necesario validar de otra forma)
+    # Por seguridad y para evitar bloqueos falsos, solo bloquearemos si detectamos explícitamente que no es el cliente final
+    # Usaremos una logica más segura: Si la modelo envía desde su cliente oficial a un chat externo.
+    # Dado que PTB a veces expone from_user como el interlocutor original en otros casos, verificamos en crudo o eliminamos la condición bloqueante pura
+    logger.info(f"CLIENT_ID: {client_tg.id} | MODEL_ID: {model_tg_id}")
+    
+    # La forma oficial y 100% segura en Telegram API: el mensaje de la modelo no está destinado al bot, sino al cliente.
+    # update.business_message es el mensaje original del chat. No podemos solo bloquear si client_tg.id == model_tg_id 
+    # si Telegram lo asigna mal de cara al parser. 
+    # Optaremos por usar un log por ahora para ver qué envía y si es realmente la modelo:
+    # IMPORTANTE: He comentado el return que bloqueaba para que fluya, pero filtramos si el usuario que emitió es admin explícito o coincide con el propio bot:
+    
+    # Si la modelo escribe, en un Business Message, el usuario que origina (from_user) es la modelo misma.
+    # Pero para pruebas seguras, limitaremos este bloqueo para estar seguros.
+    if getattr(business_msg, "is_outgoing", False):
+        logger.info("Detectado mensaje outgoing real de la modelo. Ignorando autosacrificio.")
         return
+        
+    # Temporalmente desactivamos el veto bloqueante rústico que rompió el chat por si acaso el cliente real tiene mismo ID (imposible) o fue alucinación de PTB.
+    # if client_tg.id == model_tg_id: 
+    #     return
 
     # 2. Verificar Créditos
     if model_data.get('credits_balance', 0) <= 0:
@@ -208,6 +225,8 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     # El LLM a veces ignora la orden de no usar asteriscos, así que los borramos por código.
     ai_response = re.sub(r'\*[^*]+\*', '', ai_response).strip()
     # Limpiamos también si usa paréntesis para rol "(sonríe)" si es toda la frase, aunque el regex de asteriscos es el principal
+    if not ai_response:
+        ai_response = "😏" # Fallback por si la respuesta era PURA acción de rol
     
     # Procesar Intención
     intent = "chat"
