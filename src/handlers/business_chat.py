@@ -76,26 +76,24 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     business_connection_id = business_msg.business_connection_id
 
     # 1. Identificar a la modelo dueña de la conexión
-    # IMPORTANTE: Registramos el business_connection_id si no lo tenemos
-    # Buscamos la modelo por su telegram_id (que es el chat_id donde llega el mensaje en modo business)
+    # Buscamos la modelo por su business_connection_id
     try:
-        model = db.client.table("models").select("*").eq("telegram_id", chat_id).execute()
+        if not business_connection_id:
+            logger.error("Mensaje de negocio recibido sin business_connection_id.")
+            return
+
+        model = db.client.table("models").select("*").eq("business_connection_id", business_connection_id).eq("status", "active").not_.is_("config_persona", "null").limit(1).execute()
+        
         if not model or not model.data:
-            logger.warning(f"No se encontró modelo con telegram_id {chat_id} para manejar mensaje de negocio.")
+            logger.warning(f"No se encontró modelo activa con business_connection_id {business_connection_id}. La modelo debe vincular el bot o configurar su personalidad.")
             return
         
         model_data = model.data[0]
         model_uuid = model_data['id']
         model_tg_id = model_data['telegram_id']
 
-        # Si el ID de conexión en DB está vacío o es diferente, lo actualizamos automáticamente
-        if model_data.get('business_connection_id') != business_connection_id:
-            logger.info(f"Actualizando business_connection_id para modelo {model_tg_id}: {business_connection_id}")
-            db.client.table("models").update({"business_connection_id": business_connection_id}).eq("id", model_uuid).execute()
-            model_data['business_connection_id'] = business_connection_id
-
     except Exception as e:
-        logger.error(f"Error consultando/actualizando modelo en DB: {e}")
+        logger.error(f"Error consultando modelo en DB: {e}")
         return
 
     # 2. Verificar Créditos
