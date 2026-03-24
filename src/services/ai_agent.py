@@ -25,7 +25,7 @@ class AIAgent:
         self.MANAGER_MODEL = "sao10k/l3-euryale-70b"
         self.MANAGER_TEMP = 0.7
 
-    def chat_completion(self, model_type: str, system_prompt: str, user_message: str, history: list = None):
+    def chat_completion(self, model_type: str, system_prompt: str, user_message: str, history: list = None, temperature: float = None):
         """Generic chat completion wrapper."""
         try:
             if model_type == "hunter":
@@ -37,6 +37,9 @@ class AIAgent:
             else:
                 model = self.MANAGER_MODEL
                 temp = self.MANAGER_TEMP
+                
+            if temperature is not None:
+                temp = temperature
             
             messages = [{"role": "system", "content": system_prompt}]
             
