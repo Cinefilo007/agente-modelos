@@ -211,20 +211,27 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
             def escape_md(t):
                 return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', str(t))
 
-            clean_user = escape_md(client_tg.username or "Sin User")
             clean_text = escape_md(text[:100])
             
             # Template limpio y debidamente escapado
             notif_text = (
                 f"🔥 *CLIENTE INTERESADO*\n\n"
-                f"👤 *Cliente*: @{clean_user}\n"
-                f"💬 *Mensaje*: {clean_text}\n\n"
+                f" *Mensaje*: {clean_text}\n\n"
                 f"Entra al chat para cerrar la venta"
             )
             # Quitamos los signos de exclamación del template fijo o los escapamos
             notif_text = notif_text.replace("!", "\\!")
             
-            await context.bot.send_message(chat_id=model_tg_id, text=notif_text, parse_mode="MarkdownV2")
+            # Crear botón para ir al perfil del cliente (funciona sin username)
+            keyboard = [[InlineKeyboardButton("Ver Perfil", url=f"tg://user?id={client_tg.id}")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await context.bot.send_message(
+                chat_id=model_tg_id, 
+                text=notif_text, 
+                parse_mode="MarkdownV2",
+                reply_markup=reply_markup
+            )
         except Exception as e:
             logger.error(f"Error notificando a modelo {model_tg_id}: {e}")
 
