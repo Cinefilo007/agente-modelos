@@ -62,7 +62,7 @@ class AIAgent:
             return []
             
         # Limpiar tags de intención antes de fragmentar
-        clean_text = text.replace("[INTENT: INTEREST]", "").replace("[INTENT: NO_INTEREST]", "").strip()
+        clean_text = text.replace("[NOTIFY]", "").replace("[GHOST]", "").strip()
 
         if len(clean_text) <= max_chars:
             return [clean_text]

@@ -138,8 +138,8 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         logger.info(f"Paciencia agotada para cliente {client_tg.id} con modelo {model_tg_id}.")
         return
 
-    # 4. Preparar Contexto IA
-    history = db.client.table("messages").select("sender_type, content, intent").eq("relation_id", rel_data['id']).order("created_at", desc=True).limit(6).execute().data
+    # 4. Preparar Contexto IA (Aumentado a 12 para mejor entendimiento)
+    history = db.client.table("messages").select("sender_type, content, intent").eq("relation_id", rel_data['id']).order("created_at", desc=True).limit(12).execute().data
     history = history[::-1] if history else []
     
     hist_str = ""
@@ -169,13 +169,14 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         f"HISTORIAL RECIENTE:\n{hist_str}\n"
         "==============================================\n"
         "INSTRUCCIONES CLAVE:\n"
-        "1. DETECCIÓN DE INTENCIÓN: Usa el Análisis de Variaciones para clasificar al cliente.\n"
-        "2. IMPORTANTE: Los saludos y charlas triviales (Hola, ¿qué haces?) son INTERÉS INICIAL. NO los marques como NO_INTEREST.\n"
-        "3. SI HAY INTERÉS (Cualquier charla amable o pregunta): Termina SIEMPRE con [INTENT: INTEREST].\n"
-        "4. SI ES UN TROLL, INSULTANTE O BOT: Termina con [INTENT: NO_INTEREST].\n"
-        "5. IDIOMA: Responde en el mismo idioma que el cliente.\n"
-        "6. PACIENCIA: Sé consciente de los créditos pero no cortes la charla si es amable.\n"
-        "7. Responde de forma natural, estilo humano, sin sonar a bot."
+        "1. NUNCA USES ROLEPLAY (ej. *sonríe*, *te guiña el ojo*). Escribe ÚNICAMENTE el texto como un chat real de WhatsApp/Telegram.\n"
+        "2. NUNCA TE DESPIDAS CON FIRMAS (ej. 'Besos, [Nombre]').\n"
+        "3. DETECCIÓN DE INTENCIÓN Y ACCIONES ESPECIALES:\n"
+        "   - Si es un saludo o charla normal: Responde naturalmente sin añadir ningún tag especial.\n"
+        "   - Si el cliente MUESTRA INTERÉS REAL DE COMPRA (pregunta precios, pide servicios, envía dinero): Añade [NOTIFY] al final del mensaje para avisar a la modelo.\n"
+        "   - Si el cliente es un TROLL, FALTA EL RESPETO o hace preguntas estúpidas repetitivas: Añade [GHOST] al final.\n"
+        "4. IDIOMA: Responde automáticamente en el mismo idioma que usó el cliente en su último mensaje.\n"
+        "5. PACIENCIA: No seas insistente. Si no compra, charla relajado limitando la extensión.\n"
     )
 
     # 5. Generar Respuesta
@@ -185,21 +186,13 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     
     # Procesar Intención
     intent = "chat"
-    if "[INTENT: INTEREST]" in ai_response:
-        intent = "interest"
-    elif "[INTENT: NO_INTEREST]" in ai_response:
-        intent = "no_interest"
+    if "[NOTIFY]" in ai_response:
+        intent = "notify"
+    elif "[GHOST]" in ai_response:
+        intent = "ghost"
 
-    # REGLA DE SALVAGUARDA: Si es un saludo corto o mensaje cordial, forzar INTEREST
-    # Esto evita que la IA se ponga en modo ghosting por error en las pruebas
-    greeting_keywords = ['hola', 'buen', 'como estas', 'qué tal', 'saludos', 'info']
-    if len(text.strip()) < 30 and any(kw in text.lower() for kw in greeting_keywords):
-        logger.info(f"Regla de salvaguarda activada para '{text}': Forzando INTEREST.")
-        intent = "interest"
-
-    # 6. Enviar Notificación a la Modelo si hay Interés
-    # 6. Enviar Notificación a la Modelo si hay Interés
-    if intent == "interest":
+    # 6. Enviar Notificación a la Modelo si hay Interés Real
+    if intent == "notify":
         try:
             # Escapar caracteres para MarkdownV2 (PTB recomienda escapar casi todo)
             def escape_md(t):
@@ -223,8 +216,8 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
             logger.error(f"Error notificando a modelo {model_tg_id}: {e}")
 
     # 7. Ejecutar Ghosting si no hay interés
-    if intent == "no_interest":
-        logger.info(f"Cliente {client_tg.id} marcado como 'no_interest'. Ghosting activado.")
+    if intent == "ghost":
+        logger.info(f"Cliente {client_tg.id} marcado como 'ghost'. Ghosting activado.")
         return
 
     # 8. Descontar Crédito (Solo si el bot responde)
