@@ -25,7 +25,7 @@ class AIAgent:
         self.MANAGER_MODEL = "sao10k/l3-euryale-70b"
         self.MANAGER_TEMP = 0.7
 
-    def chat_completion(self, model_type: str, system_prompt: str, user_message: str):
+    def chat_completion(self, model_type: str, system_prompt: str, user_message: str, history: list = None):
         """Generic chat completion wrapper."""
         try:
             if model_type == "hunter":
@@ -38,13 +38,17 @@ class AIAgent:
                 model = self.MANAGER_MODEL
                 temp = self.MANAGER_TEMP
             
+            messages = [{"role": "system", "content": system_prompt}]
+            
+            if history:
+                messages.extend(history)
+                
+            messages.append({"role": "user", "content": user_message})
+            
             completion = self.client.chat.completions.create(
                 model=model,
                 temperature=temp,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
+                messages=messages,
                 extra_headers={
                     "HTTP-Referer": "https://agencymodelbot.local", 
                     "X-Title": "AgencyBot"

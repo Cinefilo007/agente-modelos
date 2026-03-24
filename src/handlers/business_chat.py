@@ -66,6 +66,14 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     Handler para mensajes recibidos vía Telegram Business.
     Esta función intercepta mensajes de clientes externos que escriben a la cuenta de la modelo.
     """
+    # === AJUSTE DE IA ===
+    # Modifica este valor para hacer al bot más creativo o más literal.
+    # 0.2: Muy literal, robótico, estricto con el prompt.
+    # 0.7: Hablador, humano, creativo (Recomendado para OnlyFans/Scorts).
+    # 0.9: Extremadamente asertivo y errático.
+    BOT_TEMPERATURE = 0.7
+    # ====================
+
     business_msg = update.business_message
     if not business_msg:
         return
@@ -139,13 +147,13 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         return
 
     # 4. Preparar Contexto IA (Aumentado a 12 para mejor entendimiento)
-    history = db.client.table("messages").select("sender_type, content, intent").eq("relation_id", rel_data['id']).order("created_at", desc=True).limit(12).execute().data
-    history = history[::-1] if history else []
+    history_rows = db.client.table("messages").select("sender_type, content").eq("relation_id", rel_data['id']).order("created_at", desc=True).limit(12).execute().data
+    history_rows = history_rows[::-1] if history_rows else []
     
-    hist_str = ""
-    for m in history:
-        role = "Cliente" if m['sender_type'] == "user" else "Modelo"
-        hist_str += f"{role}: {m['content']}\n"
+    ai_history = []
+    for m in history_rows:
+        role = "user" if m['sender_type'] == "user" else "assistant"
+        ai_history.append({"role": role, "content": m['content']})
 
     # Cargar Contexto de Ventas y Variaciones
     try:
@@ -166,11 +174,10 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         f"- Pagos: {model_data.get('config_payments', {}).get('raw_text', 'Varios')}\n\n"
         f"SOP Y REGLAS:\n{sop_context}\n\n"
         f"ANÁLISIS DE VARIACIONES (CUSTOMER JOURNEY):\n{journey_context}\n\n"
-        f"HISTORIAL RECIENTE:\n{hist_str}\n"
         "==============================================\n"
         "INSTRUCCIONES CLAVE:\n"
         "1. NUNCA USES ROLEPLAY (ej. *sonríe*, *te guiña el ojo*). Escribe ÚNICAMENTE el texto como un chat real de WhatsApp/Telegram.\n"
-        "2. NUNCA TE DESPIDAS CON FIRMAS (ej. 'Besos, [Nombre]').\n"
+        "2. NUNCA TE DESPIDAS CON FIRMAS (ej. 'Besos, [Nombre]'). NO USES PLANTILLAS (ej. [tu nombre]), usa nombres inventados o evita decirlos.\n"
         "3. DETECCIÓN DE INTENCIÓN Y ACCIONES ESPECIALES:\n"
         "   - Si es un saludo o charla normal: Responde naturalmente sin añadir ningún tag especial.\n"
         "   - Si el cliente MUESTRA INTERÉS REAL DE COMPRA (pregunta precios, pide servicios, envía dinero): Añade [NOTIFY] al final del mensaje para avisar a la modelo.\n"
@@ -182,7 +189,7 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
     # 5. Generar Respuesta
     db.log_message(model_uuid, "user", text, metadata={"relation_id": rel_data['id'], "chat_id": chat_id})
     
-    ai_response = ai_agent.chat_completion("manager", system_prompt, text)
+    ai_response = ai_agent.chat_completion("manager", system_prompt, text, history=ai_history, temperature=BOT_TEMPERATURE)
     
     # Procesar Intención
     intent = "chat"
