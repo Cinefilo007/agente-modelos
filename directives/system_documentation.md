@@ -101,5 +101,11 @@ El backend expone una API RESTful documentada automáticamente en `/docs`.
 -   **Web3 / TON Storage / NFTs**: Pausado/Oculto temporalmente en la comunicación principal (Landing Page) para evitar fricción. El enfoque actual de marketing es la protección contra baneos de Telegram, el Casino Interactivo y el Chat Manager IA.
 -   **Regalos (Gifts) en el Feed**: Botón interactivo oculto temporalmente en las vistas `FeedPostCard` y `PostDetail` para trabajar en ello más adelante.
 
+### 5.2 Manejo de Rutas SPA y "Catch-all"
+Para permitir que el Frontend (React SPA) gestione sus propias rutas, el Backend define una ruta genérica (`/{full_path:path}`) que sirve el `index.html` para cualquier URL no reconocida como API o archivo estático.
+-   **Bots y Scanners**: Es común ver logs de peticiones a rutas como `/wp-admin/` o `/wordpress/` devolviendo `200 OK`. 
+-   **Causa**: El servidor entrega exitosamente el `index.html` de React al no encontrar la ruta solicitada, lo que el log registra como éxito. No implica que WordPress esté instalado.
+-   **Mejora Futura**: Filtrar peticiones comunes de bots para devolver `404 Not Found` explícito y limpiar los logs.
+
 ---
-*Última Actualización: 12 de Marzo de 2026*
+*Última Actualización: 24 de Marzo de 2026*

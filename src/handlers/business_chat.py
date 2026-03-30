@@ -27,6 +27,16 @@ async def handle_business_connection(update: Update, context: ContextTypes.DEFAU
     if is_enabled:
         # Guardar el connection_id en la base de datos para esta modelo
         db.client.table("models").update({"business_connection_id": connection_id}).eq("telegram_id", model_tg_id).execute()
+        
+        # NOTIFICAR VINCULACIÓN EXITOSA
+        try:
+            asyncio.create_task(context.bot.send_message(
+                chat_id=model_tg_id,
+                text="✅ **¡Vinculación Exitosa!**\n\nTu cuenta de Telegram Business ha sido conectada correctamente al bot. La IA está lista para responder a tus clientes.",
+                parse_mode="Markdown"
+            ))
+        except Exception as e:
+            logger.error(f"Error notificando vinculacion a modelo {model_tg_id}: {e}")
     else:
         # Limpiar si se desconecta
         db.client.table("models").update({"business_connection_id": None}).eq("telegram_id", model_tg_id).execute()
@@ -113,8 +123,27 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         return
 
     # 2. Verificar Créditos
-    if model_data.get('credits_balance', 0) <= 0:
+    current_credits = model_data.get('credits_balance', 0)
+    if current_credits <= 0:
         logger.info(f"Modelo {model_tg_id} sin créditos. Bot Manager desactivado.")
+        
+        # Para evitar spam si el cliente manda 20 mensajes seguidos, validamos que no se le haya avisado muy recientemente
+        # pero es suficiente invocar esto una vez por racha o depender de que la modelo mutee al bot
+        try:
+            await context.bot.send_message(
+                chat_id=model_tg_id,
+                text="⚠️ **Tus créditos se han agotado.**\n\nEl Agente de Ventas está pausado y no responderá a tus clientes limitando tus conversiones. Usa el comando /recargar para comprar un nuevo paquete de diamantes y seguir automatizando tus ventas.",
+                parse_mode="Markdown"
+            )
+            # Notificar al admin
+            safe_user = model_data.get('username', 'Unknown')
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=f"🚨 <b>Modelo sin saldo</b>\n\nLa modelo <a href='tg://user?id={model_tg_id}'>{model_data.get('full_name', 'N/A')}</a> (@{safe_user}) se ha quedado sin diamantes y su bot se ha pausado.\n\nContáctala para ofrecerle una recarga rápida.",
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            logger.error(f"Error notificando saldo agotado: {e}")
         return
 
     # 3. Verificar Paciencia (Límite de mensajes por relación)
@@ -276,8 +305,8 @@ async def handle_business_message(update: Update, context: ContextTypes.DEFAULT_
         return
 
     # 8. Descontar Crédito (Solo si el bot responde)
-    # TODO: Implementar lógica de descuento de créditos real
-    # db.update_model(model_tg_id, {"credits_balance": model_data['credits_balance'] - 1})
+    new_credits = current_credits - 1
+    db.update_model(model_tg_id, {"credits_balance": new_credits})
 
     # 9. Enviar Respuesta en Burbujas
     bubbles = ai_agent.split_into_bubbles(ai_response)

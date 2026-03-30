@@ -12,11 +12,6 @@ logger = logging.getLogger(__name__)
 
 # States
 SALES_CHAT = 0
-SURVEY_NAME = 1
-SURVEY_AGE = 2
-SURVEY_COUNTRY = 3
-SURVEY_SELFIE = 4
-SURVEY_VIDEO = 5
 
 # Config States (Existing)
 CONFIG_PRECIOS = 6
@@ -46,7 +41,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Eres 'Nebula IA', Eres un Agente de Ventas de Software (B2B).\n"
             "ESTÁS HABLANDO CON: Una Creadora de Contenido (Modelo).\n"
             "TU OBJETIVO: Saludar amigablemente, presentarte brevemente y esperar su respuesta. NO vendas de inmediato.\n"
-            "Ejemplo: 'Hola! Soy Nebula IA, tu asistente de ventas. ¿Cómo estás hoy?'\n"
+            f"Ejemplo: 'Hola {user.first_name}! Soy Nebula IA, tu asistente de ventas. ¿Cómo estás hoy?'\n"
             "Manténlo corto y casual (estilo WhatsApp)."
         )
         
@@ -84,10 +79,8 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 0. Check Retry Status
     if model.get('status') == 'retry_needed':
-        await update.message.reply_text("🔄 **Repetir Verificación**\n\nEl administrador ha solicitado que repitas el proceso (datos ilegibles o incompletos).\n\n1️⃣ Empecemos de nuevo: ¿Cuál es tu **Nombre y Apellido**?", parse_mode="Markdown")
-        # Reset data logic could go here if needed, but overwriting is fine
-        db.update_model(user.id, {"status": "verifying"}) # Set back to verifying
-        return SURVEY_NAME
+        await update.message.reply_text("🔄 **Revisión Pendiente**\n\nEl administrador está revisando tu caso de nuevo. Por favor comunícate directamente con él.", parse_mode="Markdown")
+        return ConversationHandler.END
 
     # Log user message FIRST
     db.log_message(model['id'], "user", user_text, intent="user_reply")
@@ -138,9 +131,9 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "3. **VENTA**: Explica que conectas tu IA a su Telegram Business para responder clientes 24/7.\n"
         "4. **INTENCIÓN Y CONFIRMACIÓN**: \n"
         "   - Si la modelo dice 'quiero empezar', 'dale', 'ok', 'estoy lista' -> Tu respuesta debe terminar con: `[INTENT: CONFIRM_START]`.\n"
-        "   - Si la modelo CONFIRMA explícitamente que quiere iniciar la VERIFICACIÓN (ej: responde 'Si' a tu pregunta de confirmación) -> `[INTENT: START_ONBOARDING]`.\n"
+        "   - Si la modelo CONFIRMA explícitamente que quiere probar el servicio (ej: responde 'Si' a tu pregunta de confirmación) -> `[INTENT: START_ONBOARDING]`.\n"
         "   - Resto -> `[INTENT: CHAT]`.\n"
-        "5. **NOMBRE**: Si no tiene nombre en perfil, pregúntale casualmente.\n"
+        f"5. **NOMBRE**: No preguntes su nombre real, refiérete a ella por su nombre de Telegram ({user.first_name}).\n"
     )
 
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
@@ -189,15 +182,31 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Acciones según intención
         if intent == "start_onboarding":
-            # Direct Jump? Only if the text implies we are asking for name or starting.
-            # But wait, if intent is start_onboarding, we usually want to transition.
-            # User wants "Pregunte a ella si desea iniciar la encuesta".
-            # So `confirm_start` -> Bot asks "Do you want to start verification?".
-            # If user says "Yes", Model output should be `start_onboarding`.
-            
             await asyncio.sleep(1)
-            await update.message.reply_text("🚀 **Excelente.**\n\n1️⃣ Empecemos: ¿Cuál es tu **Nombre y Apellido** real?", parse_mode="Markdown")
-            return SURVEY_NAME
+            await update.message.reply_text("🚀 **¡Excelente decisión!**\n\nHe enviado tu solicitud de aprobación al administrador. Te responderemos pronto.", parse_mode="Markdown")
+            
+            # --- ENVIAR NOTIFICACIÓN AL ADMIN ---
+            try:
+                safe_name = user.full_name.replace('<', '&lt;')
+                safe_user = user.username or 'SinUser'
+                caption = (
+                    f"🕵️ <b>SOLICITUD DE APROBACIÓN (IA VENTAS)</b>\n\n"
+                    f"👤 <b>Nombre TG</b>: <a href='tg://user?id={user.id}'>{safe_name}</a>\n"
+                    f"🔗 <b>User</b>: @{safe_user}\n"
+                    f"🆔 <code>{user.id}</code>"
+                )
+                
+                await context.bot.send_message(
+                    chat_id=ADMIN_ID,
+                    text=caption,
+                    parse_mode=constants.ParseMode.HTML,
+                    reply_markup=get_admin_keyboard(user.id)
+                )
+                db.update_model(user.id, {"status": "pending"})
+            except Exception as e:
+                logger.error(f"Error CRÍTICO enviando reporte admin: {e}")
+            
+            return ConversationHandler.END
             
         elif intent == "confirm_start":
              # The bot reply (generated by AI) should have asked "Do you want to start verification?"
@@ -209,153 +218,14 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return SALES_CHAT
 
-async def survey_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    name = update.message.text
-    if name.lower() in ['/cancel', 'cancelar']: return await cancel(update, context)
-    
-    user = update.effective_user
-    db.update_model(user.id, {"full_name": name})
-    
-    await update.message.reply_text(f"Un gusto, {name}.\n\n2️⃣ ¿Qué **edad** tienes? (Debes ser mayor de edad).", parse_mode="Markdown")
-    return SURVEY_AGE
-
-async def survey_age(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    if text.lower() in ['/cancel', 'cancelar']: return await cancel(update, context)
-    
-    user = update.effective_user
-    if not text.isdigit():
-        await update.message.reply_text("⚠️ Por favor ingresa solo el número (Ej: 22).")
-        return SURVEY_AGE
-    
-    age = int(text)
-    if age < 18:
-        await update.message.reply_text("⛔ Lo sentimos, no trabajamos con menores de edad.")
-        db.update_model(user.id, {"status": "rejected", "age": age})
-        return ConversationHandler.END
-    
-    db.update_model(user.id, {"age": age})
-    await update.message.reply_text("Perfecto.\n\n3️⃣ ¿De qué **país** eres?", parse_mode="Markdown")
-    return SURVEY_COUNTRY
-
-async def survey_country(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    country = update.message.text
-    if country.lower() in ['/cancel', 'cancelar']: return await cancel(update, context)
-    
-    user = update.effective_user
-    db.update_model(user.id, {"country": country})
-    
-    await update.message.reply_text(
-        "📝 Anotado.\n\n4️⃣ **Verificación de Identidad**\n"
-        "Por favor envía una **SELFIE** (foto) sosteniendo tu **Cédula/DNI/Pasaporte** cerca de tu rostro.\n"
-        "✅ Deben verse claros tus datos y tu cara.\n"
-        "� No envíes texto, solo la foto.\n\n"
-        "Escribe /cancel para salir.",
-        parse_mode="Markdown"
-    )
-    return SURVEY_SELFIE
-
-async def survey_selfie(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    
-    # Check Cancel
-    if update.message.text and update.message.text.lower() in ['/cancel', 'cancelar']:
-        return await cancel(update, context)
-
-    photo = update.message.photo
-    if not photo:
-        await update.message.reply_text("⚠️ **Error**: Esperaba una FOTO (Selfie). Por favor inténtalo de nuevo.", parse_mode="Markdown")
-        return SURVEY_SELFIE
-        
-    photo_id = photo[-1].file_id
-    db.update_model(user.id, {"id_photo_id": photo_id})
-    
-    await update.message.reply_text(
-        "📸 Foto recibida.\n\n5️⃣ **Último paso: Video Mensaje**\n"
-        "Envía un **Video Mensaje** (la burbuja redonda) diciendo:\n"
-        "🗣️ _\"Yo, [Tu Nombre], acepto los términos y condiciones, y me uno a esta agencia bajo mi propia voluntad.\"_\n\n"
-        "¡Haz click en el micrófono para cambiar a cámara y mantén presionado para grabar!",
-        parse_mode="Markdown"
-    )
-    return SURVEY_VIDEO
-
-async def survey_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    
-    if update.message.text and update.message.text.lower() in ['/cancel', 'cancelar']:
-        return await cancel(update, context)
-
-    video_note = update.message.video_note
-    if not video_note:
-        await update.message.reply_text("⚠️ **Error**: Debes enviar un VIDEO MENSAJE (Burbuja). No un video de galería ni texto.", parse_mode="Markdown")
-        return SURVEY_VIDEO
-
-    # Guardar video ID
-    db.update_model(user.id, {"verification_video_id": video_note.file_id, "status": "verifying"})
-    
-    await update.message.reply_text("✅ **¡Encuesta Completada!**\n\nHe enviado todo al administrador. Espera mi aviso.", parse_mode="Markdown")
-    
-    # --- ENVIAR AL ADMIN ---
-    # --- ENVIAR AL ADMIN ---
-    try:
-        model = db.get_model(user.id)
-        
-        # Helper para escapar HTML
-        from html import escape
-        safe_name = escape(model.get('full_name', 'N/A'))
-        safe_country = escape(model.get('country', 'N/A'))
-        safe_user = escape(model.get('username', 'SinUser'))
-        
-        caption = (
-            f"🕵️ <b>SOLICITUD DE VERIFICACIÓN</b>\n\n"
-            f"👤 <b>Nombre</b>: <a href='tg://user?id={user.id}'>{safe_name}</a>\n"
-            f"🔢 <b>Edad</b>: {model.get('age', 'N/A')}\n"
-            f"🌍 <b>País</b>: {safe_country}\n"
-            f"🔗 <b>User</b>: @{safe_user}\n"
-            f"🆔 <code>{user.id}</code>"
-        )
-        
-        # Intentar enviar Selfie con Caption
-        sent_header = False
-        if model.get('id_photo_id'):
-            try:
-                await context.bot.send_photo(
-                    chat_id=ADMIN_ID,
-                    photo=model.get('id_photo_id'),
-                    caption=caption,
-                    parse_mode=constants.ParseMode.HTML,
-                    reply_markup=get_admin_keyboard(user.id)
-                )
-                sent_header = True
-            except Exception as e:
-                logger.error(f"Error enviando foto admin: {e}")
-        
-        if not sent_header:
-            await context.bot.send_message(
-                chat_id=ADMIN_ID,
-                text=caption,
-                parse_mode=constants.ParseMode.HTML,
-                reply_markup=get_admin_keyboard(user.id)
-            )
-
-        # Video Note siempre aparte
-        if model.get('verification_video_id'):
-            await context.bot.send_message(chat_id=ADMIN_ID, text="📹 <b>Video de Aceptación:</b>", parse_mode=constants.ParseMode.HTML)
-            await context.bot.send_video_note(chat_id=ADMIN_ID, video_note=model.get('verification_video_id'))
-
-    except Exception as e:
-        logger.error(f"Error CRÍTICO enviando reporte admin: {e}")
-    
-    return ConversationHandler.END
-
 # --- SETUP CONFIG (Post-Aprobación) ---
 async def setup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Inicia la configuración (solo si está verificado)."""
     user = update.effective_user
     model = db.get_model(user.id)
     
-    if not model or not model.get('is_verified'):
-        await update.message.reply_text("⛔ Debes estar verificada para configurar el bot.")
+    if not model or model.get('status') != 'active':
+        await update.message.reply_text("⛔ Debes ser aprobada por el administrador para configurar el bot.")
         return ConversationHandler.END
 
     await update.message.reply_text(
@@ -393,11 +263,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Operación cancelada.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
-async def warning_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Maneja cuando el usuario envía algo que no es un Video Note."""
-    await update.message.reply_text("⚠️ **Atención**: Necesito un **Video Mensaje** (la burbuja redonda).\n\nEn Telegram, toca (o mantén) el icono de micrófono para cambiar a cámara, y luego graba.", parse_mode="Markdown")
-    return SURVEY_VIDEO
-
 onboarding_handler = ConversationHandler(
     per_message=False,
     entry_points=[
@@ -406,14 +271,6 @@ onboarding_handler = ConversationHandler(
     ],
     states={
         SALES_CHAT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_sales_chat)],
-        SURVEY_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, survey_name)],
-        SURVEY_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, survey_age)],
-        SURVEY_COUNTRY: [MessageHandler(filters.TEXT & ~filters.COMMAND, survey_country)],
-        SURVEY_SELFIE: [MessageHandler(filters.PHOTO, survey_selfie)],
-        SURVEY_VIDEO: [
-            MessageHandler(filters.VIDEO_NOTE, survey_video),
-            MessageHandler(filters.ALL & ~filters.COMMAND, warning_video)
-        ],
         # Config
         CONFIG_PRECIOS: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_precios)],
         CONFIG_PERSONALIDAD: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_personalidad)],

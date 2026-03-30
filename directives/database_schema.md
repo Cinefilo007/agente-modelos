@@ -1,16 +1,123 @@
-﻿‣獅畱浥⁡敤䈠獡⁥敤䐠瑡獯⠠畓慰慢敳⼠匠䱑ഩഊ䔊⁬楳瑳浥⁡瑵汩穩牡ꇃ倠獯杴敲兓⁌瘨귃⁡畓慰慢敳⸩਍਍⌣ㄠ‮慔汢獡倠楲据灩污獥਍਍⌣‣獠獦畟敳獲⁠䠨潯⁫祓瑳浥ഩ唊畳牡潩⁳敤⁬潢⁴敤匠卆椠摮灥湥楤湥整⁳敤⁬楳瑳浥⁡牰湩楣慰⁬栨浯牢獥‬畤썥澱⁳敤挠湡污獥礠瀠獯扩敬⁳敬摡⁳敤洠摯汥獯⸩਍恠獠汱਍剃䅅䕔吠䉁䕌猠獦畟敳獲⠠਍††摩唠䥕⁄剐䵉剁⁙䕋⁙䕄䅆䱕⁔敧彮慲摮浯畟極⡤Ⱙ਍††整敬牧浡楟⁤䥂䥇呎唠䥎啑⁅低⁔啎䱌ബ †甠敳湲浡⁥䕔员ബ †映汵彬慮敭吠塅ⱔ਍††獩慟敧据役潭敤⁬佂䱏䅅⁎䕄䅆䱕⁔䅆卌ⱅⴠ‭楓愠汰捩⁡⁹湥牴⁡污猠獩整慭਍††牴獵彴捳牯⁥义䕔䕇⁒䕄䅆䱕⁔〱ⰰ਍††畳獢牣灩楴湯瑟敩⁲䕔员䐠䙅啁呌✠慢楳❣ബ †挠敲瑡摥慟⁴䥔䕍呓䵁呐⁚䕄䅆䱕⁔低⡗ഩ⤊഻怊恠਍਍⌣‣浠摯汥恳਍湉潦浲捡썩溳搠⁥慬⁳潭敤潬⁳敲楧瑳慲慤⹳਍恠獠汱਍剃䅅䕔吠䉁䕌洠摯汥⁳ന †椠⁤啕䑉倠䥒䅍奒䬠奅䐠䙅啁呌朠湥牟湡潤彭畵摩⤨ബ †琠汥来慲彭摩䈠䝉义⁔乕光䕕丠呏丠䱕ⱌ਍††獵牥慮敭吠塅ⱔ਍††畦汬湟浡⁥䕔员ബ †戠潩獟潨瑲吠塅ⱔⴠ‭乛坅൝ †猠慴畴⁳䕔员䌠䕈䭃⠠瑳瑡獵䤠⁎✨牰獯数瑣Ⱗ✠敶楲祦湩❧‬愧瑣癩❥‬爧橥捥整❤‬瀧畡敳❤⤩ബ †挠敲楤獴扟污湡散䤠呎䝅剅䐠䙅啁呌〠ബ †椠彳敶楲楦摥䈠住䕌乁䐠䙅啁呌䘠䱁䕓ബ †瘠牥晩捩瑡潩彮楶敤彯摩吠塅ⱔ਍††癡瑡牡畟汲吠塅ⱔⴠ‭乛坅൝ †挠癯牥畟汲吠塅ⱔⴠ‭乛坅൝ †映汯潬敷獲损畯瑮䤠呎䝅剅䐠䙅啁呌〠‬ⴭ嬠䕎嵗਍††潴慴彬楬敫⁳义䕔䕇⁒䕄䅆䱕⁔ⰰⴠ‭乛坅൝ †爠灥瑵瑡潩彮捳牯⁥䕄䥃䅍⡌ⰳ㈠ 䕄䅆䱕⁔⸰〰‬ⴭ嬠䕎嵗⠠慃捬汵摡⁯慢慳潤攠⁮敲楶睥⥳਍††潳楣污江湩獫䨠体䉎䐠䙅啁呌✠絻Ⱗⴠ‭乛坅⁝椨獮慴牧浡‬睴瑩整Ⱳ映捡扥潯Ⱬ攠捴⤮਍††楢瑲彨慤整䐠呁ⱅⴠ‭乛坅⁝潆⁲条⁥敶楲楦慣楴湯਍††ⴭ䌠湯楦畧慲楣돃⁮敤⁬潂⁴䅉⠠慍数摡⁯湥䈠捡敫摮ഩ †挠湯楦彧牰捩獥䨠体䉎䐠䙅啁呌✠絻Ⱗⴠ‭瑻硥㩴∠⸮∮ൽ †挠湯楦彧数獲湯⁡䕔员‬ⴭ倠潲灭⁴敤瀠牥潳慮楬慤൤ †挠湯楦彧桰獹煩敵吠塅ⱔⴠ‭敄捳楲捰썩溳映귃楳慣਍††潣普杩灟祡敭瑮⁳半乏⁂䕄䅆䱕⁔笧❽‬ⴭ笠整瑸›⸢⸮索਍††牣慥整彤瑡吠䵉卅䅔偍婔䐠䙅啁呌丠坏⤨਍㬩਍恠ൠഊ⌊⌣怠汣敩瑮恳਍摉湥楴慤⁤뫃楮慣搠⁥敬摡⽳汣敩瑮獥⠠汇扯污⸩਍恠獠汱਍剃䅅䕔吠䉁䕌挠楬湥獴⠠਍††摩唠䥕⁄剐䵉剁⁙䕋⁙䕄䅆䱕⁔敧彮慲摮浯畟極⡤Ⱙ਍††整敬牧浡楟⁤䥂䥇呎唠䥎啑⁅低⁔啎䱌ബ †甠敳湲浡⁥䕔员ബ †挠畯瑮祲损摯⁥䕔员ബ †愠慶慴彲牵⁬䕔员‬ⴭ嬠䕎嵗਍††慷汬瑥扟污湡散䐠䍅䵉䱁ㄨⰰ㈠ 䕄䅆䱕⁔⸰〰‬ⴭ嬠䕎嵗਍††楢瑲彨慤整䐠呁ⱅⴠ‭乛坅⁝潆⁲条⁥敶楲楦慣楴湯਍††汧扯污牟灥瑵瑡潩⁮义䕔䕇⁒䕄䅆䱕⁔〱ⰰ਍††牣慥整彤瑡吠䵉卅䅔偍婔䐠䙅啁呌丠坏⤨਍㬩਍恠ൠഊ⌊⌣‣杠潬慢彬汢捡汫獩恴਍楌瑳⁡敮牧⁡散瑮慲楬慺慤朠獥楴湯摡⁡潰⁲汥匠灵牥䄠浤湩മ怊恠煳൬䌊䕒呁⁅䅔䱂⁅汧扯污扟慬正楬瑳⠠਍††摩唠䥕⁄剐䵉剁⁙䕋⁙䕄䅆䱕⁔敧彮慲摮浯畟極⡤Ⱙ਍††整敬牧浡楟⁤䥂䥇呎唠䥎啑⁅低⁔啎䱌‬ⴭ䤠⁄敤吠汥来慲⁭汢煯敵摡൯ †甠敳湲浡⁥䕔员‬ⴭ删晥牥湥楣⁡楶畳污਍††敲獡湯吠塅ⱔ਍††敳敶楲祴吠塅⁔䡃䍅⁋猨癥牥瑩⁹义⠠洧摥畩❭‬栧杩❨⤩ബ †愠摤摥扟⁹啕䑉删䙅剅久䕃⁓潭敤獬椨⥤‬ⴭ丠汵⁬楳映敵攠⁬畓数⁲摁業൮ †挠敲瑡摥慟⁴䥔䕍呓䵁呐⁚䕄䅆䱕⁔低⡗ഩ⤊഻怊恠਍਍⌣‣潠摲牥恳⠠獅牣睯匠獹整⥭਍牔湡慳捣潩敮⁳敳畧慲⁳敤猠牥楶楣獯倠倲മ怊恠煳൬䌊䕒呁⁅䅔䱂⁅牯敤獲⠠਍††摩唠䥕⁄剐䵉剁⁙䕋⁙䕄䅆䱕⁔敧彮慲摮浯畟極⡤Ⱙ਍††汣敩瑮楟⁤啕䑉删䙅剅久䕃⁓汣敩瑮⡳摩Ⱙ਍††潭敤彬摩唠䥕⁄䕒䕆䕒䍎卅洠摯汥⡳摩Ⱙ਍††敤捳楲瑰潩⁮䕔员‬ⴭ䐠瑥污敬⁳敤⁬敳癲捩潩挠湯牴瑡摡൯ †愠潭湵⁴䕄䥃䅍⡌〱‬⤲丠呏丠䱕ⱌ਍††瑳瑡獵吠塅⁔䡃䍅⁋猨慴畴⁳义⠠瀧湥楤杮Ⱗ✠敨摬Ⱗ✠潣灭敬整❤‬搧獩異整❤‬爧晥湵敤❤‬爧汥慥敳❤⤩ബ †挠敲瑡摥慟⁴䥔䕍呓䵁呐⁚䕄䅆䱕⁔低⡗Ⱙ਍††灵慤整彤瑡吠䵉卅䅔偍婔䐠䙅啁呌丠坏⤨਍㬩਍恠ൠഊ⌊⌣怠楤灳瑵獥ൠ䜊獥楴돃⁮敤挠湯汦捩潴⁳湥쌠犳敤敮⹳਍恠獠汱਍剃䅅䕔吠䉁䕌搠獩異整⁳ന †椠⁤啕䑉倠䥒䅍奒䬠奅䐠䙅啁呌朠湥牟湡潤彭畵摩⤨ബ †漠摲牥楟⁤啕䑉删䙅剅久䕃⁓牯敤獲椨⥤ബ †挠楬湥彴癥摩湥散吠塅ⱔⴠ‭剕⁌⁡敭楤⽡整瑸൯ †洠摯汥敟楶敤据⁥䕔员‬ⴭ唠䱒愠洠摥慩琯硥潴਍††敲潳畬楴湯吠塅⁔䡃䍅⁋爨獥汯瑵潩⁮义⠠瀧湥楤杮Ⱗ✠汣敩瑮睟湩Ⱗ✠潭敤彬楷❮⤩ബ †愠浤湩湟瑯獥吠塅ⱔ਍††牣慥整彤瑡吠䵉卅䅔偍婔䐠䙅啁呌丠坏⤨਍㬩਍恠ൠഊ⌊⌣怠汣敩瑮牟癥敩獷ൠ刊灥瑵捡썩溳搠汥挠楬湥整⠠敆摥慢正搠⁥潭敤潬⥳മ怊恠煳൬䌊䕒呁⁅䅔䱂⁅汣敩瑮牟癥敩獷⠠਍††摩唠䥕⁄剐䵉剁⁙䕋⁙䕄䅆䱕⁔敧彮慲摮浯畟極⡤Ⱙ਍††汣敩瑮楟⁤啕䑉删䙅剅久䕃⁓汣敩瑮⡳摩Ⱙ਍††潭敤彬摩唠䥕⁄䕒䕆䕒䍎卅洠摯汥⡳摩Ⱙ਍††慲楴杮䤠呎䝅剅䌠䕈䭃⠠慲楴杮㸠‽‱乁⁄慲楴杮㰠‽⤵ബ †琠条⁳䕔员‬ⴭ䔠㩪∠敇敮潲潳‬流扡敬‬敐慳潤ഢ †挠浯敭瑮吠塅ⱔ਍††牣慥整彤瑡吠䵉卅䅔偍婔䐠䙅啁呌丠坏⤨਍㬩਍恠ൠഊ⌊⌣怠潭敤彬汣敩瑮牟汥瑡潩獮ൠ䔊瑳摡⁯敤⁬浥畢潤攠瑮敲甠慮䴠摯汥⁯⁹湵䌠楬湥整⠠㩍⥎മ怊恠煳൬䌊䕒呁⁅䅔䱂⁅潭敤彬汣敩瑮牟汥瑡潩獮⠠਍††摩唠䥕⁄剐䵉剁⁙䕋⁙䕄䅆䱕⁔敧彮慲摮浯畟極⡤Ⱙ਍††潭敤彬摩唠䥕⁄䕒䕆䕒䍎卅洠摯汥⡳摩Ⱙ਍††汣敩瑮楟⁤啕䑉删䙅剅久䕃⁓汣敩瑮⡳摩Ⱙ਍††瑳瑡獵吠塅⁔䡃䍅⁋猨慴畴⁳义⠠渧睥Ⱗ✠档瑡楴杮Ⱗ✠汣獯湩❧‬挧獵潴敭❲‬愧捲楨敶❤⤩ബ †琠瑯污獟数摮䐠䍅䵉䱁ㄨⰰ㈠ 䕄䅆䱕⁔⸰〰ബ †瀠敲敦牲摥灟祡敭瑮浟瑥潨⁤䕔员ബ †氠獡彴湩整慲瑣潩彮瑡吠䵉卅䅔偍婔ബ †唠䥎啑⡅潭敤彬摩‬汣敩瑮楟⥤਍㬩਍恠ൠഊ⌊⌣怠牴湡慳瑣潩獮ൠ䠊獩潴楲污搠⁥牣꧃楤潴⹳਍恠獠汱਍剃䅅䕔吠䉁䕌琠慲獮捡楴湯⁳ന †椠⁤啕䑉倠䥒䅍奒䬠奅䐠䙅啁呌朠湥牟湡潤彭畵摩⤨ബ †洠摯汥楟⁤啕䑉删䙅剅久䕃⁓潭敤獬椨⥤ബ †挠楬湥彴摩唠䥕⁄䕒䕆䕒䍎卅挠楬湥獴椨⥤‬ⴭ传捰潩慮൬ †琠灹⁥䕔员䌠䕈䭃⠠祴数䤠⁎✨潣獮浵瑰潩❮‬琧灯灵Ⱗ✠潢畮❳⤩ബ †愠潭湵⁴䕄䥃䅍⡌〱‬⤲丠呏丠䱕ⱌ਍††瑳瑡獵吠塅⁔䡃䍅⁋猨慴畴⁳义⠠䌧䵏䱐呅䑅Ⱗ✠䕐䑎义❇‬䘧䥁䕌❄⤩ബ †搠瑥楡獬䨠体䉎䐠䙅啁呌✠絻Ⱗⴠ‭乛坅⁝敍慴慤潴⁳琨彯潭敤ⱬ朠晩彴慮敭‬瑥⹣ഩ †挠敲瑡摥慟⁴䥔䕍呓䵁呐⁚䕄䅆䱕⁔低⡗Ⱙ਍㬩਍恠ൠഊ⌊⌣怠汢捡汫獩彴敲潰瑲恳਍敒潰瑲獥搠⁥汢煯敵⹯਍恠獠汱਍剃䅅䕔吠䉁䕌戠慬正楬瑳牟灥牯獴⠠਍††摩唠䥕⁄剐䵉剁⁙䕋⁙䕄䅆䱕⁔敧彮慲摮浯畟極⡤Ⱙ਍††敲潰瑲牥浟摯汥楟⁤啕䑉删䙅剅久䕃⁓潭敤獬椨⥤ബ †爠灥牯整彤汣敩瑮楟⁤啕䑉删䙅剅久䕃⁓汣敩瑮⡳摩Ⱙ਍††敲獡湯吠塅ⱔ਍††牰潯彦楬歮吠塅ⱔ਍††瑳瑡獵吠塅⁔䕄䅆䱕⁔瀧湥楤杮Ⱗⴠ‭数摮湩Ⱨ愠灰潲敶Ɽ爠橥捥整൤ †挠敲瑡摥慟⁴䥔䕍呓䵁呐⁚䕄䅆䱕⁔低⡗ഩ⤊഻怊恠਍਍⌣‣浠獥慳敧恳⠠桃瑡䴠浥牯⥹਍楈瑳牯慩⁬敤琠摯獯氠獯洠湥慳敪⁳慰慲挠湯整瑸⹯਍恠獠汱਍剃䅅䕔吠䉁䕌洠獥慳敧⁳ന †椠⁤䥂䥇呎䜠久剅呁䑅䈠⁙䕄䅆䱕⁔十䤠䕄呎呉⁙剐䵉剁⁙䕋ⱙ਍††敲慬楴湯楟⁤啕䑉删䙅剅久䕃⁓潭敤彬汣敩瑮牟汥瑡潩獮椨⥤ബ †猠湥敤彲祴数吠塅⁔䡃䍅⁋猨湥敤彲祴数䤠⁎✨獵牥Ⱗ✠潭敤❬‬戧瑯⤧Ⱙ਍††潣瑮湥⁴䕔员ബ †椠瑮湥⁴䕔员‬ⴭ䤠瑮湥楣돃⁮敤整瑣摡⁡⁯獥慴潤搠⁥慬挠湯敶獲捡썩溳਍††敭慴慤慴䨠体䉎䐠䙅啁呌✠絻Ⱗⴠ‭慐慲琠歯湥ⱳ琠潯彬慣汬ⱳ攠捴മ †挠敲瑡摥慟⁴䥔䕍呓䵁呐⁚䕄䅆䱕⁔低⡗ഩ⤊഻怊恠਍਍⌣‣灠獯獴ൠ䌊湯整楮潤搠汥映敥⁤倨牥慭敮瑮⥥മ怊恠煳൬䌊䕒呁⁅䅔䱂⁅䙉丠呏䔠䥘呓⁓潰瑳⁳ന †椠⁤啕䑉倠䥒䅍奒䬠奅䐠䙅啁呌甠極彤敧敮慲整癟⠴Ⱙ਍††潭敤彬摩唠䥕⁄䕒䕆䕒䍎卅洠摯汥⡳摩 乏䐠䱅呅⁅䅃䍓䑁ⱅ਍††敭楤彡牵⁬䕔员丠呏丠䱕ⱌ਍††敭楤彡祴数吠塅⁔䡃䍅⁋洨摥慩瑟灹⁥义⠠椧慭敧Ⱗ✠楶敤❯⤩ബ †挠灡楴湯吠塅ⱔ਍††楬敫彳潣湵⁴义䕔䕇⁒䕄䅆䱕⁔ⰰ਍††潣浭湥獴损畯瑮䤠呎䝅剅䐠䙅啁呌〠ബ †挠敲瑡摥慟⁴䥔䕍呓䵁呐⁚䕄䅆䱕⁔低⡗ഩ⤊഻怊恠਍਍⌣‣獠潴楲獥ൠ䌊湯整楮潤攠썦涭牥⁯㈨栴⸩਍恠獠汱਍剃䅅䕔吠䉁䕌䤠⁆低⁔塅卉協猠潴楲獥⠠਍††摩唠䥕⁄剐䵉剁⁙䕋⁙䕄䅆䱕⁔畵摩束湥牥瑡彥㑶⤨ബ †洠摯汥楟⁤啕䑉删䙅剅久䕃⁓潭敤獬椨⥤传⁎䕄䕌䕔䌠十䅃䕄ബ †洠摥慩畟汲吠塅⁔低⁔啎䱌ബ †洠摥慩瑟灹⁥䕔员䌠䕈䭃⠠敭楤彡祴数䤠⁎✨浩条❥‬瘧摩潥⤧Ⱙⴠ‭楖敤⁯慭⁸〳൳ †攠灸物獥慟⁴䥔䕍呓䵁呐⁚低⁔啎䱌ബ †挠敲瑡摥慟⁴䥔䕍呓䵁呐⁚䕄䅆䱕⁔低⡗ഩ⤊഻怊恠਍਍⌣‣楠瑮牥捡楴湯恳਍楌敫ⱳ挠浯湥慴楲獯礠瘠獩慵楬慺楣湯獥മ怊恠煳൬䌊䕒呁⁅䅔䱂⁅䙉丠呏䔠䥘呓⁓湩整慲瑣潩獮⠠਍††摩唠䥕⁄剐䵉剁⁙䕋⁙䕄䅆䱕⁔畵摩束湥牥瑡彥㑶⤨ബ †愠瑣牯楟⁤啕䑉丠呏丠䱕ⱌⴠ‭汃敩瑮䤠⁄牯䴠摯汥䤠ൄ †愠瑣牯瑟灹⁥䕔员䌠䕈䭃⠠捡潴彲祴数䤠⁎✨汣敩瑮Ⱗ✠潭敤❬⤩ബ †琠牡敧彴摩唠䥕⁄低⁔啎䱌‬ⴭ倠獯⁴䑉‬瑓牯⁹䑉‬瑥⹣਍††慴杲瑥瑟灹⁥䕔员䌠䕈䭃⠠慴杲瑥瑟灹⁥义⠠瀧獯❴‬猧潴祲Ⱗ✠潣浭湥❴⤩ബ †愠瑣潩⁮䕔员䌠䕈䭃⠠捡楴湯䤠⁎✨楬敫Ⱗ✠楶睥Ⱗ✠潣浭湥❴⤩ബ †挠湯整瑮吠塅ⱔⴠ‭慐慲挠浯湥慴楲獯਍††牣慥整彤瑡吠䵉卅䅔偍婔䐠䙅啁呌丠坏⤨਍㬩਍恠ൠഊ਀⌀⌀⌀ 怀挀栀愀渀渀攀氀猀怀ഀ਀刀攀最椀猀琀爀漀 搀攀 挀愀渀愀氀攀猀 椀渀琀攀最爀愀搀漀猀 瀀愀爀愀 匀䘀匀⼀倀堀倀⸀ഀ਀怀怀怀猀焀氀ഀ਀䌀刀䔀䄀吀䔀 吀䄀䈀䰀䔀 挀栀愀渀渀攀氀猀 ⠀ഀ਀    椀搀 唀唀䤀䐀 倀刀䤀䴀䄀刀夀 䬀䔀夀 䐀䔀䘀䄀唀䰀吀 最攀渀开爀愀渀搀漀洀开甀甀椀搀⠀⤀Ⰰഀ਀    猀昀猀开甀猀攀爀开椀搀 唀唀䤀䐀 刀䔀䘀䔀刀䔀一䌀䔀匀 猀昀猀开甀猀攀爀猀⠀椀搀⤀Ⰰഀ਀    琀攀氀攀最爀愀洀开挀栀愀琀开椀搀 䈀䤀䜀䤀一吀 唀一I儀唀䔀 一伀吀 一唀䰀䰀Ⰰഀ਀    渀愀洀攀 吀䔀堀吀Ⰰഀ਀    挀愀琀攀最漀爀礀 吀䔀堀吀 䌀䠀䔀䌀䬀 ⠀挀愀琀攀最漀爀礀 I一 ⠀✀䴀漀搀攀氀愀樀攀✀Ⰰ ✀䌀椀渀攀 礀 匀攀爀椀攀猀✀Ⰰ ✀䴴攀洀攀猀✀Ⰰ ✀䌀爀椀瀀琀漀✀Ⰰ ✀䄀搀甀氀琀漀猀✀Ⰰ ✀伀琀爀漀✀⤀⤀Ⰰഀ਀    昀漀氀氀漀眀攀爀猀 I一吀䔀䜀䔀刀 䐀䔀䘀䄀唀䰀吀 　Ⰰഀ਀    愀瘀最开瘀椀攀眀猀 I一吀䔀䜀䔀刀 䐀䔀䘀䄀唀䰀吀 　Ⰰഀ਀    攀渀最愀最攀洀攀渀琀开爀愀琀攀 䐀䔀䌀I䴴䄀䰀⠀㔀Ⰰ ㈀⤀ 䐀䔀䘀䄀唀䰀吀 　⸀　　Ⰰഀ਀    猀琀愀琀甀猀 吀䔀堀吀 䌀䠀䔀䌀䬀 ⠀猀琀愀琀甀猀 I一 ⠀✀瀀攀渀搀椀渀最✀Ⰰ ✀愀挀琀椀瘀攀✀Ⰰ ✀椀渀愀挀琀椀瘀攀✀Ⰰ ✀戀愀渀渀攀搀✀Ⰰ ✀爀攀樀攀挀琀攀搀✀⤀⤀Ⰰഀ਀    愀搀洀椀渀开渀漀琀攀猀 吀䔀堀吀Ⰰ ⴀⴀ 刀愀稀쌀대渀 搀攀 爀攀挀栀愀稀漀 漀 渀漀琀愀 椀渀琀攀爀渀愀ഀ਀    椀猀开瘀攀爀椀昀椀攀搀 䈀伀伀䰀䔀䄀一 䐀䔀䘀䄀唀䰀吀 䘀䄀䰀匀䔀Ⰰ ⴀⴀ 匀椀 攀氀 愀搀洀椀渀 愀瀀爀漀戀쌀대 攀氀 挀愀渀愀氀ഀ਀    挀爀攀愀琀攀搀开愀琀 吀I䴴䔀匀吀䄀䴴吀娀 䐀䔀䘀䄀唀䰀吀 一伀圀⠀⤀ഀ਀⤀㬀ഀ਀怀怀怀ഀ਀ഀ਀⌀⌀⌀ 怀瀀爀漀洀漀开挀愀洀瀀愀椀最渀猀怀ഀ਀刀攀最椀猀琀爀漀 搀攀 愀挀甀攀爀搀漀猀 搀攀 匀䘀匀 礀 倀甀戀氀椀挀椀搀愀搀 倀愀最愀搀愀 ⠀倀堀倀⤀⸀ഀ਀怀怀怀猀焀氀ഀ਀䌀刀䔀䄀吀䔀 吀䄀䈀䰀䔀 瀀爀漀洀漀开挀愀洀瀀愀椀最渀猀 ⠀ഀ਀    椀搀 唀唀I䐀 倀刀I䴴䄀刀夀 䬀䔀夀 䐀䔀䘀䄀唀䰀吀 最攀渀开爀愀渀搀漀洀开甀甀椀搀⠀⤀Ⰰഀ਀    爀攀焀甀攀猀琀攀爀开椀搀 唀唀I䐀 刀䔀䘀䔀刀䔀一䌀䔀匀 猀昀猀开甀猀攀爀猀⠀椀搀⤀Ⰰഀ਀    琀愀爀最攀琀开椀搀 唀唀I䐀 刀䔀䘀䔀刀䔀一䌀䔀匀 猀昀猀开甀猀攀爀猀⠀椀搀⤀Ⰰഀ਀    琀礀瀀攀 吀䔀堀吀 䌀䠀䔀䌀䬀 ⠀琀礀瀀攀 I一 ⠀✀猀昀猀开琀椀洀攀✀Ⰰ ✀猀昀猀开瘀椀攀眀猀✀Ⰰ ✀瀀砀瀀✀⤀⤀Ⰰഀ਀    琀愀爀最攀琀开瘀椀攀眀猀 I一吀䔀䜀䔀刀Ⰰഀ਀    搀甀爀愀琀椀漀渀开栀漀甀爀猀 I一吀䔀䜀䔀刀Ⰰഀ਀    瀀爀椀挀攀 䐀䔀䌀I䴴䄀䰀⠀㄀　Ⰰ ㈀⤀Ⰰ ⴀⴀ 匀椀 琀礀瀀攀 㴀 瀀砀瀀ഀ਀    攀猀挀爀漀眀开猀琀愀琀甀猀 吀䔀堀吀 䌀䠀䔀䌀䬀 ⠀攀猀挀爀漀眀开猀琀愀琀甀猀 I一 ⠀✀渀漀渀攀✀Ⰰ ✀栀攀氀搀✀Ⰰ ✀爀攀氀攀愀猀攀搀✀Ⰰ ✀搀椀猀瀀甀琀攀搀✀Ⰰ ✀爀攀昀甀渀搀攀搀✀⤀⤀Ⰰഀ਀    栀愀猀开瀀爀攀洀椀甀洀开琀爀愀挀欀椀渀最 䈀伀伀䰀䔀䄀一 䐀䔀䘀䄀唀䰀吀 䘀䄀䰀匀䔀Ⰰ ⴀⴀ 匀椀 甀猀愀渀 氀椀渀欀猀 쌀먀渀椀挀漀猀ഀ਀    爀攀焀甀攀猀琀攀爀开樀漀椀渀攀搀开挀漀甀渀琀 I一吀䔀䜀䔀刀 䐀䔀䘀䄀唀䰀吀 　Ⰰഀ਀    琀愀爀最攀琀开樀漀椀渀攀搀开挀漀甀渀琀 I一吀䔀䜀䔀刀 䐀䔀䘀䄀唀䰀吀 　Ⰰഀ਀    猀琀愀琀甀猀 吀䔀堀吀 䌀䠀䔀䌀䬀 ⠀猀琀愀琀甀猀 I一 ⠀✀瀀攀渀搀椀渀最✀Ⰰ ✀愀挀琀椀瘀攀✀Ⰰ ✀挀漀洀瀀氀攀琀攀搀✀Ⰰ ✀挀愀渀挀攀氀氀攀搀✀Ⰰ ✀昀愀椀氀攀搀✀⤀⤀Ⰰഀ਀    猀琀愀爀琀开琀椀洀攀 吀I䴴䄀䴴吀娀Ⰰഀ਀    攀渀搀开琀椀洀攀 吀I䴴䄀䴴吀娀Ⰰഀ਀    爀攀焀甀攀猀琀攀爀开琀攀洀瀀氀愀琀攀开椀搀 唀唀I䐀Ⰰഀ਀    琀愀爀最攀琀开琀攀洀瀀氀愀琀攀开椀搀 唀唀I䐀Ⰰഀ਀    挀爀攀愀琀攀搀开愀琀 吀I䴴䄀䴴吀娀 䐀䔀䘀䄀唀䰀吀 一伀圀⠀⤀ഀ਀⤀㬀ഀ਀怀怀怀ഀ਀ഀ਀⌀⌀⌀ 怀瀀爀漀洀漀开琀攀洀瀀氀愀琀攀猀怀ഀ਀吀攀砀琀漀猀⼀䴀攀搀椀愀 爀攀攀渀瘀椀愀搀漀猀 氀椀猀琀漀猀 瀀愀爀愀 甀猀愀爀 攀渀 挀愀洀瀀愀쌀넀愀猀⸀ഀ਀怀怀怀猀焀氀ഀ਀䌀刀䔀䄀吀䔀 吀䄀䈀䰀䔀 瀀爀漀洀漀开琀攀洀瀀氀愀琀攀猀 ⠀ഀ਀    椀搀 唀唀I䐀 倀刀I䴴䄀刀夀 䬀䔀夀 䐀䔀䘀䄀唀䰀吀 最攀渀开爀愀渀搀漀洀开甀甀椀搀⠀⤀Ⰰഀ਀    猀昀猀开甀猀攀爀开椀搀 唀唀I䐀 刀䔀䘀䔀刀䔀一䌀䔀匀 猀昀猀开甀猀攀爀猀⠀椀搀⤀Ⰰഀ਀    琀攀氀攀最爀愀洀开洀攀猀猀愀最攀开椀搀开漀爀椀最椀渀 䈀I䜀I一吀Ⰰഀ਀    挀漀渀琀攀渀琀开搀愀琀愀 䨀匀伀一䈀Ⰰ ⴀⴀ 䔀猀琀爀甀挀琀甀爀愀 搀攀氀 洀攀渀猀愀樀攀Ⰰ 琀攀砀琀Ⰰ 洀攀搀椀愀Ⰰ 攀渀琀椀琀椀攀猀ഀ਀    挀爀攀愀琀攀搀开愀琀 吀I䴴䄀䴴吀娀 䐀䔀䘀䄀唀䰀吀 一伀圀⠀⤀ഀ਀⤀㬀ഀ਀怀怀怀
+# 🗄️ Esquema de Base de Datos: SOP & Ejecución
 
-### `sfs_reviews`
-Sistema de reputación P2P post-campaña para Channels y SFS Users.
+## 1. SOP: Gestión de Datos (Single Source of Truth)
+El sistema utiliza **Supabase (PostgreSQL)** como motor principal. Toda la lógica de persistencia debe ser relacional y seguir estas reglas:
+
+*   **Integridad**: Uso estricto de Claves Foráneas (FK) y Restricciones (Constraints).
+*   **Seguridad**: Implementación de Row Level Security (RLS) para proteger datos de modelos y clientes.
+*   **Evolución**: Prohibido el cambio manual en el dashboard. Todo cambio debe registrarse en la carpeta `/db` como migración SQL.
+
+---
+
+## 2. Definición de Tablas (Ejecución)
+
+### 2.1 Núcleo de Usuarios y Perfiles
+
+#### `models` (Creadores de Contenido)
+Información detallada de las modelos registradas.
 ```sql
-CREATE TABLE sfs_reviews (
+CREATE TABLE models (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    promo_campaign_id UUID REFERENCES promo_campaigns(id),
-    reviewer_id UUID REFERENCES sfs_users(id), -- Quien deja la reseña
-    target_id UUID REFERENCES sfs_users(id), -- A quien va dirigida
-    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-    comment TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(promo_campaign_id, reviewer_id) -- Solo 1 review por parte
+    telegram_id BIGINT UNIQUE NOT NULL,
+    username TEXT,
+    full_name TEXT,
+    bio_short TEXT, -- [NEW]
+    status TEXT CHECK (status IN ('prospect', 'verifying', 'active', 'rejected', 'paused')),
+    credits_balance INTEGER DEFAULT 0,
+    is_verified BOOLEAN DEFAULT FALSE,
+    verification_video_id TEXT,
+    avatar_url TEXT, -- [NEW]
+    cover_url TEXT, -- [NEW]
+    followers_count INTEGER DEFAULT 0, -- [NEW]
+    total_likes INTEGER DEFAULT 0, -- [NEW]
+    reputation_score DECIMAL(3, 2) DEFAULT 0.00,
+    social_links JSONB DEFAULT '{}',
+    birth_date DATE,
+    -- Configuración IA
+    config_prices JSONB DEFAULT '{}',
+    config_person TEXT, -- Prompt de personalidad
+    config_physique TEXT, -- Descripción física para IA
+    config_payments JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
+
+#### `clients` (Fans / Leads)
+```sql
+CREATE TABLE clients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    telegram_id BIGINT UNIQUE NOT NULL,
+    username TEXT,
+    country_code TEXT,
+    avatar_url TEXT,
+    wallet_balance DECIMAL(10, 2) DEFAULT 0.00,
+    birth_date DATE,
+    global_reputation INTEGER DEFAULT 100,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 2.2 Contenido Social (Social Hub)
+
+#### `posts` & `stories`
+```sql
+CREATE TABLE posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    model_id UUID REFERENCES models(id) ON DELETE CASCADE,
+    media_url TEXT NOT NULL,
+    media_type TEXT CHECK (media_type IN ('image', 'video')),
+    caption TEXT,
+    likes_count INTEGER DEFAULT 0,
+    comments_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Stories expiran en 24h
+CREATE TABLE stories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    model_id UUID REFERENCES models(id) ON DELETE CASCADE,
+    media_url TEXT NOT NULL,
+    media_type TEXT CHECK (media_type IN ('image', 'video')),
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 2.3 Economía y Negocio (Sales & Escrow)
+
+#### `orders` (Sistema Escrow)
+```sql
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES clients(id),
+    model_id UUID REFERENCES models(id),
+    description TEXT,
+    amount DECIMAL(10, 2) NOT NULL,
+    status TEXT CHECK (status IN ('pending', 'held', 'completed', 'disputed', 'refunded', 'released')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### `transactions`
+```sql
+CREATE TABLE transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    model_id UUID REFERENCES models(id),
+    client_id UUID REFERENCES clients(id), -- Opcional
+    type TEXT CHECK (type IN ('consumption', 'topup', 'bonus')),
+    amount DECIMAL(10, 2) NOT NULL,
+    status TEXT CHECK (status IN ('COMPLETED', 'PENDING', 'FAILED')),
+    details JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## 3. Relaciones Críticas
+- **Models <-> Clients**: Gestionado mediante `model_client_relations` para seguimiento del embudo de ventas (status: `new`, `chatting`, `closing`, `customer`).
+- **Escrow Flow**: `orders` -> `disputes` (en caso de conflicto).
+
+---
+*Última Actualización: 30 de Marzo de 2026*
