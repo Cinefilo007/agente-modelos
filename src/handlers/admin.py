@@ -45,13 +45,13 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
 
     if action == ACTION_APPROVE:
         # 1. Update DB
-        db.update_model(model_id, {"status": "active", "credits_balance": 50})
+        db.update_model(model_id, {"status": "active", "credits_balance": 100})
         
         # 2. Notify Model
         try:
             await context.bot.send_message(
                 chat_id=model_id,
-                text="✅ *¡Aprobada!*\n\nTu solicitud ha sido aprobada. 🎁 Te hemos otorgado **50 créditos** para probar el asistente.\n\nPara que la IA empiece a trabajar, sigue estos pasos:\n1️⃣ Configura tu perfil enviando el comando /setup\n2️⃣ Ve a los ajustes de tu cuenta de Telegram (Debes tener **Premium**).\n3️⃣ Entra en **Telegram Business** > **Chatbot**.\n4️⃣ Agrega este bot a tu cuenta.\n\nEscribe /setup para empezar.",
+                text="✅ *¡Aprobada!*\n\nTu solicitud ha sido aprobada. 🎁 Te hemos otorgado **100 créditos** para probar el asistente.\n\nPara que la IA empiece a trabajar, sigue estos pasos:\n1️⃣ Configura tu perfil enviando el comando /setup\n2️⃣ Ve a los ajustes de tu cuenta de Telegram (Debes tener **Premium**).\n3️⃣ Entra en **Telegram Business** > **Chatbot**.\n4️⃣ Agrega este bot a tu cuenta.\n\nEscribe /setup para empezar.",
                 parse_mode="Markdown"
             )
             # Safe update for admin
