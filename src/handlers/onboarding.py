@@ -104,7 +104,7 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Cargar directiva
     try:
-        with open("directives/onboarding_flow.md", "r", encoding="utf-8") as f:
+        with open("directives/bot_onboarding_flow.md", "r", encoding="utf-8") as f:
             flow_context = f.read()
     except Exception:
         flow_context = "No context available."
@@ -134,6 +134,7 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "   - Si la modelo CONFIRMA explícitamente que quiere probar el servicio (ej: responde 'Si' a tu pregunta de confirmación) -> `[INTENT: START_ONBOARDING]`.\n"
         "   - Resto -> `[INTENT: CHAT]`.\n"
         f"5. **NOMBRE**: No preguntes su nombre real, refiérete a ella por su nombre de Telegram ({user.first_name}).\n"
+        "6. **NO VERIFICACIÓN**: **PROHIBIDO TERMINANTEMENTE** pedir edad, país, selfies con documentos o videos. No menciones 'procesos de verificación' complejos. Si ella quiere unirse, simplemente dile que enviarás su solicitud de acceso al administrador para que el/ella la active.\n"
     )
 
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
