@@ -37,7 +37,7 @@ def build_app():
     # Handlers
     # Handlers
     from src.handlers.onboarding import onboarding_handler
-    from src.handlers.admin import admin_callback_handler
+    from src.handlers.admin import admin_callback_handler, admin_list_pending_command
     from src.handlers.profile import show_profile, profile_handler
     from src.handlers.business_chat import business_handler, reset_chat_handler, business_connection_handler, check_stories_permissions
     from src.handlers.credits import (
@@ -50,7 +50,12 @@ def build_app():
     )
     from telegram.ext import CommandHandler
     
-    # 1. Conversation Handlers (High Priority)
+    # 1. Critical Admin Handlers (Highest Priority)
+    # Movemos esto arriba para que los ConversationHandlers no bloqueen las aprobaciones de mensajes antiguos
+    app.add_handler(CallbackQueryHandler(admin_credit_callback, pattern="^approve_credit"))
+    app.add_handler(CallbackQueryHandler(admin_callback_handler, pattern="^(admin_approve|admin_reject|admin_repeat|payout_approve|payout_reject)"))
+    
+    # 2. Conversation Handlers
     app.add_handler(onboarding_handler)
     app.add_handler(profile_handler)
     app.add_handler(create_pkg_handler)
@@ -65,12 +70,12 @@ def build_app():
     app.add_handler(CommandHandler("dar_creditos", admin_add_credits_command))
     app.add_handler(CommandHandler("paquetes", admin_list_packages))
     app.add_handler(CommandHandler("modelos", admin_list_models))
+    app.add_handler(CommandHandler("solicitudes", admin_list_pending_command))
     app.add_handler(CommandHandler("reset", reset_chat_handler))
     app.add_handler(CommandHandler("check_stories", check_stories_permissions))
 
     # 3. Specific Callback Handlers
     app.add_handler(CallbackQueryHandler(credit_purchase_callback, pattern="^buy_credit"))
-    app.add_handler(CallbackQueryHandler(admin_credit_callback, pattern="^approve_credit"))
     
     # Admin Package Management
     app.add_handler(CallbackQueryHandler(admin_pkg_view_callback, pattern="^adm_pkg_view"))
@@ -79,10 +84,9 @@ def build_app():
     # Admin Model Management
     app.add_handler(CallbackQueryHandler(admin_model_view_callback, pattern="^adm_mod_view"))
     app.add_handler(CallbackQueryHandler(admin_model_action_callback, pattern="^adm_mod_(delete|list)"))
-    # edit_status hook not implemented yet, simple stub? handled in action or separate?
-    # For now regex matches list/delete. View is separate.
     
-    # 4. Generic Admin Callback (Catch-all for admin actions)
+    # 4. Generic Admin Callback (Catch-all for safety, but patterns above catch most)
+    # Si algún callback llega aquí y no es admin, se ignora. Si es admin y no tiene patrón, logueamos.
     app.add_handler(CallbackQueryHandler(admin_callback_handler))
 
     # Catch-all para mensajes que no son comandos (Debug/Help)

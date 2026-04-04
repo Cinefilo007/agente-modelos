@@ -11,27 +11,44 @@ ACTION_REJECT = "admin_reject"
 ACTION_REPEAT = "admin_repeat"
 ACTION_PAYOUT_APPROVE = "payout_approve"
 ACTION_PAYOUT_REJECT = "payout_reject"
+ACTION_PENDING_VIEW = "peticion_view"
 
 ADMIN_ID = 1123020118
 
 async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Maneja las acciones de los botones del Admin."""
     query = update.callback_query
+    logger.info(f"Admin Callback: {query.data} from {update.effective_user.id}")
     await query.answer() # Ack
 
     data = query.data
-    # data format: "action|telegram_id"
-    try:
-        action, model_id_str = data.split("|")
-        model_id = int(model_id_str)
-    except ValueError:
+    # data format: "action|id_or_uuid"
+    parts = data.split("|")
+    if len(parts) < 2:
         logger.error(f"Invalid callback data: {data}")
         return
+    
+    action = parts[0]
+    id_str = parts[1]
 
-    model = db.get_model(model_id)
-    if not model:
-        await query.answer("❌ Error: Modelo no encontrada en DB.", show_alert=True)
-        return
+    # model_id es int para onboarding (telegram_id), pero id_str es uuid para payouts.
+    # Evitaremos el int() global si no es necesario todavía.
+    model_id = None
+    if action in [ACTION_APPROVE, ACTION_REJECT, ACTION_REPEAT, ACTION_PENDING_VIEW]:
+        try:
+            model_id = int(id_str)
+        except ValueError:
+            logger.error(f"Expected integer model_id for {action}, got {id_str}")
+            await query.answer("❌ Error de ID.", show_alert=True)
+            return
+
+    # 1. Fetch Model (si aplica)
+    model = None
+    if model_id:
+        model = db.get_model(model_id)
+        if not model:
+            await query.answer("❌ Error: Modelo no encontrada en DB.", show_alert=True)
+            return
 
     async def update_message(text):
         """Helper para editar texto o caption según el tipo de mensaje."""
@@ -66,15 +83,41 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
         try:
             await context.bot.send_message(
                 chat_id=model_id,
-                text="❌ Solicitud denegada."
+                text="❌ Tu solicitud de aprobación ha sido rechazada por el administrador."
             )
             safe_user = model.get('username', 'Unknown').replace("<", "&lt;")
             await update_message(f"❌ Rechazada: {safe_user} ({model_id})")
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Error rejecting model {model_id}: {e}")
+            await update_message(f"❌ Rechazada (pero no notificada): {model_id}")
+
+    elif action == ACTION_REPEAT:
+        # Poner de nuevo en prospect para que el Hunter pueda hablar con ella si quiere
+        db.update_model(model_id, {"status": "prospect"})
+        safe_user = model.get('username', 'Unknown').replace("<", "&lt;")
+        await update_message(f"🔄 Repetir charla con: {safe_user} ({model_id})")
+        await context.bot.send_message(
+            chat_id=model_id,
+            text="🔄 El administrador ha solicitado un poco más de información. Cuéntame más sobre ti."
+        )
+
+    elif action == ACTION_PENDING_VIEW:
+        # Mostrar el panel de aprobación para este telegram_id
+        safe_name = model.get('full_name', 'Modelo').replace('<', '&lt;')
+        safe_user = model.get('username') or 'SinUser'
+        card_text = (
+            f"🕵️ <b>DETALLE DE SOLICITUD PENDIENTE</b>\n\n"
+            f"👤 <b>Nombre</b>: {safe_name}\n"
+            f"🔗 <b>Alias</b>: @{safe_user}\n"
+            f"🆔 <code>{model_id}</code>\n\n"
+            f"¿Qué deseas hacer con esta solicitud?"
+        )
+        await update_message(card_text)
+        # Reutilizamos el teclado estándar de admin
+        await query.edit_message_reply_markup(reply_markup=get_admin_keyboard(model_id))
 
     elif action == ACTION_PAYOUT_APPROVE:
-        tx_id = model_id_str # In this case it's a UUID string
+        tx_id = id_str # Aquí id_str es el UUID de la transacción
         logger.info(f"Manual payout approval triggered for TX {tx_id}")
         
         # We'll use the job queue function directly to avoid code duplication
@@ -111,7 +154,7 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
             await update_message(f"❌ Fallo en Liquidación:\n\n{result}")
 
     elif action == ACTION_PAYOUT_REJECT:
-        tx_id = model_id_str
+        tx_id = id_str
         # 1. Fetch TX
         tx_res = db.client.table("crypto_transactions").select("*").eq("id", tx_id).maybe_single().execute()
         if not tx_res.data or tx_res.data["status"] != "pending":
@@ -133,6 +176,28 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
         db.client.table("crypto_transactions").update({"status": "failed"}).eq("id", tx_id).execute()
         
         await update_message(f"❌ Retiro Rechazado.\n\nSe han reintegrado {amount} USDT al saldo de la modelo.")
+
+async def admin_list_pending_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando /solicitudes: Lista modelos en estado 'pending'."""
+    if update.effective_user.id != ADMIN_ID: return
+
+    try:
+        pendings = db.get_pending_models()
+        if not pendings:
+            await update.message.reply_text("✅ No hay solicitudes pendientes de aprobación (IA ventas).")
+            return
+
+        text = f"📋 **Solicitudes Pendientes ({len(pendings)})**\n\nSelecciona una para gestionar:"
+        keyboard = []
+        for p in pendings:
+            name = p.get('full_name', 'Modelo')
+            btn_text = f"👤 {name[:15]} (@{p.get('username', '...')})"
+            keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"{ACTION_PENDING_VIEW}|{p['telegram_id']}")])
+
+        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+    except Exception as e:
+        logger.error(f"Error listing pendings: {e}")
+        await update.message.reply_text("❌ Error al cargar solicitudes.")
 
 def get_admin_keyboard(model_id):
     """Genera el teclado para el mensaje de verificación."""

@@ -137,6 +137,19 @@ class Database:
             logger.error(f"Error getting history for model {model_id}: {e}")
             return []
 
+    def get_pending_models(self):
+        """Obtiene todos los modelos con status 'pending'."""
+        try:
+            response = self.client.table("models") \
+                .select("*") \
+                .eq("status", "pending") \
+                .order("created_at", desc=False) \
+                .execute()
+            return response.data if response.data else []
+        except Exception as e:
+            logger.error(f"Error getting pending models: {e}")
+            return []
+
     def get_active_credit_packages(self):
         """Obtiene paquetes de créditos activos."""
         try:

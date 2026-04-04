@@ -84,6 +84,7 @@ async def credit_purchase_callback(update: Update, context: ContextTypes.DEFAULT
 async def admin_credit_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Maneja la aprobación de recargas por parte del Admin."""
     query = update.callback_query
+    logger.info(f"Credit Approval Callback: {query.data} from {update.effective_user.id}")
     await query.answer()
     
     data = query.data
@@ -115,12 +116,12 @@ async def admin_credit_callback(update: Update, context: ContextTypes.DEFAULT_TY
         
         await query.edit_message_text(f"✅ Recarga aprobada para {user_id}. (+{credits} diamantes)")
         
+    except ValueError:
+        logger.error(f"ValueError parsing callback data in credit approval: {data}")
+        await query.answer("❌ Error: Datos de recarga inválidos.", show_alert=True)
     except Exception as e:
         logger.error(f"Error approving credit: {e}")
         await query.edit_message_text(f"❌ Error interno: {e}")
-
-    except ValueError:
-        await update.message.reply_text("❌ Error: ID y Cantidad deben ser números.")
 
 # --- ADMIN PACKAGE MANAGEMENT ---
 
