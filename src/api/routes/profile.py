@@ -111,6 +111,12 @@ async def apply_as_model(
         existing = db.client.table("models").select("*").eq("telegram_id", user.id).maybe_single().execute()
         
         if existing and existing.data:
+            # SEGURIDAD: No permitir que una modelo rechazada vuelva a aplicar sin contactar al admin
+            if existing.data.get('status') == 'rejected':
+                raise HTTPException(
+                    status_code=403,
+                    detail="Tu solicitud fue rechazada previamente. Contacta al administrador directamente para apelar."
+                )
             # Update existing
             db.client.table("models").update(model_data).eq("telegram_id", user.id).execute()
             model_id = existing.data['id']

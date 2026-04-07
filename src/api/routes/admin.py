@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from src.services.database import db
+from src.api.dependencies import get_current_user, TelegramUser
 import os
 from telegram import Bot
 
@@ -28,13 +29,17 @@ class VerificationAction(BaseModel):
 
 # BLACKLIST
 @router.get("/blacklist")
-async def get_blacklist():
-    """Obtiene la lista negra global."""
+async def get_blacklist(user: TelegramUser = Depends(get_current_user)):
+    """Obtiene la lista negra global. Solo admin."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso restringido a administradores")
     return db.get_blacklist()
 
 @router.post("/blacklist")
-async def add_blacklist(item: BlacklistAddRequest):
-    """Agrega un usuario a la lista negra."""
+async def add_blacklist(item: BlacklistAddRequest, user: TelegramUser = Depends(get_current_user)):
+    """Agrega un usuario a la lista negra. Solo admin."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso restringido a administradores")
     result = db.add_to_blacklist(
         item.telegram_id, 
         item.username, 
@@ -47,8 +52,10 @@ async def add_blacklist(item: BlacklistAddRequest):
     return {"status": "success", "data": result}
 
 @router.delete("/blacklist/{id}")
-async def remove_blacklist(id: str):
-    """Elimina un usuario de la lista negra."""
+async def remove_blacklist(id: str, user: TelegramUser = Depends(get_current_user)):
+    """Elimina un usuario de la lista negra. Solo admin."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso restringido a administradores")
     success = db.remove_from_blacklist(id)
     if not success:
         raise HTTPException(status_code=500, detail="Error removing from blacklist")
@@ -56,13 +63,17 @@ async def remove_blacklist(id: str):
 
 # DISPUTES
 @router.get("/disputes")
-async def get_disputes():
-    """Obtiene disputas activas."""
+async def get_disputes(user: TelegramUser = Depends(get_current_user)):
+    """Obtiene disputas activas. Solo admin."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso restringido a administradores")
     return db.get_active_disputes()
 
 @router.post("/disputes/{id}/resolve")
-async def resolve_dispute(id: str, item: DisputeResolveRequest):
-    """Resuelve una disputa."""
+async def resolve_dispute(id: str, item: DisputeResolveRequest, user: TelegramUser = Depends(get_current_user)):
+    """Resuelve una disputa. Solo admin."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso restringido a administradores")
     result = db.resolve_dispute(id, item.resolution, item.admin_notes)
     if not result:
         raise HTTPException(status_code=500, detail="Error resolving dispute")

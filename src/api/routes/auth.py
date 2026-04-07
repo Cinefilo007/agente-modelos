@@ -15,7 +15,9 @@ from telegram import Bot
 router = APIRouter()
 
 BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
-JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-me")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError("CRITICAL ERROR: JWT_SECRET not set in environment.")
 ALGORITHM = "HS256"
 # ID de Telegram del administrador principal. Si el usuario que inicia sesión
 # coincide con este ID, se le asigna automáticamente role='admin' sin importar
@@ -108,11 +110,19 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
             model_data = model_res.data
             if model_data.get('status') == 'rejected':
                  raise HTTPException(status_code=403, detail="Tu cuenta de modelo ha sido rechazada.")
-            elif model_data.get('status') == 'verifying':
-                 # Treat them as a simple client until their model account is approved
+            elif model_data.get('status') == 'verifying' or model_data.get('status') == 'prospect':
+                 # Modelo aún en proceso — tratar como usuario anónimo hasta aprobación del admin
                  user_role = "unknown"
                  user_data = None
+            elif not model_data.get('is_verified', False):
+                 # SEGURIDAD CRÍTICA: El registro existe pero el admin NO aprobó a la modelo.
+                 # Esto puede pasar si status='active' fue forzado sin pasar por verificación.
+                 raise HTTPException(
+                     status_code=403,
+                     detail="Tu cuenta está pendiente de verificación. El administrador debe aprobar tu solicitud antes de que puedas acceder."
+                 )
             else:
+                 # Modelo activa y verificada por el admin
                  user_role = "model"
                  user_data = model_data
     except HTTPException:

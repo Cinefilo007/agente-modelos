@@ -188,21 +188,23 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         <div className="text-center">
                             <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-tighter">Followers</p>
                             <p className="text-sm font-bold text-white leading-tight mt-0.5">
-                                {user.followers_count >= 1000 ? (user.followers_count / 1000).toFixed(1) + 'M' : (user.followers_count || '1.2M')}
+                                {user.followers_count > 0
+                                    ? (user.followers_count >= 1000 ? (user.followers_count / 1000).toFixed(1) + 'K' : user.followers_count)
+                                    : '0'}
                             </p>
                         </div>
                         <div className="text-center border-x border-white/10">
                             <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-tighter">Likes</p>
                             <p className="text-sm font-bold text-accent-blue leading-tight text-cyan-400 mt-0.5">
-                                {user.total_likes >= 1000 ? '+' + (user.total_likes / 1000).toFixed(0) + 'k' : (user.total_likes ? '+' + user.total_likes : '+12%')}
+                                {user.total_likes > 0 ? (user.total_likes >= 1000 ? '+' + (user.total_likes / 1000).toFixed(0) + 'k' : '+' + user.total_likes) : '0'}
                             </p>
                         </div>
                         <div className="text-center">
                             <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-tighter">Rating</p>
                             <p className="text-sm font-bold text-accent-magenta leading-tight mt-0.5" style={{ color: 'var(--theme-glow)' }}>
-                                {(user.reputation_score !== undefined && user.reputation_score !== null)
+                                {(user.reputation_score !== undefined && user.reputation_score !== null && user.reputation_score > 0)
                                     ? parseFloat(user.reputation_score).toFixed(1)
-                                    : '4.9'}
+                                    : '0.0'}
                             </p>
                         </div>
                     </div>
@@ -252,7 +254,7 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
 
                     {/* Bio Section */}
                     <p className="mt-3 text-slate-400 leading-snug text-sm w-full pr-4">
-                        {user.bio_short || user.bio || 'Redefining the digital aesthetic. High-fashion projects and exclusive digital content. 📍 Based in New York / Paris.'}
+                        {user.bio_short || user.bio || ''}
                     </p>
                 </div>
 
@@ -271,16 +273,8 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                             </div>
                         </a>
                     )) : (
-                        // Mock icons for design alignment if no data
-                        <>
-                            {['instagram', 'twitter', 'onlyfans', 'mail', 'website'].map((mock, i) => (
-                                <div key={i} className="flex-shrink-0">
-                                    <div className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center">
-                                        {getSocialIcon(mock, 18)}
-                                    </div>
-                                </div>
-                            ))}
-                        </>
+                        // Sin redes sociales configuradas
+                        <p className="text-xs text-white/30 italic">Sin redes sociales configuradas</p>
                     )}
                 </div>
 

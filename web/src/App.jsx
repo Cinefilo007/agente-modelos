@@ -80,11 +80,25 @@ const ProtectedRoute = ({ children }) => {
   console.log("[Router] Verificando acceso para:", user.username || user.id, "Rol:", user.role);
 
   // Strict check for profile completion - Only for CLIENTS
-  // Models are already verified by the admin through the bot ( Phase A )
-  // Admins are verified by system config
+  // For models: backend already blocks unverified on login, but we add a frontend guard too
   const isClient = user.role === 'client';
   const isModel = user.role === 'model';
   const isAdmin = user.role === 'admin';
+
+  // SEGURIDAD: Una modelo que logró obtener un JWT pero no está verificada
+  // (p.ej. si el token fue creado antes de este fix) accede aquí.
+  if (isModel && !user.is_verified) {
+    console.warn('[Router] Modelo detectada sin verificar, bloqueando acceso.');
+    return (
+      <div className="flex flex-col h-screen w-full items-center justify-center bg-black text-white gap-4 p-6">
+        <div className="text-4xl">⏳</div>
+        <h2 className="text-xl font-bold text-center">Verificación Pendiente</h2>
+        <p className="text-sm text-white/60 text-center max-w-xs">
+          Tu cuenta está siendo revisada por el administrador. Te notificaremos por Telegram cuando sea aprobada.
+        </p>
+      </div>
+    );
+  }
 
   // A model or admin should NEVER go to onboarding
   const needsOnboarding = isClient && (!user.birth_date || !user.terms_accepted);

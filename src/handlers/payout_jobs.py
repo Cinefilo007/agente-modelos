@@ -7,7 +7,8 @@ from telegram.ext import ContextTypes
 logger = logging.getLogger("PayoutJobs")
 
 PAYOUT_MNEMONIC = os.getenv("PAYOUT_WALLET_MNEMONIC")
-ADMIN_ID = 1123020118
+# SEGURIDAD: Migrado de constante a variable de entorno
+ADMIN_ID = int(os.getenv("ADMIN_TELEGRAM_ID", "1123020118"))
 
 async def process_auto_payout(context: ContextTypes.DEFAULT_TYPE):
     """
@@ -60,9 +61,11 @@ async def process_auto_payout(context: ContextTypes.DEFAULT_TYPE):
                 text=f"✅ *Liquidación Automática Exitosa*\n\nSe enviaron {amount} USDT a `{dest_addr}`.\nTXID: `{tx_id}`"
             )
         else:
+            # SEGURIDAD: Asegurar que el error de result no contenga la mnemónica
+            error_msg = str(result).replace(str(PAYOUT_MNEMONIC), "***ID_REDACTED***") if PAYOUT_MNEMONIC else str(result)
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
-                text=f"❌ *Fallo en Liquidación Automática*\n\nError: {result}"
+                text=f"❌ *Fallo en Liquidación Automática*\n\nError: {error_msg}"
             )
 
     except Exception as e:

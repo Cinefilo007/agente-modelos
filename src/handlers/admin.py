@@ -13,7 +13,9 @@ ACTION_PAYOUT_APPROVE = "payout_approve"
 ACTION_PAYOUT_REJECT = "payout_reject"
 ACTION_PENDING_VIEW = "peticion_view"
 
-ADMIN_ID = 1123020118
+import os
+# SEGURIDAD: Migrado de constante a variable de entorno
+ADMIN_ID = int(os.getenv("ADMIN_TELEGRAM_ID", "1123020118"))
 
 async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Maneja las acciones de los botones del Admin."""

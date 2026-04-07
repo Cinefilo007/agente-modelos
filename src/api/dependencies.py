@@ -10,7 +10,12 @@ from jose import jwt, JWTError
 from pydantic import BaseModel
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-me")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError(
+        "CRITICAL SECURITY ERROR: JWT_SECRET environment variable is NOT SET. "
+        "The application cannot start without a secure secret key."
+    )
 ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/telegram", auto_error=False)

@@ -11,9 +11,13 @@ app = FastAPI(
 )
 
 # CORS Configuration
-origins = [
-    "*", # In production, restrict this to your specific domain or Telegram WebApp domains
-]
+# SEGURIDAD: Restringir orígenes permitidos. En producción, configurar ALLOWED_ORIGINS.
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "https://t.me,https://web.telegram.org")
+origins = [o.strip() for o in allowed_origins_env.split(",")]
+
+# Si estamos en desarrollo, podemos permitir localhost (opcional)
+if os.getenv("ENV") != "production":
+    origins.append("*")
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,22 +56,18 @@ app.include_router(coach.router, prefix="/api/coach", tags=["Nebula Coach"])
 app.include_router(orders.router, prefix="/api/orders", tags=["Orders"])
 
 # Serve React Frontend (Static Files)
-# Ensure 'web/dist' exists (it will be created during build process)
 if os.path.exists("web/dist"):
     app.mount("/assets", StaticFiles(directory="web/dist/assets"), name="assets")
     
     @app.get("/{full_path:path}")
     async def serve_react_app(full_path: str):
-        # API routes are already handled above. 
         if full_path.startswith("api/"):
             return {"error": "Not Found"}
             
-        # Serve specific file if exists (css, js, images in assets)
         file_path = f"web/dist/{full_path}"
         if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
             
-        # For root "/" or any SPA route, serve index.html
         return FileResponse("web/dist/index.html")
 else:
     print("Warning: web/dist directory not found. Frontend will not be served.")

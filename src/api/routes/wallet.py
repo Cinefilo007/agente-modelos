@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 # For sending notifications to admin
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-ADMIN_ID = 1123020118 # Based on src/handlers/admin.py
+# SEGURIDAD: Migrado de constante hardcodeada a variable de entorno
+ADMIN_ID = int(os.getenv("ADMIN_TELEGRAM_ID", "1123020118")) 
 
 # Import bot_app for scheduling jobs
 # Using import inside function to avoid circular dependencies if any
@@ -88,8 +89,8 @@ async def get_wallet_balance(user: TelegramUser = Depends(get_current_user)):
         }
         
     except Exception as e:
-        print(f"Error fetching wallet balance: {e}")
-        raise HTTPException(status_code=500, detail=f"Debug Error: {str(e)}")
+        logger.error(f"Error fetching wallet balance for {user.user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error al recuperar saldo de la billetera")
 
 @router.get("/deposit-info", response_model=DepositInfoResponse)
 async def get_deposit_info(user: TelegramUser = Depends(get_current_user)):
@@ -113,8 +114,8 @@ async def get_deposit_info(user: TelegramUser = Depends(get_current_user)):
         }
         
     except Exception as e:
-        print(f"Error fetching deposit info: {e}")
-        raise HTTPException(status_code=500, detail=f"Debug Error: {str(e)}")
+        logger.error(f"Error fetching deposit info for {user.user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error al recuperar información de depósito")
 
 @router.get("/history")
 async def get_transaction_history(
@@ -173,9 +174,20 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
         if balance < request.amount:
             raise HTTPException(status_code=400, detail="Saldo insuficiente")
         
-        # 2. Transfer funds (Atomic-ish)
-        # Deduct from client
-        db.client.table("wallets").update({"balance": balance - request.amount}).eq("user_id", user.user_id).execute()
+        # 2. Transfer funds (Atomic 'Compare-and-Swap' logical update)
+        # SEGURIDAD: Prevenir Doble Gasto (Race Condition) detectando si el saldo cambió 
+        # entre la lectura y la actualización.
+        new_balance = balance - request.amount
+        deduct_res = db.client.table("wallets") \
+            .update({"balance": new_balance}) \
+            .eq("user_id", user.user_id) \
+            .eq("balance", balance) \
+            .execute()
+        
+        if not deduct_res.data:
+            # Si no se actualizó nada, es porque el saldo cambió (Race Condition detectada)
+            logger.warning(f"[Wallet] Race condition detectada en TIP para usuario {user.user_id}")
+            raise HTTPException(status_code=409, detail="La transacción no pudo completarse debido a un conflicto de simultaneidad. Inténtalo de nuevo.")
         
         # Add to model
         model_wallet = db.client.table("wallets").select("balance").eq("user_id", request.model_id).execute()
@@ -270,8 +282,8 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
     except HTTPException as he:
         raise he
     except Exception as e:
-        print(f"Error sending tip: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error sending tip from {user.user_id} to {request.model_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error al procesar la propina")
 
 class GiftPurchaseRequest(BaseModel):
     gift_id: str
@@ -300,8 +312,17 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
         if balance < amount:
             raise HTTPException(status_code=400, detail="Saldo insuficiente")
 
-        # 3. Transfer
-        db.client.table("wallets").update({"balance": balance - amount}).eq("user_id", user.user_id).execute()
+        # 3. Transfer (Atomic CAS logic)
+        new_balance = balance - amount
+        deduct_res = db.client.table("wallets") \
+            .update({"balance": new_balance}) \
+            .eq("user_id", user.user_id) \
+            .eq("balance", balance) \
+            .execute()
+        
+        if not deduct_res.data:
+            logger.warning(f"[Wallet] Race condition detectada en GIFT para usuario {user.user_id}")
+            raise HTTPException(status_code=409, detail="Conflicto de transacción. Inténtalo de nuevo.")
         
         model_wallet = db.client.table("wallets").select("balance").eq("user_id", request.model_id).execute()
         if not model_wallet.data:
@@ -398,10 +419,18 @@ async def withdraw_funds(request: WithdrawRequest, user: TelegramUser = Depends(
         if current_balance < request.amount:
             raise HTTPException(status_code=400, detail="Saldo insuficiente")
         
-        # 2. Perform Deduction
-        # TODO: Wrap in transaction or RPC for true safety. For MVP this is acceptable.
+        # 2. Perform Deduction (CAS Atomic logic)
+        # SEGURIDAD: Evitar doble retiro concurrente.
         new_balance = current_balance - request.amount
-        db.client.table("wallets").update({"balance": new_balance}).eq("user_id", user.user_id).execute()
+        deduct_res = db.client.table("wallets") \
+            .update({"balance": new_balance}) \
+            .eq("user_id", user.user_id) \
+            .eq("balance", current_balance) \
+            .execute()
+        
+        if not deduct_res.data:
+            logger.warning(f"[Wallet] Race condition detectada en WITHDRAW para usuario {user.user_id}")
+            raise HTTPException(status_code=409, detail="Error de concurrencia en el retiro. Inténtalo de nuevo.")
         
         # 3. Record Transaction
         tx_data = {
@@ -474,5 +503,5 @@ async def withdraw_funds(request: WithdrawRequest, user: TelegramUser = Depends(
     except HTTPException as he:
         raise he
     except Exception as e:
-        print(f"Error processing withdrawal: {e}")
-        raise HTTPException(status_code=500, detail=f"Debug Error: {str(e)}")
+        logger.error(f"Error processing withdrawal for {user.user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error interno al procesar el retiro")

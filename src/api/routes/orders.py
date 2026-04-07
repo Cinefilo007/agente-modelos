@@ -41,7 +41,6 @@ async def get_my_sales(user: TelegramUser = Depends(get_current_user)):
 async def get_order_details(order_id: str, user: TelegramUser = Depends(get_current_user)):
     """Get full details of a specific order (Digital Delivery Note)."""
     try:
-        # Nota: Eliminamos artistic_name del join de clients ya que esa tabla no tiene ese campo
         res = db.client.table("orders") \
             .select("*, models(id, username, artistic_name, avatar_url, telegram_id), clients(id, username, avatar_url, telegram_id), model_services(*), model_service_options(*)") \
             .eq("id", order_id) \
@@ -50,7 +49,19 @@ async def get_order_details(order_id: str, user: TelegramUser = Depends(get_curr
         if not res.data:
             raise HTTPException(status_code=404, detail="Orden no encontrada")
         
-        return res.data
+        order = res.data
+
+        # SEGURIDAD: Verificar que el usuario sea parte de esta orden o sea admin
+        is_client_of_order = str(order.get('client_id')) == str(user.user_id)
+        is_model_of_order = str(order.get('model_id')) == str(user.user_id)
+        is_admin = user.role == 'admin'
+
+        if not (is_client_of_order or is_model_of_order or is_admin):
+            raise HTTPException(status_code=403, detail="No tienes acceso a esta orden")
+        
+        return order
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[Orders] Error fetching order {order_id}: {e}")
         raise HTTPException(status_code=500, detail="Error al recuperar detalles de la orden")
@@ -62,24 +73,32 @@ async def mark_order_shipped(order_id: str, user: TelegramUser = Depends(get_cur
         raise HTTPException(status_code=403, detail="Solo modelos pueden marcar envío")
         
     try:
+        # SEGURIDAD: Verificar que la modelo sea dueña de esta orden
+        order_res = db.client.table("orders").select("model_id, client_id, model_services(title)").eq("id", order_id).single().execute()
+        if not order_res.data:
+            raise HTTPException(status_code=404, detail="Orden no encontrada")
+
+        if str(order_res.data['model_id']) != str(user.user_id):
+            raise HTTPException(status_code=403, detail="No puedes modificar órdenes de otras modelos")
+
         # Update delivery_status
         db.client.table("orders").update({"delivery_status": "shipped"}).eq("id", order_id).execute()
         
         # Notify Client
-        order_res = db.client.table("orders").select("client_id, model_services(title)").eq("id", order_id).single().execute()
-        if order_res.data:
-            from src.services import notifications
-            import asyncio
-            client_id = order_res.data['client_id']
-            service_name = order_res.data['model_services']['title']
-            msg = f"✅ <b>¡Servicio Realizado!</b>\n\nTu servicio <b>{service_name}</b> ha sido marcado como realizado por la modelo.\n\nPor favor, verifica el resultado y libera los fondos desde tu perfil."
-            
-            # Get client telegram_id
-            client_info = db.client.table("clients").select("telegram_id").eq("id", client_id).single().execute()
-            if client_info.data:
-                asyncio.create_task(notifications.send_notification(client_info.data['telegram_id'], msg))
+        client_id = order_res.data['client_id']
+        service_name = order_res.data['model_services']['title']
+        msg = f"✅ <b>¡Servicio Realizado!</b>\n\nTu servicio <b>{service_name}</b> ha sido marcado como realizado por la modelo.\n\nPor favor, verifica el resultado y libera los fondos desde tu perfil."
+        
+        from src.services import notifications
+        import asyncio
+        # Get client telegram_id
+        client_info = db.client.table("clients").select("telegram_id").eq("id", client_id).single().execute()
+        if client_info.data:
+            asyncio.create_task(notifications.send_notification(client_info.data['telegram_id'], msg))
 
         return {"status": "success", "message": "Orden marcada como realizada"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
