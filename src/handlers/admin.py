@@ -213,3 +213,197 @@ def get_admin_keyboard(model_id):
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+
+# ============================================================
+# DIFUSIÓN MASIVA — Comando /difusion (Solo Admin)
+# ============================================================
+from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters
+
+# Estados del ConversationHandler de difusión
+DIFUSION_CONTENT = 0
+DIFUSION_CONFIRM = 1
+
+async def difusion_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Paso 1: Admin envía /difusion → Bot pide el contenido."""
+    if update.effective_user.id != ADMIN_ID:
+        return ConversationHandler.END
+
+    # Obtener cantidad de destinatarios
+    models = db.get_all_models_for_broadcast()
+    count = len(models) if models else 0
+
+    await update.message.reply_text(
+        f"📢 *DIFUSIÓN MASIVA*\n\n"
+        f"Destinatarias: *{count} modelos* (prospect, pending, active)\n\n"
+        f"Envía el mensaje que deseas difundir.\n"
+        f"Puedes enviar:\n"
+        f"• Texto solo\n"
+        f"• Foto con caption\n"
+        f"• Video con caption\n"
+        f"• Documento con caption\n\n"
+        f"Escribe /cancelar para cancelar.",
+        parse_mode="Markdown"
+    )
+    return DIFUSION_CONTENT
+
+
+async def difusion_receive_content(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Paso 2: Recibe el contenido y pide confirmación."""
+    msg = update.message
+
+    # Guardar contenido en contexto
+    content = {}
+    if msg.photo:
+        content["type"] = "photo"
+        content["file_id"] = msg.photo[-1].file_id  # Mejor calidad
+        content["caption"] = msg.caption or ""
+    elif msg.video:
+        content["type"] = "video"
+        content["file_id"] = msg.video.file_id
+        content["caption"] = msg.caption or ""
+    elif msg.document:
+        content["type"] = "document"
+        content["file_id"] = msg.document.file_id
+        content["caption"] = msg.caption or ""
+    elif msg.text:
+        content["type"] = "text"
+        content["text"] = msg.text
+    else:
+        await msg.reply_text("⚠️ Tipo de contenido no soportado. Envía texto, foto, video o documento.")
+        return DIFUSION_CONTENT
+
+    context.user_data["difusion_content"] = content
+
+    # Mostrar preview + pedir confirmación
+    models = db.get_all_models_for_broadcast()
+    count = len(models) if models else 0
+    
+    preview_text = (
+        f"📋 *CONFIRMACIÓN DE DIFUSIÓN*\n\n"
+        f"📄 *Tipo*: {content['type'].upper()}\n"
+        f"👥 *Destinatarias*: {count} modelos\n"
+    )
+    
+    if content["type"] == "text":
+        preview_text += f"📝 *Mensaje*:\n{content['text'][:200]}{'...' if len(content['text']) > 200 else ''}\n"
+    else:
+        preview_text += f"📝 *Caption*: {content.get('caption', '(sin caption)')[:150]}\n"
+
+    preview_text += f"\n¿Confirmar envío? Escribe *SI* para enviar o /cancelar para abortar."
+    
+    await msg.reply_text(preview_text, parse_mode="Markdown")
+    return DIFUSION_CONFIRM
+
+
+async def difusion_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Paso 3: Confirma y ejecuta el envío masivo."""
+    if update.message.text.strip().upper() != "SI":
+        await update.message.reply_text("❌ Difusión cancelada.")
+        return ConversationHandler.END
+
+    content = context.user_data.get("difusion_content")
+    if not content:
+        await update.message.reply_text("❌ Error: No hay contenido guardado. Inicia de nuevo con /difusion.")
+        return ConversationHandler.END
+
+    models = db.get_all_models_for_broadcast()
+    if not models:
+        await update.message.reply_text("⚠️ No hay modelos registradas para enviar.")
+        return ConversationHandler.END
+
+    total = len(models)
+    enviados = 0
+    fallidos = 0
+    errores_detalle = []
+
+    status_msg = await update.message.reply_text(f"⏳ Enviando a {total} modelos... (0/{total})")
+
+    import asyncio
+    for i, model in enumerate(models):
+        tg_id = model["telegram_id"]
+        try:
+            if content["type"] == "text":
+                await context.bot.send_message(
+                    chat_id=tg_id,
+                    text=content["text"],
+                    parse_mode="Markdown"
+                )
+            elif content["type"] == "photo":
+                await context.bot.send_photo(
+                    chat_id=tg_id,
+                    photo=content["file_id"],
+                    caption=content.get("caption", ""),
+                    parse_mode="Markdown"
+                )
+            elif content["type"] == "video":
+                await context.bot.send_video(
+                    chat_id=tg_id,
+                    video=content["file_id"],
+                    caption=content.get("caption", ""),
+                    parse_mode="Markdown"
+                )
+            elif content["type"] == "document":
+                await context.bot.send_document(
+                    chat_id=tg_id,
+                    document=content["file_id"],
+                    caption=content.get("caption", ""),
+                    parse_mode="Markdown"
+                )
+            enviados += 1
+        except Exception as e:
+            fallidos += 1
+            username = model.get("username", "desconocido")
+            errores_detalle.append(f"@{username} ({tg_id}): {str(e)[:50]}")
+            logger.warning(f"Difusión falló para {tg_id}: {e}")
+
+        # Actualizar progreso cada 5 envíos
+        if (i + 1) % 5 == 0 or (i + 1) == total:
+            try:
+                await status_msg.edit_text(f"⏳ Enviando... ({i + 1}/{total})")
+            except Exception:
+                pass
+
+        # Rate limiting de Telegram: ~30 msg/seg, esperamos 0.1s por seguridad
+        await asyncio.sleep(0.1)
+
+    # Reporte final
+    report = (
+        f"📢 *DIFUSIÓN COMPLETADA*\n\n"
+        f"✅ Enviados: *{enviados}/{total}*\n"
+        f"❌ Fallidos: *{fallidos}*\n"
+    )
+    if errores_detalle:
+        report += f"\n⚠️ *Detalle de errores:*\n"
+        for err in errores_detalle[:10]:  # Max 10 errores en el reporte
+            report += f"• {err}\n"
+        if len(errores_detalle) > 10:
+            report += f"• ... y {len(errores_detalle) - 10} más\n"
+
+    await status_msg.edit_text(report, parse_mode="Markdown")
+    
+    # Limpiar contexto
+    context.user_data.pop("difusion_content", None)
+    return ConversationHandler.END
+
+
+async def difusion_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Cancela la difusión."""
+    context.user_data.pop("difusion_content", None)
+    await update.message.reply_text("❌ Difusión cancelada.")
+    return ConversationHandler.END
+
+
+# ConversationHandler de Difusión
+difusion_handler = ConversationHandler(
+    entry_points=[CommandHandler("difusion", difusion_start)],
+    states={
+        DIFUSION_CONTENT: [
+            MessageHandler(filters.PHOTO | filters.VIDEO | filters.Document.ALL | (filters.TEXT & ~filters.COMMAND), difusion_receive_content)
+        ],
+        DIFUSION_CONFIRM: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, difusion_confirm)
+        ],
+    },
+    fallbacks=[CommandHandler("cancelar", difusion_cancel)],
+)

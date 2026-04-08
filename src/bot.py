@@ -37,7 +37,7 @@ def build_app():
     # Handlers
     # Handlers
     from src.handlers.onboarding import onboarding_handler
-    from src.handlers.admin import admin_callback_handler, admin_list_pending_command
+    from src.handlers.admin import admin_callback_handler, admin_list_pending_command, difusion_handler
     from src.handlers.profile import show_profile, profile_handler
     from src.handlers.business_chat import business_handler, reset_chat_handler, business_connection_handler, check_stories_permissions
     from src.handlers.credits import (
@@ -53,7 +53,7 @@ def build_app():
     # 1. Critical Admin Handlers (Highest Priority)
     # Movemos esto arriba para que los ConversationHandlers no bloqueen las aprobaciones de mensajes antiguos
     app.add_handler(CallbackQueryHandler(admin_credit_callback, pattern="^approve_credit"))
-    app.add_handler(CallbackQueryHandler(admin_callback_handler, pattern="^(admin_approve|admin_reject|admin_repeat|payout_approve|payout_reject)"))
+    app.add_handler(CallbackQueryHandler(admin_callback_handler, pattern="^(admin_approve|admin_reject|admin_repeat|payout_approve|payout_reject|peticion_view)"))
     
     # 2. Conversation Handlers
     app.add_handler(onboarding_handler)
@@ -61,6 +61,7 @@ def build_app():
     app.add_handler(create_pkg_handler)
     app.add_handler(edit_pkg_handler)   # Edit Package
     app.add_handler(edit_model_handler) # Edit Model Credits
+    app.add_handler(difusion_handler)   # Difusión Masiva (Admin)
     app.add_handler(business_handler)   # Telegram Business Messages
     app.add_handler(business_connection_handler) # Business Connections
 

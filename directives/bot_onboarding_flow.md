@@ -55,7 +55,50 @@ Cuando la modelo llega a 0 créditos `(credits_balance <= 0)`:
     *   **Para la Modelo:** Se le informa por el canal privado del bot que necesita recargar saldo y se le despliegan los paquetes (`credits.py`).
     *   **Para el Admin:** Se envía un aviso inmediato de "Modelo sin saldo", instando a contactarla por privado ("Tengo un cierre pendiente en mi OF, préstame, etc.") para reactivar sus poderes o lograr un pago al instante.
 
-## 5. Próximas Mejoras Posibles
+## 5. Comando /difusion — Difusión Masiva (Marketing)
+
+El administrador puede enviar mensajes masivos a todas las modelos que hayan interactuado con el bot.
+
+### Flujo:
+1.  **`/difusion`**: El bot muestra la cantidad de destinatarias y pide el contenido.
+2.  **Paso de Contenido**: El admin envía texto, foto, video o documento (con caption opcional).
+3.  **Confirmación**: El bot muestra un resumen y pide escribir `SI` para confirmar.
+4.  **Envío**: El bot itera sobre todas las modelos y reenvía el contenido, mostrando progreso.
+5.  **Reporte**: Al final muestra un resumen de `enviados/total` y errores.
+
+### Destinatarias:
+Todas las modelos con `status IN ('prospect', 'pending', 'active')` — cualquier modelo que haya usado `/start` al menos una vez.
+
+### Archivo: `src/handlers/admin.py`
+- `difusion_handler` (ConversationHandler)
+- `difusion_start`, `difusion_receive_content`, `difusion_confirm`, `difusion_cancel`
+
+### Método BD: `get_all_models_for_broadcast()` en `src/services/database.py`
+
+---
+
+## 6. Corrección Crítica: Constraint de Status (2026-04-08)
+
+**Bug**: El `CHECK` constraint de `models.status` **no incluía** el valor `'pending'`, lo que causaba que:
+- `update_model(status="pending")` fallara silenciosamente.
+- `/solicitudes` siempre retornara vacío.
+
+**Fix**: Ejecutar la siguiente migración SQL:
+```sql
+ALTER TABLE models DROP CONSTRAINT IF EXISTS models_status_check;
+ALTER TABLE models ADD CONSTRAINT models_status_check
+  CHECK (status IN ('prospect', 'pending', 'verifying', 'active', 'rejected', 'paused'));
+```
+
+**Archivo**: `db/migration_add_pending_status.sql`
+
+---
+
+## 7. Próximas Mejoras Posibles
 
 - Implementar validación automática de pagos por Crypto Pay.
 - Notificaciones de bajo saldo (Ej: "Aviso: Te quedan 5 mensajes de IA").
+- Segmentación avanzada en difusiones (por status, por créditos, etc.).
+
+---
+*Última Actualización: 8 de Abril de 2026*

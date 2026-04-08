@@ -22,7 +22,7 @@ CREATE TABLE models (
     username TEXT,
     full_name TEXT,
     bio_short TEXT, -- [NEW]
-    status TEXT CHECK (status IN ('prospect', 'verifying', 'active', 'rejected', 'paused')),
+    status TEXT CHECK (status IN ('prospect', 'pending', 'verifying', 'active', 'rejected', 'paused')),
     credits_balance INTEGER DEFAULT 0,
     is_verified BOOLEAN DEFAULT FALSE,
     verification_video_id TEXT,

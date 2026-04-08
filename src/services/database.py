@@ -150,6 +150,21 @@ class Database:
             logger.error(f"Error getting pending models: {e}")
             return []
 
+    def get_all_models_for_broadcast(self):
+        """Obtiene todas las modelos que han interactuado con el bot (para difusión masiva).
+        Incluye: prospect, pending, active (excluye rejected).
+        """
+        try:
+            response = self.client.table("models") \
+                .select("telegram_id, username, full_name, status") \
+                .in_("status", ["prospect", "pending", "active"]) \
+                .order("created_at", desc=False) \
+                .execute()
+            return response.data if response.data else []
+        except Exception as e:
+            logger.error(f"Error getting models for broadcast: {e}")
+            return []
+
     def get_active_credit_packages(self):
         """Obtiene paquetes de créditos activos."""
         try:
