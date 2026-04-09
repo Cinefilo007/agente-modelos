@@ -19,23 +19,23 @@ El sistema sigue la lógica de **SOPs (Procedimientos Operativos Estándar) vs E
 
 ## 2. Modelos de IA Utilizados
 
-- **Retoque Corporal**: `fal-ai/fooocus/inpainting`.
-  - *Prompt base*: "high quality skin retouch, remove blemishes, remove stretch marks, professional photography".
-- **Cambio de Fondo**: `fal-ai/bria/background-removal` + `fal-ai/flux/schnell`.
-  - El sistema debe permitir elegir entre fondos predefinidos (Lujo, Playa, Ciudad) o prompts personalizados.
+- **Retoque Corporal**: `fal-ai/image-editing/retouch`.
+  - *Prompt base*: "perfect flawless cinematic skin, remove all acne, remove all stretch marks, professional photography".
+  - *Optimización*: Se ha eliminado el post-procesamiento CCSR para reducir costos y uso de créditos FAL.
+- **Cambio de Fondo**: `fal-ai/bria/background/replace`.
+  - El sistema permite elegir entre fondos predefinidos traducidos automáticamente al inglés.
 
 ## 3. Estrategia de Monetización
 
 Para asegurar la rentabilidad y cubrir los costos de los créditos de FAL:
-- **Costo Operativo**: Definido por el uso de API de FAL.
-- **Costo Usuario**: 10 créditos por edición (aprox. $1 USD dependiendo de la tasa de cambio interna).
+- **Costo Operativo**: Optimizado eliminando modelos secundarios (Upscalers).
+- **Costo Usuario**: 1 Crédito por Retoque, 2 Créditos por Fondo.
 - **Consistencia**: No se inicia el proceso si el balance es menor al costo.
 
-## 4. Guía para Mejoras Futuras
+## 4. Frontend y Estabilidad
 
-- **Mejora 1: Lote de Edición**: Permitir subir 5 fotos y que se editen automáticamente con el mismo fondo.
-- **Mejora 2: Filtros Estilizados**: Implementar modelos de transferencia de estilo (estilo manga, cyberpunk, etc.).
-- **Mejora 3: Video Retouching**: Explorar modelos como `fal-ai/stable-video-diffusion` para edición de clips cortos.
+- **Preview Seguro**: El componente `AIPhotoEditor` gestiona `URL.createObjectURL` mediante `useEffect` para evitar fugas de memoria y errores de carga.
+- **Soporte de Formatos**: Acepta tanto objetos `File` (nuevos posts) como URLs directas (edición futura).
 
 ---
 *Nota: Este documento debe ser consultado antes de cualquier modificación al sistema de IA.*

@@ -10,13 +10,28 @@ export function AIPhotoEditor({ originalImage, onApply, onClose }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [processedImage, setProcessedImage] = useState(null);
     const [activeTab, setActiveTab] = useState('touchup'); // 'touchup' or 'background'
-    const [bgPrompt, setBgPrompt] = useState('playa paradisíaca al atardecer, estilo cine');
+    const [originalUrl, setOriginalUrl] = useState(null);
+    const [imageError, setImageError] = useState(false);
     const { showToast } = useToast();
     const { themeColor } = useTheme();
     const { user, updateUser } = useAuth();
 
+    // Gestionar la URL de la imagen original (File vs String)
+    React.useEffect(() => {
+        if (!originalImage) return;
+
+        if (typeof originalImage === 'string') {
+            setOriginalUrl(originalImage);
+        } else if (originalImage instanceof File || originalImage instanceof Blob) {
+            const url = URL.createObjectURL(originalImage);
+            setOriginalUrl(url);
+            return () => URL.revokeObjectURL(url);
+        }
+    }, [originalImage]);
+
     const handleAction = async (type) => {
         setIsProcessing(true);
+        setImageError(false);
         try {
             // originalImage es un File si viene de CreatePost
             const formData = new FormData();
@@ -76,11 +91,27 @@ export function AIPhotoEditor({ originalImage, onApply, onClose }) {
                 <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-white/5 border border-white/10 shadow-2xl">
                     {!processedImage ? (
                         <div className="w-full h-full flex items-center justify-center p-4">
-                            <img
-                                src={URL.createObjectURL(originalImage)}
-                                alt="Original"
-                                className="max-w-full max-h-full object-contain"
-                            />
+                            {originalUrl ? (
+                                <img
+                                    src={originalUrl}
+                                    alt="Original"
+                                    className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${imageError ? 'opacity-0' : 'opacity-100'}`}
+                                    onError={() => setImageError(true)}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center gap-2 text-gray-500">
+                                    <ImageIcon size={48} className="opacity-20" />
+                                    <p className="text-xs">Cargando imagen...</p>
+                                </div>
+                            )}
+                            
+                            {imageError && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-red-400 p-6 text-center">
+                                    <AlertCircle size={32} />
+                                    <p className="text-xs font-bold uppercase">Error al cargar el preview</p>
+                                    <p className="text-[10px] opacity-60">Intenta subir la imagen de nuevo</p>
+                                </div>
+                            )}
                             <div className="absolute top-4 left-4 px-2 py-1 bg-black/50 backdrop-blur-md rounded-md text-[10px] uppercase font-bold text-gray-400">Original</div>
                         </div>
                     ) : (

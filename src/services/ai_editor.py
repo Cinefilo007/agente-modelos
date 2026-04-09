@@ -44,26 +44,9 @@ class AIEditorService:
                 logger.error("Error en Paso 1: No se generó imagen retocada")
                 return None
 
-            # PASO 2: Usar CCSR para escalar y recuperar todos los pixeles del fondo
-            # CCSR es excelente para restaurar rostros, texturas y subir la resolución final 2x
-            logger.info("Iniciando Paso 2: Mejora de Resolución con CCSR")
-            try:
-                res_upscale = await fal_client.subscribe_async(
-                    "fal-ai/ccsr",
-                    arguments={
-                        "image_url": retouched_url,
-                        "sync_mode": True,
-                        "enable_safety_checker": False # Desactiva filtros obstructivos
-                    }
-                )
-                
-                if res_upscale and "image" in res_upscale:
-                    return res_upscale["image"]["url"]
-            except Exception as upscale_e:
-                logger.error(f"Error procesando Upscale CCSR, retornando paso 1 como fallback: {upscale_e}")
-                # Fallback: si falla el upscaler por algo imprevisto, retorna al menos la foto retocada
-                return retouched_url
-                
+            # PASO 2: Removido por solicitud del usuario (ahorro de tokens)
+            # Anteriormente se usaba fal-ai/ccsr para escalado 2x.
+            
             return retouched_url
 
         except Exception as e:
