@@ -19,7 +19,7 @@ class AIAgent:
         )
         
         # Models & Temperatures
-        self.HUNTER_MODEL = "anthropic/claude-3.5-sonnet"
+        self.HUNTER_MODEL = "google/gemini-2.5-flash"
         self.HUNTER_TEMP = 0.7
         
         self.MANAGER_MODEL = "sao10k/l3-euryale-70b"
