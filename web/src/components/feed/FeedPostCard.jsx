@@ -339,11 +339,14 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             className="w-full h-full object-cover"
                         />
                     )}
+                    
+                    {/* Premium Gradient Transition Overlay */}
+                    <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none z-10" />
                 </Link>
 
-                {/* Bottom Actions Area - Liquid glass style */}
-                <div className="p-4 bg-white/5 backdrop-blur-xl border-t border-white/5">
-                    <div className="flex items-center gap-4 mb-3">
+                {/* Bottom Actions Area - Premium Gradient Style */}
+                <div className="px-4 pt-1 pb-3 bg-gradient-to-b from-black/95 to-transparent backdrop-blur-xl relative z-20 -mt-1">
+                    <div className="flex items-center gap-4 mb-2">
                         <div className="relative">
                             <motion.button
                                 whileTap={user?.role !== 'model' && user?.role !== 'admin' ? { scale: 1.5 } : {}}
@@ -420,7 +423,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         </button> */}
                     </div>
 
-                    <div className="relative mb-3">
+                    <div className="relative mb-1">
                         <p className={clsx(
                             "text-sm text-gray-200 leading-relaxed",
                             !isExpanded && "line-clamp-2"
@@ -446,7 +449,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         if (!links || links.length === 0) return null;
 
                         return (
-                            <div className="flex flex-wrap gap-2 mb-4">
+                            <div className="flex flex-wrap gap-2 mb-1">
                                 {links.map((lnk, idx) => (
                                     <a
                                         key={idx}
