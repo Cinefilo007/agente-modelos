@@ -297,19 +297,19 @@ export default function PostDetail() {
                                 playsInline
                                 onContextMenu={(e) => e.preventDefault()}
                             />
-                            {/* Custom Overlays for Video */}
-                            <div className="absolute bottom-4 left-4 flex gap-2">
+                            {/* Custom Overlays for Video - Moved to Right */}
+                            <div className="absolute bottom-6 right-6 flex flex-col gap-3 z-30">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                    className="p-2 rounded-full bg-black/50 backdrop-blur-md text-white hover:bg-white/20 transition-all border border-white/10"
+                                    className="p-3 rounded-full bg-black/40 backdrop-blur-xl text-white hover:bg-white/10 transition-all border border-white/20 shadow-2xl"
                                 >
-                                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                                    {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
                                 </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setIsFullscreen(true); }}
-                                    className="p-2 rounded-full bg-black/50 backdrop-blur-md text-white hover:bg-white/20 transition-all border border-white/10"
+                                    className="p-3 rounded-full bg-black/40 backdrop-blur-xl text-white hover:bg-white/10 transition-all border border-white/20 shadow-2xl"
                                 >
-                                    <Maximize2 size={20} />
+                                    <Maximize2 size={22} />
                                 </button>
                             </div>
                         </div>
@@ -338,7 +338,8 @@ export default function PostDetail() {
                         </div>
                         <button
                             onClick={() => navigate(`/${user.username}`)}
-                            className="px-4 py-1 rounded-full bg-[var(--card-bg)] border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:opacity-80 transition-colors"
+                            className="px-6 py-2 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 text-[13px] font-bold text-white hover:bg-white/10 transition-all shadow-xl hover:shadow-white/5 active:scale-95"
+                            style={{ fontFamily: "'Inter', 'Outfit', sans-serif" }}
                         >
                             Ver Perfil
                         </button>

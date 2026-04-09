@@ -9,61 +9,65 @@ logger = logging.getLogger(__name__)
 
 def apply_image_watermark(image_content: bytes, text: str) -> bytes:
     """
-    Añade una marca de agua de texto en la esquina inferior izquierda de una imagen.
+    Añade una marca de agua de texto con fondo desvanecido y fuente moderna.
     """
     try:
         # Abrir imagen desde bytes
         image = Image.open(io.BytesIO(image_content)).convert("RGBA")
         width, height = image.size
         
-        # Crear una capa para el texto
-        txt_layer = Image.new("RGBA", image.size, (255, 255, 255, 0))
+        # Tamaño de fuente proporcional
+        font_size = max(24, int(height * 0.035))
         
-        # Intentar cargar una fuente, si no cargar la default
-        font_size = max(20, int(height * 0.03)) # Tamaño proporcional
+        # Intentar cargar Roboto-Bold.ttf
+        font_path = os.path.join(os.getcwd(), "src", "assets", "fonts", "Roboto-Bold.ttf")
         try:
-            # Intentar rutas comunes en Linux/Unix o Windows
-            font_paths = [
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "C:\\Windows\\Fonts\\arial.ttf"
-            ]
-            font = None
-            for path in font_paths:
-                if os.path.exists(path):
-                    font = ImageFont.truetype(path, font_size)
-                    break
-            if not font:
+            if os.path.exists(font_path):
+                font = ImageFont.truetype(font_path, font_size)
+            else:
                 font = ImageFont.load_default()
         except:
             font = ImageFont.load_default()
             
-        draw = ImageDraw.Draw(txt_layer)
-        
-        # Calcular posición (inferior izquierda)
-        margin = 20
-        # draw.textbbox is available in newer Pillow versions
+        # Medimos el texto
+        temp_img = Image.new("RGBA", (1, 1))
+        temp_draw = ImageDraw.Draw(temp_img)
         try:
-            bbox = draw.textbbox((0, 0), text, font=font)
+            bbox = temp_draw.textbbox((0, 0), text, font=font)
             tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
         except AttributeError:
-            # Fallback para versiones antiguas
-            tw, th = draw.textsize(text, font=font)
-            
+            tw, th = temp_draw.textsize(text, font=font)
+
+        # Crear capa para el overlay
+        overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+        
+        margin = 30
         x = margin
-        y = height - th - margin
+        y = height - th - margin - 10
         
-        # Dibujar sombra para legibilidad (negro suave)
-        draw.text((x+2, y+2), text, font=font, fill=(0, 0, 0, 100))
-        # Dibujar texto principal (blanco semi-transparente)
-        draw.text((x, y), text, font=font, fill=(255, 255, 255, 160))
+        # 1. Dibujar el fondo desvanecido (Glow)
+        from PIL import ImageFilter
+        bg_width = tw + 60
+        bg_height = th + 40
+        # Crear máscara de degradado radial/difuminado
+        bg_mask = Image.new("L", (bg_width, bg_height), 0)
+        bg_draw = ImageDraw.Draw(bg_mask)
+        bg_draw.ellipse([10, 5, bg_width-10, bg_height-5], fill=180) # Ovalo central
+        bg_mask = bg_mask.filter(ImageFilter.GaussianBlur(radius=12)) # Desvanecer mucho
         
-        # Combinar capas
-        watermarked = Image.alpha_composite(image, txt_layer)
+        bg_color = Image.new("RGBA", (bg_width, bg_height), (0, 0, 0, 255))
+        overlay.paste(bg_color, (x - 30, y - 15), mask=bg_mask)
         
-        # Convertir de vuelta a RGB y bytes
+        # 2. Dibujar el texto principal
+        draw = ImageDraw.Draw(overlay)
+        draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+        
+        # Combinar
+        watermarked = Image.alpha_composite(image, overlay)
+        
+        # Convertir a RGB y bytes
         output = io.BytesIO()
-        watermarked.convert("RGB").save(output, format="JPEG", quality=90)
+        watermarked.convert("RGB").save(output, format="JPEG", quality=95)
         return output.getvalue()
     except Exception as e:
         logger.error(f"Error aplicando marca de agua a imagen: {e}")
@@ -71,32 +75,34 @@ def apply_image_watermark(image_content: bytes, text: str) -> bytes:
 
 async def apply_video_watermark(video_content: bytes, text: str) -> bytes:
     """
-    Añade una marca de agua de texto en la esquina inferior izquierda de un video usando ffmpeg.
+    Añade una marca de agua de texto con fondo desvanecido en video usando ffmpeg.
     """
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_in:
         temp_in.write(video_content)
         temp_in_path = temp_in.name
 
     temp_out_path = temp_in_path + "_wm.mp4"
+    font_path = os.path.join(os.getcwd(), "src", "assets", "fonts", "Roboto-Bold.ttf")
+    
+    # Escapar el path para ffmpeg (especialmente en Windows)
+    font_path_esc = font_path.replace("\\", "/").replace(":", "\\:")
     
     try:
-        # Filtro drawtext de ffmpeg
-        # x=20:y=h-th-20 posiciona en la esquina inferior izquierda con 20px de margen
-        # box=1 añade un fondo sutil detrás del texto para legibilidad
+        # Filtro drawtext con fondo desvanecido (simulado con boxborderw y boxcolor)
+        # box=1:boxcolor=black@0.4:boxborderw=20 crea un efecto de "glow" oscuro
         filter_str = (
-            f"drawtext=text='{text}':fontcolor=white:fontsize=24:"
-            f"box=1:boxcolor=black@0.3:boxborderw=5:x=20:y=h-th-20"
+            f"drawtext=fontfile='{font_path_esc}':text='{text}':fontcolor=white@0.9:fontsize=28:"
+            f"box=1:boxcolor=black@0.4:boxborderw=15:x=30:y=h-th-30"
         )
         
         cmd = [
             "ffmpeg", "-y", "-i", temp_in_path,
             "-vf", filter_str,
             "-c:v", "libx264", "-crf", "23", "-preset", "veryfast",
-            "-c:a", "copy", # Mantener audio original
+            "-c:a", "copy",
             temp_out_path
         ]
         
-        # Ejecutar ffmpeg de forma asíncrona (vía subprocess para simplicidad aquí)
         process = subprocess.run(cmd, capture_output=True, text=True)
         
         if process.returncode != 0:
@@ -115,3 +121,27 @@ async def apply_video_watermark(video_content: bytes, text: str) -> bytes:
             os.remove(temp_in_path)
         if os.path.exists(temp_out_path):
             os.remove(temp_out_path)
+
+def get_video_duration(video_content: bytes) -> float:
+    """
+    Obtiene la duración de un video usando ffprobe.
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp:
+        temp.write(video_content)
+        temp_path = temp.name
+        
+    try:
+        cmd = [
+            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", temp_path
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return float(result.stdout.strip())
+        return 0.0
+    except Exception as e:
+        logger.error(f"Error getting video duration: {e}")
+        return 0.0
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)

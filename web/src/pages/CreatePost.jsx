@@ -27,8 +27,6 @@ function CreatePost() {
     const [trimStart, setTrimStart] = useState(0);
     const [trimEnd, setTrimEnd] = useState(20);
     const [thumbnailTime, setThumbnailTime] = useState(0.1);
-    const [filmstrip, setFilmstrip] = useState([]);
-    const [isGeneratingFrames, setIsGeneratingFrames] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -101,63 +99,6 @@ function CreatePost() {
         }
     };
 
-    const generateFilmstrip = async (videoSrc, knownDuration) => {
-        setIsGeneratingFrames(true);
-        const frames = [];
-        const count = 10;
-
-        // Create hidden video element for extraction
-        const video = document.createElement('video');
-        video.src = videoSrc;
-        video.muted = true;
-        video.playsInline = true;
-        video.preload = 'auto';
-
-        await new Promise(resolve => {
-            video.onloadeddata = () => resolve();
-            video.onerror = () => resolve();
-            video.load();
-        });
-
-        const duration = knownDuration || video.duration || 0;
-        if (duration === 0 || duration === Infinity || isNaN(duration)) {
-            setIsGeneratingFrames(false);
-            return;
-        }
-
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        canvas.width = 160;
-        canvas.height = 90;
-
-        for (let i = 0; i < count; i++) {
-            const time = (duration / count) * i;
-            video.currentTime = time;
-
-            try {
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        video.removeEventListener('seeked', onSeek);
-                        resolve(); // Skip this frame if it takes too long
-                    }, 2000);
-
-                    const onSeek = () => {
-                        clearTimeout(timeout);
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        frames.push(canvas.toDataURL('image/jpeg', 0.6));
-                        video.removeEventListener('seeked', onSeek);
-                        resolve();
-                    };
-                    video.addEventListener('seeked', onSeek);
-                    video.load(); // Some browsers need load() or play() to trigger seek on invisible elements
-                });
-            } catch (e) {
-                console.warn("Failed to capture frame at", time);
-            }
-        }
-        setFilmstrip(frames);
-        setIsGeneratingFrames(false);
-    };
 
     useEffect(() => {
         if (isEditingVideo && videoRef.current) {
@@ -190,9 +131,6 @@ function CreatePost() {
             return prev;
         });
 
-        if (previewUrl && filmstrip.length === 0 && !isGeneratingFrames) {
-            generateFilmstrip(previewUrl, duration);
-        }
     };
 
     const togglePlay = () => {
@@ -698,16 +636,10 @@ function CreatePost() {
                                     }}
                                     onTouchEnd={() => setIsDragging(null)}
                                 >
-                                    {/* Filmstrip Background */}
-                                    {filmstrip.length > 0 ? (
-                                        filmstrip.map((src, i) => (
-                                            <img key={i} src={src} className="h-full flex-1 object-cover opacity-60 grayscale-[0.5] pointer-events-none" />
-                                        ))
-                                    ) : (
-                                        <div className="flex-1 h-full bg-white/5 flex items-center justify-center pointer-events-none">
-                                            {isGeneratingFrames ? <Loader size={20} className="animate-spin text-white/20" /> : <div className="h-full w-full" />}
-                                        </div>
-                                    )}
+                                    {/* Simplified Video Background */}
+                                    <div className="flex-1 h-full bg-white/5 flex items-center justify-center pointer-events-none">
+                                        <div className="h-full w-full bg-gradient-to-r from-blue-900/20 via-blue-800/20 to-blue-900/20" />
+                                    </div>
 
                                     {/* Draggable Shrouds (Darkened areas outside selection) */}
                                     <div className="absolute top-0 left-0 h-full bg-black/70 z-10 pointer-events-none" style={{ width: `${videoDuration > 0 ? (trimStart / videoDuration) * 100 : 0}%` }} />

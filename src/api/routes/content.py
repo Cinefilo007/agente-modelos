@@ -57,8 +57,8 @@ async def create_post(
     media_type = "video" if file.content_type.startswith("video") else "image"
     file_content = await file.read()
     
-    # 1.b Aplicar Marca de Agua (Watermark)
-    from src.services.image_processing import apply_image_watermark, apply_video_watermark
+    # 1.b Aplicar Marca de Agua (Watermark) e importar validadores
+    from src.services.image_processing import apply_image_watermark, apply_video_watermark, get_video_duration
     watermark_text = f"nebulaespace.site/{user.username}" if user.username else "nebulaespace.site"
     
     if media_type == "image":
@@ -76,9 +76,19 @@ async def create_post(
     if media_type == "video":
         # Handle Trimming if requested
         if end_time is not None and end_time > start_time:
+            # Server-side security check for trim range
+            if (end_time - start_time) > 20.5:
+                raise HTTPException(status_code=400, detail="El recorte excede los 20 segundos permitidos.")
+
             print(f"[Video Editor] Trimming video: {start_time}s to {end_time}s")
             file_content = await trim_video(file_content, start_time, end_time)
             thumbnail_time = max(0.1, min(thumbnail_time - start_time, (end_time - start_time) / 2))
+        
+        # Validar duración real post-recorte
+        actual_duration = get_video_duration(file_content)
+        if actual_duration > 20.5:
+            logger.warning(f"Video reject: duration {actual_duration}s exceeds limit from user {user.username}")
+            raise HTTPException(status_code=400, detail="El video excede la duración máxima de 20 segundos.")
         
         # Upload Video
         import uuid
