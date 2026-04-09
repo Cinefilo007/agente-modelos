@@ -77,8 +77,8 @@ class AIAgent:
         bubbles = []
         current_bubble = ""
         
-        # Split por oraciones o comas para que sea natural
-        parts = clean_text.replace(". ", ".|").replace(", ", ",|").split("|")
+        # Split por oraciones para que sea natural (solo puntos)
+        parts = clean_text.replace(". ", ".|").split("|")
         
         for part in parts:
             if len(current_bubble) + len(part) <= max_chars:

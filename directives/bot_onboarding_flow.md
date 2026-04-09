@@ -7,7 +7,7 @@
 *   **Identidad Exclusiva en la MiniApp:** La recolección de datos sensibles (nombre real, edad, país, foto de documento, video de verificación) **NUNCA** se realiza a través del chat de texto del Bot. Se procesa a través de los formularios seguros y cifrados de la MiniApp.
 *   **Fricción Cero en el ChatBot:** El Bot de Telegram tiene como único propósito inicial "vender" la idea de usar a *Nebula IA* como asistente de ventas a la modelo, utilizando su nombre de usuario de Telegram para romper el hielo y enviando la solicitud al Administrador tan pronto como ella demuestra interés en probar el servicio.
 *   **Aprobación Manual Centralizada:** Todo acceso a la IA de ventas está gobernado por una compuerta humana. El Bot es incapaz de activar de forma autónoma el agente a nuevas creadoras sin tu aprobación.
-*   **Modelo de Negocio "Freemium" por Créditos:** Se atrae con 50 créditos gratuitos para que vean la magia funcionar, forzando luego a que dependan de los planes estructurados.
+*   **Modelo de Negocio "Freemium" por Créditos:** Se atrae con 100 créditos gratuitos para que vean la magia funcionar, forzando luego a que dependan de los planes estructurados.
 
 ## 2. Diagrama de Flujo (Onboarding Bot Telegram)
 
@@ -28,8 +28,8 @@ sequenceDiagram
     Note over B,M: El Bot ignora nuevos mensajes
     
     A->>B: Clic en [Aprobar]
-    B->>DB: set status="active" & credits_balance=50
-    B->>M: "Solicitud aprobada" + Guía de Vinculación + 50 Créditos
+    B->>DB: set status="active" & credits_balance=100
+    B->>M: "Solicitud aprobada" + Guía de Vinculación + 100 Créditos
     
     M->>B: /setup
     B->>M: Configuración (Precios, Físico, Pagos)
@@ -45,7 +45,7 @@ La tabla `models` juega un rol crucial para decidir si el Bot responde o no a lo
 *   `status = 'pending'`: El Bot no inicia tareas de ventas, la modelo está esperando ser aprobada por el Admin.
 *   `status = 'active'`: El Bot puede ejecutar sus flujos de ventas o el `/setup`, incluso si `is_verified=false`.
 *   `is_verified = false`: Bandera que se mantiene en Falso hasta que la modelo complete el KYC completo a través de la interfaz web (MiniApp). Esto no bloquea su capacidad de probar la IA de Telegram con sus primeros clientes.
-*   `credits_balance = 50`: Se entregan como cortesía tras la aprobación del administrador y se van gastando a razón de `-1` crédito por cada mensaje o réplica del Bot de la agencia, logrando cerrar una venta.
+*   `credits_balance = 100`: Se entregan como cortesía tras la aprobación del administrador y se van gastando a razón de `-1` crédito por cada mensaje o réplica del Bot de la agencia, logrando cerrar una venta.
 
 ## 4. Agotamiento de Créditos
 

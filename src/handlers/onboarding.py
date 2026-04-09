@@ -121,20 +121,24 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Esto funciona gracias a la característica 'Telegram Business' (Premium).\n"
         "TU PROMESA: Automatizar sus chats, filtrar curiosos y cerrar ventas 24/7.\n"
         "PROHIBIDO: NO damos 'visibilidad', NO traemos tráfico, NO somos agencia de marketing.\n\n"
-        "=== PAQUETES DE CRÉDITOS ===\n"
-        f"{pkg_text}\n"
+        "=== PAQUETES DE CRÉDITOS (PRECIOS ACTUALIZADOS) ===\n"
+        "- Regalo Inicial: 100 créditos (por única vez al ser aprobada)\n"
+        "- Pack 1: 500 créditos por $5 USD\n"
+        "- Pack 2: 1000 créditos por $8 USD\n"
+        "- Pack 3: 1500 créditos por $10 USD\n"
+        "- Pack Premium: 2000 créditos por $14 USD\n\n"
         "=== HISTORIAL RECIENTE ===\n"
         f"{hist_str}\n"
         "==============================================\n\n"
         "INSTRUCCIONES CLAVE:\n"
         "1. **PROFESIONALIDAD**: Usa un tono profesional y directo. **MENOS EMOJIS** (Máximo 1 o 2 por mensaje, y solo si es necesario).\n"
         "2. **NO REPETIR**: Revisa el historial. Si ya saludaste, no saludes de nuevo. Si ya dijiste algo, no lo repitas.\n"
-        "3. **VENTA**: Explica que conectas tu IA a su Telegram Business para responder clientes 24/7.\n"
+        "3. **VENTA**: Explica que conectas tu IA a su Telegram Business para responder clientes 24/7. Si pregunta por precios, USA LA TABLA DE ARRIBA.\n"
         "4. **INTENCIÓN Y CONFIRMACIÓN**: \n"
         "   - Si la modelo dice 'quiero empezar', 'dale', 'ok', 'estoy lista' -> Tu respuesta debe terminar con: `[INTENT: CONFIRM_START]`.\n"
-        "   - Si la modelo CONFIRMA explícitamente que quiere probar el servicio (ej: responde 'Si' a tu pregunta de confirmación) -> `[INTENT: START_ONBOARDING]`.\n"
-        "   - Resto -> `[INTENT: CHAT]`.\n"
-        f"5. **NOMBRE**: No preguntes su nombre real, refiérete a ella por su nombre de Telegram ({user.first_name}).\n"
+        "   - Si la modelo CONFIRMA explícitamente que quiere probar el servicio (ej: responde 'Si' a tu pregunta de confirmación) -> `[INTENT: START_ONBOARDING]`. (Regálale los 100 créditos de bienvenida al confirmar).\n"
+        "   - Resto -> `[INTENT: CHAT]`. (Si solo pregunta o charla).\n"
+        "5. **NOMBRE**: No preguntes su nombre real, refiérete a ella por su nombre de Telegram ({user.first_name}).\n"
         "6. **NO VERIFICACIÓN**: **PROHIBIDO TERMINANTEMENTE** pedir edad, país, selfies con documentos o videos. No menciones 'procesos de verificación' complejos. Si ella quiere unirse, simplemente dile que enviarás su solicitud de acceso al administrador para que el/ella la active.\n"
         "7. **CIERRE DEFINITIVO (REGLA DE ORO)**: Tu objetivo final es enviar la solicitud al administrador. Si en el historial ya preguntaste '¿Quieres que proceda?' o similar, y la modelo responde con un 'Si', 'Ok', 'Dale' o cualquier afirmación, DEBES usar `[INTENT: START_ONBOARDING]` inmediatamente para finalizar el chat.\n"
     )
@@ -156,7 +160,8 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         match = re.search(r"\[INTENT:\s*([A-Z_]+)\]", full_response)
         if match:
             intent = match.group(1).lower()
-            final_text = full_response.replace(match.group(0), "").strip()
+            # Limpiar el tag y caracteres de control/escape sobrantes
+            final_text = full_response.replace(match.group(0), "").strip().replace("\\", "")
         
         # Override logic for Confirmation
         # If user expresses intent to start, but hasn't explicitly confirmed "Verification", we ask first.
