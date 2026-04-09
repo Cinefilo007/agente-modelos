@@ -76,7 +76,7 @@ const LandingPage = () => {
 
         // Telegram.Login.auth() abre popup nativo de Telegram
         window.Telegram?.Login?.auth(
-            { bot_id: botId, request_access: 'write', lang: 'es' },
+            { client_id: botId, request_access: 'write', lang: 'es' },
             async (data) => {
                 if (!data) {
                     // Usuario canceló el popup
