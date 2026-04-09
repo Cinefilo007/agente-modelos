@@ -57,6 +57,18 @@ async def create_post(
     media_type = "video" if file.content_type.startswith("video") else "image"
     file_content = await file.read()
     
+    # 1.b Aplicar Marca de Agua (Watermark)
+    from src.services.image_processing import apply_image_watermark, apply_video_watermark
+    watermark_text = f"nebulaespace.site/{user.username}" if user.username else "nebulaespace.site"
+    
+    if media_type == "image":
+        print(f"[Watermark] Aplicando marca de agua a imagen de {user.username}")
+        file_content = apply_image_watermark(file_content, watermark_text)
+    else:
+        print(f"[Watermark] Aplicando marca de agua a video de {user.username}")
+        # El procesamiento de video puede ser pesado, pero el usuario lo espera al crear el post
+        file_content = await apply_video_watermark(file_content, watermark_text)
+
     public_url = None
     thumbnail_url = None
 
@@ -105,14 +117,14 @@ async def create_post(
         # It's an image
         import uuid
         unique_id = uuid.uuid4()
-        file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+        file_ext = "jpg" # Siempre guardamos como jpg procesado para consistencia
         filename = f"uploads/{unique_id}.{file_ext}"
         
         try:
             db.service_client.storage.from_("posts").upload(
                 path=filename,
                 file=file_content,
-                file_options={"content-type": file.content_type}
+                file_options={"content-type": "image/jpeg"}
             )
             public_url = db.service_client.storage.from_("posts").get_public_url(filename)
         except Exception as e:
@@ -260,11 +272,37 @@ async def create_story(
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Only models can create stories")
 
-    # Upload file to 'stories' bucket
-    public_url = await upload_file(file, bucket_name="stories")
-    
-    # Determine media type
+    # 1. Procesar contenido y aplicar marca de agua
     media_type = "video" if file.content_type.startswith("video") else "image"
+    file_content = await file.read()
+    
+    from src.services.image_processing import apply_image_watermark, apply_video_watermark
+    watermark_text = f"nebulaespace.site/{user.username}" if user.username else "nebulaespace.site"
+    
+    if media_type == "image":
+        file_content = apply_image_watermark(file_content, watermark_text)
+        content_type = "image/jpeg"
+        file_ext = "jpg"
+    else:
+        file_content = await apply_video_watermark(file_content, watermark_text)
+        content_type = "video/mp4"
+        file_ext = "mp4"
+
+    # 2. Subir a Supabase Storage
+    import uuid
+    unique_id = uuid.uuid4()
+    filename = f"uploads/{unique_id}.{file_ext}"
+    
+    try:
+        db.service_client.storage.from_("stories").upload(
+            path=filename,
+            file=file_content,
+            file_options={"content-type": content_type}
+        )
+        public_url = db.service_client.storage.from_("stories").get_public_url(filename)
+    except Exception as e:
+        logger.error(f"Error uploading story: {e}")
+        raise HTTPException(status_code=500, detail="Error al subir historia")
 
     expires_at = (datetime.utcnow() + timedelta(hours=24)).isoformat()
     
