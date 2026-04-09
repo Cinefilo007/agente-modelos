@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unknown-property */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
@@ -16,7 +16,7 @@ const LandingPage = () => {
     const { loginWithTelegram } = useAuth();
     const { showToast } = useToast();
     const navigate = useNavigate();
-    const telegramWrapperRef = useRef(null);
+
     const [scrolled, setScrolled] = useState(false);
     const [viewMode, setViewMode] = useState(null); // 'fan' or 'creator' or null
     const [modelsPreview, setModelsPreview] = useState([]);
@@ -44,56 +44,61 @@ const LandingPage = () => {
     }, []);
 
     const [botUsername, setBotUsername] = useState(null);
+    const [botId, setBotId] = useState(null);
+    const [loginLoading, setLoginLoading] = useState(false);
 
+    // Cargar configuración del bot
     useEffect(() => {
         const fetchConfig = async () => {
             try {
-                const res = await api.get('/config/bot-username');
-                setBotUsername(res.data.username);
+                const [usernameRes, idRes] = await Promise.all([
+                    api.get('/config/bot-username'),
+                    api.get('/config/bot-id')
+                ]);
+                setBotUsername(usernameRes.data.username);
+                setBotId(idRes.data.bot_id);
             } catch (err) {
                 setBotUsername('AgenteNebulaIA_bot');
+                console.error('[Auth] Error cargando config del bot:', err);
             }
         };
         fetchConfig();
     }, []);
 
-    useEffect(() => {
-        if (!botUsername || !viewMode) return;
-
-        const timeoutId = setTimeout(() => {
-            if (telegramWrapperRef.current) {
-                telegramWrapperRef.current.innerHTML = "";
-                const script = document.createElement('script');
-                script.src = "https://telegram.org/js/telegram-widget.js?22";
-                script.setAttribute('data-telegram-login', botUsername);
-                script.setAttribute('data-size', 'large');
-                script.setAttribute('data-radius', '12');
-                script.setAttribute('data-request-access', 'write');
-                script.setAttribute('data-userpic', 'false');
-                script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-                script.async = true;
-                telegramWrapperRef.current.appendChild(script);
-            }
-        }, 300);
-
-        window.onTelegramAuth = async (user) => {
-            try {
-                localStorage.setItem('intendedRole', viewMode);
-                await loginWithTelegram(user);
-                navigate('/');
-            }
-            catch (error) {
-                showToast(error.response?.data?.detail || "Login failed", "error");
-            }
-        };
-        return () => {
-            window.onTelegramAuth = undefined;
-            clearTimeout(timeoutId);
+    // Login nativo con Telegram Login Library (popup nativo)
+    const handleTelegramLogin = () => {
+        if (!botId) {
+            showToast('Error de configuración del bot. Intenta más tarde.', 'error');
+            return;
         }
-    }, [loginWithTelegram, navigate, botUsername, viewMode]);
+
+        setLoginLoading(true);
+
+        // Telegram.Login.auth() abre popup nativo de Telegram
+        window.Telegram?.Login?.auth(
+            { bot_id: botId, request_access: 'write', lang: 'es' },
+            async (data) => {
+                if (!data) {
+                    // Usuario canceló el popup
+                    setLoginLoading(false);
+                    return;
+                }
+
+                try {
+                    localStorage.setItem('intendedRole', viewMode);
+                    await loginWithTelegram(data);
+                    navigate('/');
+                } catch (error) {
+                    showToast(error.response?.data?.detail || 'Error al iniciar sesión', 'error');
+                } finally {
+                    setLoginLoading(false);
+                }
+            }
+        );
+    };
 
     const scrollToLogin = () => {
-        telegramWrapperRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
 
     // --- Role Selector View ---
@@ -670,7 +675,7 @@ const LandingPage = () => {
             )}
 
             {/* --- FINAL CTA --- */}
-            <section className="py-48 relative text-center z-10" id="login">
+            <section className="py-48 relative text-center z-10" id="login-section">
                 <div className="container mx-auto px-6">
                     <div className="max-w-4xl mx-auto space-y-12">
                         <h2 className={`text-6xl md:text-9xl font-black tracking-tighter mb-12 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] ${viewMode === 'fan' ? 'text-pink-100' : 'text-purple-100'}`}>
@@ -679,9 +684,36 @@ const LandingPage = () => {
                         <div className={`flex flex-col items-center gap-10 border p-8 md:p-16 rounded-[4rem] bg-black/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden ${viewMode === 'fan' ? 'border-pink-500/10 shadow-pink-500/5' : 'border-purple-500/10 shadow-purple-500/5'}`}>
                             <div className={`absolute top-0 right-0 w-64 h-64 blur-[100px] opacity-20 -mr-32 -mt-32 rounded-full ${viewMode === 'fan' ? 'bg-pink-500' : 'bg-purple-500'}`}></div>
                             <p className="text-xl text-gray-400 font-bold max-w-xl">Únete a la elite que ya está operando en el futuro de Telegram.</p>
-                            <div className="w-full max-w-[320px] sm:max-w-[400px] overflow-hidden rounded-3xl bg-white/5 p-6 border border-white/10 group flex justify-center">
-                                <div ref={telegramWrapperRef} className="w-full flex justify-center scale-90 sm:scale-110 transition-transform duration-500 origin-center"></div>
-                            </div>
+                            
+                            {/* Botón de Login Nativo con Telegram */}
+                            <button
+                                onClick={handleTelegramLogin}
+                                disabled={loginLoading || !botId}
+                                className={`group relative w-full max-w-[360px] px-8 py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-4 overflow-hidden ${
+                                    loginLoading 
+                                        ? 'opacity-70 cursor-wait' 
+                                        : 'hover:scale-[1.03] hover:shadow-[0_20px_60px_-15px_rgba(0,136,204,0.4)] active:scale-[0.98]'
+                                }`}
+                                style={{
+                                    background: 'linear-gradient(135deg, #0088cc 0%, #00aaee 50%, #0077b5 100%)',
+                                    boxShadow: '0 10px 30px -5px rgba(0, 136, 204, 0.3)'
+                                }}
+                            >
+                                {/* Efecto de brillo animado */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                                
+                                {loginLoading ? (
+                                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                ) : (
+                                    <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white flex-shrink-0">
+                                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                                    </svg>
+                                )}
+                                <span className="relative text-white font-black tracking-wider">
+                                    {loginLoading ? 'Conectando...' : 'Entrar con Telegram'}
+                                </span>
+                            </button>
+
                             <div className="flex flex-col gap-4">
                                 <span className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-600 flex items-center justify-center gap-3">
                                     <Lock className="w-3 h-3" /> Privacidad Garantizada

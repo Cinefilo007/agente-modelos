@@ -1,11 +1,30 @@
 # Directiva Actualizada: Autenticación Estricta v2
 
-> **Última actualización:** 2026-04-07 (Post-Auditoría de Seguridad)
+> **Última actualización:** 2026-04-08 (Migración a Telegram Login Library + OIDC)
 
 ## 1. Visión General
 El sistema de autenticación es determinista y seguro. Se basa exclusivamente en Telegram y valida el estado del usuario contra el backend en cada carga de la aplicación para evitar "usuarios fantasma".
 
 **Incidente de referencia:** 2026-04-06 — modelo no verificada (Maggie, `07d7cced-...`) accedió al portal y creó una publicación debido a 3 vulnerabilidades simultáneas. Todas corregidas en esta versión.
+
+---
+
+## 2. Métodos de Autenticación
+
+### 2.1 Telegram Login Library (OIDC — Principal)
+- **Frontend**: `Telegram.Login.auth({ bot_id, request_access: 'write', lang: 'es' }, callback)`
+- **Callback devuelve**: `{ id, first_name, username, photo_url, hash, auth_date, id_token }`
+- **Backend**: `POST /api/auth/telegram-oidc` — Valida el `id_token` JWT firmado por Telegram via JWKS público
+- **Verificación**: RSA contra `https://oauth.telegram.org/.well-known/jwks.json`
+- **Claims validados**: `iss`, `aud` (bot_id), `exp`
+
+### 2.2 HMAC Hash (Fallback/Legacy)
+- **Backend**: `POST /api/auth/telegram` — Valida hash HMAC-SHA256 con `sha256(BOT_TOKEN)`
+- **Usado por**: Widget legacy `telegram-widget.js` o si `Telegram.Login.auth()` no devuelve `id_token`
+
+### 2.3 WebApp initData (Auto-Login en Mini App)
+- **Backend**: `POST /api/auth/webapp` — Valida HMAC con clave `WebAppData`
+- **Usado por**: Telegram Mini App (auto-login silencioso)
 
 ---
 
@@ -94,8 +113,14 @@ Endpoints protegidos a partir de 2026-04-07:
 |----------|-----------|-------------|
 | `JWT_SECRET` | **SÍ — Obligatoria** | Firma de tokens JWT. Si no está, el sistema usa fallback inseguro y lanza warning CRÍTICO en logs. |
 | `ADMIN_TELEGRAM_ID` | SÍ | ID del admin. Si no está, nadie tiene role=admin. |
-| `TELEGRAM_TOKEN` | SÍ | Para validar HMAC de WebApp y Widget. |
+| `TELEGRAM_TOKEN` | SÍ | Para validar HMAC de WebApp y Widget + extraer BOT_ID para OIDC. |
 | `SUPABASE_SERVICE_ROLE_KEY` | SÍ | Para operaciones de escritura seguras. |
+| `TELEGRAM_BOT_USERNAME` | Opcional | Username del bot (fallback: AgenteNebulaIA_bot). Usado en landing. |
+
+### Prerrequisitos en BotFather (Web Login)
+- Ir a [@BotFather Mini App](https://t.me/botfather?startapp) → Bot Settings → Web Login
+- Registrar Allowed URL: `https://nebulaespace.site`
+- Guardar Client ID y Client Secret (el Client ID debe coincidir con BOT_ID)
 
 ---
 
@@ -120,4 +145,4 @@ Endpoints protegidos a partir de 2026-04-07:
 - Las trasferencias de wallet deben usar RPCs atómicas de Supabase para evitar race conditions.
 - Los modelos rechazados (`status='rejected'`) no pueden re-aplicar sin contactar al admin.
 
-*Versión 2.0 — Post auditoría 2026-04-07*
+*Versión 3.0 — Migración Telegram Login Library OIDC 2026-04-08*

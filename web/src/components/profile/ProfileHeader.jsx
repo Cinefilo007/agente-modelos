@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Edit3, Globe, Lock, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Linkedin, Github, Link as LinkIcon, CheckCircle2, Gamepad2, MessageCircle, UserCheck, MoreVertical, MapPin, Diamond } from 'lucide-react';
+import { Edit3, Globe, Lock, Mail, LayoutDashboard, Share2, TrendingUp, DollarSign, Loader, Music2, Linkedin, Github, Link as LinkIcon, CheckCircle2, Gamepad2, MessageCircle, UserCheck, MoreVertical, MapPin, Diamond, LogOut } from 'lucide-react';
 
 import {
     SiInstagram, SiX, SiFacebook, SiYoutube,
@@ -17,13 +17,30 @@ import { useToast } from '../../context/ToastContext';
 
 export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const { themeColor } = useTheme();
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, logout } = useAuth();
     const navigate = useNavigate();
     const { showToast } = useToast();
     const [isFollowing, setIsFollowing] = useState(false);
     const [loadingFollow, setLoadingFollow] = useState(false);
     const [showMessageAlert, setShowMessageAlert] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [logoutConfirm, setLogoutConfirm] = useState(false);
+
+    // Auto-resetear confirmación de logout después de 3s
+    useEffect(() => {
+        if (logoutConfirm) {
+            const timer = setTimeout(() => setLogoutConfirm(false), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [logoutConfirm]);
+
+    const handleLogout = () => {
+        if (!logoutConfirm) {
+            setLogoutConfirm(true);
+            return;
+        }
+        logout();
+    };
 
     // Fetch follow status if not own profile
     useEffect(() => {
@@ -161,6 +178,23 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                 >
                     <Share2 size={20} className="group-hover:scale-110 transition-transform" />
                 </button>
+
+                {/* Botón de logout discreto — solo visible para el dueño del perfil */}
+                {isOwnProfile && (
+                    <button
+                        onClick={handleLogout}
+                        className={`absolute top-4 left-4 backdrop-blur-md border rounded-full text-white transition-all z-20 group active:scale-95 flex items-center gap-2 ${
+                            logoutConfirm 
+                                ? 'bg-red-500/80 border-red-400/50 px-4 py-2.5 hover:bg-red-600/80' 
+                                : 'bg-black/40 border-white/10 p-2.5 hover:bg-black/60'
+                        }`}
+                    >
+                        <LogOut size={18} className={`transition-transform ${logoutConfirm ? 'text-white' : 'group-hover:scale-110'}`} />
+                        {logoutConfirm && (
+                            <span className="text-xs font-bold text-white whitespace-nowrap">¿Salir?</span>
+                        )}
+                    </button>
+                )}
             </div>
 
             {/* Content Container */}

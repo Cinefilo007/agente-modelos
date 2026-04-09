@@ -86,9 +86,12 @@ def build_app():
     app.add_handler(CallbackQueryHandler(admin_model_view_callback, pattern="^adm_mod_view"))
     app.add_handler(CallbackQueryHandler(admin_model_action_callback, pattern="^adm_mod_(delete|list)"))
     
-    # 4. Generic Admin Callback (Catch-all for safety, but patterns above catch most)
-    # Si algún callback llega aquí y no es admin, se ignora. Si es admin y no tiene patrón, logueamos.
-    app.add_handler(CallbackQueryHandler(admin_callback_handler))
+    # 4. Catch-all seguro: Solo logea callbacks no manejados y responde para evitar spinners
+    async def _unhandled_callback(update, context):
+        query = update.callback_query
+        logger.warning(f"Callback no manejado: {query.data} from {update.effective_user.id}")
+        await query.answer()
+    app.add_handler(CallbackQueryHandler(_unhandled_callback))
 
     # Catch-all para mensajes que no son comandos (Debug/Help)
     from telegram.ext import MessageHandler, filters

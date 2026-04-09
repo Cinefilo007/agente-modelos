@@ -6,10 +6,12 @@ import hashlib
 import hmac
 import time
 from datetime import date, datetime
-from jose import jwt
+from jose import jwt, jwk
+from jose.utils import base64url_decode
 from src.services.database import db
 from urllib.parse import parse_qsl
 import json
+import httpx
 from telegram import Bot
 
 router = APIRouter()
@@ -19,10 +21,34 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
     raise RuntimeError("CRITICAL ERROR: JWT_SECRET not set in environment.")
 ALGORITHM = "HS256"
+# ID numérico del bot, extraído del token
+BOT_ID = BOT_TOKEN.split(":")[0] if BOT_TOKEN and ":" in BOT_TOKEN else None
 # ID de Telegram del administrador principal. Si el usuario que inicia sesión
 # coincide con este ID, se le asigna automáticamente role='admin' sin importar
 # qué rol tenga en la base de datos.
 ADMIN_TELEGRAM_ID = os.getenv("ADMIN_TELEGRAM_ID")
+
+# --- Cache para JWKS de Telegram ---
+_telegram_jwks_cache = {"keys": None, "fetched_at": 0}
+JWKS_CACHE_TTL = 3600  # 1 hora
+
+async def get_telegram_jwks():
+    """
+    Descarga y cachea las claves públicas de Telegram para verificar id_tokens.
+    Endpoint: https://oauth.telegram.org/.well-known/jwks.json
+    """
+    now = time.time()
+    if _telegram_jwks_cache["keys"] and (now - _telegram_jwks_cache["fetched_at"]) < JWKS_CACHE_TTL:
+        return _telegram_jwks_cache["keys"]
+    
+    async with httpx.AsyncClient() as client:
+        resp = await client.get("https://oauth.telegram.org/.well-known/jwks.json", timeout=10)
+        resp.raise_for_status()
+        jwks_data = resp.json()
+        _telegram_jwks_cache["keys"] = jwks_data.get("keys", [])
+        _telegram_jwks_cache["fetched_at"] = now
+        return _telegram_jwks_cache["keys"]
+
 
 class TelegramAuthData(BaseModel):
     id: int
@@ -32,6 +58,10 @@ class TelegramAuthData(BaseModel):
     photo_url: Optional[str] = None
     auth_date: int
     hash: str
+
+class TelegramOIDCData(BaseModel):
+    """Datos recibidos del Telegram.Login.auth() con id_token"""
+    id_token: str
 
 class WebAppAuthData(BaseModel):
     init_data: str
@@ -249,10 +279,73 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
 @router.post("/telegram")
 async def telegram_login(auth_data: TelegramAuthData):
     """
-    Widget Login
+    Widget Login — Validación HMAC legacy (hash con BOT_TOKEN).
+    Compatible con telegram-widget.js y Telegram.Login.auth() sin id_token.
     """
     verify_telegram_data(auth_data)
     return await process_login(auth_data.id, auth_data.username, auth_data.photo_url)
+
+@router.post("/telegram-oidc")
+async def telegram_oidc_login(data: TelegramOIDCData):
+    """
+    Login OIDC — Validación del id_token JWT firmado por Telegram.
+    Más seguro que HMAC: usa firma RSA verificada contra JWKS público de Telegram.
+    """
+    if not BOT_ID:
+        raise HTTPException(status_code=500, detail="BOT_ID no configurado en el servidor")
+    
+    try:
+        # 1. Obtener claves públicas de Telegram
+        jwks_keys = await get_telegram_jwks()
+        if not jwks_keys:
+            raise HTTPException(status_code=500, detail="No se pudieron obtener claves JWKS de Telegram")
+        
+        # 2. Decodificar el header del token para obtener el kid
+        unverified_header = jwt.get_unverified_header(data.id_token)
+        kid = unverified_header.get("kid")
+        
+        # 3. Encontrar la clave pública correspondiente
+        rsa_key = None
+        for key in jwks_keys:
+            if key.get("kid") == kid:
+                rsa_key = key
+                break
+        
+        if not rsa_key:
+            raise HTTPException(status_code=403, detail="Clave de firma no encontrada en JWKS de Telegram")
+        
+        # 4. Verificar y decodificar el token
+        payload = jwt.decode(
+            data.id_token,
+            rsa_key,
+            algorithms=["RS256"],
+            audience=BOT_ID,
+            issuer="https://oauth.telegram.org"
+        )
+        
+        # 5. Extraer datos del usuario del payload OIDC
+        telegram_id = payload.get("id") or int(payload.get("sub", "0"))
+        username = payload.get("preferred_username")
+        photo_url = payload.get("picture")
+        
+        if not telegram_id:
+            raise HTTPException(status_code=400, detail="Token OIDC no contiene ID de usuario")
+        
+        print(f"[Auth OIDC] Login exitoso para telegram_id={telegram_id}, username={username}")
+        return await process_login(telegram_id, username, photo_url)
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="El token ha expirado")
+    except jwt.JWTClaimsError as e:
+        raise HTTPException(status_code=403, detail=f"Claims inválidos en el token: {str(e)}")
+    except jwt.JWTError as e:
+        print(f"[Auth OIDC] Error JWT: {str(e)}")
+        raise HTTPException(status_code=403, detail="Token OIDC inválido")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Auth OIDC] Error inesperado: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno al procesar el login OIDC")
 
 @router.post("/webapp")
 async def webapp_login(data: WebAppAuthData):
@@ -262,3 +355,4 @@ async def webapp_login(data: WebAppAuthData):
     user_info = verify_webapp_data(data.init_data)
     # telegram_id is int in user_info
     return await process_login(user_info['id'], user_info.get('username'), user_info.get('photo_url'))
+

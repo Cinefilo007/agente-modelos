@@ -94,6 +94,24 @@ ALTER TABLE models ADD CONSTRAINT models_status_check
 
 ---
 
+## 6.5 Corrección Crítica: Concurrencia de Aprobaciones (2026-04-08)
+
+**Bug**: Solo la primera solicitud de aprobación funcionaba; las siguientes no hacían nada.
+
+**Causa raíz** — Triple fallo:
+1. **`query.answer()` doble**: Se llamaba `query.answer()` al inicio del handler (sin alert) y luego `query.answer(show_alert=True)` en los catch de errores. Telegram solo permite UNA respuesta por callback. La segunda llamada lanzaba `BadRequest` no capturado que mataba el handler.
+2. **Catch-all tóxico**: Un `CallbackQueryHandler` sin patrón (catch-all) registrado al final de `bot.py` interceptaba TODOS los callbacks no manejados y llamaba `admin_callback_handler` causando comportamiento impredecible.
+3. **Errores de `send_message` no aislados**: Si una modelo había bloqueado el bot, `send_message` lanzaba `Forbidden` que entraba al except y disparaba el doble-answer.
+
+**Fix aplicado**:
+- `query.answer()` se llama UNA SOLA VEZ, DESPUÉS de validaciones y ANTES de las acciones.
+- Los errores de `send_message` se manejan con `notif_ok = False` sin llamar `query.answer()` de nuevo.
+- El catch-all fue reemplazado por un handler de logging seguro `_unhandled_callback`.
+
+**Regla de oro**: NUNCA llamar `query.answer()` más de una vez por callback.
+
+---
+
 ## 7. Próximas Mejoras Posibles
 
 - Implementar validación automática de pagos por Crypto Pay.
