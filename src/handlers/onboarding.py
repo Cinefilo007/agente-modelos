@@ -99,7 +99,8 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         role = "Modelo" if msg['sender_type'] == "user" else "Hunter"
         content = msg['content']
         import re
-        clean_content = re.sub(r"\[INTENT:.*?\]", "", content).replace("(INTENT:", "").replace(")", "").strip()
+        # Mantener etiquetas técnicas para que la IA tenga memoria de sus estados
+        clean_content = content
         hist_str += f"{role}: {clean_content}\n"
 
     # Cargar directiva
@@ -135,6 +136,7 @@ async def handle_sales_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "   - Resto -> `[INTENT: CHAT]`.\n"
         f"5. **NOMBRE**: No preguntes su nombre real, refiérete a ella por su nombre de Telegram ({user.first_name}).\n"
         "6. **NO VERIFICACIÓN**: **PROHIBIDO TERMINANTEMENTE** pedir edad, país, selfies con documentos o videos. No menciones 'procesos de verificación' complejos. Si ella quiere unirse, simplemente dile que enviarás su solicitud de acceso al administrador para que el/ella la active.\n"
+        "7. **CIERRE DEFINITIVO (REGLA DE ORO)**: Tu objetivo final es enviar la solicitud al administrador. Si en el historial ya preguntaste '¿Quieres que proceda?' o similar, y la modelo responde con un 'Si', 'Ok', 'Dale' o cualquier afirmación, DEBES usar `[INTENT: START_ONBOARDING]` inmediatamente para finalizar el chat.\n"
     )
 
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
