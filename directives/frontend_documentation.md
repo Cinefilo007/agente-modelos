@@ -76,6 +76,7 @@ Todas las rutas se encuentran anidadas bajo el componente `Layout` para garantiz
 ### Fase 3: Refinamiento de UX/UI (Actual)
 -   **Ajuste de Vista Escritorio**: Se modificó `Layout.jsx` para evitar que la app se "estire" en pantallas grandes, confinándola a una vista tipo tablet centrada.
 -   **Navegación**: Ajuste de la barra de navegación para respetar los límites del contenedor central.
+-   **UI del Feed**: Simplificación de `FeedPostCard` eliminando la caja de comentarios rápida para una estética más limpia y usando iconos minimalistas (flechas) para expandir/retraer el texto de la publicación. La interacción completa se delega a la vista de detalle.
 
 ## 6. Guías para Futuras Correcciones
 

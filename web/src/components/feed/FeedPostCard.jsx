@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX, AlertTriangle, Send, X, Trash2, Flag, ExternalLink } from 'lucide-react';
+import { Heart, MessageCircle, MoreHorizontal, Play, Volume2, VolumeX, AlertTriangle, Send, X, Trash2, Flag, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import EliteAvatar from '../common/EliteAvatar';
 import GiftSelector from '../posts/GiftSelector';
@@ -428,21 +428,15 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             <span className="font-bold text-white mr-2">{post.user.artistic_name || post.user.name}</span>
                             {post.description || post.caption}
                         </p>
-                        {(post.description?.length > 80 || post.caption?.length > 80) && !isExpanded && (
-                            <button
-                                onClick={() => setIsExpanded(true)}
-                                className="text-gray-400 text-xs font-bold mt-1 hover:text-white transition-colors"
-                            >
-                                ... más
-                            </button>
-                        )}
-                        {isExpanded && (
-                            <button
-                                onClick={() => setIsExpanded(false)}
-                                className="text-gray-500 text-[10px] font-bold mt-1 hover:text-white transition-colors block"
-                            >
-                                ocultar
-                            </button>
+                        {(post.description?.length > 80 || post.caption?.length > 80) && (
+                            <div className="flex justify-center mt-1">
+                                <button
+                                    onClick={() => setIsExpanded(!isExpanded)}
+                                    className="text-white/40 hover:text-white/80 transition-colors p-1"
+                                >
+                                    {isExpanded ? <ChevronUp size={16} strokeWidth={1.5} /> : <ChevronDown size={16} strokeWidth={1.5} />}
+                                </button>
+                            </div>
                         )}
                     </div>
 
@@ -470,29 +464,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         );
                     })()}
 
-                    {/* Quick Comment Input - Simplified */}
-                    {!isAdmin && (
-                        <div className="flex gap-2 items-center pt-3 border-t border-white/5">
-                            <div className="flex-1 relative">
-                                <input
-                                    type="text"
-                                    value={commentText}
-                                    onChange={(e) => setCommentText(e.target.value)}
-                                    placeholder="Añade un comentario..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-full py-2 px-4 text-sm text-white focus:outline-none focus:border-pink-500/50 placeholder-gray-500 transition-all"
-                                    onKeyDown={(e) => e.key === 'Enter' && handleComment()}
-                                />
-                                {commentText.trim() && (
-                                    <button
-                                        onClick={handleComment}
-                                        className="absolute right-1 top-1 p-1.5 bg-pink-600 rounded-full text-white hover:bg-pink-500 transition-colors"
-                                    >
-                                        <Send size={14} />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
+
                 </div>
             </div >
 
