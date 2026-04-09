@@ -12,3 +12,4 @@ tonsdk
 aiohttp
 fal-client
 deep-translator
+Pillow
