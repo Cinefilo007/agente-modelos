@@ -10,6 +10,7 @@ export function AIPhotoEditor({ originalImage, onApply, onClose }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [processedImage, setProcessedImage] = useState(null);
     const [activeTab, setActiveTab] = useState('touchup'); // 'touchup' or 'background'
+    const [bgPrompt, setBgPrompt] = useState('playa paradisíaca al atardecer, estilo cine');
     const [originalUrl, setOriginalUrl] = useState(null);
     const [imageError, setImageError] = useState(false);
     const { showToast } = useToast();
