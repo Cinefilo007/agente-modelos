@@ -287,18 +287,26 @@ async def difusion_receive_content(update: Update, context: ContextTypes.DEFAULT
     models = db.get_all_models_for_broadcast()
     count = len(models) if models else 0
     
+    # Escapar contenido del usuario para evitar errores de Markdown
+    from telegram.helpers import escape_markdown
+    
+    if content["type"] == "text":
+        safe_preview = escape_markdown(content['text'][:200], version=1)
+        if len(content['text']) > 200:
+            safe_preview += "..."
+        content_line = f"📝 *Mensaje*:\n{safe_preview}\n"
+    else:
+        raw_caption = content.get('caption', '(sin caption)')[:150]
+        safe_caption = escape_markdown(raw_caption, version=1)
+        content_line = f"📝 *Caption*: {safe_caption}\n"
+
     preview_text = (
         f"📋 *CONFIRMACIÓN DE DIFUSIÓN*\n\n"
         f"📄 *Tipo*: {content['type'].upper()}\n"
         f"👥 *Destinatarias*: {count} modelos\n"
+        f"{content_line}"
+        f"\n¿Confirmar envío? Escribe *SI* para enviar o /cancelar para abortar."
     )
-    
-    if content["type"] == "text":
-        preview_text += f"📝 *Mensaje*:\n{content['text'][:200]}{'...' if len(content['text']) > 200 else ''}\n"
-    else:
-        preview_text += f"📝 *Caption*: {content.get('caption', '(sin caption)')[:150]}\n"
-
-    preview_text += f"\n¿Confirmar envío? Escribe *SI* para enviar o /cancelar para abortar."
     
     await msg.reply_text(preview_text, parse_mode="Markdown")
     return DIFUSION_CONFIRM
@@ -334,29 +342,25 @@ async def difusion_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if content["type"] == "text":
                 await context.bot.send_message(
                     chat_id=tg_id,
-                    text=content["text"],
-                    parse_mode="Markdown"
+                    text=content["text"]
                 )
             elif content["type"] == "photo":
                 await context.bot.send_photo(
                     chat_id=tg_id,
                     photo=content["file_id"],
-                    caption=content.get("caption", ""),
-                    parse_mode="Markdown"
+                    caption=content.get("caption", "")
                 )
             elif content["type"] == "video":
                 await context.bot.send_video(
                     chat_id=tg_id,
                     video=content["file_id"],
-                    caption=content.get("caption", ""),
-                    parse_mode="Markdown"
+                    caption=content.get("caption", "")
                 )
             elif content["type"] == "document":
                 await context.bot.send_document(
                     chat_id=tg_id,
                     document=content["file_id"],
-                    caption=content.get("caption", ""),
-                    parse_mode="Markdown"
+                    caption=content.get("caption", "")
                 )
             enviados += 1
         except Exception as e:
@@ -375,20 +379,20 @@ async def difusion_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Rate limiting de Telegram: ~30 msg/seg, esperamos 0.1s por seguridad
         await asyncio.sleep(0.1)
 
-    # Reporte final
+    # Reporte final (sin parse_mode para evitar errores con contenido de errores)
     report = (
-        f"📢 *DIFUSIÓN COMPLETADA*\n\n"
-        f"✅ Enviados: *{enviados}/{total}*\n"
-        f"❌ Fallidos: *{fallidos}*\n"
+        f"📢 DIFUSIÓN COMPLETADA\n\n"
+        f"✅ Enviados: {enviados}/{total}\n"
+        f"❌ Fallidos: {fallidos}\n"
     )
     if errores_detalle:
-        report += f"\n⚠️ *Detalle de errores:*\n"
+        report += f"\n⚠️ Detalle de errores:\n"
         for err in errores_detalle[:10]:  # Max 10 errores en el reporte
             report += f"• {err}\n"
         if len(errores_detalle) > 10:
             report += f"• ... y {len(errores_detalle) - 10} más\n"
 
-    await status_msg.edit_text(report, parse_mode="Markdown")
+    await status_msg.edit_text(report)
     
     # Limpiar contexto
     context.user_data.pop("difusion_content", None)
