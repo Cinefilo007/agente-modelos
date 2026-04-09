@@ -89,7 +89,20 @@ const LandingPage = () => {
                     await loginWithTelegram(data);
                     navigate('/');
                 } catch (error) {
-                    showToast(error.response?.data?.detail || 'Error al iniciar sesión', 'error');
+                    console.error('[Landing] Login error:', error);
+                    const errorDetail = error.response?.data?.detail;
+                    
+                    // Manejar errores de validación de FastAPI (listas o dicts)
+                    let errorMsg = 'Error al iniciar sesión';
+                    if (Array.isArray(errorDetail)) {
+                        errorMsg = errorDetail[0]?.msg || JSON.stringify(errorDetail);
+                    } else if (typeof errorDetail === 'string') {
+                        errorMsg = errorDetail;
+                    } else if (errorDetail && typeof errorDetail === 'object') {
+                        errorMsg = errorDetail.msg || JSON.stringify(errorDetail);
+                    }
+
+                    showToast(errorMsg, 'error');
                 } finally {
                     setLoginLoading(false);
                 }

@@ -14,7 +14,18 @@ export const ToastProvider = ({ children }) => {
 
     const showToast = useCallback((message, type = 'info', duration = 4000) => {
         const id = Date.now();
-        setToasts(prev => [...prev, { id, message, type }]);
+        
+        // Evitar crash #31 de React si el mensaje es un objeto (ej. error de validación)
+        let finalMessage = message;
+        if (typeof message === 'object' && message !== null) {
+            try {
+                finalMessage = message.msg || message.message || JSON.stringify(message);
+            } catch (e) {
+                finalMessage = "Error inesperado (detalles en consola)";
+            }
+        }
+
+        setToasts(prev => [...prev, { id, message: String(finalMessage), type }]);
 
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
