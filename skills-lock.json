@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "branding": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "7fadacd3c7bebbdeb579614bd607970a9866f78e5c8aedd6f34f026871aec7a3"
+    }
+  }
+}

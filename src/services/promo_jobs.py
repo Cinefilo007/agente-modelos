@@ -504,26 +504,31 @@ async def monitor_sfs_views_and_fraud(bot):
             # Método: intentar copiar el mensaje al propio chat del bot (ID negativo)
             # Si falla con "message not found" → fraude detectado
             # ----------------------------------------------------------------
-            for post in posts:
-                ch_res = db.service_client.table('channels').select('telegram_chat_id').eq('id', post['channel_id']).execute()
-                if not ch_res.data:
-                    continue
-                chat_id_tg = ch_res.data[0]['telegram_chat_id']
-                try:
-                    # get_chat + forwardMessage al propio bot es la forma más fiable de verificar
-                    await bot.forward_message(
-                        chat_id=bot.id if hasattr(bot, 'id') else chat_id_tg,
-                        from_chat_id=chat_id_tg,
-                        message_id=post['telegram_message_id'],
-                        disable_notification=True
-                    )
-                except Exception as fwd_err:
-                    err_lower = str(fwd_err).lower()
-                    if any(k in err_lower for k in ['message to forward not found', 'message_id_invalid', 'not found']):
-                        logger.warning(f"[fraude] Campaña {camp_id}: post {post['telegram_message_id']} eliminado prematuramente.")
-                        await _fraud_campaign(camp_id, camp['requester_id'], camp['target_id'], post['channel_id'])
-                        break  # No seguir evaluando esta campaña
-                    # Otro error (rate limit, etc.) — ignorar
+            if camp.get('type') == 'SFS_STORY':
+                # Tolerancia para SFS_STORY: No podemos verificar forward_message, confiamos en la expiración SFS_TIME
+                logger.info(f"[monitor] Campaña {camp_id} es SFS_STORY. Se salta validación estricta de forward.")
+            else:
+                for post in posts:
+                    ch_res = db.service_client.table('channels').select('telegram_chat_id').eq('id', post['channel_id']).execute()
+                    if not ch_res.data:
+                        continue
+                    chat_id_tg = ch_res.data[0]['telegram_chat_id']
+                    try:
+                        # get_chat + forwardMessage al propio bot es la forma más fiable de verificar
+                        await bot.forward_message(
+                            chat_id=bot.id if hasattr(bot, 'id') else chat_id_tg,
+                            from_chat_id=chat_id_tg,
+                            message_id=post['telegram_message_id'],
+                            disable_notification=True
+                        )
+                    except Exception as fwd_err:
+                        err_lower = str(fwd_err).lower()
+                        if any(k in err_lower for k in ['message to forward not found', 'message_id_invalid', 'not found']):
+                            logger.warning(f"[fraude] Campaña {camp_id}: post {post['telegram_message_id']} eliminado prematuramente.")
+                            await _fraud_campaign(camp_id, camp['requester_id'], camp['target_id'], post['channel_id'])
+                            break  # No seguir evaluando esta campaña
+                        # Otro error (rate limit, etc.) — ignorar
+
 
             # Re-leer estado por si acaso se marcó como fraud
             camp_status_res = db.service_client.table('promo_campaigns').select('status').eq('id', camp_id).execute()
@@ -588,16 +593,16 @@ async def monitor_sfs_views_and_fraud(bot):
                         f"Tu campaña lleva <b>{total_views:,} / {views_target:,} vistas</b> (90%+)."
                     )
 
-            # ── SFS_TIME ──
-            elif camp_type == 'SFS_TIME' and camp.get('start_time') and camp.get('duration_hours'):
+            # ── SFS_TIME o SFS_STORY ──
+            elif camp_type in ['SFS_TIME', 'SFS_STORY'] and camp.get('start_time'):
                 from datetime import timezone as tz
                 start_str = camp['start_time'].replace('Z', '+00:00')
                 start = datetime.fromisoformat(start_str)
-                duration_h = camp['duration_hours']
+                duration_h = camp.get('duration_hours') or 24 # Fallback a 24h para SFS_STORY
                 end_time = start + timedelta(hours=duration_h)
                 now_utc = datetime.now(tz.utc)
                 if now_utc >= end_time:
-                    logger.info(f"[monitor] Campaña {camp_id} SFS_TIME expirada.")
+                    logger.info(f"[monitor] Campaña {camp_id} {camp_type} expirada.")
                     await _complete_campaign(
                         camp_id, camp['requester_id'], camp['target_id'],
                         f"Tu campaña de <b>{duration_h}h</b> de exposición ha completado su tiempo."

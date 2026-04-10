@@ -100,6 +100,16 @@ const Promotions = () => {
     useEffect(() => {
         const initSfsUser = async () => {
             try {
+                // Configurar WebApp para pantalla completa si está disponible
+                if (window.Telegram?.WebApp) {
+                    window.Telegram.WebApp.expand();
+                    if (window.Telegram.WebApp.requestFullscreen) {
+                        try {
+                            window.Telegram.WebApp.requestFullscreen();
+                        } catch(e) { console.error('Full screen not supported', e); }
+                    }
+                }
+
                 // Detectar usuario de Telegram WebApp primero (fuente de verdad)
                 const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
                 const tgTelegramId = tgUser?.id ? Number(tgUser.id) : null;
@@ -173,47 +183,60 @@ const Promotions = () => {
         initSfsUser();
     }, []);
 
-    // Telegram Login Widget (solo se monta si needsLogin es true)
-    useEffect(() => {
-        if (!needsLogin || !telegramLoginRef.current) return;
-        if (telegramLoginRef.current.innerHTML !== "") return;
+    // NATIVE TELEGRAM LOGIN POPUP
+    const handleNativeTelegramLogin = async () => {
+        setGlobalAuthLoading(true);
+        try {
+            // Fetch bot config to get bot_id dynamically
+            const { data } = await api.get('/auth/config');
+            const botId = data.bot_id;
 
-        const script = document.createElement('script');
-        script.src = "https://telegram.org/js/telegram-widget.js?22";
-        script.setAttribute('data-telegram-login', 'ClubNebula_Bot');
-        script.setAttribute('data-size', 'large');
-        script.setAttribute('data-radius', '12');
-        script.setAttribute('data-request-access', 'write');
-        script.setAttribute('data-userpic', 'false');
-        script.setAttribute('data-onauth', 'onTelegramAuthPromo(user)');
-        script.async = true;
-        telegramLoginRef.current.appendChild(script);
-
-        window.onTelegramAuthPromo = async (user) => {
-            try {
-                setGlobalAuthLoading(true);
-                setNeedsLogin(false);
-                const userPayload = {
-                    telegram_id: user.id,
-                    username: user.username || "",
-                    full_name: `${user.first_name || ""} ${user.last_name || ""}`.trim()
-                };
-                const userDoc = await sfsService.authenticateUser(userPayload);
-                setSfsUser(userDoc);
-                saveSession(userDoc);
-                const lims = await sfsService.getUserLimits(userDoc.id);
-                setLimits(lims);
-            } catch (err) {
-                console.error("[Promo] Login error", err);
-                showToast("Error al iniciar sesión", "error");
-                setNeedsLogin(true);
-            } finally {
-                setGlobalAuthLoading(false);
+            if (!window.Telegram?.Login) {
+                // Ensure the script is loaded globally
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = "https://telegram.org/js/telegram-widget.js?22";
+                    script.async = true;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
             }
-        };
 
-        return () => { window.onTelegramAuthPromo = undefined; };
-    }, [needsLogin]);
+            window.Telegram.Login.auth(
+                { bot_id: botId, request_access: "write", embed: 1 },
+                async (user) => {
+                    if (!user) {
+                        setGlobalAuthLoading(false);
+                        return; // user canceled
+                    }
+                    try {
+                        const userPayload = {
+                            telegram_id: user.id,
+                            username: user.username || "",
+                            full_name: `${user.first_name || ""} ${user.last_name || ""}`.trim()
+                        };
+                        const userDoc = await sfsService.authenticateUser(userPayload);
+                        setSfsUser(userDoc);
+                        saveSession(userDoc);
+                        const lims = await sfsService.getUserLimits(userDoc.id);
+                        setLimits(lims);
+                        setNeedsLogin(false);
+                    } catch (err) {
+                        console.error("[Promo] Login error", err);
+                        showToast("Error al iniciar sesión", "error");
+                        setNeedsLogin(true);
+                    } finally {
+                        setGlobalAuthLoading(false);
+                    }
+                }
+            );
+        } catch (error) {
+            console.error("Error fetching config or logging in:", error);
+            showToast("Error contactando al servidor", "error");
+            setGlobalAuthLoading(false);
+        }
+    };
 
     // ---- Carga del catálogo ----
     const fetchCatalog = useCallback(async (page = 1, category = '') => {
@@ -318,7 +341,7 @@ const Promotions = () => {
         setProposeTarget(channel);
         setProposeSelectedChannel('');
         setProposeSelectedTemplate('');
-        setProposeContractType('SFS_VIEWS');
+        setProposeContractType(channel?.username ? 'SFS_VIEWS' : 'SFS_TIME');
         setProposeViewsTarget(1000);
         setProposeDurationHours(24);
         setProposeFollowersTarget(100);
@@ -1296,10 +1319,15 @@ const Promotions = () => {
                         ))}
                     </div>
 
-                    {/* Widget de login */}
+                    {/* Login Nativo */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
                         <p className="text-xs text-gray-400 text-center mb-4">Inicia sesión para acceder al catálogo completo</p>
-                        <div ref={telegramLoginRef} className="flex items-center justify-center" />
+                        <button 
+                            onClick={handleNativeTelegramLogin}
+                            className="w-full py-4 rounded-2xl text-sm font-black text-white bg-blue-500 hover:bg-blue-600 shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all flex items-center justify-center gap-2"
+                        >
+                            <Send className="w-5 h-5" /> Iniciar Sesión con Telegram
+                        </button>
                         <p className="text-[10px] text-gray-600 mt-4 uppercase tracking-widest flex items-center justify-center gap-1.5">
                             <ShieldCheck className="w-3 h-3" /> Acceso seguro vía Telegram
                         </p>
@@ -1314,7 +1342,9 @@ const Promotions = () => {
     }
 
     return (
-        <div className="pb-24 pt-4 px-4 max-w-2xl mx-auto min-h-screen tour-step-1">
+        <div className="pb-24 px-4 max-w-2xl mx-auto min-h-screen tour-step-1"
+             style={{ paddingTop: typeof window !== 'undefined' && window.Telegram?.WebApp?.isExpanded ? 'var(--tg-safe-area-inset-top, 8px)' : '1rem' }}
+        >
             <Joyride steps={tourSteps} run={runTour} continuous showSkipButton showProgress callback={handleJoyrideCallback}
                 styles={{ options: { arrowColor: 'hsl(240 10% 5%)', backgroundColor: 'hsl(240 10% 5%)', overlayColor: 'rgba(0,0,0,0.75)', primaryColor: '#c026d3', textColor: 'hsl(0 0% 98%)', zIndex: 1000 }, buttonNext: { borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }, buttonBack: { marginRight: 10, color: '#a1a1aa' }, buttonSkip: { color: '#a1a1aa' } }} />
 
@@ -1341,15 +1371,18 @@ const Promotions = () => {
                     {/* Tipo de contrato */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Tipo de Contrato</label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-4 gap-2">
                             {[
-                                { id: 'SFS_VIEWS', emoji: '👁️', label: 'Por Vistas', desc: 'Finaliza al alcanzar una meta de vistas' },
-                                { id: 'SFS_TIME', emoji: '⏱️', label: 'Por Tiempo', desc: 'Dura una cantidad de horas fija' },
-                                { id: 'SFS_FOLLOWERS', emoji: '👥', label: 'Por Subs', desc: 'Finaliza al ganar N seguidores' },
+                                { id: 'SFS_VIEWS', emoji: '👁️', label: 'Vistas', disabled: !proposeTarget?.username },
+                                { id: 'SFS_TIME', emoji: '⏱️', label: 'Tiempo', disabled: false },
+                                { id: 'SFS_FOLLOWERS', emoji: '👥', label: 'Subs', disabled: false },
+                                { id: 'SFS_STORY', emoji: '📸', label: 'Historia', disabled: false },
                             ].map(ct => (
-                                <button key={ct.id} onClick={() => setProposeContractType(ct.id)}
-                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all ${proposeContractType === ct.id ? 'border-purple-500 bg-purple-500/20 text-foreground' : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10'}`}>
-                                    <span className="text-xl">{ct.emoji}</span>
+                                <button key={ct.id} 
+                                    onClick={() => !ct.disabled && setProposeContractType(ct.id)}
+                                    disabled={ct.disabled}
+                                    className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border text-center transition-all h-[70px] ${ct.disabled ? 'opacity-30 grayscale cursor-not-allowed border-white/5 bg-transparent' : proposeContractType === ct.id ? 'border-purple-500 bg-purple-500/20 text-foreground' : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10'}`}>
+                                    <span className="text-xl leading-none">{ct.emoji}</span>
                                     <span className="text-[10px] font-bold leading-tight">{ct.label}</span>
                                 </button>
                             ))}
@@ -1364,12 +1397,6 @@ const Promotions = () => {
                                 {proposeViewsTarget > (proposeTarget?.avg_views || 0) * 2 && (
                                     <p className="text-amber-300">⚠️ La meta es alta para este canal. Considera bajarla.</p>
                                 )}
-                                {!proposeTarget?.username && (
-                                    <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                        <p className="text-red-300 font-bold">⚠️ Canal Privado</p>
-                                        <p className="text-red-200/80">Las vistas en canales privados no se pueden medir automáticamente. Se recomienda usar <b>Tiempo</b> o <b>Seguidores</b> para este canal.</p>
-                                    </div>
-                                )}
                             </>}
                             {proposeContractType === 'SFS_TIME' && <>
                                 <p>⏱️ Los posts permanecen publicados por el tiempo acordado, independientemente de las vistas.</p>
@@ -1383,7 +1410,17 @@ const Promotions = () => {
                                     <p className="text-amber-300">⚠️ Meta alta respecto al tamaño del canal. Considera bajarla.</p>
                                 )}
                             </>}
+                            {proposeContractType === 'SFS_STORY' && <>
+                                <p>📸 Colaboración en Historias. Se publicará en el perfil personal (Telegram Business) durante 24 horas.</p>
+                                <p className="text-blue-200/80">Ambas partes deben haber otorgado permisos de historias al bot.</p>
+                            </>}
                         </div>
+                        {!proposeTarget?.username && proposeContractType === 'SFS_VIEWS' && (
+                            <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                <p className="text-red-300 font-bold">⚠️ Canal Privado</p>
+                                <p className="text-red-200/80">Las vistas en canales privados no se pueden medir automáticamente. Se recomienda usar <b>Tiempo</b> o <b>Seguidores</b> para este canal.</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Selector dinámico según tipo */}
@@ -1528,7 +1565,8 @@ const Promotions = () => {
                         </select>
                     </div>
 
-                    {/* Modo */}
+                    {/* Modo (PXP oculto temporalmente) */}
+                    {/* 
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Modo de Participación</label>
                         <div className="grid grid-cols-3 gap-2">
@@ -1545,6 +1583,7 @@ const Promotions = () => {
                             ))}
                         </div>
                     </div>
+                    */}
 
                     {/* Tipos de contrato aceptados */}
                     <div className="space-y-2">
@@ -1554,6 +1593,7 @@ const Promotions = () => {
                                 { id: 'SFS_VIEWS', label: 'Por Vistas' },
                                 { id: 'SFS_TIME', label: 'Por Tiempo' },
                                 { id: 'SFS_FOLLOWERS', label: 'Por Subs' },
+                                { id: 'SFS_STORY', label: 'Historia' },
                             ].map(ct => {
                                 const active = (channelEditData.accepted_contract_types || []).includes(ct.id);
                                 return (

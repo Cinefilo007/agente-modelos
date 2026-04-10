@@ -26,6 +26,9 @@ Este sistema es una solución integral para la gestión y automatización de la 
 *   **[Flujo de Onboarding](./onboarding_flow.md)**: De registro a verificación ID.
 *   **[Sistema Escrow (P2P)](./escrow_system.md)**: Pagos seguros y disputas.
 
+### 🎨 Branding e Identidad
+*   **[Identidad de Marca Nebula](./BRAND_IDENTITY_NEBULA.md)**: Pilares, Slogan, Guía Visual y Voz de Marca.
+
 ---
 
 ## 3. Estándar de Trabajo: SOP vs Ejecución

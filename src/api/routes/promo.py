@@ -31,6 +31,8 @@ def _contract_label(camp: dict) -> str:
         return f"Por Tiempo ({camp.get('duration_hours', '?')}h)"
     if t == "SFS_FOLLOWERS":
         return f"Por Subs ({camp.get('followers_target', '?'):,} subs)"
+    if t == "SFS_STORY":
+        return f"En Historia ({camp.get('duration_hours', '?')}h)"
     return t
 
 class TelegramUserAuth(BaseModel):
@@ -56,7 +58,7 @@ class ProposeSFSReq(BaseModel):
     target_sfs_user_id: str
     requester_channel_id: str
     requester_template_id: str
-    contract_type: str = "SFS_VIEWS"  # SFS_VIEWS | SFS_TIME | SFS_FOLLOWERS
+    contract_type: str = "SFS_VIEWS"  # SFS_VIEWS | SFS_TIME | SFS_FOLLOWERS | SFS_STORY
     views_target: Optional[int] = None
     duration_hours: Optional[int] = None
     followers_target: Optional[int] = None
@@ -288,7 +290,7 @@ async def check_user_limits(sfs_user_id: str = Query(...)):
         if not user_res.data:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
         user = user_res.data[0]
-        base_limit = 6 if user.get("is_agency_model") else 2
+        base_limit = 20 if user.get("is_agency_model") else 10
         today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         count_res = db.client.table("promo_campaigns").select("id", count="exact").eq("requester_id", sfs_user_id).gte("created_at", today).execute()
         used = count_res.count or 0
@@ -345,15 +347,15 @@ async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
     """Crea una propuesta de campaña SFS."""
     try:
         # Validar tipo de contrato
-        valid_types = ["SFS_VIEWS", "SFS_TIME", "SFS_FOLLOWERS"]
+        valid_types = ["SFS_VIEWS", "SFS_TIME", "SFS_FOLLOWERS", "SFS_STORY"]
         if req.contract_type not in valid_types:
             raise HTTPException(status_code=400, detail=f"Tipo de contrato inválido. Usa: {valid_types}")
 
         # Validar campo correspondiente al tipo
         if req.contract_type == "SFS_VIEWS" and not req.views_target:
             raise HTTPException(status_code=400, detail="Se requiere views_target para SFS_VIEWS")
-        if req.contract_type == "SFS_TIME" and not req.duration_hours:
-            raise HTTPException(status_code=400, detail="Se requiere duration_hours para SFS_TIME")
+        if req.contract_type in ["SFS_TIME", "SFS_STORY"] and not req.duration_hours:
+            raise HTTPException(status_code=400, detail=f"Se requiere duration_hours para {req.contract_type}")
         if req.contract_type == "SFS_FOLLOWERS" and not req.followers_target:
             raise HTTPException(status_code=400, detail="Se requiere followers_target para SFS_FOLLOWERS")
 
@@ -372,7 +374,7 @@ async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
         limits_res = db.client.table("promo_campaigns").select("id", count="exact").eq("requester_id", requester_id).gte("created_at", today).execute()
         used = limits_res.count or 0
         user_res = db.client.table("sfs_users").select("is_agency_model").eq("id", requester_id).execute()
-        base_limit = 6 if (user_res.data and user_res.data[0].get("is_agency_model")) else 2
+        base_limit = 20 if (user_res.data and user_res.data[0].get("is_agency_model")) else 10
         if used >= base_limit:
             raise HTTPException(status_code=429, detail=f"Límite diario alcanzado ({base_limit} SFS/día)")
 
