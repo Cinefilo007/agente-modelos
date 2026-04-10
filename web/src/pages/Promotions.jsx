@@ -1342,9 +1342,9 @@ const Promotions = () => {
     }
 
     return (
-        <div className="pb-24 min-h-screen tour-step-1 bg-[#030014]">
+        <div className="pb-24 min-h-screen tour-step-1 bg-transparent">
             {/* Cinta Superior (Safe Area para botones Nativos de Telegram) */}
-            <div className="sticky top-0 z-50 w-full bg-[#030014]/80 backdrop-blur-md border-b border-white/5 flex flex-col justify-end pb-3 items-center"
+            <div className="sticky top-0 z-50 w-full bg-[#030014]/60 backdrop-blur-md border-b border-white/5 flex flex-col justify-end pb-3 items-center"
                 style={{ paddingTop: 'var(--tg-safe-area-inset-top, 8px)', height: 'calc(var(--tg-safe-area-inset-top, 8px) + 50px)' }}
             >
                 <div className="flex items-center justify-center relative w-full px-4">

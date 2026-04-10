@@ -117,7 +117,7 @@ const AdvertiserProfile = () => {
 
     // ---- Error ----
     if (error || !profile) return (
-        <div className="min-h-screen bg-[#030014] flex flex-col items-center justify-center p-6 text-center">
+        <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 text-center">
             <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
             <h2 className="text-lg font-bold text-white mb-1">Perfil no encontrado</h2>
             <p className="text-sm text-gray-400 mb-6">{error || 'El anunciante no existe o no está disponible.'}</p>
@@ -136,19 +136,29 @@ const AdvertiserProfile = () => {
     const reviews = profile.reviews || [];
 
     return (
-        <div className="min-h-screen bg-[#030014] pb-12">
+        <div className="min-h-screen bg-transparent pb-12">
+            {/* Cinta Superior (Safe Area para botones Nativos de Telegram) */}
+            <div className="sticky top-0 z-50 w-full bg-[#030014]/60 backdrop-blur-md border-b border-white/5 flex flex-col justify-end pb-3 items-center"
+                style={{ paddingTop: 'var(--tg-safe-area-inset-top, 8px)', height: 'calc(var(--tg-safe-area-inset-top, 8px) + 50px)' }}
+            >
+                <div className="flex items-center justify-between w-full px-4 relative">
+                    {/* Botón atrás dentro de la cinta protegida */}
+                    <button onClick={() => navigate(-1)}
+                        className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white transition-colors">
+                        <ChevronLeft className="w-4 h-4" /> Volver
+                    </button>
+                    <h1 className="text-sm font-bold text-white/90 truncate absolute left-1/2 -translate-x-1/2">
+                        {profile.username ? `@${profile.username}` : 'Perfil'}
+                    </h1>
+                </div>
+            </div>
+
             {/* Header con fondo gradiente */}
             <div className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-purple-900/40 via-fuchsia-900/20 to-[#030014]" />
+                <div className="absolute inset-0 bg-gradient-to-b from-purple-900/40 via-fuchsia-900/20 to-transparent" />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.2),transparent_70%)]" />
 
                 <div className="relative px-4 pt-5 pb-8">
-                    {/* Botón atrás */}
-                    <button onClick={() => navigate(-1)}
-                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors mb-8">
-                        <ChevronLeft className="w-4 h-4" /> Volver
-                    </button>
-
                     {/* Avatar + Info */}
                     <div className="flex items-start gap-4">
                         <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-600 via-fuchsia-500 to-pink-500 flex items-center justify-center text-4xl font-black text-white shadow-[0_0_30px_rgba(168,85,247,0.4)] shrink-0">
@@ -162,7 +172,7 @@ const AdvertiserProfile = () => {
                                 <p className="text-sm text-purple-300 mt-0.5">@{profile.username}</p>
                             )}
                             <div className="mt-3 flex flex-wrap gap-2">
-                                <TrustBadge score={profile.trust_score || 100} />
+                                <TrustBadge score={profile.trust_score || 0} />
                                 {profile.is_agency_model && (
                                     <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-purple-500/40 bg-purple-500/15 text-[10px] font-bold text-purple-300">
                                         ⭐ Modelo Agencia

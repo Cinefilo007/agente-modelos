@@ -52,9 +52,9 @@ const BannerCarousel = ({ sfsUser }) => {
                             <span className="text-2xl">🔥</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h4 className="font-black text-white text-sm leading-tight">¿Eres Creadora de Contenido?</h4>
+                            <h4 className="font-black text-white text-sm leading-tight">¿Lista para escalar tus ventas?</h4>
                             <p className="text-[11px] text-white/80 mt-0.5 leading-relaxed">
-                                Automatiza tus ventas con nuestro <span className="font-bold text-white">Bot IA</span>. SFS ilimitados y analíticas PRO.
+                                Vende nuestro feed al estilo Instagram usando IA. <i className="block mt-1 font-semibold opacity-90">"Sola eres una estrella, juntas somos Nebula."</i>
                             </p>
                             <a href="https://agente-modelos-production.up.railway.app/landing" target="_blank" rel="noreferrer"
                                 className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-white text-purple-700 rounded-lg text-[11px] font-black hover:bg-white/90 transition-all active:scale-95 shadow-lg shadow-black/20">

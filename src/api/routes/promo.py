@@ -593,7 +593,7 @@ async def submit_review(req: ReviewReq, sfs_user_id: str = Query(...)):
 
         target_res = db.client.table("sfs_users").select("trust_score").eq("id", req.target_id).execute()
         if target_res.data:
-            current_score = target_res.data[0].get("trust_score", 100)
+            current_score = target_res.data[0].get("trust_score") or 0
             adjustment = (req.rating - 3) * 5
             new_score = max(0, min(100, current_score + adjustment))
             db.service_client.table("sfs_users").update({"trust_score": new_score}).eq("id", req.target_id).execute()
