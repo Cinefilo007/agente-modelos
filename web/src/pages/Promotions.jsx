@@ -727,7 +727,7 @@ const Promotions = () => {
                                                 {channel.name} <ExternalLink className="w-3 h-3" />
                                             </a>
                                         ) : channel.name}
-                                        {channel.trust_score >= 90 && <ShieldCheck className="w-4 h-4 text-green-400" />}
+                                        {(channel.trust_score || 0) >= 90 && <ShieldCheck className="w-4 h-4 text-green-400" />}
                                     </h3>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                         <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs rounded-full flex items-center gap-1">
@@ -743,8 +743,8 @@ const Promotions = () => {
                                         )}
                                     </div>
                                 </div>
-                                <div className={`tour-step-3 text-sm font-bold flex items-center gap-1 ${channel.trust_score >= 80 ? 'text-green-400' : 'text-yellow-500'}`}>
-                                    <Star className="w-4 h-4 fill-current" /> {channel.trust_score}
+                                <div className={`tour-step-3 text-sm font-bold flex items-center gap-1 ${(channel.trust_score || 0) >= 80 ? 'text-green-400' : 'text-yellow-500'}`}>
+                                    ⭐ {(channel.trust_score || 0).toFixed(1)}
                                 </div>
                             </div>
 
@@ -1143,7 +1143,7 @@ const Promotions = () => {
                 <div className="flex-1">
                     <p className="font-black text-foreground text-lg">@{sfsUser?.username || sfsUser?.full_name || 'usuario'}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">Trust: {sfsUser?.trust_score ?? 100}/100</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">Puntuación: {sfsUser?.trust_score ?? 0}/100</span>
                         {sfsUser?.is_agency_model && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">Modelo Agencia</span>}
                     </div>
                 </div>
@@ -1342,9 +1342,17 @@ const Promotions = () => {
     }
 
     return (
-        <div className="pb-24 px-4 max-w-2xl mx-auto min-h-screen tour-step-1"
-             style={{ paddingTop: typeof window !== 'undefined' && window.Telegram?.WebApp?.isExpanded ? 'var(--tg-safe-area-inset-top, 8px)' : '1rem' }}
-        >
+        <div className="pb-24 min-h-screen tour-step-1 bg-[#030014]">
+            {/* Cinta Superior (Safe Area para botones Nativos de Telegram) */}
+            <div className="sticky top-0 z-50 w-full bg-[#030014]/80 backdrop-blur-md border-b border-white/5 flex flex-col justify-end pb-3 items-center"
+                style={{ paddingTop: 'var(--tg-safe-area-inset-top, 8px)', height: 'calc(var(--tg-safe-area-inset-top, 8px) + 50px)' }}
+            >
+                <div className="flex items-center justify-center relative w-full px-4">
+                    <h1 className="text-xl font-black bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Promo Center</h1>
+                </div>
+            </div>
+
+            <div className="px-4 max-w-2xl mx-auto pt-4">
             <Joyride steps={tourSteps} run={runTour} continuous showSkipButton showProgress callback={handleJoyrideCallback}
                 styles={{ options: { arrowColor: 'hsl(240 10% 5%)', backgroundColor: 'hsl(240 10% 5%)', overlayColor: 'rgba(0,0,0,0.75)', primaryColor: '#c026d3', textColor: 'hsl(0 0% 98%)', zIndex: 1000 }, buttonNext: { borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }, buttonBack: { marginRight: 10, color: '#a1a1aa' }, buttonSkip: { color: '#a1a1aa' } }} />
 
@@ -1657,17 +1665,17 @@ const Promotions = () => {
             {renderStatsModal()}
             {renderReviewModal()}
 
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
+            {/* Header Secundario Info */}
+            <div className="flex items-center justify-between mb-4 mt-2">
                 <div>
-                    <h1 className="text-2xl font-black bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Promo Center</h1>
-                    <p className="text-xs text-muted-foreground mt-0.5">Acuerdos seguros SFS y Publicidad PXP.</p>
+                    <h2 className="text-sm font-bold text-foreground">Acuerdos SFS</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Añade canales y haz crecer tu comunidad.</p>
                 </div>
                 <button
                     onClick={() => setProfilePanelOpen(true)}
-                    className="flex items-center gap-2 px-3 py-2 bg-card/50 border border-white/10 rounded-xl text-xs font-bold text-foreground hover:bg-card/70 transition-all active:scale-95"
+                    className="flex items-center gap-2 px-3 py-2 bg-card/50 border border-white/10 rounded-xl text-xs font-bold text-foreground hover:bg-card/70 transition-all active:scale-95 shadow-sm"
                 >
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white text-[10px] font-black tour-step-profile-btn">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white text-[11px] font-black tour-step-profile-btn shadow-inner">
                         {(sfsUser?.username || sfsUser?.full_name || '?')[0].toUpperCase()}
                     </div>
                     <span className="hidden sm:block">@{sfsUser?.username || sfsUser?.full_name || 'usuario'}</span>
@@ -1786,6 +1794,8 @@ const Promotions = () => {
                     </div>
                 </div>
             )}
+            {/* Cierre del envoltorio interno del layout */}
+            </div>
         </div>
     );
 
