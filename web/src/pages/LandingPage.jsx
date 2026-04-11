@@ -65,7 +65,7 @@ const LandingPage = () => {
         fetchConfig();
     }, []);
 
-    // Login nativo con Telegram Login Library (popup nativo)
+    // Login nativo con Telegram Widget API (popup nativo confiable y seguro)
     const handleTelegramLogin = () => {
         if (!botId) {
             showToast('Error de configuración del bot. Intenta más tarde.', 'error');
@@ -74,42 +74,18 @@ const LandingPage = () => {
 
         setLoginLoading(true);
 
-        // Telegram.Login.auth nativo de telegram-login.js tiene un bug que omite el origin en el popup
-        // Por ello, creamos manualmente el popup con los mismos parámetros pero incluyendo &origin
-        const redirectUri = window.location.origin + window.location.pathname;
-        const origin = window.location.origin;
-        const authUrl = `https://oauth.telegram.org/auth?response_type=post_message&client_id=${botId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid profile&lang=es&origin=${encodeURIComponent(origin)}`;
-        
-        const width = 550;
-        const height = 650;
-        const left = Math.max(0, (window.screen.width - width) / 2) + (window.screen.availLeft | 0);
-        const top = Math.max(0, (window.screen.height - height) / 2) + (window.screen.availTop | 0);
-        
-        const popup = window.open(authUrl, 'telegram_oidc_login', `width=${width},height=${height},left=${left},top=${top},status=0,location=0,menubar=0,toolbar=0`);
-        
-        if (!popup) {
-            showToast("Desactiva el bloqueador de popups para iniciar sesión.", "error");
-            setLoginLoading(false);
-            return;
-        }
-
-        const messageHandler = async (event) => {
-            if (event.origin !== 'https://oauth.telegram.org' && event.origin !== 'https://oauth.tg.dev') return;
-            try {
-                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-                if (data && data.event === 'auth_result') {
-                    window.removeEventListener('message', messageHandler);
-                    if (popup && (!popup.closed)) popup.close();
-                    
-                    if (data.error || !data.result) {
+        if (window.Telegram && window.Telegram.Login) {
+            window.Telegram.Login.auth(
+                { bot_id: botId, request_access: 'write', lang: 'es' },
+                async (data) => {
+                    if (!data) {
                         setLoginLoading(false);
-                        return;
+                        return; // User closed popup
                     }
-                    
                     try {
                         localStorage.setItem('intendedRole', viewMode);
-                        // Pasamos el id_token como lo esperaba Telegram.Login.auth nativo
-                        await loginWithTelegram({ id_token: data.result });
+                        // Pasamos la data que tiene el hash HMAC
+                        await loginWithTelegram(data);
                         navigate('/');
                     } catch (error) {
                         console.error('[Landing] Login error:', error);
@@ -127,21 +103,27 @@ const LandingPage = () => {
                         setLoginLoading(false);
                     }
                 }
-            } catch (e) {
-                console.error("Error parsed telegram auth result:", e);
-            }
-        };
+            );
 
-        window.addEventListener('message', messageHandler);
-        
-        // Polling para revisar si cerraron la ventana sin loguearse
-        const popupTick = setInterval(() => {
-            if (popup.closed) {
-                clearInterval(popupTick);
-                window.removeEventListener('message', messageHandler);
-                setLoginLoading(false);
-            }
-        }, 500);
+            // Respaldo por si se cierra la ventana sin notificar callback
+            const checkIfClosed = setInterval(() => {
+                // Telegram widget iframe suele resetearse o no disparar si el usuario lo cierra abruptamente 
+                // pero no tenemos control directo del handle de la ventana aquí, así que el loading spinner se quitará con un timeout
+            }, 1000);
+            
+            setTimeout(() => {
+                setLoginLoading((prev) => {
+                    if (prev) {
+                         showToast('Asegúrate de permitir ventanas emergentes si no ves la de Telegram.', 'info');
+                         return false; 
+                    }
+                    return prev;
+                });
+            }, 15000); // Reset loading after 15s if it gets stuck
+        } else {
+            showToast('Librería de Telegram no cargada. Desactiva AdBlock.', 'error');
+            setLoginLoading(false);
+        }
     };
 
     const scrollToLogin = () => {
