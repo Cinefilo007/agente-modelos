@@ -60,7 +60,7 @@ const FanLanding = () => {
         fetchConfig();
     }, []);
 
-    const handleTelegramLogin = () => {
+    const handleTelegramLogin = async () => {
         if (!botId) {
             showToast('Error de configuración del bot. Intenta más tarde.', 'error');
             return;
@@ -68,6 +68,31 @@ const FanLanding = () => {
 
         setLoginLoading(true);
 
+        // 1. Detectar si estamos dentro de la Mini App (flujo silencioso/nativo)
+        if (window.Telegram?.WebApp?.initData) {
+            console.log('[FanLanding] Detectada Mini App, usando initData...');
+            try {
+                // El login se maneja usualmente por el AuthContext al iniciar,
+                // pero si el usuario hace clic explícitamente, re-validamos.
+                const response = await api.post('/auth/webapp', {
+                    init_data: window.Telegram.WebApp.initData
+                });
+                const { access_token, user: userData, role } = response.data;
+                const fullUser = { ...userData, role };
+                
+                localStorage.setItem('token', access_token);
+                localStorage.setItem('user', JSON.stringify(fullUser));
+                navigate('/');
+            } catch (error) {
+                console.error('[FanLanding] WebApp login failed:', error);
+                showToast('Error al conectar con Telegram nativo.', 'error');
+            } finally {
+                setLoginLoading(false);
+            }
+            return;
+        }
+
+        // 2. Flujo de Navegador Estándar (Login Widget / Popup)
         if (window.Telegram && window.Telegram.Login) {
             window.Telegram.Login.auth(
                 { bot_id: botId, request_access: 'write', lang: 'es' },
@@ -80,7 +105,7 @@ const FanLanding = () => {
                         await loginWithTelegram(data);
                         navigate('/');
                     } catch (error) {
-                        console.error('[FanLanding] Login error:', error);
+                        console.error('[FanLanding] Browser login error:', error);
                         showToast(error.response?.data?.detail || 'Error al iniciar sesión', 'error');
                     } finally {
                         setLoginLoading(false);
@@ -112,13 +137,13 @@ const FanLanding = () => {
             </div>
 
             {/* Navbar */}
-            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
-                <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/5 py-3 md:py-4' : 'bg-transparent py-4 md:py-6'}`}>
+                <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
                     <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/')}>
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)] transition-transform group-hover:rotate-12">
-                            <Activity className="w-6 h-6 text-white" />
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)] transition-transform group-hover:rotate-12">
+                            <Activity className="w-5 h-5 md:w-6 md:h-6 text-white" />
                         </div>
-                        <span className="font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                        <span className="font-black text-xl md:text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
                             NEBULA<span className="text-pink-500">.FANS</span>
                         </span>
                     </div>
@@ -127,33 +152,33 @@ const FanLanding = () => {
                         <a href="#seguridad" className="hover:text-white transition-colors">Seguridad</a>
                         <a href="#experiencia" className="hover:text-white transition-colors">Vip</a>
                     </div>
-                    <button onClick={scrollToLogin} className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-pink-500/50 transition-all font-bold text-xs uppercase tracking-widest backdrop-blur-md">
+                    <button onClick={scrollToLogin} className="px-4 py-2 md:px-6 md:py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-pink-500/50 transition-all font-bold text-[10px] uppercase tracking-widest backdrop-blur-md">
                         Entrar
                     </button>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <section className="relative min-h-screen flex items-center justify-center pt-20 px-4 z-10">
-                <div className="container mx-auto text-center space-y-12">
-                    <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-pink-500/30 bg-pink-500/5 text-pink-300 backdrop-blur-md animate-bounce-slow">
-                        <Heart className="w-4 h-4 fill-pink-500 text-pink-500" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">El Ecosistema más Exclusivo</span>
+            <section className="relative min-h-screen flex items-center justify-center pt-24 md:pt-32 px-4 z-10 overflow-hidden">
+                <div className="container mx-auto text-center space-y-8 md:space-y-12">
+                    <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-pink-500/30 bg-pink-500/5 text-pink-300 backdrop-blur-md animate-bounce-slow">
+                        <Heart className="w-3.5 h-3.5 fill-pink-500 text-pink-500" />
+                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em]">El Ecosistema más Exclusivo</span>
                     </div>
 
-                    <h1 className="text-6xl md:text-[10rem] font-black leading-[0.85] tracking-tighter max-w-6xl mx-auto uppercase">
+                    <h1 className="text-[3.5rem] sm:text-7xl md:text-[10rem] font-black leading-[0.9] md:leading-[0.85] tracking-tighter max-w-6xl mx-auto uppercase">
                         El Futuro <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">
                             del Placer
                         </span>
                     </h1>
 
-                    <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto leading-relaxed font-medium">
-                        Modelos reales e IA combinadas en un entorno <span className="text-white font-bold">100% privado</span>. Sin suscripciones, solo lo que deseas, cuando lo deseas.
+                    <p className="text-lg md:text-2xl text-gray-400 max-w-2xl mx-auto leading-relaxed font-medium px-4">
+                        Modelos reales e IA combinadas en un entorno <span className="text-white font-bold">100% privado</span>. Sin suscripciones, solo lo que deseas.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                        <button onClick={scrollToLogin} className="group relative px-12 py-6 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-pink-600 hover:text-white transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:scale-95 flex items-center gap-3 overflow-hidden">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 pt-4">
+                        <button onClick={scrollToLogin} className="group relative w-full sm:w-auto px-10 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:bg-pink-600 hover:text-white transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-3 overflow-hidden">
                             Comenzar ahora
                             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </button>
@@ -256,9 +281,9 @@ const FanLanding = () => {
             </section>
 
             {/* Experience / Stats */}
-            <section className="py-32 relative z-10 bg-white/5 backdrop-blur-sm border-y border-white/10" id="experiencia">
+            <section className="py-20 md:py-32 relative z-10 bg-white/5 backdrop-blur-sm border-y border-white/10" id="experiencia">
                 <div className="container mx-auto px-6">
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 text-center md:text-left">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 text-center md:text-left">
                         <StatItem number="+25k" label="Fans Activos" />
                         <StatItem number="+500" label="Modelos VIP" />
                         <StatItem number="100%" label="Seguridad" />
@@ -268,28 +293,28 @@ const FanLanding = () => {
             </section>
 
             {/* Final CTA High Impact */}
-            <section className="py-48 relative overflow-hidden z-10" id="login-section">
+            <section className="py-24 md:py-48 relative overflow-hidden z-10" id="login-section">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-pink-500/5 to-transparent"></div>
                 
                 <div className="container mx-auto px-6 relative">
-                    <div className="max-w-5xl mx-auto text-center space-y-16">
-                        <h2 className="text-6xl md:text-9xl font-black tracking-tighter uppercase leading-[0.8] mb-8">
+                    <div className="max-w-5xl mx-auto text-center space-y-12 md:space-y-16">
+                        <h2 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter uppercase leading-[0.9] md:leading-[0.8] mb-8 px-2">
                             Empieza el <br />
                             <span className="text-pink-500">Espectáculo.</span>
                         </h2>
                         
-                        <div className="flex flex-col items-center gap-10 border border-white/10 p-12 md:p-20 rounded-[4rem] bg-black/60 backdrop-blur-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative">
+                        <div className="flex flex-col items-center gap-8 md:gap-10 border border-white/10 p-8 md:p-20 rounded-[2.5rem] md:rounded-[4rem] bg-black/60 backdrop-blur-3xl shadow-3xl relative mx-auto max-w-[95%]">
                             {/* Decorative blur */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/20 blur-[100px] pointer-events-none"></div>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 md:w-64 h-48 md:h-64 bg-pink-500/20 blur-[80px] md:blur-[100px] pointer-events-none"></div>
                             
-                            <p className="text-xl md:text-2xl text-gray-400 font-bold max-w-xl">
+                            <p className="text-lg md:text-2xl text-gray-400 font-bold max-w-xl px-2">
                                 Solo necesitas un clic para conectar con nuestro bot y desbloquear todo el contenido.
                             </p>
                             
                             <button
                                 onClick={handleTelegramLogin}
                                 disabled={loginLoading || !botId}
-                                className={`group relative w-full max-w-[400px] px-10 py-6 rounded-[2rem] font-black text-sm uppercase tracking-[.25em] transition-all duration-500 flex items-center justify-center gap-4 overflow-hidden shadow-2xl ${
+                                className={`group relative w-full max-w-[400px] px-8 py-5 md:px-10 md:py-6 rounded-2xl md:rounded-[2rem] font-black text-[12px] md:text-sm uppercase tracking-[.25em] transition-all duration-500 flex items-center justify-center gap-4 overflow-hidden shadow-2xl ${
                                     loginLoading ? 'opacity-70 scale-95' : 'hover:scale-105 hover:shadow-pink-500/20'
                                 }`}
                                 style={{
@@ -297,28 +322,28 @@ const FanLanding = () => {
                                 }}
                             >
                                 {loginLoading ? (
-                                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                 ) : (
-                                    <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white group-hover:rotate-12 transition-transform">
+                                    <svg viewBox="0 0 24 24" className="w-6 h-6 md:w-7 md:h-7 fill-white group-hover:rotate-12 transition-transform">
                                         <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
                                     </svg>
                                 )}
-                                <span className="text-white font-black text-base">
+                                <span className="text-white font-black text-xs md:text-base">
                                     {loginLoading ? 'Conectando...' : 'Conectar Telegram'}
                                 </span>
                                 
                                 <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity"></div>
                             </button>
                             
-                            <div className="flex items-center gap-6 opacity-40">
+                            <div className="flex items-center gap-4 md:gap-6 opacity-40">
                                 <div className="flex items-center gap-2">
-                                    <Lock size={12} />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Cifrado 256-bit</span>
+                                    <Lock size={10} />
+                                    <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em]">Cifrado SSL</span>
                                 </div>
                                 <div className="w-1 h-1 rounded-full bg-white/30"></div>
                                 <div className="flex items-center gap-2">
-                                    <UserCheck size={12} />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Verified Gateway</span>
+                                    <UserCheck size={10} />
+                                    <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em]">Verified</span>
                                 </div>
                             </div>
                         </div>
