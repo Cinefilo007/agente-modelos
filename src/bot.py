@@ -46,7 +46,7 @@ def build_app():
         edit_pkg_handler
     )
     from src.handlers.admin_models import (
-        admin_list_models, admin_model_view_callback, admin_model_action_callback, edit_model_handler
+        admin_list_models, admin_model_view_callback, admin_model_action_callback, edit_model_handler, admin_verify_model_command
     )
     from telegram.ext import CommandHandler
     
@@ -71,6 +71,7 @@ def build_app():
     app.add_handler(CommandHandler("dar_creditos", admin_add_credits_command))
     app.add_handler(CommandHandler("paquetes", admin_list_packages))
     app.add_handler(CommandHandler("modelos", admin_list_models))
+    app.add_handler(CommandHandler("verificar_modelo", admin_verify_model_command))
     app.add_handler(CommandHandler("solicitudes", admin_list_pending_command))
     app.add_handler(CommandHandler("reset", reset_chat_handler))
     app.add_handler(CommandHandler("check_stories", check_stories_permissions))

@@ -139,3 +139,65 @@ edit_model_handler = ConversationHandler(
     },
     fallbacks=[CommandHandler("cancel", cancel_mod_edit)]
 )
+
+async def admin_verify_model_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Comando /verificar_modelo <username_o_id>
+    Solo para admins. Marca a la modelo como verificada, activa y le suma 100 créditos.
+    """
+    user = update.effective_user
+    if user.id != ADMIN_ID:
+        return
+
+    if not context.args:
+        await update.message.reply_text("⚠️ Uso incorrecto. \nFormato: `/verificar_modelo <username_o_id_telegram>`", parse_mode="Markdown")
+        return
+
+    identifier = context.args[0]
+    model = db.get_model_by_username_or_id(identifier)
+
+    if not model:
+        await update.message.reply_text(f"❌ No se encontró una modelo con el identificador `{identifier}`.", parse_mode="Markdown")
+        return
+
+    # Update model
+    model_uuid = model['id']
+    current_credits = model.get('credits_balance', 0)
+    new_credits = current_credits + 100
+
+    updates = {
+        "status": "active",
+        "is_verified": True,
+        "credits_balance": new_credits
+    }
+
+    result = db.update_model_by_uuid(model_uuid, updates)
+
+    if result:
+        model_name = model.get('full_name', identifier)
+        await update.message.reply_text(
+            f"✅ **Modelo Verificada Exitosamente**\n\n"
+            f"👩‍🎤 Modelo: {model_name}\n"
+            f"📊 Nuevo Estado: `Activa`\n"
+            f"✅ Verificada: `Sí`\n"
+            f"💎 Créditos: `{new_credits}` (+100)",
+            parse_mode="Markdown"
+        )
+        
+        # Notificar a la modelo
+        try:
+            telegram_id = model['telegram_id']
+            await context.bot.send_message(
+                chat_id=telegram_id,
+                text="🎉 **¡Felicidades! Tu cuenta ha sido verificada y activada.**\n\n"
+                     "Te hemos regalado **100 créditos iniciales** para que pruebes nuestro sistema.\n"
+                     "Si aún no lo has hecho, usa el comando /setup para configurar tus preferencias y tarifas.",
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logger.error(f"Error notificando a la modelo {identifier}: {e}")
+            await update.message.reply_text("⚠️ *Nota:* No se pudo enviar el mensaje automático a la modelo (puede haber bloqueado al bot).", parse_mode="Markdown")
+            
+    else:
+        await update.message.reply_text("❌ Ocurrió un error al intentar actualizar la base de datos.")
+

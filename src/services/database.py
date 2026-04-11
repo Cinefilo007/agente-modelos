@@ -67,6 +67,23 @@ class Database:
             logger.error(f"Error getting model by UUID {model_uuid}: {e}")
             return None
 
+    def get_model_by_username_or_id(self, identifier: str):
+        """Busca una modelo por su username o telegram_id."""
+        try:
+            identifier = identifier.strip().replace("@", "")
+            if identifier.isdigit():
+                # Filtrar por telegram_id si es puramente numérico
+                response = self.client.table("models").select("*").eq("telegram_id", int(identifier)).limit(1).execute()
+            else:
+                # Filtrar por username (case insensitivve handled by postgres or exactly as saved)
+                response = self.client.table("models").select("*").ilike("username", identifier).limit(1).execute()
+            if response.data:
+                return response.data[0]
+            return None
+        except Exception as e:
+            logger.error(f"Error getting model by identifier {identifier}: {e}")
+            return None
+
     def create_model(self, telegram_id: int, username: str, full_name: str):
         """Crea una nueva modelo en estado Prospect."""
         try:

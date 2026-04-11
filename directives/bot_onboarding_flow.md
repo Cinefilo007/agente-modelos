@@ -112,11 +112,27 @@ ALTER TABLE models ADD CONSTRAINT models_status_check
 
 ---
 
-## 7. Próximas Mejoras Posibles
+## 7. Aprobación y Verificación Rápida de Modelos (Admin Only)
+
+Para las modelos conocidas que no es necesario pasar por el riguroso proceso de KYC desde la MiniApp, se ha implementado el comando rápido de activación por Telegram.
+
+### Comando: `/verificar_modelo <username_o_id>`
+*   Se manda por mensaje directo al bot. Solo el administrador (`ADMIN_ID`) puede usarlo.
+*   Acepta tanto el `@username` como el `telegram_id` de la creadora.
+*   **Acciones que ejecuta:**
+    1. Busca a la modelo con el username (sin el arroba) o parsea el ID si son puros números.
+    2. Establece `is_verified = True`.
+    3. Cambia `status = 'active'`.
+    4. Agrega +100 a `credits_balance`.
+    5. Envía un mensaje directo a la modelo felicitándola por su verificación y crédito inicial, invitándola a usar `/setup`.
+
+---
+
+## 8. Próximas Mejoras Posibles
 
 - Implementar validación automática de pagos por Crypto Pay.
 - Notificaciones de bajo saldo (Ej: "Aviso: Te quedan 5 mensajes de IA").
 - Segmentación avanzada en difusiones (por status, por créditos, etc.).
 
 ---
-*Última Actualización: 8 de Abril de 2026*
+*Última Actualización: 11 de Abril de 2026*
