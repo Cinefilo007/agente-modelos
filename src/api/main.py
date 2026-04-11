@@ -98,7 +98,7 @@ if os.path.exists("web/dist"):
     <meta property="og:description" content="{bio_clean}" />
     <meta property="og:image" content="{avatar}" />
     <meta property="og:type" content="profile" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="{name}" />
     <meta name="twitter:description" content="{bio_clean}" />
     <meta name="twitter:image" content="{avatar}" />
