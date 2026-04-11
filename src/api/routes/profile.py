@@ -102,8 +102,7 @@ async def apply_as_model(
             "birth_date": birth_date,
             "status": "verifying",
             "verification_video_id": verification_url, # Storing photo URL in existing column for now
-            "external_links": [{"network": "country", "url": country_code}] # Storing country in external_links
-            # Let's verify schema. Using 'config_persona' for country temporarily or add to metadata.
+            "country": country_code
         }
         
         print(f"[Apply Model] Upserting DB record: {model_data}")
