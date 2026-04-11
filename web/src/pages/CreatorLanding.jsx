@@ -357,14 +357,4 @@ const CreatorLanding = () => {
     );
 };
 
-const BenefitCard = ({ icon: Icon, title, desc }) => (
-    <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all group">
-        <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-            <Icon className="w-6 h-6 text-purple-400" />
-        </div>
-        <h4 className="text-xl font-bold mb-3">{title}</h4>
-        <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
-    </div>
-);
-
 export default CreatorLanding;
