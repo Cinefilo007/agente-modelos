@@ -167,19 +167,19 @@ const FanLanding = () => {
                     </div>
 
                     <h1 className="text-[3.5rem] sm:text-7xl md:text-[10rem] font-black leading-[0.9] md:leading-[0.85] tracking-tighter max-w-6xl mx-auto uppercase">
-                        El Futuro <br />
+                        El Ecosistema <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">
-                            del Placer
+                            más Exclusivo
                         </span>
                     </h1>
 
                     <p className="text-lg md:text-2xl text-gray-400 max-w-2xl mx-auto leading-relaxed font-medium px-4">
-                        Modelos reales e IA combinadas en un entorno <span className="text-white font-bold">100% privado</span>. Sin suscripciones, solo lo que deseas.
+                        Reunimos y verificamos a las mejores creadoras de Telegram en una plataforma <span className="text-white font-bold">100% segura</span>. Sin intermediarios, conexión directa.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 pt-4">
                         <button onClick={scrollToLogin} className="group relative w-full sm:w-auto px-10 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:bg-pink-600 hover:text-white transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-3 overflow-hidden">
-                            Comenzar ahora
+                            Explorar Creadoras
                             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </div>
@@ -200,10 +200,10 @@ const FanLanding = () => {
                 <div className="container mx-auto px-6">
                     <div className="flex justify-between items-end mb-16 px-4">
                         <div>
-                            <h2 className="text-4xl md:text-7xl font-black tracking-tighter uppercase mb-2">Estrellas <span className="text-pink-500">Nebula</span></h2>
-                            <p className="text-gray-500 font-medium">Las creadoras más populares de la semana</p>
+                            <h2 className="text-3xl md:text-7xl font-black tracking-tighter uppercase mb-2">Estrellas <span className="text-pink-500">Nebula</span></h2>
+                            <p className="text-gray-500 text-xs md:text-base font-medium uppercase tracking-widest">Verificadas y listas para conectar</p>
                         </div>
-                        <button onClick={scrollToLogin} className="text-xs font-black uppercase tracking-widest text-pink-500 hover:text-white transition-colors pb-2 border-b border-pink-500/20">Ver Todo</button>
+                        <button onClick={scrollToLogin} className="text-[9px] md:text-xs font-black uppercase tracking-widest text-pink-500 hover:text-white transition-colors pb-2 border-b border-pink-500/20">Ver Todo</button>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
@@ -221,21 +221,24 @@ const FanLanding = () => {
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-40 transition-opacity"></div>
                                     
-                                    <div className="absolute top-4 left-4">
-                                        <div className="px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                            <span className="text-[10px] font-black uppercase tracking-widest">En Vivo</span>
+                                    <div className="absolute top-3 left-3 md:top-4 md:left-4">
+                                        <div className="px-2 py-1 md:px-3 md:py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center gap-1.5 md:gap-2">
+                                            <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest">Online</span>
                                         </div>
                                     </div>
 
-                                    <div className="absolute bottom-0 left-0 right-0 p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <h4 className="font-black text-xl md:text-2xl tracking-tighter uppercase">{m.artistic_name || m.username}</h4>
-                                            {m.is_verified && <Check className="w-5 h-5 text-black bg-pink-500 rounded-full p-1" />}
+                                    <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                                        <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2 max-w-full">
+                                            <h4 className="font-black text-sm md:text-2xl tracking-tighter uppercase truncate">{m.artistic_name || m.username}</h4>
+                                            {m.is_verified && <Check className="w-3.5 h-3.5 md:w-5 md:h-5 text-black bg-pink-500 rounded-full p-0.5 md:p-1 shrink-0" />}
                                         </div>
-                                        <div className="flex gap-4 opacity-100 group-hover:opacity-100 transition-opacity">
-                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fans: 12.4k</div>
-                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Posts: 450</div>
+                                        <div className="flex gap-3 md:gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
+                                            <div className="text-[8px] md:text-[10px] font-bold text-gray-300 uppercase tracking-widest flex items-center gap-1">
+                                                <Heart className="w-2.5 h-2.5 md:w-3 md:h-3 fill-pink-500 text-pink-500" />
+                                                12.4k
+                                            </div>
+                                            <div className="text-[8px] md:text-[10px] font-bold text-gray-300 uppercase tracking-widest">450 Posts</div>
                                         </div>
                                     </div>
                                 </div>
@@ -253,8 +256,8 @@ const FanLanding = () => {
             <section className="py-32 relative z-10" id="seguridad">
                 <div className="container mx-auto px-6">
                     <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
-                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase">Lo que <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">nos hace diferentes</span></h2>
-                        <p className="text-gray-500 text-lg">Diseñamos la plataforma que nosotros mismos querríamos usar como fans.</p>
+                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase">La plataforma <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">que mereces</span></h2>
+                        <p className="text-gray-500 text-lg">Centralizamos, verificamos y protegemos tu conexión con las estrellas más exclusivas de Telegram.</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">

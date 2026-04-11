@@ -148,50 +148,78 @@ const CreatorLanding = () => {
                     <div className="grid lg:grid-cols-2 gap-12 md:gap-20 items-center">
                         <div className="space-y-8 md:space-y-12 text-center lg:text-left">
                             <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-indigo-500/30 bg-indigo-500/5 text-indigo-300 backdrop-blur-md animate-float">
-                                <Sparkles className="w-4 h-4 text-indigo-400" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em]">IA Empowerment Agency</span>
+                                <Zap className="w-4 h-4 text-indigo-400" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Tu Contenido, Tus Reglas</span>
                             </div>
 
                             <h1 className="text-5xl sm:text-7xl md:text-[9rem] font-black leading-[0.9] md:leading-[0.8] tracking-tighter uppercase max-w-4xl lg:mx-0 mx-auto">
-                                Monetiza <br />
+                                Libertad <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
-                                    tu Influencia
+                                    Sin Límites
                                 </span>
                             </h1>
 
-                            <p className="text-lg md:text-2xl text-gray-400 max-w-xl lg:mx-0 mx-auto leading-relaxed font-medium px-4 lg:px-0">
-                                La plataforma que blinda tu contenido y escala tus ingresos mediante tecnología propietaria y soporte 24/7.
-                            </p>
+                            <div className="space-y-6 max-w-xl lg:mx-0 mx-auto">
+                                <p className="text-lg md:text-2xl text-gray-400 leading-relaxed font-medium">
+                                    No somos una agencia tradicional. Eres <span className="text-white font-bold">dueña total de tu contenido</span> en la primera red social nativa de Telegram.
+                                </p>
+                                <ul className="flex flex-col gap-3 text-sm md:text-base text-indigo-300 font-bold uppercase tracking-widest text-left max-w-xs mx-auto lg:mx-0">
+                                    <li className="flex items-center gap-3"><Check className="w-5 h-5" /> Cero Censura</li>
+                                    <li className="flex items-center gap-3"><Check className="w-5 h-5" /> Sin Miedo a Baneos</li>
+                                    <li className="flex items-center gap-3"><Check className="w-5 h-5" /> Tráfico Orgánico</li>
+                                </ul>
+                            </div>
 
                             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 md:gap-6 pt-4">
                                 <button onClick={scrollToLogin} className="group relative w-full sm:w-auto px-10 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 hover:text-white transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-3 overflow-hidden">
-                                    Unirse a la Agencia
+                                    Crear mi perfil nativo
                                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </div>
                         </div>
 
-                        <div className="relative group lg:block hidden">
-                            <div className="absolute inset-0 bg-indigo-500/20 blur-[120px] rounded-full group-hover:bg-indigo-500/30 transition-all"></div>
-                            <div className="relative border border-white/10 p-4 rounded-[3rem] bg-black/40 backdrop-blur-2xl shadow-3xl overflow-hidden group-hover:border-white/20 transition-all">
-                                <img 
-                                    src={profileAnatomy} 
-                                    className="w-full h-auto rounded-[2rem] shadow-2xl" 
-                                    alt="Nebula Profile Anatomy" 
-                                />
-                                {/* Floating Badges Decorative */}
-                                <div className="absolute top-10 right-10 px-4 py-2 bg-indigo-600 rounded-full font-black text-[10px] uppercase tracking-widest animate-bounce">Live Now</div>
+                        <div className="relative space-y-6">
+                            <div className="p-8 md:p-12 rounded-[3.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-3xl shadow-3xl">
+                                <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter mb-8 text-indigo-400">Anatomía Premium</h3>
+                                <div className="space-y-6 md:space-y-8">
+                                    <div className="flex gap-6">
+                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/30">
+                                            <Globe className="w-6 h-6 text-indigo-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-xs uppercase tracking-widest mb-2">Social Hub Integrado</h4>
+                                            <p className="text-gray-500 text-sm leading-relaxed">Única plataforma que te permite centralizar todos tus links sociales (IG, TW, OF) de forma elegante.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-6">
+                                        <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/30">
+                                            <Zap className="w-6 h-6 text-purple-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-xs uppercase tracking-widest mb-2">Etiquetas de Servicio</h4>
+                                            <p className="text-gray-500 text-sm leading-relaxed">Muestra tus servicios y tarifas en segundos con un diseño visual intuitivo que convierte fans.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-6">
+                                        <div className="w-12 h-12 rounded-2xl bg-pink-500/20 flex items-center justify-center shrink-0 border border-pink-500/30">
+                                            <Sparkles className="w-6 h-6 text-pink-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-xs uppercase tracking-widest mb-2">Botón de Casino VIP</h4>
+                                            <p className="text-gray-500 text-sm leading-relaxed">Monetiza el entretenimiento de tus fans con integraciones de juegos directas en tu perfil.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-
-                        {/* Mobile Image Preview (Only visible on small screens) */}
-                        <div className="lg:hidden relative px-4">
-                            <div className="absolute inset-0 bg-indigo-500/10 blur-3xl"></div>
-                            <img 
-                                src={profileAnatomy} 
-                                className="relative w-full h-auto rounded-3xl border border-white/10 shadow-2xl" 
-                                alt="Profile Anatomy" 
-                            />
+                            
+                            {/* Protection Badge */}
+                            <div className="p-6 rounded-3xl bg-indigo-600/10 border border-indigo-500/20 flex items-center gap-4 group">
+                                <Shield className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
+                                <div>
+                                    <span className="block font-black text-[10px] uppercase tracking-widest text-white">Protección Activa</span>
+                                    <span className="text-xs text-indigo-300">Estás protegida por nuestra Lista Negra Global.</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -206,47 +234,50 @@ const CreatorLanding = () => {
                         <div className="space-y-10 md:space-y-12">
                             <div className="text-center lg:text-left">
                                 <h2 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter uppercase mb-6 leading-tight">
-                                    Tecnología de <br />
-                                    <span className="text-indigo-500">Próxima Generación</span>
+                                    Panel de <br />
+                                    <span className="text-indigo-500">Alto Rendimiento</span>
                                 </h2>
                                 <p className="text-gray-400 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                                    No somos solo una agencia; somos tu socio tecnológico. Te proporcionamos las herramientas que los "top creators" usan en secreto.
+                                    Todo lo que necesitas para escalar tu negocio sin complicaciones técnicas.
                                 </p>
                             </div>
 
                             <div className="grid gap-4 md:gap-6">
                                 <BenefitCard 
-                                    icon={Bot} 
+                                    icon={BarChart3} 
                                     color="purple"
-                                    title="IA Chat Manager" 
-                                    desc="Nuestra IA responde mensajes 24/7 con tu tono de voz, aumentando la retención de fans." 
+                                    title="Métricas en Tiempo Real" 
+                                    desc="Visualiza tus ganancias, clics y retención de fans con gráficas diseñadas para la toma de decisiones." 
                                 />
                                 <BenefitCard 
-                                    icon={Shield} 
+                                    icon={Users} 
                                     color="blue"
-                                    title="Blindaje Anti-Baneo" 
-                                    desc="Sistemas de protección avanzada para tus cuentas de redes sociales y pasarelas de pago." 
+                                    title="Gestión de Suscriptores" 
+                                    desc="Herramientas avanzadas para segmentar y fidelizar a tus mejores clientes automáticamente." 
                                 />
                                 <BenefitCard 
-                                    icon={Zap} 
+                                    icon={Lock} 
                                     color="indigo"
-                                    title="Escalado Global" 
-                                    desc="Accede a mercados internacionales con traductores IA integrados en tiempo real." 
+                                    title="Privacidad Blindada" 
+                                    desc="Control total sobre quién ve tu contenido con sistemas anti-leaks de última generación." 
                                 />
                             </div>
                         </div>
 
                         <div className="relative group lg:block hidden">
                             <div className="absolute inset-0 bg-indigo-500/20 blur-[120px] rounded-full group-hover:bg-indigo-500/30 transition-colors"></div>
-                            <div className="relative rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-[#0a061e]">
-                                <img 
-                                    src={profileAnatomy} 
-                                    alt="Dashboard Preview" 
-                                    className="w-full h-auto opacity-70 group-hover:opacity-90 transition-opacity"
-                                />
-                                <div className="absolute bottom-0 left-0 right-0 p-12 bg-gradient-to-t from-[#0a061e] via-[#0a061e]/80 to-transparent">
-                                    <h4 className="text-2xl font-black mb-4 uppercase">Control Total</h4>
-                                    <p className="text-gray-400 text-sm">Gestiona tus publicaciones, servicios y ganancias desde un panel intuitivo diseñado para el máximo rendimiento.</p>
+                            <div className="relative rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-[#0a061e] p-12 space-y-8">
+                                <div className="space-y-4">
+                                    <div className="h-4 w-32 bg-indigo-500/20 rounded-full animate-pulse"></div>
+                                    <div className="h-12 w-full bg-white/5 rounded-2xl"></div>
+                                    <div className="h-12 w-full bg-white/5 rounded-2xl"></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="h-32 bg-white/5 rounded-3xl"></div>
+                                    <div className="h-32 bg-white/5 rounded-3xl"></div>
+                                </div>
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={scrollToLogin} className="px-8 py-4 bg-indigo-600 rounded-2xl font-black uppercase tracking-widest text-[10px]">Ver Panel Demo</button>
                                 </div>
                             </div>
                         </div>
@@ -259,45 +290,14 @@ const CreatorLanding = () => {
                 <div className="container mx-auto px-6 md:px-8">
                     <div className="flex flex-col lg:flex-row items-center justify-between gap-12 md:gap-16 border border-white/5 bg-white/[0.02] backdrop-blur-2xl p-10 md:p-24 rounded-[2.5rem] md:rounded-[4rem]">
                         <div className="max-w-md space-y-4 md:space-y-6 text-center lg:text-left">
-                            <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter">Resultados que <span className="text-indigo-400">Hablan Solos</span></h3>
-                            <p className="text-gray-500 leading-relaxed text-sm md:text-base">Nuestras creadoras experimentan un crecimiento promedio del 400% en sus primeros 3 meses.</p>
+                            <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter">Resultados <span className="text-indigo-400">Sin Filtros</span></h3>
+                            <p className="text-gray-500 leading-relaxed text-sm md:text-base">Nuestra red social interna maximiza tu alcance orgánico desde el primer día.</p>
                         </div>
                         <div className="grid grid-cols-2 gap-8 md:gap-24 w-full lg:w-auto">
-                            <StatItem number="12x" label="ROAS Promedio" />
+                            <StatItem number="100%" label="Libertad" />
                             <StatItem number="+$5k" label="Ganancia Media" />
-                            <StatItem number="99%" label="Retención" />
+                            <StatItem number="0%" label="Censura" />
                             <StatItem number="24h" label="Pagos Express" />
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Dashboard / Tech */}
-            <section className="py-20 md:py-32 relative z-10" id="dashboard">
-                <div className="container mx-auto px-6 md:px-8">
-                    <div className="text-center max-w-4xl mx-auto mb-16 md:mb-20 space-y-4 md:space-y-6">
-                        <div className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-indigo-300">Infraestructura Nebula</div>
-                        <h2 className="text-4xl sm:text-6xl md:text-8xl font-black uppercase tracking-tighter leading-tight px-2">Tu Negocio, <br /><span className="text-indigo-500 underline decoration-indigo-500/30 underline-offset-8">Automatizado.</span></h2>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-6 md:gap-12">
-                        <div className="p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-white/[0.02] border border-white/10 hover:border-indigo-500/40 transition-all group">
-                            <BarChart3 className="w-10 h-10 md:w-12 md:h-12 text-indigo-400 mb-6 md:mb-8 group-hover:scale-110 transition-transform" />
-                            <h4 className="text-xl md:text-2xl font-bold mb-4">Analítica Real</h4>
-                            <p className="text-gray-500 text-sm">Entiende exactamente de dónde vienen tus fans y qué contenido convierte mejor.</p>
-                        </div>
-                        <div className="p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-white/[0.02] border border-white/10 hover:border-purple-500/40 transition-all group">
-                            <Globe className="w-10 h-10 md:w-12 md:h-12 text-purple-400 mb-6 md:mb-8 group-hover:scale-110 transition-transform" />
-                            <h4 className="text-xl md:text-2xl font-bold mb-4">Alcance Global</h4>
-                            <p className="text-gray-500 text-sm">Llegamos a fans en más de 50 países con estrategias de tráfico segmentadas.</p>
-                        </div>
-                        <div className="p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-indigo-600 border border-indigo-400 hover:scale-[1.02] transition-all group relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-6 md:p-8 transform translate-x-4 -translate-y-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Zap size={80} />
-                            </div>
-                            <h4 className="text-xl md:text-2xl font-black mb-4 uppercase text-white">Prueba Gratis</h4>
-                            <p className="text-indigo-100 text-sm mb-6 md:mb-8">Empieza hoy sin costos fijos. Solo ganamos cuando tú ganas.</p>
-                            <button onClick={scrollToLogin} className="w-full py-4 md:py-5 bg-white text-indigo-600 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:shadow-xl transition-all shadow-lg active:scale-95">Empezar</button>
                         </div>
                     </div>
                 </div>
@@ -310,8 +310,8 @@ const CreatorLanding = () => {
                 <div className="container mx-auto px-6 md:px-8 relative">
                     <div className="max-w-6xl mx-auto text-center space-y-12 md:space-y-20">
                         <h2 className="text-5xl sm:text-7xl md:text-[12rem] font-black tracking-tighter uppercase leading-[0.9] md:leading-[0.7] mb-8 md:mb-12 px-2">
-                            Eleva tu <br />
-                            <span className="text-indigo-500">Estándar.</span>
+                            Tu Imperio, <br />
+                            <span className="text-indigo-500">Nativo.</span>
                         </h2>
                         
                         <div className="flex flex-col items-center gap-8 md:gap-12 border border-white/10 p-8 md:p-24 rounded-[2.5rem] md:rounded-[5rem] bg-black/60 backdrop-blur-3xl shadow-3xl relative mx-auto max-w-[95%]">
@@ -319,15 +319,18 @@ const CreatorLanding = () => {
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 md:w-[500px] h-64 md:h-[500px] bg-indigo-500/10 blur-[80px] md:blur-[150px] pointer-events-none"></div>
                             
                             <p className="text-xl md:text-3xl text-gray-400 font-bold max-w-2xl leading-relaxed px-2">
-                                Únete a la agencia que está cambiando las reglas del juego. Empieza tu verificación en un clic.
+                                Únete a la primera red social que no intenta controlarte. Empieza tu verificación en un clic.
                             </p>
                             
                             <button
                                 onClick={handleTelegramLogin}
                                 disabled={loginLoading || !botId}
                                 className={`group relative w-full max-w-[450px] px-8 py-5 md:px-12 md:py-7 rounded-[1.5rem] md:rounded-[2.5rem] font-black text-[12px] md:text-sm uppercase tracking-[.3em] transition-all duration-500 flex items-center justify-center gap-4 md:gap-6 overflow-hidden shadow-2xl ${
-                                    loginLoading ? 'opacity-70 scale-95' : 'hover:scale-105 hover:shadow-indigo-500/40 bg-indigo-600'
+                                    loginLoading ? 'opacity-70 scale-95' : 'hover:scale-105 hover:shadow-indigo-500/40'
                                 }`}
+                                style={{
+                                    background: 'linear-gradient(135deg, #0088cc 0%, #00aaee 50%, #0077b5 100%)',
+                                }}
                             >
                                 {loginLoading ? (
                                     <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -337,7 +340,7 @@ const CreatorLanding = () => {
                                     </svg>
                                 )}
                                 <span className="text-white font-black text-xs md:text-lg">
-                                    {loginLoading ? 'Iniciando...' : 'Aplicar por Telegram'}
+                                    {loginLoading ? 'Conectando...' : 'Conectar Telegram'}
                                 </span>
                                 <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-20 transition-opacity"></div>
                             </button>
