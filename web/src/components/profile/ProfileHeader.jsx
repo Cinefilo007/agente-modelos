@@ -94,7 +94,10 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
     };
 
     const handleShare = () => {
-        const url = window.location.href;
+        const origin = window.location.origin;
+        const profileSlug = user.username ? user.username.replace('@', '') : user.id;
+        const url = `${origin}/${profileSlug}`;
+
         if (navigator.share) {
             navigator.share({
                 title: `Perfil de ${user.artistic_name || user.full_name}`,
