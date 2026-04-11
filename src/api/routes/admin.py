@@ -110,8 +110,14 @@ async def process_verification(model_id: str, body: VerificationAction):
         if body.action == "approve":
             db.client.table("models").update({"status": "active", "is_verified": True}).eq("id", model_id).execute()
             
+            # --- CLEANUP DUPLICATE CLIENT RECORD ---
+            # Si existía como cliente, lo eliminamos para que no haya duplicidad
+            model_info = db.get_model_by_uuid(model_id)
+            if model_info and model_info.get('telegram_id'):
+                db.client.table("clients").delete().eq("telegram_id", model_info['telegram_id']).execute()
+                print(f"[Admin] Duplicate client record cleaned for Telegram ID: {model_info['telegram_id']}")
+
             # --- CREATE WALLET FOR APPROVED MODEL ---
-            # Check if wallet already exists
             w_res = db.client.table("wallets").select("user_id").eq("user_id", model_id).execute()
             if not w_res.data:
                 memo = f"user_{model_id.split('-')[0]}"
@@ -121,7 +127,6 @@ async def process_verification(model_id: str, body: VerificationAction):
                     "locked_balance": 0.0,
                     "deposit_memo": memo
                 }).execute()
-                print(f"Billetera creada para modelo aprobado: {model_id}")
         else:
              db.client.table("models").update({"status": "rejected"}).eq("id", model_id).execute()
 
@@ -135,16 +140,26 @@ async def process_verification(model_id: str, body: VerificationAction):
             bot = Bot(token=TELEGRAM_TOKEN)
             try:
                 if body.action == "approve":
+                    username = model.get('username', '').replace('@', '')
+                    profile_url = f"nebulaespace.site/{username}" if username else "nebulaespace.site/me"
+                    
+                    msg = (
+                        f"✨ <b>¡BIENVENIDA A LA AGENCIA NEBULA!</b> ✨\n\n"
+                        f"Tu cuenta ha sido <b>aprobada y verificada</b> con éxito.\n\n"
+                        f"🚀 <b>Tu Perfil Público:</b> {profile_url}\n\n"
+                        f"Ya puedes acceder al panel de creadoras, publicar contenido y gestionar tus servicios. "
+                        f"Tu presencia en el ecosistema ahora es visible para miles de clientes."
+                    )
                     await bot.send_message(
                         chat_id=model['telegram_id'],
-                        text="✅ *¡Felicidades! Tu cuenta ha sido verificada.*\n\nYa eres oficialmente un Creador. Accede al portal para configurar tus paquetes y empezar a ganar.",
-                        parse_mode="Markdown"
+                        text=msg,
+                        parse_mode="HTML"
                     )
                 else:
                     await bot.send_message(
                         chat_id=model['telegram_id'],
-                        text="❌ *Solicitud Rechazada*\n\nTu perfil no cumple con nuestros requisitos de verificación.",
-                        parse_mode="Markdown"
+                        text="❌ <b>Solicitud de Agencia Rechazada</b>\n\nTu perfil no cumple con los estándares actuales de nuestra agencia.",
+                        parse_mode="HTML"
                     )
             except Exception as e:
                 print(f"Error notifying user {model['telegram_id']}: {e}")

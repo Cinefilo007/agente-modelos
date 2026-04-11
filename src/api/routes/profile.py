@@ -220,9 +220,13 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
              raise HTTPException(status_code=404, detail="Client profile not found.")
         user_data = client.data
         
-        # Fetch real wallet balance
-        wallet_res = db.client.table("wallets").select("balance").eq("user_id", user_data['id']).maybe_single().execute()
-        user_data['wallet_balance'] = float(wallet_res.data['balance']) if wallet_res.data else 0.0
+        # Fetch real wallet balance gracefully
+        try:
+            wallet_res = db.client.table("wallets").select("balance").eq("user_id", user_data['id']).maybe_single().execute()
+            user_data['wallet_balance'] = float(wallet_res.data['balance']) if wallet_res.data else 0.0
+        except Exception as e:
+            print(f"[Profile] Error fetching wallet for {user.id}, defaulting to 0.0. Error: {e}")
+            user_data['wallet_balance'] = 0.0
         
         user_data['role'] = 'client'
         return user_data
@@ -309,15 +313,38 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
         return {"message": "No changes detected"}
 
     try:
+        # Get old state to check if terms_accepted changed from false to true
+        old_profile = db.client.table(table).select("terms_accepted").eq("telegram_id", user.id).single().execute()
+        
         response = db.client.table(table).update(updates).eq("telegram_id", user.id).execute()
         if not response or not response.data:
-            # Fallback to fetching the record
             profile = db.client.table(table).select("*").eq("telegram_id", user.id).single().execute()
             return profile.data
-        return response.data[0]
+        
+        updated_user = response.data[0]
+        
+        # NOTIFICACIÓN AL ADMIN: Solo si el cliente acaba de aceptar términos y antes no lo había hecho
+        if table == "clients" and updates.get("terms_accepted") is True:
+            was_accepted = old_profile.data.get("terms_accepted") if old_profile.data else False
+            if not was_accepted:
+                try:
+                    bot = Bot(token=TELEGRAM_TOKEN)
+                    msg = (
+                        f"✅ <b>¡Nuevo Cliente Registrado!</b>\n\n"
+                        f"👤 <b>Usuario:</b> @{user.username or 'Sin username'}\n"
+                        f"🆔 <b>ID:</b> <code>{user.id}</code>\n"
+                        f"🎂 <b>Cumpleaños:</b> {updated_user.get('birth_date', 'No provisto')}\n"
+                        f"🛡️ <b>Estado:</b> Mayor de edad y términos aceptados."
+                    )
+                    if ADMIN_ID:
+                        await bot.send_message(chat_id=ADMIN_ID, text=msg, parse_mode="HTML")
+                        print(f"[Profile] Admin notified of registration completion: {user.id}")
+                except Exception as notify_err:
+                    print(f"[Profile] Failed to notify admin: {notify_err}")
+
+        return updated_user
     except Exception as e:
         print(f"[ERROR] Database update failed for user {user.id}: {str(e)}")
-        # Raise better error if it's a field error
         if "external_links" in str(e):
              raise HTTPException(status_code=400, detail="Error de base de datos: La columna 'external_links' no existe en 'models'. Por favor ejecute la migración SQL.")
         raise HTTPException(status_code=500, detail=f"Database update failed: {str(e)}")

@@ -33,6 +33,8 @@ import WalletPage from './pages/WalletPage';
 import Promotions from './pages/Promotions';
 import AdvertiserProfile from './pages/AdvertiserProfile';
 import Casino from './pages/Casino';
+import FanLanding from './pages/FanLanding';
+import CreatorLanding from './pages/CreatorLanding';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -52,8 +54,6 @@ const ProtectedRoute = ({ children }) => {
     const heartbeatInterval = setInterval(async () => {
       if (user?.role === 'model') {
         try {
-          // Assuming 'api' is imported or globally available
-          // If not, you'll need to add 'import api from './utils/api';' or similar
           await api.post('/profile/heartbeat');
         } catch (e) {
           console.error("Heartbeat failed", e);
@@ -72,51 +72,35 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (!user) {
+  const isDirectLanding = ['/fans', '/creators'].includes(location.pathname);
+
+  if (!user && !isDirectLanding) {
     console.log("[Router] Usuario no autenticado, redirigiendo a landing.");
     return <Navigate to="/landing" state={{ from: location }} replace />;
   }
 
-  console.log("[Router] Verificando acceso para:", user.username || user.id, "Rol:", user.role);
+  if (isDirectLanding) return children;
 
-  // Strict check for profile completion - Only for CLIENTS
-  // For models: backend already blocks unverified on login, but we add a frontend guard too
   const isClient = user.role === 'client';
   const isModel = user.role === 'model';
   const isAdmin = user.role === 'admin';
 
-  // SEGURIDAD: Una modelo que logró obtener un JWT pero no está verificada
-  // (p.ej. si el token fue creado antes de este fix) accede aquí.
-  if (isModel && !user.is_verified) {
-    console.warn('[Router] Modelo detectada sin verificar, bloqueando acceso.');
-    return (
-      <div className="flex flex-col h-screen w-full items-center justify-center bg-black text-white gap-4 p-6">
-        <div className="text-4xl">⏳</div>
-        <h2 className="text-xl font-bold text-center">Verificación Pendiente</h2>
-        <p className="text-sm text-white/60 text-center max-w-xs">
-          Tu cuenta está siendo revisada por el administrador. Te notificaremos por Telegram cuando sea aprobada.
-        </p>
-      </div>
-    );
-  }
-
-  // A model or admin should NEVER go to onboarding
+  // Onboarding check - Solo para Clientes (Fans) y solo si no están en una landing directa
   const needsOnboarding = isClient && (!user.birth_date || !user.terms_accepted);
   const isCurrentlyInOnboarding = location.pathname === '/onboarding';
 
-  if ((isModel || isAdmin) && isCurrentlyInOnboarding) {
-    console.log(`[Router] ${isAdmin ? 'Admin' : 'Modelo'} detectado en onboarding, redirigiendo al feed/admin.`);
-    return <Navigate to={isAdmin ? "/admin" : "/"} replace />;
-  }
-
   if (needsOnboarding && !isCurrentlyInOnboarding) {
-    // Allow public paths or specific paths? No, strict onboarding.
     console.warn("[Router] Cliente con perfil incompleto, redirigiendo a onboarding.");
     return <Navigate to="/onboarding" replace />;
   }
 
-  // If user is admin trying to access root, maybe redirect to admin dashboard or let them see feed?
-  // User asked "if admin enters, redirect to admin panel"
+  // Modelos no verificadas: Ahora SI permitimos entrar a la App (Curiosity Hook)
+  // Las restricciones se aplicarán en los componentes específicos (Layout, CreatePost)
+
+  if ((isModel || isAdmin) && isCurrentlyInOnboarding) {
+    return <Navigate to={isAdmin ? "/admin" : "/"} replace />;
+  }
+
   if (isAdmin && location.pathname === '/' && !location.pathname.startsWith('/admin')) {
     return <Navigate to="/admin" replace />;
   }
@@ -148,11 +132,24 @@ function App() {
             <InstallPWA />
             <BrowserRouter>
               <Routes>
-                {/* Public Route: Landing Page */}
+                {/* Public Route: Landing Page (Selector) */}
                 <Route path="/landing" element={
                   <PublicRoute>
                     <LandingPage />
                   </PublicRoute>
+                } />
+
+                {/* Specific Landings (Hybrid: Allowed for guest and logged-in) */}
+                <Route path="/fans" element={
+                  <ProtectedRoute>
+                    <FanLanding />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/creators" element={
+                  <ProtectedRoute>
+                    <CreatorLanding />
+                  </ProtectedRoute>
                 } />
 
                 {/* Perfiles Públicos Generales de la App removidos de aquí */}

@@ -16,16 +16,18 @@ from telegram import Bot
 
 router = APIRouter()
 
-BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")  # Creator Bot
+CLIENT_BOT_TOKEN = os.getenv("CLIENT_BOT_TOKEN")  # Fan Bot
 JWT_SECRET = os.getenv("JWT_SECRET")
+
 if not JWT_SECRET:
     raise RuntimeError("CRITICAL ERROR: JWT_SECRET not set in environment.")
 ALGORITHM = "HS256"
-# ID numérico del bot, extraído del token
+
+# IDs numéricos de los bots
 BOT_ID = BOT_TOKEN.split(":")[0] if BOT_TOKEN and ":" in BOT_TOKEN else None
-# ID de Telegram del administrador principal. Si el usuario que inicia sesión
-# coincide con este ID, se le asigna automáticamente role='admin' sin importar
-# qué rol tenga en la base de datos.
+CLIENT_BOT_ID = CLIENT_BOT_TOKEN.split(":")[0] if CLIENT_BOT_TOKEN and ":" in CLIENT_BOT_TOKEN else None
+
 ADMIN_TELEGRAM_ID = os.getenv("ADMIN_TELEGRAM_ID")
 
 # --- Cache para JWKS de Telegram ---
@@ -33,10 +35,7 @@ _telegram_jwks_cache = {"keys": None, "fetched_at": 0}
 JWKS_CACHE_TTL = 3600  # 1 hora
 
 async def get_telegram_jwks():
-    """
-    Descarga y cachea las claves públicas de Telegram para verificar id_tokens.
-    Endpoint: https://oauth.telegram.org/.well-known/jwks.json
-    """
+    """Descarga y cachea las claves públicas de Telegram."""
     now = time.time()
     if _telegram_jwks_cache["keys"] and (now - _telegram_jwks_cache["fetched_at"]) < JWKS_CACHE_TTL:
         return _telegram_jwks_cache["keys"]
@@ -49,7 +48,6 @@ async def get_telegram_jwks():
         _telegram_jwks_cache["fetched_at"] = now
         return _telegram_jwks_cache["keys"]
 
-
 class TelegramAuthData(BaseModel):
     id: int
     first_name: str
@@ -60,37 +58,42 @@ class TelegramAuthData(BaseModel):
     hash: str
 
 class TelegramOIDCData(BaseModel):
-    """Datos recibidos del Telegram.Login.auth() con id_token"""
     id_token: str
 
 class WebAppAuthData(BaseModel):
     init_data: str
 
-def verify_telegram_data(data: TelegramAuthData):
+def verify_telegram_data(data: TelegramAuthData) -> str:
+    """ Verifica el hash contra ambos bots. Retorna 'client' o 'model' """
     if not BOT_TOKEN:
         raise HTTPException(status_code=500, detail="Server configuration error: TELEGRAM_TOKEN not set")
     
-    # Check auth_date for freshness (e.g. within 24 hours)
-    # Note: Telegram auth_date is unix timestamp
     if time.time() - data.auth_date > 86400:
         raise HTTPException(status_code=400, detail="Auth data is outdated")
 
     data_check_arr = []
-    # Convert pydantic model to dict, exclude hash, sort keys
     d = data.dict(exclude={'hash'}, exclude_none=True)
     for k in sorted(d.keys()):
         data_check_arr.append(f"{k}={d[k]}")
-    
     data_check_string = "\n".join(data_check_arr)
     
+    # 1. Intentar validar como CLIENTE (Fan Bot)
+    if CLIENT_BOT_TOKEN:
+        secret_key_client = hashlib.sha256(CLIENT_BOT_TOKEN.encode()).digest()
+        hash_check_client = hmac.new(secret_key_client, data_check_string.encode(), hashlib.sha256).hexdigest()
+        if hash_check_client == data.hash:
+            return "client"
+            
+    # 2. Intentar validar como CREADORA (Creator Bot)
     secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
     hash_check = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+    if hash_check == data.hash:
+        return "model"
     
-    if hash_check != data.hash:
-        raise HTTPException(status_code=403, detail="Invalid Telegram hash")
-    return True
+    raise HTTPException(status_code=403, detail="Invalid Telegram hash")
 
-def verify_webapp_data(init_data: str):
+def verify_webapp_data(init_data: str) -> tuple[dict, str]:
+    """ Returns (user_info, role) """
     if not BOT_TOKEN:
          raise HTTPException(status_code=500, detail="Server configuration error: TELEGRAM_TOKEN not set")
 
@@ -104,64 +107,65 @@ def verify_webapp_data(init_data: str):
 
     hash_received = parsed_data.pop("hash")
     
-    # Sort keys alphabetically
     data_check_arr = []
     for k in sorted(parsed_data.keys()):
-        # Values in init_data are strings, no encoding needed for value part in check string
         data_check_arr.append(f"{k}={parsed_data[k]}")
-    
     data_check_string = "\n".join(data_check_arr)
     
-    # HMAC-SHA256 signature
-    secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
-    hash_check = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-    
-    if hash_check != hash_received:
+    # Try Client Bot
+    role = None
+    if CLIENT_BOT_TOKEN:
+        secret_key_client = hmac.new("WebAppData".encode(), CLIENT_BOT_TOKEN.encode(), hashlib.sha256).digest()
+        if hmac.new(secret_key_client, data_check_string.encode(), hashlib.sha256).hexdigest() == hash_received:
+            role = "client"
+            
+    # Try Creator Bot
+    if not role:
+        secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
+        if hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest() == hash_received:
+            role = "model"
+
+    if not role:
         raise HTTPException(status_code=403, detail="Invalid WebApp hash")
         
-    # Check auth_date
-    if "auth_date" in parsed_data:
-        if time.time() - int(parsed_data["auth_date"]) > 86400:
-             raise HTTPException(status_code=400, detail="WebApp auth data is outdated")
+    if "auth_date" in parsed_data and time.time() - int(parsed_data["auth_date"]) > 86400:
+         raise HTTPException(status_code=400, detail="WebApp auth data is outdated")
     
-    return json.loads(parsed_data["user"])
+    return json.loads(parsed_data["user"]), role
 
-async def process_login(telegram_id: int, username: str = None, photo_url: str = None):
+async def process_login(telegram_id: int, username: str = None, photo_url: str = None, explicit_role: str = None):
     """
-    Shared logic for login processing
+    Shared logic for login processing. Explicit role strictly defines where to look/insert.
     """
-    user_role = "unknown"
+    user_role = explicit_role or "unknown"
     user_data = None
     
-    # 1. Models
-    try:
-        model_res = db.client.table("models").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
-        if model_res is not None and hasattr(model_res, 'data') and model_res.data:
-            model_data = model_res.data
-            if model_data.get('status') == 'rejected':
-                 raise HTTPException(status_code=403, detail="Tu cuenta de modelo ha sido rechazada.")
-            elif model_data.get('status') == 'verifying' or model_data.get('status') == 'prospect':
-                 # Modelo aún en proceso — tratar como usuario anónimo hasta aprobación del admin
-                 user_role = "unknown"
-                 user_data = None
-            elif not model_data.get('is_verified', False):
-                 # SEGURIDAD CRÍTICA: El registro existe pero el admin NO aprobó a la modelo.
-                 # Esto puede pasar si status='active' fue forzado sin pasar por verificación.
-                 raise HTTPException(
-                     status_code=403,
-                     detail="Tu cuenta está pendiente de verificación. El administrador debe aprobar tu solicitud antes de que puedas acceder."
-                 )
-            else:
-                 # Modelo activa y verificada por el admin
-                 user_role = "model"
-                 user_data = model_data
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"[Backend Auth] Error checking models for {telegram_id}: {str(e)}")
+    # 1. Models (Only if explicitly intended or unknown)
+    if user_role in ("model", "unknown"):
+        try:
+            model_res = db.client.table("models").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
+            if model_res is not None and hasattr(model_res, 'data') and model_res.data:
+                model_data = model_res.data
+                if model_data.get('status') == 'rejected':
+                     raise HTTPException(status_code=403, detail="Tu cuenta de modelo ha sido rechazada.")
+                elif model_data.get('status') == 'verifying' or model_data.get('status') == 'prospect':
+                     user_role = "unknown"
+                     user_data = None
+                elif not model_data.get('is_verified', False):
+                     raise HTTPException(
+                         status_code=403,
+                         detail="Tu cuenta está pendiente de verificación. El administrador debe aprobar tu solicitud antes de que puedas acceder."
+                     )
+                else:
+                     user_role = "model"
+                     user_data = model_data
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"[Backend Auth] Error checking models for {telegram_id}: {str(e)}")
 
-    # 2. Clients
-    if not user_data:
+    # 2. Clients (Only if explicitly intended or unknown/fallback)
+    if not user_data and user_role in ("client", "unknown"):
         try:
             client_res = db.client.table("clients").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
             if client_res is not None and hasattr(client_res, 'data') and client_res.data:
@@ -169,7 +173,8 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                 user_data = client_res.data
                 if user_data.get('is_blacklisted'):
                     raise HTTPException(status_code=403, detail="Acceso denegado por políticas de la comunidad.")
-            else:
+            elif user_role == "client":
+                # Create NEW client specifically because they entered via Client Bot
                 user_role = "client"
                 new_client = {
                     "telegram_id": telegram_id,
@@ -182,25 +187,24 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                     res = db.client.table("clients").insert(new_client).execute()
                     if res is not None and hasattr(res, 'data') and res.data and len(res.data) > 0:
                         user_data = res.data[0]
-                        
                         # Notify Admin of NEW Fan
-                        if BOT_TOKEN and ADMIN_TELEGRAM_ID:
+                        notify_token = CLIENT_BOT_TOKEN if CLIENT_BOT_TOKEN else BOT_TOKEN
+                        if notify_token and ADMIN_TELEGRAM_ID:
                             try:
-                                bot = Bot(token=BOT_TOKEN)
+                                bot = Bot(token=notify_token)
+                                bot_name = "Bot de Fans" if notify_token == CLIENT_BOT_TOKEN else "Agente Nebula"
                                 msg = (
-                                    f"🎯 <b>Nuevo Fan Entrando a Onboarding</b>\n\n"
+                                    f"🎯 <b>Nuevo Fan Entrando a Onboarding</b>\n"
+                                    f"<i>Notificado via: {bot_name}</i>\n\n"
                                     f"👤 <b>Usuario:</b> @{username or 'Sin username'}\n"
                                     f"🆔 <b>ID Telegram:</b> <code>{telegram_id}</code>\n"
                                     f"📅 <b>Fecha:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
                                 )
-                                # Run in background or wait, since it's async we need await
                                 await bot.send_message(chat_id=ADMIN_TELEGRAM_ID, text=msg, parse_mode="HTML")
-                                print(f"[Auth] Admin notified of new fan: {telegram_id}")
+                                print(f"[Auth] Admin notified of new fan via {bot_name}: {telegram_id}")
                             except Exception as notify_err:
                                 print(f"[Auth] Notification failed: {notify_err}")
                     else:
-                        print(f"[Backend Auth] Insertion failed for {telegram_id}. Response: {res}")
-                        # Final retry select
                         retry_res = db.client.table("clients").select("*").eq("telegram_id", telegram_id).maybe_single().execute()
                         if retry_res and retry_res.data:
                             user_data = retry_res.data
@@ -209,18 +213,20 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                 except HTTPException:
                     raise
                 except Exception as e:
-                     print(f"[Backend Auth] Database Error during insert for {telegram_id}: {str(e)}")
                      raise HTTPException(status_code=500, detail="Fallo en el registro del usuario.")
         except HTTPException:
             raise
         except Exception as e:
-             print(f"[Backend Auth] Database Error checking clients: {str(e)}")
              raise HTTPException(status_code=500, detail="Error de comunicación con la base de datos.")
 
     if not user_data:
-         raise HTTPException(status_code=500, detail="No se pudo procesar la sesión del usuario.")
+        if user_role == "model":
+            # Si intentó entrar por el bot de Modelos y NO tiene registro
+            raise HTTPException(status_code=404, detail="Perfil no encontrado. Inicia tu proceso de registro.")
+        raise HTTPException(status_code=500, detail="No se pudo procesar la sesión del usuario.")
 
-    # Age check
+    # Age check (Only applies if user_data has birth_date)
+    birth_date_str = user_data.get('birth_date')
     birth_date_str = user_data.get('birth_date')
     if birth_date_str:
         try:
@@ -279,17 +285,15 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
 @router.post("/telegram")
 async def telegram_login(auth_data: TelegramAuthData):
     """
-    Widget Login — Validación HMAC legacy (hash con BOT_TOKEN).
-    Compatible con telegram-widget.js y Telegram.Login.auth() sin id_token.
+    Widget Login — Validación HMAC legacy.
     """
-    verify_telegram_data(auth_data)
-    return await process_login(auth_data.id, auth_data.username, auth_data.photo_url)
+    role = verify_telegram_data(auth_data)
+    return await process_login(auth_data.id, auth_data.username, auth_data.photo_url, explicit_role=role)
 
 @router.post("/telegram-oidc")
 async def telegram_oidc_login(data: TelegramOIDCData):
     """
     Login OIDC — Validación del id_token JWT firmado por Telegram.
-    Más seguro que HMAC: usa firma RSA verificada contra JWKS público de Telegram.
     """
     if not BOT_ID:
         raise HTTPException(status_code=500, detail="BOT_ID no configurado en el servidor")
@@ -314,15 +318,26 @@ async def telegram_oidc_login(data: TelegramOIDCData):
         if not rsa_key:
             raise HTTPException(status_code=403, detail="Clave de firma no encontrada en JWKS de Telegram")
         
-        # 4. Verificar y decodificar el token
+        # 4. Verificar y decodificar el token sin aud constraint yet
         payload = jwt.decode(
             data.id_token,
             rsa_key,
             algorithms=["RS256"],
-            audience=BOT_ID,
+            options={"verify_aud": False},
             issuer="https://oauth.telegram.org"
         )
         
+        # Check audience manually against both bots
+        aud = payload.get("aud")
+        role = None
+        if CLIENT_BOT_ID and str(aud) == str(CLIENT_BOT_ID):
+            role = "client"
+        elif BOT_ID and str(aud) == str(BOT_ID):
+            role = "model"
+            
+        if not role:
+             raise HTTPException(status_code=403, detail="Token no emitido por ninguno de nuestros bots")
+             
         # 5. Extraer datos del usuario del payload OIDC
         telegram_id = payload.get("id") or int(payload.get("sub", "0"))
         username = payload.get("preferred_username")
@@ -331,8 +346,8 @@ async def telegram_oidc_login(data: TelegramOIDCData):
         if not telegram_id:
             raise HTTPException(status_code=400, detail="Token OIDC no contiene ID de usuario")
         
-        print(f"[Auth OIDC] Login exitoso para telegram_id={telegram_id}, username={username}")
-        return await process_login(telegram_id, username, photo_url)
+        print(f"[Auth OIDC] Login exitoso para telegram_id={telegram_id}, username={username}, bot_aud={aud}, role={role}")
+        return await process_login(telegram_id, username, photo_url, explicit_role=role)
         
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="El token ha expirado")
@@ -352,7 +367,6 @@ async def webapp_login(data: WebAppAuthData):
     """
     WebApp Auto-Login
     """
-    user_info = verify_webapp_data(data.init_data)
-    # telegram_id is int in user_info
-    return await process_login(user_info['id'], user_info.get('username'), user_info.get('photo_url'))
+    user_info, role = verify_webapp_data(data.init_data)
+    return await process_login(user_info['id'], user_info.get('username'), user_info.get('photo_url'), explicit_role=role)
 

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Outlet, useLocation, Link } from 'react-router-dom';
+import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { Home, User, Bell, Plus, Compass } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { clsx } from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { TermsModal } from './auth/TermsModal';
+import { VerificationRequiredModal } from './auth/VerificationRequiredModal';
 
 import api from '../api/axios';
 import ThemeSettings from './ui/ThemeSettings';
@@ -12,11 +13,15 @@ import NebulaBackground from './ui/NebulaBackground';
 
 export default function Layout() {
     const location = useLocation();
-    const { themeColor } = useTheme(); // We still use themeColor for specific inline styles if needed
+    const navigate = useNavigate();
+    const { themeColor } = useTheme(); 
     const { user } = useAuth();
+    
     // Check if user is model to show Add Post button
-    // For now assuming everyone can see it or logical check:
     const isModel = user?.role === 'model';
+    const isVerified = user?.is_verified === true;
+
+    const [showVerificationModal, setShowVerificationModal] = React.useState(false);
 
     const NavItem = ({ to, icon: Icon, label, badge }) => {
         const isActive = location.pathname === to;
@@ -137,6 +142,7 @@ export default function Layout() {
             <div className="flex flex-col w-full max-w-[768px] h-screen bg-transparent overflow-hidden relative shadow-2xl border-x border-border transform-gpu">
 
                 {showTerms && <TermsModal onAccept={() => setShowTerms(false)} />}
+                {showVerificationModal && <VerificationRequiredModal isOpen={showVerificationModal} onClose={() => setShowVerificationModal(false)} />}
 
                 <NebulaBackground />
                 <ThemeSettings />
@@ -156,17 +162,22 @@ export default function Layout() {
                             {/* Central Action Button (Models only, NOT Admin) */}
                             {isModel && user?.role !== 'admin' && (
                                 <div className="relative -top-5 flex flex-col items-center justify-center w-[20%]">
-                                    <Link to="/create-post">
-                                        <button
-                                            className="w-14 h-14 rounded-full flex items-center justify-center text-primary-foreground shadow-lg transform transition-transform active:scale-95 border-4 border-background"
-                                            style={{
-                                                background: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
-                                                boxShadow: `0 8px 20px -5px ${themeColor}88`
-                                            }}
-                                        >
-                                            <Plus size={28} strokeWidth={2.5} />
-                                        </button>
-                                    </Link>
+                                    <button
+                                        onClick={() => {
+                                            if (!isVerified) {
+                                                setShowVerificationModal(true);
+                                            } else {
+                                                navigate('/create-post');
+                                            }
+                                        }}
+                                        className="w-14 h-14 rounded-full flex items-center justify-center text-primary-foreground shadow-lg transform transition-transform active:scale-95 border-4 border-background"
+                                        style={{
+                                            background: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
+                                            boxShadow: `0 8px 20px -5px ${themeColor}88`
+                                        }}
+                                    >
+                                        <Plus size={28} strokeWidth={2.5} />
+                                    </button>
                                 </div>
                             )}
 

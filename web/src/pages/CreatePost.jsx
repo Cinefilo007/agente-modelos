@@ -400,34 +400,50 @@ function CreatePost() {
                             ))}
 
                             {/* Formulario Nuevo Link */}
-                            <div className="space-y-3 pt-2 border-t border-white/5">
-                                <input
-                                    type="text"
-                                    placeholder="Nombre del botón (ej: Mi Web)"
-                                    value={newLink.label}
-                                    onChange={(e) => setNewLink({ ...newLink, label: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-all"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="URL (https://...)"
-                                    value={newLink.url}
-                                    onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-all"
-                                />
+                            <div className="space-y-4 pt-4 border-t border-white/10">
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Nombre del Botón</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ej: Mi OnlyFans, Mi Web, WhatsApp..."
+                                            value={newLink.label}
+                                            onChange={(e) => setNewLink({ ...newLink, label: e.target.value })}
+                                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-all font-sans"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">URL de Destino</label>
+                                        <input
+                                            type="text"
+                                            placeholder="https://..."
+                                            value={newLink.url}
+                                            onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-all font-sans"
+                                        />
+                                    </div>
+                                </div>
+
                                 {newLink.url && (
-                                    <div className="flex justify-between items-center px-1">
-                                        <p className="text-[10px] text-green-400 font-medium">Se guardará automáticamente al publicar</p>
+                                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2">
+                                        <div className="flex items-center gap-2 text-blue-400">
+                                            <CheckCircle size={14} className="animate-pulse" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest">Listo para guardar</p>
+                                        </div>
+                                        <p className="text-[11px] text-gray-400 font-medium">
+                                            Este enlace se guardará <span className="text-white font-bold">automáticamente</span> al compartir el post. No necesitas tocar nada más.
+                                        </p>
                                         <button 
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.preventDefault();
                                                 if (newLink.url) {
                                                     setLinks([...links, { label: newLink.label || 'Enlace', url: newLink.url }]);
                                                     setNewLink({ label: '', url: '' });
                                                 }
                                             }}
-                                            className="text-[10px] text-blue-400 hover:text-blue-300 font-bold"
+                                            className="w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 transition-all border border-blue-500/10"
                                         >
-                                            + Añadir otro
+                                            + Añadir otro enlace
                                         </button>
                                     </div>
                                 )}

@@ -382,9 +382,10 @@ async def get_stories_feed(user: TelegramUser = Depends(get_current_user)):
     """Get active stories for the feed (global for now)."""
     try:
         now = datetime.utcnow().isoformat()
-        # Fetch active stories with model info
+        # Fetch active stories with model info (Only verified)
         response = db.client.table("stories") \
-            .select("*, models(username, full_name, artistic_name, avatar_url)") \
+            .select("*, models!inner(username, full_name, artistic_name, avatar_url, is_verified)") \
+            .eq("models.is_verified", True) \
             .gt("expires_at", now) \
             .order("created_at", desc=False) \
             .limit(100) \
@@ -418,7 +419,8 @@ async def get_feed(
     try:
         now = datetime.utcnow().isoformat()
         query = db.client.table("posts") \
-            .select("*, models(username, full_name, artistic_name, avatar_url, is_verified, last_seen)")
+            .select("*, models!inner(username, full_name, artistic_name, avatar_url, is_verified, last_seen)") \
+            .eq("models.is_verified", True)
         
         # 1. Try to apply status filter (will fail if columns don't exist yet)
         try:
