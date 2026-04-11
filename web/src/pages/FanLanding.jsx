@@ -9,6 +9,8 @@ import {
     Check, Coins, UserCheck, Activity, Lock
 } from 'lucide-react';
 
+import { BenefitCard, StatItem, DecorativeDivider } from '../components/landing/LandingComponents';
+
 const FanLanding = () => {
     const { loginWithTelegram } = useAuth();
     const { showToast } = useToast();
@@ -49,7 +51,7 @@ const FanLanding = () => {
                     api.get('/config/fan-bot-id')
                 ]);
                 setBotUsername(usernameRes.data.username);
-                setBotId(usernameRes.data.username ? idRes.data.bot_id : null);
+                setBotId(idRes.data.bot_id || idRes.data.id); // Depende de cómo lo devuelva el endpoint
             } catch (err) {
                 setBotUsername('NebulaModels_bot');
                 console.error('[Auth] Error cargando config del bot de fans:', err);
@@ -75,7 +77,6 @@ const FanLanding = () => {
                         return;
                     }
                     try {
-                        // El backend ahora detectará el bot_id y asignará role='client'
                         await loginWithTelegram(data);
                         navigate('/');
                     } catch (error) {
@@ -104,13 +105,17 @@ const FanLanding = () => {
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#02010a]">
                 <div className="absolute top-[-10%] left-[-10%] w-[1000px] h-[1000px] bg-purple-600/20 rounded-full blur-[150px] animate-pulse"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[800px] h-[800px] bg-pink-600/15 rounded-full blur-[150px] animate-pulse delay-1000"></div>
+                
+                {/* Neon Lines Decor */}
+                <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-pink-500/10 to-transparent"></div>
+                <div className="absolute top-3/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/10 to-transparent"></div>
             </div>
 
             {/* Navbar */}
             <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
                 <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
                     <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/')}>
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)]">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)] transition-transform group-hover:rotate-12">
                             <Activity className="w-6 h-6 text-white" />
                         </div>
                         <span className="font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
@@ -120,7 +125,7 @@ const FanLanding = () => {
                     <div className="hidden md:flex gap-8 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
                         <a href="#models" className="hover:text-white transition-colors">Modelos</a>
                         <a href="#seguridad" className="hover:text-white transition-colors">Seguridad</a>
-                        <a href="#vip" className="hover:text-white transition-colors">Experiencia VIP</a>
+                        <a href="#experiencia" className="hover:text-white transition-colors">Vip</a>
                     </div>
                     <button onClick={scrollToLogin} className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-pink-500/50 transition-all font-bold text-xs uppercase tracking-widest backdrop-blur-md">
                         Entrar
@@ -129,109 +134,163 @@ const FanLanding = () => {
             </nav>
 
             {/* Hero Section */}
-            <section className="relative min-h-[90vh] flex items-center justify-center pt-20 px-4 z-10">
-                <div className="container mx-auto text-center space-y-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-pink-500/20 bg-pink-900/10 text-pink-300 backdrop-blur-md">
-                        <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">Experiencia VIP Garantizada</span>
+            <section className="relative min-h-screen flex items-center justify-center pt-20 px-4 z-10">
+                <div className="container mx-auto text-center space-y-12">
+                    <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-pink-500/30 bg-pink-500/5 text-pink-300 backdrop-blur-md animate-bounce-slow">
+                        <Heart className="w-4 h-4 fill-pink-500 text-pink-500" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">El Ecosistema más Exclusivo</span>
                     </div>
 
-                    <h1 className="text-5xl md:text-8xl font-black leading-tight tracking-tighter max-w-5xl mx-auto">
-                        Conecta con el <br />
+                    <h1 className="text-6xl md:text-[10rem] font-black leading-[0.85] tracking-tighter max-w-6xl mx-auto uppercase">
+                        El Futuro <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">
-                            Top de Modelos
+                            del Placer
                         </span>
                     </h1>
 
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-                        Descubre un ecosistema exclusivo donde la belleza se une a la seguridad. Modelos reales, reseñas verificadas y contenido premium esperándote.
+                    <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto leading-relaxed font-medium">
+                        Modelos reales e IA combinadas en un entorno <span className="text-white font-bold">100% privado</span>. Sin suscripciones, solo lo que deseas, cuando lo deseas.
                     </p>
 
-                    <button onClick={scrollToLogin} className="px-10 py-5 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-pink-600 hover:text-white transition-all shadow-xl">
-                        Explorar Ahora
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                        <button onClick={scrollToLogin} className="group relative px-12 py-6 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-pink-600 hover:text-white transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:scale-95 flex items-center gap-3 overflow-hidden">
+                            Comenzar ahora
+                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
+                </div>
+                
+                {/* Mouse Scroll Indicator */}
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30">
+                    <div className="w-5 h-8 border-2 border-white rounded-full flex justify-center p-1">
+                        <div className="w-1 h-2 bg-white rounded-full animate-scroll-dot"></div>
+                    </div>
                 </div>
             </section>
+
+            <DecorativeDivider />
 
             {/* Models Preview */}
             <section className="py-24 relative z-10" id="models">
                 <div className="container mx-auto px-6">
-                    <h2 className="text-4xl font-black tracking-tighter mb-12">Nuestras Estrellas</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div className="flex justify-between items-end mb-16 px-4">
+                        <div>
+                            <h2 className="text-4xl md:text-7xl font-black tracking-tighter uppercase mb-2">Estrellas <span className="text-pink-500">Nebula</span></h2>
+                            <p className="text-gray-500 font-medium">Las creadoras más populares de la semana</p>
+                        </div>
+                        <button onClick={scrollToLogin} className="text-xs font-black uppercase tracking-widest text-pink-500 hover:text-white transition-colors pb-2 border-b border-pink-500/20">Ver Todo</button>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
                         {modelsPreview.length > 0 ? (
                             modelsPreview.map((m) => (
-                                <div key={m.id} className="group relative aspect-[3/4] rounded-3xl overflow-hidden border border-white/5 cursor-pointer" onClick={scrollToLogin}>
-                                    <img src={m.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop'} alt={m.artistic_name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
-                                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                                        <div className="flex items-center gap-2">
-                                            <h4 className="font-bold text-lg">{m.artistic_name || m.username}</h4>
-                                            {m.is_verified && <Check className="w-4 h-4 text-pink-400 bg-white rounded-full p-0.5" />}
+                                <div 
+                                    key={m.id} 
+                                    className="group relative aspect-[3/4] rounded-[2.5rem] overflow-hidden border border-white/5 cursor-pointer shadow-2xl transition-all hover:border-pink-500/50" 
+                                    onClick={scrollToLogin}
+                                >
+                                    <img 
+                                        src={m.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop'} 
+                                        alt={m.artistic_name} 
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110" 
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-40 transition-opacity"></div>
+                                    
+                                    <div className="absolute top-4 left-4">
+                                        <div className="px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest">En Vivo</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="absolute bottom-0 left-0 right-0 p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h4 className="font-black text-xl md:text-2xl tracking-tighter uppercase">{m.artistic_name || m.username}</h4>
+                                            {m.is_verified && <Check className="w-5 h-5 text-black bg-pink-500 rounded-full p-1" />}
+                                        </div>
+                                        <div className="flex gap-4 opacity-100 group-hover:opacity-100 transition-opacity">
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fans: 12.4k</div>
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Posts: 450</div>
                                         </div>
                                     </div>
                                 </div>
                             ))
                         ) : (
                             [1, 2, 3, 4].map(i => (
-                                <div key={i} className="aspect-[3/4] rounded-3xl bg-white/5 animate-pulse border border-white/5"></div>
+                                <div key={i} className="aspect-[3/4] rounded-[2.5rem] bg-white/5 animate-pulse border border-white/5"></div>
                             ))
                         )}
                     </div>
                 </div>
             </section>
 
-            {/* Features */}
-            <section className="py-32 relative z-10 bg-black/40" id="seguridad">
-                <div className="container mx-auto px-6 grid md:grid-cols-2 gap-24 items-center">
-                    <div className="space-y-8">
-                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
-                            Tu Seguridad es <br />
-                            <span className="text-pink-500">Nuestra Prioridad</span>.
-                        </h2>
-                        <p className="text-lg text-gray-500">
-                            Pagos protegidos, anonimato garantizado y modelos 100% reales. Disfruta sin preocupaciones en el ecosistema Nebula.
-                        </p>
-                        <div className="grid sm:grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                                <Shield className="w-12 h-12 text-pink-400" />
-                                <h4 className="font-bold">Pagos Escrow</h4>
-                                <p className="text-sm text-gray-500">Tu dinero está seguro hasta que el servicio sea realizado.</p>
-                            </div>
-                            <div className="space-y-4">
-                                <Lock className="w-12 h-12 text-indigo-400" />
-                                <h4 className="font-bold">Privacidad Total</h4>
-                                <p className="text-sm text-gray-500">Inicia sesión con Telegram, sin correos ni contraseñas.</p>
-                            </div>
-                        </div>
+            {/* Features Detail */}
+            <section className="py-32 relative z-10" id="seguridad">
+                <div className="container mx-auto px-6">
+                    <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
+                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase">Lo que <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">nos hace diferentes</span></h2>
+                        <p className="text-gray-500 text-lg">Diseñamos la plataforma que nosotros mismos querríamos usar como fans.</p>
                     </div>
-                    <div className="relative">
-                         <div className="absolute inset-0 bg-pink-500/10 blur-[100px] rounded-full"></div>
-                         <div className="relative p-12 bg-white/[0.02] border border-white/10 rounded-[3rem] backdrop-blur-3xl">
-                             <h3 className="text-3xl font-black mb-6">Únete a la Comunidad</h3>
-                             <p className="text-gray-400 mb-8">Accede a contenido exclusivo y sorteos diarios conectando tu cuenta.</p>
-                             <button onClick={scrollToLogin} className="w-full py-4 bg-pink-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-pink-500 transition-all flex items-center justify-center gap-2">
-                                 <Heart className="w-4 h-4" /> Registrarme como Fan
-                             </button>
-                         </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        <BenefitCard 
+                            icon={Shield} 
+                            color="pink"
+                            title="Escrow Blindado" 
+                            desc="Tu saldo se libera solo cuando el servicio se completa. Seguridad bancaria para tu entretenimiento." 
+                        />
+                        <BenefitCard 
+                            icon={Zap} 
+                            color="purple"
+                            title="Telegram Nativo" 
+                            desc="Sin descargas, sin webs complejas. Todo funciona dentro de tu app de mensajería favorita." 
+                        />
+                        <BenefitCard 
+                            icon={Lock} 
+                            color="indigo"
+                            title="Anonimato Total" 
+                            desc="Nadie sabrá quién eres. Solo tu ID de Telegram es necesario para vivir la experiencia Nebula." 
+                        />
                     </div>
                 </div>
             </section>
 
-            {/* Final CTA */}
-            <section className="py-48 relative text-center z-10" id="login-section">
+            {/* Experience / Stats */}
+            <section className="py-32 relative z-10 bg-white/5 backdrop-blur-sm border-y border-white/10" id="experiencia">
                 <div className="container mx-auto px-6">
-                    <div className="max-w-4xl mx-auto space-y-12">
-                        <h2 className="text-6xl md:text-9xl font-black tracking-tighter mb-12 text-pink-100">
-                            Disfruta el Futuro.
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 text-center md:text-left">
+                        <StatItem number="+25k" label="Fans Activos" />
+                        <StatItem number="+500" label="Modelos VIP" />
+                        <StatItem number="100%" label="Seguridad" />
+                        <StatItem number="24/7" label="Soporte VIP" />
+                    </div>
+                </div>
+            </section>
+
+            {/* Final CTA High Impact */}
+            <section className="py-48 relative overflow-hidden z-10" id="login-section">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-pink-500/5 to-transparent"></div>
+                
+                <div className="container mx-auto px-6 relative">
+                    <div className="max-w-5xl mx-auto text-center space-y-16">
+                        <h2 className="text-6xl md:text-9xl font-black tracking-tighter uppercase leading-[0.8] mb-8">
+                            Empieza el <br />
+                            <span className="text-pink-500">Espectáculo.</span>
                         </h2>
-                        <div className="flex flex-col items-center gap-10 border border-pink-500/10 p-8 md:p-16 rounded-[4rem] bg-black/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
-                            <p className="text-xl text-gray-400 font-bold max-w-xl">Inicia sesión con tu bot de confianza para acceder a todo el contenido.</p>
+                        
+                        <div className="flex flex-col items-center gap-10 border border-white/10 p-12 md:p-20 rounded-[4rem] bg-black/60 backdrop-blur-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative">
+                            {/* Decorative blur */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/20 blur-[100px] pointer-events-none"></div>
+                            
+                            <p className="text-xl md:text-2xl text-gray-400 font-bold max-w-xl">
+                                Solo necesitas un clic para conectar con nuestro bot y desbloquear todo el contenido.
+                            </p>
                             
                             <button
                                 onClick={handleTelegramLogin}
                                 disabled={loginLoading || !botId}
-                                className={`group relative w-full max-w-[360px] px-8 py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-4 overflow-hidden ${
-                                    loginLoading ? 'opacity-70' : 'hover:scale-[1.03] shadow-lg'
+                                className={`group relative w-full max-w-[400px] px-10 py-6 rounded-[2rem] font-black text-sm uppercase tracking-[.25em] transition-all duration-500 flex items-center justify-center gap-4 overflow-hidden shadow-2xl ${
+                                    loginLoading ? 'opacity-70 scale-95' : 'hover:scale-105 hover:shadow-pink-500/20'
                                 }`}
                                 style={{
                                     background: 'linear-gradient(135deg, #0088cc 0%, #00aaee 50%, #0077b5 100%)',
@@ -240,29 +299,65 @@ const FanLanding = () => {
                                 {loginLoading ? (
                                     <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                 ) : (
-                                    <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white">
+                                    <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white group-hover:rotate-12 transition-transform">
                                         <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
                                     </svg>
                                 )}
-                                <span className="text-white font-black">
-                                    {loginLoading ? 'Conectando...' : 'Entrar con Telegram'}
+                                <span className="text-white font-black text-base">
+                                    {loginLoading ? 'Conectando...' : 'Conectar Telegram'}
                                 </span>
+                                
+                                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity"></div>
                             </button>
                             
-                            <span className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-600 flex items-center justify-center gap-3">
-                                <Lock className="w-3 h-3" /> Conexión Segura
-                            </span>
+                            <div className="flex items-center gap-6 opacity-40">
+                                <div className="flex items-center gap-2">
+                                    <Lock size={12} />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Cifrado 256-bit</span>
+                                </div>
+                                <div className="w-1 h-1 rounded-full bg-white/30"></div>
+                                <div className="flex items-center gap-2">
+                                    <UserCheck size={12} />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Verified Gateway</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <footer className="py-12 border-t border-white/5 bg-black z-20 relative">
-                <div className="container mx-auto px-6 flex justify-between items-center opacity-40">
-                    <div className="font-black tracking-tighter text-sm">NEBULA.FANS</div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">© 2026 Portal de Entretenimiento</div>
+            <footer className="py-20 border-t border-white/5 bg-black z-20 relative">
+                <div className="container mx-auto px-6">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+                        <div className="flex flex-col items-center md:items-start gap-4">
+                            <div className="font-black tracking-tighter text-2xl">NEBULA<span className="text-pink-500">.FANS</span></div>
+                            <p className="text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em]">El estándar de oro para fans exigentes.</p>
+                        </div>
+                        <div className="flex gap-12 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                            <a href="#" className="hover:text-white transition-colors">Privacidad</a>
+                            <a href="#" className="hover:text-white transition-colors">Términos</a>
+                            <a href="#" className="hover:text-white transition-colors">Contacto</a>
+                        </div>
+                    </div>
+                    <div className="mt-16 pt-8 border-t border-white/5 text-center text-[10px] font-bold uppercase tracking-widest text-gray-700">
+                        © 2026 Nebula Ecosystem • All Rights Reserved
+                    </div>
                 </div>
             </footer>
+            
+            {/* Global Animation Styles */}
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes scroll-dot {
+                    0%, 100% { transform: translateY(0); opacity: 0; }
+                    50% { transform: translateY(10px); opacity: 1; }
+                }
+                .animate-scroll-dot {
+                    animation: scroll-dot 2s infinite ease-in-out;
+                }
+                .animate-bounce-slow {
+                    animation: bounce 3s infinite;
+                }
+            `}} />
         </div>
     );
 };
