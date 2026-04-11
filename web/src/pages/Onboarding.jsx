@@ -37,6 +37,8 @@ const Onboarding = () => {
     const [creatorBirthDate, setCreatorBirthDate] = useState('');
     const [verificationPhoto, setVerificationPhoto] = useState(null);
 
+    const [isRestricted, setIsRestricted] = useState(false);
+
     useEffect(() => {
         // Auto-select role if chosen in Landing Page
         const intendedRole = localStorage.getItem('intendedRole');
@@ -61,7 +63,7 @@ const Onboarding = () => {
         if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
 
         if (age < 18) {
-            setError("Debes ser mayor de 18 años.");
+            setIsRestricted(true);
             return;
         }
 
@@ -257,6 +259,21 @@ const Onboarding = () => {
         );
     }
 
+    if (isRestricted) {
+        return (
+            <div className="min-h-screen bg-[#050510] text-white flex items-center justify-center p-4 text-center">
+                <div className="max-w-md bg-gray-900/80 p-8 rounded-3xl border border-red-500/30">
+                    <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <AlertCircle className="w-10 h-10 text-red-500" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-4">Acceso Restringido</h2>
+                    <p className="text-gray-400 mb-6">Nebula Agency es una plataforma estrictamente para mayores de 18 años. Debido a tu fecha de nacimiento, no podemos permitirte el acceso por motivos de seguridad y cumplimiento legal.</p>
+                    <button onClick={logout} className="text-purple-400 hover:text-purple-300 font-bold uppercase tracking-widest text-sm">Entendido (Cerrar)</button>
+                </div>
+            </div>
+        );
+    }
+
     // Default: Fan Flow
     return (
         <div className="min-h-screen bg-[#050510] text-white flex items-center justify-center p-4">
@@ -274,22 +291,6 @@ const Onboarding = () => {
                 )}
 
                 <form onSubmit={handleFanSubmit} className="space-y-6">
-                    {/* Avatar Selection */}
-                    <div>
-                        <label className="text-sm font-medium text-gray-300 mb-3 block">Elige tu Avatar</label>
-                        <div className="grid grid-cols-3 gap-3">
-                            {AVATARS.map((av) => (
-                                <div
-                                    key={av.id}
-                                    onClick={() => setSelectedAvatar(av.id)}
-                                    className={`p-3 rounded-xl flex items-center justify-center cursor-pointer border transition-all ${selectedAvatar === av.id ? 'border-purple-500 bg-purple-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10'}`}
-                                >
-                                    <av.icon className={`w-6 h-6 ${av.color}`} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-300">Fecha de Nacimiento</label>
                         <input
@@ -311,13 +312,13 @@ const Onboarding = () => {
                     </div>
 
                     <div className="flex gap-3 pt-2">
-                        <button type="button" onClick={() => setStep('select_role')} className="flex-1 py-3 text-gray-400 hover:text-white">Atrás</button>
+                        <button type="button" onClick={logout} className="flex-1 py-3 text-gray-400 hover:text-white">Cancelar y Salir</button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-[2] py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-purple-500/25 disabled:opacity-50"
+                            className="flex-[2] py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-purple-500/25 disabled:opacity-50 hover:scale-[1.02] transition-transform"
                         >
-                            {loading ? 'Guardando...' : 'Comenzar'}
+                            {loading ? 'Guardando...' : 'Comenzar a explorar'}
                         </button>
                     </div>
                 </form>

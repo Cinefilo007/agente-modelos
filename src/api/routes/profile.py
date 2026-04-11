@@ -137,12 +137,12 @@ async def apply_as_model(
             bot = Bot(token=TELEGRAM_TOKEN)
             
             caption = (
-                f"📝 *Nueva Solicitud de Creador*\n\n"
-                f"👤 *Usuario:* @{user.username} (ID: `{user.id}`)\n"
-                f"📛 *Nombre Real:* {full_name}\n"
-                f"🌍 *País:* {country_code}\n"
-                f"🎂 *Fecha Nac:* {birth_date}\n\n"
-                f"📸 *Evidencia:* [Ver Foto]({verification_url})"
+                f"📝 <b>Nueva Solicitud de Creador</b>\n\n"
+                f"👤 <b>Usuario:</b> @{user.username} (ID: <code>{user.id}</code>)\n"
+                f"📛 <b>Nombre Real:</b> {full_name}\n"
+                f"🌍 <b>País:</b> {country_code}\n"
+                f"🎂 <b>Fecha Nac:</b> {birth_date}\n\n"
+                f"📸 <b>Evidencia:</b> <a href='{verification_url}'>Ver Foto</a>"
             )
             
             keyboard = [
@@ -157,7 +157,7 @@ async def apply_as_model(
                     chat_id=ADMIN_ID,
                     photo=verification_url, 
                     caption=caption,
-                    parse_mode="Markdown",
+                    parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 print("[Apply Model] Admin notified successfully with photo")
@@ -166,7 +166,7 @@ async def apply_as_model(
                 await bot.send_message(
                     chat_id=ADMIN_ID,
                     text=caption, # Caption contains the link
-                    parse_mode="Markdown",
+                    parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 print("[Apply Model] Admin notified successfully with text fallback")
