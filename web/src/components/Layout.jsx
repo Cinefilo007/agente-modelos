@@ -147,7 +147,7 @@ export default function Layout() {
                 </main>
 
                 {/* Bottom Navigation Bar */}
-                {user && (
+                {showNav && (
                     <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center bg-[var(--surface-color)]/90 backdrop-blur-xl border-t border-[var(--glass-border)] pb-safe">
                         <nav className="flex justify-around items-center h-16 w-full max-w-[768px] px-4">
                             <NavItem to="/" icon={Home} label="Inicio" badge={hasNewPosts ? 1 : 0} />

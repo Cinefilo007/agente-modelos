@@ -74,40 +74,74 @@ const LandingPage = () => {
 
         setLoginLoading(true);
 
-        // Telegram.Login.auth() abre popup nativo de Telegram
-        window.Telegram?.Login?.auth(
-            { client_id: botId, request_access: 'write', lang: 'es' },
-            async (data) => {
-                if (!data) {
-                    // Usuario canceló el popup
-                    setLoginLoading(false);
-                    return;
-                }
+        // Telegram.Login.auth nativo de telegram-login.js tiene un bug que omite el origin en el popup
+        // Por ello, creamos manualmente el popup con los mismos parámetros pero incluyendo &origin
+        const redirectUri = window.location.origin + window.location.pathname;
+        const origin = window.location.origin;
+        const authUrl = `https://oauth.telegram.org/auth?response_type=post_message&client_id=${botId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid profile&lang=es&origin=${encodeURIComponent(origin)}`;
+        
+        const width = 550;
+        const height = 650;
+        const left = Math.max(0, (window.screen.width - width) / 2) + (window.screen.availLeft | 0);
+        const top = Math.max(0, (window.screen.height - height) / 2) + (window.screen.availTop | 0);
+        
+        const popup = window.open(authUrl, 'telegram_oidc_login', `width=${width},height=${height},left=${left},top=${top},status=0,location=0,menubar=0,toolbar=0`);
+        
+        if (!popup) {
+            showToast("Desactiva el bloqueador de popups para iniciar sesión.", "error");
+            setLoginLoading(false);
+            return;
+        }
 
-                try {
-                    localStorage.setItem('intendedRole', viewMode);
-                    await loginWithTelegram(data);
-                    navigate('/');
-                } catch (error) {
-                    console.error('[Landing] Login error:', error);
-                    const errorDetail = error.response?.data?.detail;
+        const messageHandler = async (event) => {
+            if (event.origin !== 'https://oauth.telegram.org' && event.origin !== 'https://oauth.tg.dev') return;
+            try {
+                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                if (data && data.event === 'auth_result') {
+                    window.removeEventListener('message', messageHandler);
+                    if (popup && (!popup.closed)) popup.close();
                     
-                    // Manejar errores de validación de FastAPI (listas o dicts)
-                    let errorMsg = 'Error al iniciar sesión';
-                    if (Array.isArray(errorDetail)) {
-                        errorMsg = errorDetail[0]?.msg || JSON.stringify(errorDetail);
-                    } else if (typeof errorDetail === 'string') {
-                        errorMsg = errorDetail;
-                    } else if (errorDetail && typeof errorDetail === 'object') {
-                        errorMsg = errorDetail.msg || JSON.stringify(errorDetail);
+                    if (data.error || !data.result) {
+                        setLoginLoading(false);
+                        return;
                     }
-
-                    showToast(errorMsg, 'error');
-                } finally {
-                    setLoginLoading(false);
+                    
+                    try {
+                        localStorage.setItem('intendedRole', viewMode);
+                        // Pasamos el id_token como lo esperaba Telegram.Login.auth nativo
+                        await loginWithTelegram({ id_token: data.result });
+                        navigate('/');
+                    } catch (error) {
+                        console.error('[Landing] Login error:', error);
+                        const errorDetail = error.response?.data?.detail;
+                        let errorMsg = 'Error al iniciar sesión';
+                        if (Array.isArray(errorDetail)) {
+                            errorMsg = errorDetail[0]?.msg || JSON.stringify(errorDetail);
+                        } else if (typeof errorDetail === 'string') {
+                            errorMsg = errorDetail;
+                        } else if (errorDetail && typeof errorDetail === 'object') {
+                            errorMsg = errorDetail.msg || JSON.stringify(errorDetail);
+                        }
+                        showToast(errorMsg, 'error');
+                    } finally {
+                        setLoginLoading(false);
+                    }
                 }
+            } catch (e) {
+                console.error("Error parsed telegram auth result:", e);
             }
-        );
+        };
+
+        window.addEventListener('message', messageHandler);
+        
+        // Polling para revisar si cerraron la ventana sin loguearse
+        const popupTick = setInterval(() => {
+            if (popup.closed) {
+                clearInterval(popupTick);
+                window.removeEventListener('message', messageHandler);
+                setLoginLoading(false);
+            }
+        }, 500);
     };
 
     const scrollToLogin = () => {

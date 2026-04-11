@@ -176,8 +176,16 @@ function CreatePost() {
         }
 
         // Add New Features: Links and Scheduling
-        if (links.length > 0) {
-            formData.append('external_links', JSON.stringify(links));
+        const allLinks = [...links];
+        if (newLink.url) {
+            allLinks.push({
+                label: newLink.label || 'Enlace',
+                url: newLink.url
+            });
+        }
+        
+        if (allLinks.length > 0) {
+            formData.append('external_links', JSON.stringify(allLinks));
         }
         if (isScheduling && scheduledAt) {
             // Convertir la fecha y hora seleccionada (local) a UTC absoluto (ISO)
@@ -350,7 +358,7 @@ function CreatePost() {
                         >
                             <Link size={18} />
                             <span className="text-xs font-bold uppercase tracking-wider">
-                                {links.length > 0 ? `${links.length} Links` : 'Añadir Links'}
+                                {(links.length > 0 || newLink.url) ? `${links.length + (newLink.url ? 1 : 0)} Enlaces` : 'Añadir Links'}
                             </span>
                         </button>
                         <button
@@ -400,26 +408,29 @@ function CreatePost() {
                                     onChange={(e) => setNewLink({ ...newLink, label: e.target.value })}
                                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-all"
                                 />
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="URL (https://...)"
-                                        value={newLink.url}
-                                        onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-                                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-all"
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            if (newLink.label && newLink.url) {
-                                                setLinks([...links, newLink]);
-                                                setNewLink({ label: '', url: '' });
-                                            }
-                                        }}
-                                        className="bg-blue-600 p-2.5 rounded-xl text-white hover:bg-blue-500 active:scale-90 transition-all shadow-lg shadow-blue-600/20"
-                                    >
-                                        <Plus size={20} />
-                                    </button>
-                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="URL (https://...)"
+                                    value={newLink.url}
+                                    onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-all"
+                                />
+                                {newLink.url && (
+                                    <div className="flex justify-between items-center px-1">
+                                        <p className="text-[10px] text-green-400 font-medium">Se guardará automáticamente al publicar</p>
+                                        <button 
+                                            onClick={() => {
+                                                if (newLink.url) {
+                                                    setLinks([...links, { label: newLink.label || 'Enlace', url: newLink.url }]);
+                                                    setNewLink({ label: '', url: '' });
+                                                }
+                                            }}
+                                            className="text-[10px] text-blue-400 hover:text-blue-300 font-bold"
+                                        >
+                                            + Añadir otro
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
