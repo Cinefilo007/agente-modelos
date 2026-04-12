@@ -147,22 +147,21 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             links = Object.keys(links).map(key => ({ network: key, url: links[key] }));
         }
 
-                    links.forEach(link => {
-                        if (link.url) {
-                            socialLinks.push({
-                                id: link.network + link.url,
-                                icon: getSocialIcon(link.network),
-                                label: link.network,
-                                url: link.url,
-                                network: link.network,
-                                color: getSocialColor(link.network)
-                            });
-                        }
+            links.forEach(link => {
+                if (link.url) {
+                    socialLinks.push({
+                        id: link.network + link.url,
+                        icon: getSocialIcon(link.network),
+                        label: link.network,
+                        url: link.url,
+                        network: link.network,
+                        color: getSocialColor(link.network)
                     });
                 }
-            }
-        
-            const handleSocialClick = (e, url) => {
+            });
+        }
+    
+        const handleSocialClick = (e, url) => {
                 if (!currentUser) {
                     e.preventDefault();
                     setShowAuthModal(true);
