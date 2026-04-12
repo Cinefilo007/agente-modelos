@@ -1,4 +1,4 @@
-import { getOptimizedUrl, IMAGE_PRESETS } from '../utils/image';
+import { getOptimizedUrl, IMAGE_PRESETS } from '../../utils/image';
 
 export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     const [imgError, setImgError] = useState(false);
