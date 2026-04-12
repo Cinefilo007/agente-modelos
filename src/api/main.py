@@ -27,9 +27,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import logging
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logging.error(f"[GLOBAL ERROR] {request.method} {request.url.path} | Error: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "msg": str(exc)}
+    )
+
+import time
+from fastapi import Request
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    path = request.url.path
+    
+    # Log solo si no es un asset muy ruidoso, o log todo si estamos debuggeando
+    if not path.startswith("/api/notification/unread"): # Evitar spam de notificaciones
+        print(f"[Backend Log] --> {request.method} {path}")
+    
+    try:
+        response = await call_next(request)
+        process_time = (time.time() - start_time) * 1000
+        
+        if not path.startswith("/api/notification/unread"):
+            print(f"[Backend Log] <-- {request.method} {path} | STATUS: {response.status_code} | TIME: {process_time:.2f}ms")
+            
+        return response
+    except Exception as e:
+        print(f"[CRITICAL ERROR] Fallo procesando {path}: {str(e)}")
+        raise
+
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "service": "Agency Bot API"}
+    return {"status": "ok", "service": "Agency Bot API", "env": os.getenv("ENV", "dev")}
+
+@app.get("/api/debug/files")
+async def debug_files():
+    import os
+    files = []
+    if os.path.exists("web/dist"):
+        for root, dirs, filenames in os.walk("web/dist"):
+            for f in filenames:
+                files.append(os.path.join(root, f))
+    return {"web_dist_exists": os.path.exists("web/dist"), "files": files}
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse

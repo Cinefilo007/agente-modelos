@@ -93,7 +93,7 @@ const ProtectedRoute = ({ children }) => {
   const isCurrentlyInOnboarding = location.pathname === '/onboarding';
 
   if (needsOnboarding && !isCurrentlyInOnboarding) {
-    console.warn("[Router] Cliente con perfil incompleto, redirigiendo a onboarding.");
+    console.warn("[Router] Onboarding Requerido. Redirigiendo...", { role: user.role, status: user.status, path: location.pathname });
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -101,6 +101,7 @@ const ProtectedRoute = ({ children }) => {
   // Las restricciones se aplicarán en los componentes específicos (Layout, CreatePost)
 
   if ((isModel || isAdmin) && isCurrentlyInOnboarding) {
+    console.log("[Router] Ya completó onboarding o es Admin. Redirigiendo a home/admin.");
     return <Navigate to={isAdmin ? "/admin" : "/"} replace />;
   }
 

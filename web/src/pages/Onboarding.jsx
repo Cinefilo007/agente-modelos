@@ -16,10 +16,16 @@ const Onboarding = () => {
     // Estado inicial: intentamos pre-seleccionar basado en el login, pero permitimos elegir
     // Estado inicial: Autodetectar paso basado en el rol del usuario
     const [step, setStep] = useState(() => {
-        if (user?.role === 'client') return 'fan_flow';
-        if (user?.role === 'model') return 'creator_flow';
+        const initialRole = user?.role;
+        console.log("[Onboarding] Inicializando estado. Rol detectado:", initialRole);
+        if (initialRole === 'client') return 'fan_flow';
+        if (initialRole === 'model') return 'creator_flow';
         return 'select_role'; 
     });
+
+    useEffect(() => {
+        console.log("[Onboarding] Componente montado / Step cambiado a:", step);
+    }, [step]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
