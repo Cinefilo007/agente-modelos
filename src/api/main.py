@@ -70,14 +70,19 @@ if os.path.exists("web/dist"):
     async def serve_react_app(full_path: str):
         if full_path.startswith("api/"):
             return JSONResponse(status_code=404, content={"error": "Not Found"})
-            
+        # Archivos directos en raíz (manifest, icons, etc)
         file_path = f"web/dist/{full_path}"
         if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
-             return FileResponse(file_path)
+             # Aplicar caché agresiva a assets e imágenes
+             headers = {}
+             if any(full_path.endswith(ext) for ext in ['.js', '.css', '.png', '.jpg', '.jpeg', '.svg', '.woff2']):
+                 headers["Cache-Control"] = "public, max-age=31536000, immutable"
+             return FileResponse(file_path, headers=headers)
              
+        # Catch-all para la SPA de React (Sin caché para que cargue siempre la última versión del index)
         index_path = "web/dist/index.html"
         if os.path.exists(index_path):
-            return FileResponse(index_path)
+            return FileResponse(index_path, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
         
         return JSONResponse(status_code=404, content={"error": "Frontend build not found"})
 else:

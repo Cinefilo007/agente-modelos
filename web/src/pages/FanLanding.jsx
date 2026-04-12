@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import { BenefitCard, StatItem, DecorativeDivider } from '../components/landing/LandingComponents';
+import { getOptimizedUrl, IMAGE_PRESETS } from '../utils/image';
 
 const FanLanding = () => {
     const { loginWithTelegram } = useAuth();
@@ -215,9 +216,10 @@ const FanLanding = () => {
                                     onClick={scrollToLogin}
                                 >
                                     <img 
-                                        src={m.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop'} 
+                                        src={getOptimizedUrl(m.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop', IMAGE_PRESETS.FEED)} 
                                         alt={m.artistic_name} 
                                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110" 
+                                        loading="lazy"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-40 transition-opacity"></div>
                                     

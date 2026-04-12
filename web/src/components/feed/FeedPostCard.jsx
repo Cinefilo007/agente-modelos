@@ -13,6 +13,7 @@ import { CircleDollarSign, Gift } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../context/ToastContext';
 import { isOnline as checkOnline } from '../../utils/date';
+import { getOptimizedUrl, IMAGE_PRESETS } from '../../utils/image';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
     const { user, updateUser } = useAuth();
@@ -339,9 +340,10 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                         </>
                     ) : (
                         <img
-                            src={post.media_url || post.image}
+                            src={getOptimizedUrl(post.media_url || post.image, IMAGE_PRESETS.FEED)}
                             alt="Post Content"
                             className="w-full h-full object-cover"
+                            loading="lazy"
                         />
                     )}
                 </Link>

@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { getOptimizedUrl, IMAGE_PRESETS } from '../utils/image';
 
 export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
     const [imgError, setImgError] = useState(false);
@@ -22,9 +20,11 @@ export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
             return null;
         }
 
-        if (url.startsWith('http')) return url;
+        if (url.startsWith('http')) {
+             return getOptimizedUrl(url, IMAGE_PRESETS.AVATAR);
+        }
         const cleanPath = url.replace(/^\/+/, '');
-        return `${STORAGE_BASE}${cleanPath}`;
+        return getOptimizedUrl(`${STORAGE_BASE}${cleanPath}`, IMAGE_PRESETS.AVATAR);
     };
 
     const finalSrc = getSafeUrl(src);

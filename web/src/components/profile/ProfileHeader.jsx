@@ -14,6 +14,7 @@ import api from '../../api/axios';
 import { isOnline as checkOnline } from '../../utils/date';
 import { AuthRequiredModal } from '../auth/AuthRequiredModal';
 import { useToast } from '../../context/ToastContext';
+import { getOptimizedUrl, IMAGE_PRESETS } from '../../utils/image';
 
 export function ProfileHeader({ user, isOwnProfile, customActions }) {
     const { themeColor } = useTheme();
@@ -174,7 +175,9 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
         <div className="relative font-display text-slate-900 dark:text-slate-100 pb-4" style={{ '--theme-glow': themeColor || '#b829e3' }}>
             {/* Cover Image Container */}
             <div className="relative w-full h-64 md:h-72">
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${user.cover_url || user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab'}')` }}></div>
+                <div className="absolute inset-0 bg-cover bg-center" style={{ 
+                    backgroundImage: `url('${getOptimizedUrl(user.cover_url || user.cover || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab', IMAGE_PRESETS.COVER)}')` 
+                }}></div>
                 {/* Desvanecimiento suave unicamente en el borde inferior para mezclarse con el fondo */}
                 <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0a060e] to-transparent"></div>
                 {/* Linea extra para asegurar que no quede un borde duro de anti-aliasing */}
