@@ -118,6 +118,13 @@ const Onboarding = () => {
 
     // --- RENDER STEPS ---
 
+    // Efecto para manejar navegación si no hay un flujo claro
+    useEffect(() => {
+        if (step === 'select_role') {
+            navigate('/landing');
+        }
+    }, [step, navigate]);
+
     if (isRestricted) {
         return (
             <div className="min-h-screen bg-[#02010a] text-white flex items-center justify-center p-4 text-center font-sans">
@@ -153,7 +160,7 @@ const Onboarding = () => {
                     </div>
                     <h2 className="text-3xl font-black mb-4 tracking-tighter uppercase">¡Recibido!</h2>
                     <p className="text-gray-400 mb-8 leading-relaxed">
-                        Tu solicitud como creadora está en revisión. El equipo de Nebula verificará tus datos y recibiras una notificación en Telegram.
+                        Tu solicitud como creadora está en revisión. El equipo de Nebula verificará tus datos y recibirás una notificación en Telegram.
                     </p>
                     <button onClick={logout} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
                         Cerrar Sesión
@@ -161,14 +168,6 @@ const Onboarding = () => {
                 </div>
             </div>
         );
-    }
-
-    // Si el usuario llega sin rol (poco común), lo enviamos al selector principal
-    if (step === 'select_role') {
-        useEffect(() => {
-            navigate('/landing');
-        }, [navigate]);
-        return null;
     }
 
     if (step === 'creator_flow') {
