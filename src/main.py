@@ -88,7 +88,8 @@ def main():
     if enable_bot:
         logger.info("Starting Telegram Bots orchestration...")
         import time
-        time.sleep(5) # Dar margen de 5 segs a API y BD para conectar y evitar conflictos
+        # Delay extendido para asegurar que Railway resetee conexiones
+        time.sleep(10)
         run_bots()
     else:
         logger.info("Bots are disabled (ENABLE_BOT=false)")
