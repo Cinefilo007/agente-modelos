@@ -31,6 +31,8 @@ async def _run_bots_concurrently():
     main_bot = build_main_bot()
     if main_bot:
         await main_bot.initialize()
+        # Limpiar cualquier webhook previo que esté causando el Conflict
+        await main_bot.bot.delete_webhook(drop_pending_updates=True)
         await main_bot.start()
         await main_bot.updater.start_polling(drop_pending_updates=True)
         apps_running.append(main_bot)
@@ -40,6 +42,8 @@ async def _run_bots_concurrently():
     promo_bot = build_promo_bot()
     if promo_bot:
         await promo_bot.initialize()
+        # Limpiar cualquier webhook previo que esté causando el Conflict
+        await promo_bot.bot.delete_webhook(drop_pending_updates=True)
         await promo_bot.start()
         await promo_bot.updater.start_polling(drop_pending_updates=True)
         apps_running.append(promo_bot)

@@ -40,73 +40,23 @@ const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    // Telegram Mini App Config
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand(); // Force Fullscreen
+  if (loading) return (
+     <div className="flex h-screen w-full items-center justify-center bg-black">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-purple-500"></div>
+     </div>
+  );
 
-      // Set header color
-      window.Telegram.WebApp.setHeaderColor('#000000');
-    }
-
-    // Heartbeat for Online Status (every 2 mins)
-    const heartbeatInterval = setInterval(async () => {
-      if (user?.role === 'model') {
-        try {
-          await api.post('/profile/heartbeat');
-        } catch (e) {
-          console.error("Heartbeat failed", e);
-        }
-      }
-    }, 120000);
-
-    return () => clearInterval(heartbeatInterval);
-  }, [user]);
-
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
-
-  const isDirectLanding = ['/landing', '/fans', '/creators'].includes(location.pathname);
-
-  if (!user && !isDirectLanding) {
-    console.log("[Router] Usuario no autenticado, redirigiendo a landing.");
+  // Excepciones para las páginas públicas (Landings)
+  const isPublicPath = ['/landing', '/fans', '/creators'].includes(location.pathname);
+  
+  if (!user && !isPublicPath) {
     return <Navigate to="/landing" state={{ from: location }} replace />;
   }
 
-  if (isDirectLanding) return children;
-
-  const isClient = user.role === 'client';
-  const isModel = user.role === 'model';
-  const isAdmin = user.role === 'admin';
-
-  // Onboarding check:
-  // 1. Clientes (Fans) con perfil incompleto
-  // 2. Modelos en estado 'prospect' (recién registradas desde la landing)
-  const isProspectModel = isModel && user.status === 'prospect';
-  const needsOnboarding = (isClient && (!user.birth_date || !user.terms_accepted)) || isProspectModel;
-  const isCurrentlyInOnboarding = location.pathname === '/onboarding';
-
-  if (needsOnboarding && !isCurrentlyInOnboarding) {
-    console.warn("[Router] Onboarding Requerido. Redirigiendo...", { role: user.role, status: user.status, path: location.pathname });
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  // Modelos no verificadas: Ahora SI permitimos entrar a la App (Curiosity Hook)
-  // Las restricciones se aplicarán en los componentes específicos (Layout, CreatePost)
-
-  if ((isModel || isAdmin) && isCurrentlyInOnboarding) {
-    console.log("[Router] Ya completó onboarding o es Admin. Redirigiendo a home/admin.");
-    return <Navigate to={isAdmin ? "/admin" : "/"} replace />;
-  }
-
-  if (isAdmin && location.pathname === '/' && !location.pathname.startsWith('/admin')) {
-    return <Navigate to="/admin" replace />;
+  // Si existe usuario y está en una landing pública, le dejamos estar ahí 
+  // (o podrías redirigirlo a /, pero dejarlo es más "suave")
+  if (user && isPublicPath && location.pathname === '/landing') {
+     return <Navigate to={user.role === 'admin' ? "/admin" : "/"} replace />;
   }
 
   return children;
