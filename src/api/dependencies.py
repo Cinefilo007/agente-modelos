@@ -5,6 +5,7 @@ import json
 from urllib.parse import parse_qsl
 from typing import Dict, Any, Optional
 from fastapi import Header, HTTPException, status, Depends
+from src.services.database import db
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from pydantic import BaseModel
@@ -56,9 +57,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TelegramUser:
         raise credentials_exception
 
 async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[TelegramUser]:
-    """
-    Optional version of get_current_user - returns None instead of raising if token is missing/invalid.
-    """
+    # ... (existing code keeps the same)
     if not token:
         return None
     try:
@@ -79,3 +78,36 @@ async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme
         )
     except:
         return None
+
+async def require_verified_model(user: TelegramUser = Depends(get_current_user)) -> TelegramUser:
+    """
+    Dependency to ensure the user is a model AND is verified in the database.
+    Admins are always allowed.
+    """
+    if user.role == "admin":
+        return user
+        
+    if user.role != "model":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta operación solo está disponible para modelos."
+        )
+    
+    # Query DB to check verification status (don't trust token role/verified status entirely)
+    try:
+        res = db.client.table("models").select("is_verified").eq("id", user.user_id).maybe_single().execute()
+        if not res or not res.data or not res.data.get('is_verified', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu cuenta de modelo aún no ha sido verificada por un administrador."
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Security] Error validating model verification: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al validar estado de verificación."
+        )
+        
+    return user

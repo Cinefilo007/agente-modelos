@@ -67,7 +67,15 @@ const CreatorLanding = () => {
                 
                 localStorage.setItem('token', access_token);
                 localStorage.setItem('user', JSON.stringify(fullUser));
-                navigate('/');
+                
+                // Redirigir según verificación
+                if (fullUser.role === 'model' && !fullUser.is_verified) {
+                    navigate('/'); // Ir al feed si no está verificado
+                } else if (fullUser.role === 'model') {
+                    navigate('/admin');
+                } else {
+                    navigate('/');
+                }
             } catch (error) {
                 console.error('[CreatorLanding] WebApp login failed:', error);
                 showToast('Error al conectar con el bot nativo.', 'error');
@@ -87,8 +95,16 @@ const CreatorLanding = () => {
                         return;
                     }
                     try {
-                        await loginWithTelegram(data);
-                        navigate('/');
+                        const loggedUser = await loginWithTelegram(data);
+                        
+                        // Redirigir según el estado de verificación
+                        if (loggedUser?.role === 'model' && !loggedUser?.is_verified) {
+                            navigate('/'); // Ir al feed si no está verificado
+                        } else if (loggedUser?.role === 'model') {
+                            navigate('/admin');
+                        } else {
+                            navigate('/');
+                        }
                     } catch (error) {
                         console.error('[CreatorLanding] Login error:', error);
                         showToast(error.response?.data?.detail || 'Error al iniciar sesión', 'error');

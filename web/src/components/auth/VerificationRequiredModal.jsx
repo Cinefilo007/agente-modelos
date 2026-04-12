@@ -70,16 +70,28 @@ export function VerificationRequiredModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          <button
-            onClick={() => {
-              onClose();
-              navigate('/onboarding');
-            }}
-            className="w-full py-5 bg-primary text-primary-foreground font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase tracking-[0.2em]"
-            style={{ backgroundColor: themeColor }}
-          >
-            Completar Verificación
-          </button>
+          <div className="flex flex-col gap-3 w-full">
+              <button
+                onClick={() => {
+                  onClose ? onClose() : null;
+                  navigate('/onboarding');
+                }}
+                className="w-full py-5 bg-primary text-primary-foreground font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase tracking-[0.2em]"
+                style={{ backgroundColor: themeColor }}
+              >
+                Completar Verificación
+              </button>
+              
+              <button
+                onClick={() => {
+                  onClose ? onClose() : null;
+                  navigate('/');
+                }}
+                className="w-full py-4 bg-white/5 text-gray-400 font-bold rounded-2xl hover:bg-white/10 transition-all text-[10px] uppercase tracking-widest border border-white/5"
+              >
+                Explorar Feed General
+              </button>
+          </div>
         </div>
 
         <p className="mt-8 text-[9px] text-gray-600 uppercase tracking-[0.3em] font-black italic">

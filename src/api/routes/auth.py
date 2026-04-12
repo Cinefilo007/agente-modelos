@@ -148,17 +148,11 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                 model_data = model_res.data
                 if model_data.get('status') == 'rejected':
                      raise HTTPException(status_code=403, detail="Tu cuenta de modelo ha sido rechazada.")
-                elif model_data.get('status') == 'verifying' or model_data.get('status') == 'prospect':
-                     user_role = "unknown"
-                     user_data = None
-                elif not model_data.get('is_verified', False):
-                     raise HTTPException(
-                         status_code=403,
-                         detail="Tu cuenta está pendiente de verificación. El administrador debe aprobar tu solicitud antes de que puedas acceder."
-                     )
-                else:
-                     user_role = "model"
-                     user_data = model_data
+                
+                # Permitimos el login incluso si no está verificada para que el frontend pueda
+                # manejar la redirección al onboarding o mostrar el modal de bloqueo.
+                user_role = "model"
+                user_data = model_data
         except HTTPException:
             raise
         except Exception as e:

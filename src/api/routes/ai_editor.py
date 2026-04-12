@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from src.api.dependencies import get_current_user, TelegramUser
+from src.api.dependencies import get_current_user, TelegramUser, require_verified_model
 from src.services.database import db
 from src.services.ai_editor import ai_editor
 from src.services.storage import upload_file
@@ -63,7 +63,7 @@ async def ai_touch_up(
 async def ai_change_background(
     background_prompt: str = Form(...),
     image: UploadFile = File(...),
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Solo las modelos pueden usar esta herramienta")

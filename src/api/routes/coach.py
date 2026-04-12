@@ -10,7 +10,7 @@ from typing import Optional
 from datetime import datetime
 
 from src.services.database import db
-from src.api.dependencies import get_current_user, TelegramUser
+from src.api.dependencies import get_current_user, TelegramUser, require_verified_model
 from src.services import coach_service
 
 router = APIRouter()
@@ -64,7 +64,7 @@ def _get_plan_id(model_id: str, mes: int, anio: int) -> Optional[str]:
 async def obtener_plan_mensual(
     mes: Optional[int] = None,
     anio: Optional[int] = None,
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """
     Obtiene el plan mensual del Coach para la modelo autenticada.
@@ -116,7 +116,7 @@ async def obtener_plan_mensual(
 async def regenerar_plan_mensual(
     mes: Optional[int] = None,
     anio: Optional[int] = None,
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """
     Fuerza la regeneracion del plan mensual.
@@ -165,7 +165,7 @@ async def regenerar_plan_mensual(
 @router.post("/feedback")
 async def registrar_feedback(
     data: FeedbackRequest,
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """
     Registra el resultado de una accion del plan (exito/fracaso).
@@ -202,7 +202,7 @@ async def registrar_feedback(
 
 @router.get("/insights")
 async def obtener_insights_colectivos(
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """
     Retorna las insights colectivas anonimas del ecosistema.

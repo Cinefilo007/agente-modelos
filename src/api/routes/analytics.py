@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import List, Optional
 from src.services.database import db
-from src.api.dependencies import get_current_user, get_current_user_optional, TelegramUser
+from src.api.dependencies import get_current_user, get_current_user_optional, TelegramUser, require_verified_model
 from datetime import datetime, timedelta
 
 router = APIRouter()
@@ -41,7 +41,7 @@ async def record_view(data: ViewRecord, request: Request, user: Optional[Telegra
 async def get_model_summary(
     month: Optional[int] = None,
     year: Optional[int] = None,
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """Returns summary stats for the logged-in model with time filters."""
     """Returns summary stats for the logged-in model."""
@@ -176,7 +176,7 @@ async def get_model_summary(
 async def get_model_exposure(
     month: Optional[int] = None,
     year: Optional[int] = None,
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """Returns views per day for the last 7 days or a full month."""
     if user.role != "model":
@@ -266,7 +266,7 @@ async def get_model_exposure(
         return []
 
 @router.get("/model/visitors")
-async def get_model_visitors(user: TelegramUser = Depends(get_current_user)):
+async def get_model_visitors(user: TelegramUser = Depends(require_verified_model)):
     """Returns list of recent visitors with country info."""
     if user.role != "model":
         raise HTTPException(status_code=403, detail="Solo para modelos")

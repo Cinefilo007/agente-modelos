@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Body, BackgroundTasks
 from typing import List, Optional
 from pydantic import BaseModel
-from src.api.dependencies import get_current_user, get_current_user_optional, TelegramUser
+from src.api.dependencies import get_current_user, get_current_user_optional, TelegramUser, require_verified_model
 from src.services.database import db
 from src.services.storage import upload_file
 from src.services.telegram_stories import post_to_telegram_story
@@ -47,7 +47,7 @@ async def create_post(
     end_time: Optional[float] = Form(None),
     thumbnail_time: float = Form(0.1),
     publish_to_story: bool = Form(False),
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """Create a new post with file upload, now supporting links and scheduling."""
     if user.role != "model":
@@ -217,7 +217,7 @@ async def create_post(
 
 @router.get("/posts/my-posts")
 async def get_my_posts(
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """Get all posts (including scheduled) for the current model."""
     if user.role != "model":
@@ -276,7 +276,7 @@ async def get_user_posts(
 @router.post("/stories")
 async def create_story(
     file: UploadFile = File(...),
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """Create a new story (expires in 24h)."""
     if user.role != "model":
@@ -329,7 +329,7 @@ async def create_story(
 @router.delete("/stories/{story_id}")
 async def delete_story(
     story_id: str,
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """Delete a story (author or admin) and its media."""
     story = db.client.table("stories").select("model_id, media_url").eq("id", story_id).single().execute()
@@ -359,7 +359,7 @@ async def delete_story(
 @router.put("/stories/{story_id}/toggle-saved")
 async def toggle_story_saved(
     story_id: str,
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """Toggle the is_saved status of a story (author only)."""
     if user.role != "model":
@@ -549,7 +549,7 @@ async def get_post_detail(
 async def delete_post(
     post_id: str,
     reason: Optional[str] = Body(None, embed=True), # Optional reason for admin deletion
-    user: TelegramUser = Depends(get_current_user)
+    user: TelegramUser = Depends(require_verified_model)
 ):
     """Delete a post (author or admin)."""
     # 1. Check ownership or admin role
