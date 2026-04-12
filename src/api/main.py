@@ -110,65 +110,59 @@ INDEX_HTML_CACHE = None
 
 # Serve React Frontend (Static Files)
 if os.path.exists("web/dist"):
+    # Re-montar assets para que FastAPI maneje el streaming de forma nativa (más robusto)
+    app.mount("/assets", StaticFiles(directory="web/dist/assets"), name="assets")
+    
     @app.get("/{full_path:path}")
     async def serve_react_app(full_path: str):
         global INDEX_HTML_CACHE
         
+        # Evitar capturar rutas de la API
         if full_path.startswith("api/"):
             return JSONResponse(status_code=404, content={"error": "Not Found"})
             
+        # Si es un archivo directo en la raíz (ej: sw.js, manifest.json)
         file_path = f"web/dist/{full_path}"
-        
-        # Log para debug (solo en logs del servidor, no ruidoso)
-        if full_path and not full_path.endswith((".js", ".css", ".png", ".jpg", ".svg")):
-            print(f"[Static Debug] Request: {full_path}")
-            
         if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
-            
+             return FileResponse(file_path)
+
         # Cargar index.html si no está en caché
         if not INDEX_HTML_CACHE:
             try:
                 with open("web/dist/index.html", "r", encoding="utf-8") as f:
                     INDEX_HTML_CACHE = f.read()
             except Exception as e:
-                print(f"Error cargando index.html: {e}")
-                return JSONResponse(status_code=500, content={"error": "Frontend not ready"})
+                print(f"Error crítico cargando index.html: {e}")
+                return HTMLResponse(content="<h1>Error de Carga</h1>", status_code=500)
 
-        # Generar links enriquecidos para Telegram
-        exclude_routes = {"api", "assets", "admin", "promotions", "landing", "feed", "explore", "reviews", "notifications", "edit-profile", "create-post", "create-story", "post", "service", "checkout", "order", "support", "shop-manager", "profile", "me", "casino", "onboarding", "wallet", "index.html", "sw.js", "manifest.json"}
-        
+        # Log de navegación para ver qué ruta está pidiendo el cliente
+        print(f"[Navegación] Solicitud de ruta: /{full_path}")
+
+        # Generar links enriquecidos para Telegram si es un perfil
+        exclude_routes = {"api", "assets", "admin", "promotions", "landing", "feed", "explore", "reviews", "notifications", "edit-profile", "create-post", "create-story", "post", "service", "checkout", "order", "support", "shop-manager", "profile", "me", "casino", "onboarding", "wallet"}
         path_segments = [p for p in full_path.split("/") if p]
         
-        if not full_path or full_path == "" or full_path == "index.html":
-             return HTMLResponse(content=INDEX_HTML_CACHE)
-
-        if len(path_segments) == 1:
+        if len(path_segments) == 1 and path_segments[0] not in exclude_routes:
             username = path_segments[0]
-            if username not in exclude_routes:
-                try:
-                    query = db.client.table("models").select("artistic_name, full_name, username, avatar_url, bio_short").eq("username", username).maybe_single().execute()
-                    if query and query.data:
-                        model = query.data
-                        name = model.get("artistic_name") or model.get("full_name") or model.get("username")
-                        bio = model.get("bio_short") or f"Perfil de {name}."
-                        bio_clean = bio.replace('\n', ' ').replace('"', "'")
-                        avatar = model.get("avatar_url") or ""
-                        
-                        og_tags = f"""
+            try:
+                query = db.client.table("models").select("artistic_name, full_name, username, avatar_url, bio_short").eq("username", username).maybe_single().execute()
+                if query and query.data:
+                    model = query.data
+                    name = model.get("artistic_name") or model.get("full_name") or model.get("username")
+                    bio_clean = (model.get("bio_short") or f"Perfil de {name}.").replace('\n', ' ').replace('"', "'")
+                    avatar = model.get("avatar_url") or ""
+                    
+                    og_tags = f"""
     <meta property="og:title" content="{name}" />
     <meta property="og:description" content="{bio_clean}" />
     <meta property="og:image" content="{avatar}" />
     <meta property="og:type" content="profile" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="{name}" />
-    <meta name="twitter:description" content="{bio_clean}" />
-    <meta name="twitter:image" content="{avatar}" />
 """
-                        return HTMLResponse(content=INDEX_HTML_CACHE.replace("</head>", f"{og_tags}</head>"))
-                except Exception as e:
-                    print(f"Error in OG tags generation for {username}: {e}")
+                    return HTMLResponse(content=INDEX_HTML_CACHE.replace("</head>", f"{og_tags}</head>"))
+            except:
+                pass
             
+        # Para cualquier otra ruta de la SPA, servimos el index.html
         return HTMLResponse(content=INDEX_HTML_CACHE)
 else:
     print("Warning: web/dist directory not found. Frontend will not be served.")
