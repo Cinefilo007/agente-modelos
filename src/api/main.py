@@ -105,32 +105,43 @@ from fastapi.responses import FileResponse, HTMLResponse
 import re
 from src.services.database import db
 
+# Caché en memoria para el index.html para evitar lecturas constantes de disco
+INDEX_HTML_CACHE = None
+
 # Serve React Frontend (Static Files)
 if os.path.exists("web/dist"):
     @app.get("/{full_path:path}")
     async def serve_react_app(full_path: str):
+        global INDEX_HTML_CACHE
+        
         if full_path.startswith("api/"):
             return JSONResponse(status_code=404, content={"error": "Not Found"})
             
-        # Determinar la ruta real del archivo
         file_path = f"web/dist/{full_path}"
         
-        # Log para debug de archivos específicos
-        if full_path:
-            print(f"[Static Debug] Buscando archivo: {file_path}")
+        # Log para debug (solo en logs del servidor, no ruidoso)
+        if full_path and not full_path.endswith((".js", ".css", ".png", ".jpg", ".svg")):
+            print(f"[Static Debug] Request: {full_path}")
             
         if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
             
-        # Generar links enriquecidos para Telegram (Open Graph y Twitter Cards)
-        # Solo para rutas que parecen perfiles (segmento único)
+        # Cargar index.html si no está en caché
+        if not INDEX_HTML_CACHE:
+            try:
+                with open("web/dist/index.html", "r", encoding="utf-8") as f:
+                    INDEX_HTML_CACHE = f.read()
+            except Exception as e:
+                print(f"Error cargando index.html: {e}")
+                return JSONResponse(status_code=500, content={"error": "Frontend not ready"})
+
+        # Generar links enriquecidos para Telegram
         exclude_routes = {"api", "assets", "admin", "promotions", "landing", "feed", "explore", "reviews", "notifications", "edit-profile", "create-post", "create-story", "post", "service", "checkout", "order", "support", "shop-manager", "profile", "me", "casino", "onboarding", "wallet", "index.html", "sw.js", "manifest.json"}
         
         path_segments = [p for p in full_path.split("/") if p]
         
-        # Si es el root o una ruta de la App, servimos el index.html
         if not full_path or full_path == "" or full_path == "index.html":
-             return FileResponse("web/dist/index.html")
+             return HTMLResponse(content=INDEX_HTML_CACHE)
 
         if len(path_segments) == 1:
             username = path_segments[0]
@@ -144,11 +155,7 @@ if os.path.exists("web/dist"):
                         bio_clean = bio.replace('\n', ' ').replace('"', "'")
                         avatar = model.get("avatar_url") or ""
                         
-                        try:
-                            with open("web/dist/index.html", "r", encoding="utf-8") as f:
-                                html_content = f.read()
-                            
-                            og_tags = f"""
+                        og_tags = f"""
     <meta property="og:title" content="{name}" />
     <meta property="og:description" content="{bio_clean}" />
     <meta property="og:image" content="{avatar}" />
@@ -158,14 +165,10 @@ if os.path.exists("web/dist"):
     <meta name="twitter:description" content="{bio_clean}" />
     <meta name="twitter:image" content="{avatar}" />
 """
-                            html_content = html_content.replace("</head>", f"{og_tags}</head>")
-                            return HTMLResponse(content=html_content)
-                        except Exception as e:
-                            print(f"Error in OG tags: {e}")
+                        return HTMLResponse(content=INDEX_HTML_CACHE.replace("</head>", f"{og_tags}</head>"))
                 except Exception as e:
-                    print(f"Error fetching model data: {e}")
+                    print(f"Error in OG tags generation for {username}: {e}")
             
-        # Si no coincide con nada, devolver index.html para que el router de React maneje 404
-        return FileResponse("web/dist/index.html")
+        return HTMLResponse(content=INDEX_HTML_CACHE)
 else:
     print("Warning: web/dist directory not found. Frontend will not be served.")
