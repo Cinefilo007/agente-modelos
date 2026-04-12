@@ -38,10 +38,15 @@ import CreatorLanding from './pages/CreatorLanding';
 
 const TelegramInitializer = () => {
   useEffect(() => {
-    if (window.Telegram?.WebApp) {
+    if (window.Telegram?.WebApp && window.Telegram.WebApp.isVersionAtLeast('6.1')) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
-      window.Telegram.WebApp.setHeaderColor('#000000');
+      try {
+        window.Telegram.WebApp.setHeaderColor('#000000');
+      } catch (e) {}
+    } else if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
     }
   }, []);
   return null;

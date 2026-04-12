@@ -3,17 +3,26 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+
+# Importar routers necesarios
+from src.api.routes.config import router as config_router
 
 # Configuración básica de la App
 app = FastAPI(title="Agency Bot API")
 
-# Compresión Gzip para reducir el peso de los archivos estáticos (Evita CONNECTION_RESET)
+# Compresión Gzip para optimizar transferencia
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Configurar CORS
-origins = ["*"]  # En producción deberíamos ser más restrictivos si es posible
+# SEGURIDAD: Configuración de CORS restrictiva
+origins = [
+    "https://nebulaespace.site",
+    "http://nebulaespace.site",
+    "http://localhost:5173",  # Para desarrollo local
+    "http://127.0.0.1:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -22,29 +31,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- RUTAS DE API ---
+app.include_router(config_router, prefix="/api/config", tags=["Config"])
+
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "service": "Agency Bot API", "env": os.getenv("ENV", "dev")}
+    return {"status": "ok", "service": "Agency Bot API"}
 
-# --- SERVICIO DE ARCHIVOS ESTÁTICOS (ROBUSTO) ---
-# Montamos la carpeta assets primero para que FastAPI la maneje internamente
+# --- SERVICIO DE ARCHIVOS ESTÁTICOS ---
 if os.path.exists("web/dist"):
-    # Sub-app para archivos de assets
+    # Montamos assets para que FastAPI gestione el streaming y compresión
     app.mount("/assets", StaticFiles(directory="web/dist/assets"), name="assets")
     
-    # Catch-all para la SPA (Single Page Application)
     @app.get("/{full_path:path}")
     async def serve_react_app(full_path: str):
-        # 1. Si es una ruta de API, devolvemos 404
+        # Evitar capturar rutas de la API bajo /api
         if full_path.startswith("api/"):
             return JSONResponse(status_code=404, content={"error": "Not Found"})
             
-        # 2. Si es un archivo directo en la raíz (ej: sw.js, manifest.json, vite.svg)
+        # Archivos directos en raíz (manifest, icons, etc)
         file_path = f"web/dist/{full_path}"
         if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
              return FileResponse(file_path)
              
-        # 3. Para cualquier otra cosa (Rutas de React), servimos el index.html
+        # Catch-all para la SPA de React
         index_path = "web/dist/index.html"
         if os.path.exists(index_path):
             return FileResponse(index_path)
