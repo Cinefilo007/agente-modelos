@@ -68,9 +68,9 @@ def run_bots():
         logger.info("Bots detenidos mediante interrupción de teclado.")
 
 def main():
-    enable_api = os.getenv("ENABLE_API", "true").lower() == "true"
-    enable_bot = os.getenv("ENABLE_BOT", "true").lower() == "true"
-    enable_monitor = os.getenv("ENABLE_MONITOR", "true").lower() == "true"
+    enable_api = True
+    enable_bot = False  # DESACTIVADO POR DIAGNÓSTICO
+    enable_monitor = False # DESACTIVADO POR DIAGNÓSTICO
 
     # API en hilo secundario (Uvicorn crea su propio loop internamente)
     if enable_api:
