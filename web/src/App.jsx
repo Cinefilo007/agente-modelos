@@ -36,6 +36,17 @@ import Casino from './pages/Casino';
 import FanLanding from './pages/FanLanding';
 import CreatorLanding from './pages/CreatorLanding';
 
+const TelegramInitializer = () => {
+  useEffect(() => {
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+      window.Telegram.WebApp.setHeaderColor('#000000');
+    }
+  }, []);
+  return null;
+};
+
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -85,6 +96,7 @@ function App() {
           <ThemeProvider>
             <InstallPWA />
             <BrowserRouter>
+              <TelegramInitializer />
               <Routes>
                 {/* Public Route: Landing Page (Selector) */}
                 <Route path="/landing" element={

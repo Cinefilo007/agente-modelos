@@ -2,11 +2,15 @@ import os
 import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 # Configuración básica de la App
 app = FastAPI(title="Agency Bot API")
+
+# Compresión Gzip para reducir el peso de los archivos estáticos (Evita CONNECTION_RESET)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Configurar CORS
 origins = ["*"]  # En producción deberíamos ser más restrictivos si es posible
