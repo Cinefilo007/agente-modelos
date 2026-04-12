@@ -20,6 +20,12 @@ from src.api.routes.notifications import router as notifications_router
 from src.api.routes.promo import router as promo_router
 from src.api.routes.interactions import router as interactions_router
 from src.api.routes.orders import router as orders_router
+from src.api.routes.analytics import router as analytics_router
+from src.api.routes.coach import router as coach_router
+from src.api.routes.ai_editor import router as ai_editor_router
+from src.api.routes.admin_gifts import router as admin_gifts_router
+from src.api.routes.client import router as client_router
+from src.api.routes.escrow import router as escrow_router
 
 # Configuración básica de la App
 app = FastAPI(title="Agency Bot API")
@@ -57,6 +63,12 @@ app.include_router(notifications_router, prefix="/api/notifications", tags=["Not
 app.include_router(promo_router, prefix="/api/promo", tags=["Promo"])
 app.include_router(interactions_router, prefix="/api/interactions", tags=["Interactions"])
 app.include_router(orders_router, prefix="/api/orders", tags=["Orders"])
+app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
+app.include_router(coach_router, prefix="/api/coach", tags=["Coach"])
+app.include_router(ai_editor_router, prefix="/api/ai-editor", tags=["AI Editor"])
+app.include_router(admin_gifts_router, prefix="/api/admin-gifts", tags=["Admin Gifts"])
+app.include_router(client_router, prefix="/api/client", tags=["Client"])
+app.include_router(escrow_router, prefix="/api/escrow", tags=["Escrow"])
 
 @app.get("/api/health")
 async def health_check():

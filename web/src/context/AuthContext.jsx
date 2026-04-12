@@ -101,13 +101,11 @@ export const AuthProvider = ({ children }) => {
 
             // Si Telegram devuelve un id_token (flujo OIDC moderno), usarlo
             if (telegramData.id_token) {
-                console.log('[Auth] Usando flujo OIDC con id_token...');
                 response = await api.post('/auth/telegram-oidc', {
                     id_token: telegramData.id_token
                 });
             } else {
                 // Fallback: hash HMAC legacy (compatible con el widget antiguo)
-                console.log('[Auth] Usando flujo HMAC legacy...');
                 response = await api.post('/auth/telegram', telegramData);
             }
 

@@ -10,9 +10,12 @@ import PostCalendar from '../components/posts/PostCalendar';
 import ShopManager from './ShopManager';
 import CasinoPrizeManager from '../components/admin/CasinoPrizeManager';
 import NebulaCoachPanel from '../components/coach/NebulaCoachPanel';
+import { useAuth } from '../context/AuthContext';
+import { VerificationRequiredModal } from '../components/auth/VerificationRequiredModal';
 
 export default function AdminPanel() {
     const { themeColor } = useTheme();
+    const { user } = useAuth();
     const [stats, setStats] = useState({ visitors: 0, sales_count: 0, revenue: 0, credits: 0, conversion_rate: 0, visitors_growth: 0, sales_growth: 0 });
     const [exposure, setExposure] = useState([0, 0, 0, 0, 0, 0, 0]);
     const [activeTab, setActiveTab] = useState('analytics'); // analytics, bot, calendar, shop, wallet, casino
@@ -448,8 +451,23 @@ export default function AdminPanel() {
     );
 
     return (
-        <div className="min-h-screen pb-20 pt-4 px-4 font-sans max-w-2xl mx-auto">
-            <div className="flex items-center gap-4 mb-6">
+        <div className={clsx(
+            "min-h-screen pb-20 pt-4 px-4 font-sans max-w-2xl mx-auto",
+            !user?.is_verified && "pointer-events-none select-none"
+        )}>
+            {/* Modal de Verificación Persistente */}
+            {!user?.is_verified && (
+                <VerificationRequiredModal 
+                    isOpen={true} 
+                    onClose={() => {}} // No permitir cerrar si no es verificado
+                />
+            )}
+
+            <div className={clsx(
+                "transition-all duration-700",
+                !user?.is_verified && "blur-xl opacity-20 scale-95 grayscale"
+            )}>
+                <div className="flex items-center gap-4 mb-6">
                 <Link to="/profile" className="p-2 rounded-full bg-card/50 border border-white/5 text-muted-foreground hover:text-foreground">
                     <ArrowLeft size={20} />
                 </Link>
@@ -496,5 +514,6 @@ export default function AdminPanel() {
                 {activeTab === 'casino' && <CasinoPrizeManager />}
             </div>
         </div>
+    </div>
     );
 }

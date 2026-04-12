@@ -1,9 +1,11 @@
 import React from 'react';
 import { X, ShieldAlert, Sparkles, UserCheck } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 
 export function VerificationRequiredModal({ isOpen, onClose }) {
   const { themeColor } = useTheme();
+  const navigate = useNavigate();
 
   if (!isOpen) return null;
 
@@ -71,12 +73,12 @@ export function VerificationRequiredModal({ isOpen, onClose }) {
           <button
             onClick={() => {
               onClose();
-              // No redirect needed if they can already edit profile, or redirect to instructions
+              navigate('/onboarding');
             }}
             className="w-full py-5 bg-primary text-primary-foreground font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase tracking-[0.2em]"
             style={{ backgroundColor: themeColor }}
           >
-            Entendido
+            Completar Verificación
           </button>
         </div>
 
