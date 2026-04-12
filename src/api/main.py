@@ -107,21 +107,31 @@ from src.services.database import db
 
 # Serve React Frontend (Static Files)
 if os.path.exists("web/dist"):
-    app.mount("/assets", StaticFiles(directory="web/dist/assets"), name="assets")
-    
     @app.get("/{full_path:path}")
     async def serve_react_app(full_path: str):
         if full_path.startswith("api/"):
-            return {"error": "Not Found"}
+            return JSONResponse(status_code=404, content={"error": "Not Found"})
             
+        # Determinar la ruta real del archivo
         file_path = f"web/dist/{full_path}"
+        
+        # Log para debug de archivos específicos
+        if full_path:
+            print(f"[Static Debug] Buscando archivo: {file_path}")
+            
         if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
             
         # Generar links enriquecidos para Telegram (Open Graph y Twitter Cards)
-        exclude_routes = {"api", "assets", "admin", "promotions", "landing", "feed", "explore", "reviews", "notifications", "edit-profile", "create-post", "create-story", "post", "service", "checkout", "order", "support", "shop-manager", "profile", "me", "casino", "onboarding", "wallet", "index.html"}
+        # Solo para rutas que parecen perfiles (segmento único)
+        exclude_routes = {"api", "assets", "admin", "promotions", "landing", "feed", "explore", "reviews", "notifications", "edit-profile", "create-post", "create-story", "post", "service", "checkout", "order", "support", "shop-manager", "profile", "me", "casino", "onboarding", "wallet", "index.html", "sw.js", "manifest.json"}
         
         path_segments = [p for p in full_path.split("/") if p]
+        
+        # Si es el root o una ruta de la App, servimos el index.html
+        if not full_path or full_path == "" or full_path == "index.html":
+             return FileResponse("web/dist/index.html")
+
         if len(path_segments) == 1:
             username = path_segments[0]
             if username not in exclude_routes:
@@ -131,9 +141,8 @@ if os.path.exists("web/dist"):
                         model = query.data
                         name = model.get("artistic_name") or model.get("full_name") or model.get("username")
                         bio = model.get("bio_short") or f"Perfil de {name}."
-                        # Quitar saltos de linea y comillas raras de la bio si las hay
                         bio_clean = bio.replace('\n', ' ').replace('"', "'")
-                        avatar = model.get("avatar_url") or "https://images.unsplash.com/photo-1541701494587-cb58502866ab"
+                        avatar = model.get("avatar_url") or ""
                         
                         try:
                             with open("web/dist/index.html", "r", encoding="utf-8") as f:
@@ -152,10 +161,11 @@ if os.path.exists("web/dist"):
                             html_content = html_content.replace("</head>", f"{og_tags}</head>")
                             return HTMLResponse(content=html_content)
                         except Exception as e:
-                            print(f"Error leyendo index.html para OG tags: {e}")
+                            print(f"Error in OG tags: {e}")
                 except Exception as e:
-                    print(f"Error fetching model data for OG tags ({username}): {e}")
+                    print(f"Error fetching model data: {e}")
             
+        # Si no coincide con nada, devolver index.html para que el router de React maneje 404
         return FileResponse("web/dist/index.html")
 else:
     print("Warning: web/dist directory not found. Frontend will not be served.")
