@@ -118,12 +118,50 @@ const Onboarding = () => {
 
     // --- RENDER STEPS ---
 
-    // Efecto para manejar navegación si no hay un flujo claro
-    useEffect(() => {
-        if (step === 'select_role') {
-            navigate('/landing');
-        }
-    }, [step, navigate]);
+    // Efecto de limpieza: No redirigimos, si no hay rol mostramos el selector como fallback
+    if (step === 'select_role') {
+        return (
+            <div className="min-h-screen bg-[#02010a] text-white flex items-center justify-center p-4 font-sans">
+                <div className="fixed inset-0 z-0 pointer-events-none">
+                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px]"></div>
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px]"></div>
+                </div>
+
+                <div className="relative z-10 max-w-xl w-full text-center">
+                    <h2 className="text-4xl font-black tracking-tighter uppercase mb-2">Bienvenido a Nebula</h2>
+                    <p className="text-gray-500 font-bold uppercase tracking-widest mb-10 text-xs">Para continuar, confirma cómo quieres usar la plataforma</p>
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <button onClick={() => setStep('fan_flow')} className="group relative bg-black/40 border border-white/10 p-8 rounded-[2.5rem] hover:border-pink-500/50 transition-all text-left backdrop-blur-3xl overflow-hidden">
+                            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-20 transition-opacity">
+                                <Heart className="w-24 h-24 text-pink-500" />
+                            </div>
+                            <div className="w-12 h-12 bg-pink-500/20 rounded-2xl flex items-center justify-center mb-6">
+                                <Users className="w-6 h-6 text-pink-500" />
+                            </div>
+                            <h3 className="text-xl font-black tracking-tighter uppercase mb-2">Soy Fan</h3>
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wide leading-relaxed">Quiero explorar perfiles y conectar con mis creadoras favoritas.</p>
+                        </button>
+
+                        <button onClick={() => setStep('creator_flow')} className="group relative bg-black/40 border border-white/10 p-8 rounded-[2.5rem] hover:border-purple-500/50 transition-all text-left backdrop-blur-3xl overflow-hidden">
+                            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-20 transition-opacity">
+                                <Star className="w-24 h-24 text-purple-500" />
+                            </div>
+                            <div className="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center mb-6">
+                                <Activity className="w-6 h-6 text-purple-500" />
+                            </div>
+                            <h3 className="text-xl font-black tracking-tighter uppercase mb-2">Soy Creadora</h3>
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wide leading-relaxed">Deseo un perfil verificado para centralizar mi contenido de Telegram.</p>
+                        </button>
+                    </div>
+
+                    <button onClick={logout} className="mt-12 text-gray-600 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">
+                        O cerrar sesión para cambiar de cuenta
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     if (isRestricted) {
         return (

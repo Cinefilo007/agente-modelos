@@ -72,7 +72,7 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  const isDirectLanding = ['/fans', '/creators'].includes(location.pathname);
+  const isDirectLanding = ['/landing', '/fans', '/creators'].includes(location.pathname);
 
   if (!user && !isDirectLanding) {
     console.log("[Router] Usuario no autenticado, redirigiendo a landing.");
