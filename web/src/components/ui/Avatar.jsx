@@ -1,3 +1,6 @@
+import React, { useState, useEffect } from 'react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { getOptimizedUrl, IMAGE_PRESETS } from '../../utils/image';
 
 export function Avatar({ src, alt, name, size = 'md', isOnline, className }) {
