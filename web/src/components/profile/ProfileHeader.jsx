@@ -147,20 +147,27 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
             links = Object.keys(links).map(key => ({ network: key, url: links[key] }));
         }
 
-        if (Array.isArray(links)) {
-            links.forEach(link => {
-                if (link.url) {
-                    socialLinks.push({
-                        id: link.network + link.url,
-                        icon: getSocialIcon(link.network),
-                        label: link.network,
-                        url: link.url,
-                        color: getSocialColor(link.network)
+                    links.forEach(link => {
+                        if (link.url) {
+                            socialLinks.push({
+                                id: link.network + link.url,
+                                icon: getSocialIcon(link.network),
+                                label: link.network,
+                                url: link.url,
+                                network: link.network,
+                                color: getSocialColor(link.network)
+                            });
+                        }
                     });
                 }
-            });
-        }
-    }
+            }
+        
+            const handleSocialClick = (e, url) => {
+                if (!currentUser) {
+                    e.preventDefault();
+                    setShowAuthModal(true);
+                }
+            };
 
     if (!user) return null; // Safety check
 
@@ -295,13 +302,13 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                     </p>
                 </div>
 
-                {/* Social Icons Row */}
                 <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar py-1">
                     {socialLinks.length > 0 ? socialLinks.map((link) => (
                         <a
                             key={link.id}
                             href={link.url}
-                            target="_blank"
+                            onClick={(e) => handleSocialClick(e, link.url)}
+                            target={currentUser ? "_blank" : "_self"}
                             rel="noopener noreferrer"
                             className="flex-shrink-0"
                         >
@@ -348,17 +355,22 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                         </button>
 
                         {isFollowing && (
-                            <Link to={`/casino/${user.username}`} className="flex-1">
-                                <button
-                                    className="w-full h-12 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-2xl px-3 flex items-center justify-center transition-all group shadow-lg shadow-yellow-500/5 gap-2.5"
-                                >
-                                    <Gamepad2 size={20} className="text-yellow-500 group-hover:scale-110 transition-transform flex-shrink-0" />
-                                    <div className="flex flex-col items-start leading-none mt-px">
-                                        <span className="text-yellow-500 font-bold text-[13px] md:text-sm">Casino</span>
-                                        <span className="text-yellow-500/70 text-[9px] mt-1 uppercase tracking-wider">Jugar y ganar</span>
-                                    </div>
-                                </button>
-                            </Link>
+                            <button
+                                onClick={() => {
+                                    if (!currentUser) {
+                                        setShowAuthModal(true);
+                                    } else {
+                                        navigate(`/casino/${user.username || user.id}`);
+                                    }
+                                }}
+                                className="flex-1 h-12 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-2xl px-3 flex items-center justify-center transition-all group shadow-lg shadow-yellow-500/5 gap-2.5 text-left"
+                            >
+                                <Gamepad2 size={20} className="text-yellow-500 group-hover:scale-110 transition-transform flex-shrink-0" />
+                                <div className="flex flex-col items-start leading-none mt-px">
+                                    <span className="text-yellow-500 font-bold text-[13px] md:text-sm">Casino</span>
+                                    <span className="text-yellow-500/70 text-[9px] mt-1 uppercase tracking-wider">Jugar y ganar</span>
+                                </div>
+                            </button>
                         )}
                     </div>
                 )}

@@ -143,7 +143,7 @@ const CreatorLanding = () => {
             </nav>
 
             {/* Hero Section */}
-            <section className="relative min-h-screen flex items-center justify-center pt-24 md:pt-32 px-4 z-10 overflow-hidden">
+            <section className="relative min-h-[85vh] flex items-center justify-center pt-20 md:pt-24 px-4 z-10 overflow-hidden">
                 <div className="container mx-auto">
                     <div className="grid lg:grid-cols-2 gap-12 md:gap-20 items-center">
                         <div className="space-y-8 md:space-y-12 text-center lg:text-left">
@@ -152,7 +152,7 @@ const CreatorLanding = () => {
                                 <span className="text-[10px] font-black uppercase tracking-[0.3em]">Tu Contenido, Tus Reglas</span>
                             </div>
 
-                            <h1 className="text-5xl sm:text-7xl md:text-[9rem] font-black leading-[0.9] md:leading-[0.8] tracking-tighter uppercase max-w-4xl lg:mx-0 mx-auto">
+                            <h1 className="text-5xl md:text-8xl lg:text-9xl font-black leading-[0.9] md:leading-[0.8] tracking-tighter uppercase max-w-4xl lg:mx-0 mx-auto">
                                 Libertad <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
                                     Sin Límites
@@ -160,7 +160,7 @@ const CreatorLanding = () => {
                             </h1>
 
                             <div className="space-y-6 max-w-xl lg:mx-0 mx-auto">
-                                <p className="text-lg md:text-2xl text-gray-400 leading-relaxed font-medium">
+                                <p className="text-lg md:text-xl text-gray-400 leading-relaxed font-medium">
                                     No somos una agencia tradicional. Eres <span className="text-white font-bold">dueña total de tu contenido</span> en la primera red social nativa de Telegram.
                                 </p>
                                 <ul className="flex flex-col gap-3 text-sm md:text-base text-indigo-300 font-bold uppercase tracking-widest text-left max-w-xs mx-auto lg:mx-0">
@@ -178,46 +178,14 @@ const CreatorLanding = () => {
                             </div>
                         </div>
 
-                        <div className="relative space-y-6">
-                            <div className="p-8 md:p-12 rounded-[3.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-3xl shadow-3xl">
-                                <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter mb-8 text-indigo-400">Anatomía Premium</h3>
-                                <div className="space-y-6 md:space-y-8">
-                                    <div className="flex gap-6">
-                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/30">
-                                            <Globe className="w-6 h-6 text-indigo-400" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-black text-xs uppercase tracking-widest mb-2">Social Hub Integrado</h4>
-                                            <p className="text-gray-500 text-sm leading-relaxed">Única plataforma que te permite centralizar todos tus links sociales (IG, TW, OF) de forma elegante.</p>
-                                        </div>
+                        <div className="relative group lg:block hidden">
+                            <div className="absolute inset-0 bg-indigo-500/20 blur-[120px] rounded-full"></div>
+                            <div className="relative aspect-square rounded-[3.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-3xl p-12 flex items-center justify-center">
+                                <div className="text-center space-y-4">
+                                    <Cpu className="w-24 h-24 text-indigo-500 mx-auto animate-pulse" />
+                                    <div className="px-6 py-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-xs font-black uppercase tracking-widest text-indigo-300">
+                                        Nativo de Telegram
                                     </div>
-                                    <div className="flex gap-6">
-                                        <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/30">
-                                            <Zap className="w-6 h-6 text-purple-400" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-black text-xs uppercase tracking-widest mb-2">Etiquetas de Servicio</h4>
-                                            <p className="text-gray-500 text-sm leading-relaxed">Muestra tus servicios y tarifas en segundos con un diseño visual intuitivo que convierte fans.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-6">
-                                        <div className="w-12 h-12 rounded-2xl bg-pink-500/20 flex items-center justify-center shrink-0 border border-pink-500/30">
-                                            <Sparkles className="w-6 h-6 text-pink-400" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-black text-xs uppercase tracking-widest mb-2">Botón de Casino VIP</h4>
-                                            <p className="text-gray-500 text-sm leading-relaxed">Monetiza el entretenimiento de tus fans con integraciones de juegos directas en tu perfil.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {/* Protection Badge */}
-                            <div className="p-6 rounded-3xl bg-indigo-600/10 border border-indigo-500/20 flex items-center gap-4 group">
-                                <Shield className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
-                                <div>
-                                    <span className="block font-black text-[10px] uppercase tracking-widest text-white">Protección Activa</span>
-                                    <span className="text-xs text-indigo-300">Estás protegida por nuestra Lista Negra Global.</span>
                                 </div>
                             </div>
                         </div>
@@ -227,17 +195,17 @@ const CreatorLanding = () => {
 
             <DecorativeDivider />
 
-            {/* Features Detail */}
-            <section className="py-20 md:py-32 relative z-10" id="ventajas">
+            {/* Panel Section */}
+            <section className="py-12 md:py-20 relative z-10" id="ventajas">
                 <div className="container mx-auto px-6 md:px-8">
                     <div className="grid lg:grid-cols-2 gap-16 md:gap-24 items-center">
                         <div className="space-y-10 md:space-y-12">
                             <div className="text-center lg:text-left">
-                                <h2 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter uppercase mb-6 leading-tight">
+                                <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase mb-6 leading-tight">
                                     Panel de <br />
                                     <span className="text-indigo-500">Alto Rendimiento</span>
                                 </h2>
-                                <p className="text-gray-400 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                                <p className="text-gray-400 text-base md:text-lg leading-relaxed max-w-2xl mx-auto lg:mx-0">
                                     Todo lo que necesitas para escalar tu negocio sin complicaciones técnicas.
                                 </p>
                             </div>
@@ -285,15 +253,66 @@ const CreatorLanding = () => {
                 </div>
             </section>
 
-            {/* Growth Stats */}
+            {/* SFS Bot Section */}
+            <section className="py-12 md:py-20 relative z-10 overflow-hidden bg-purple-900/5">
+                <div className="container mx-auto px-8">
+                    <div className="flex flex-col lg:flex-row items-center gap-12 md:gap-16">
+                        <div className="lg:w-1/2 space-y-8 text-center lg:text-left">
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[9px] font-black uppercase tracking-[0.2em]">
+                                <Bot className="w-3.5 h-3.5" /> Colaboración Inteligente
+                            </div>
+                            <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none">
+                                Bot SFS <br />
+                                <span className="text-purple-500">Automatizado</span>
+                            </h2>
+                            <p className="text-gray-400 text-base leading-relaxed">
+                                Gestiona intercambios (Shoutout for Shoutout) con otras modelos sin salir de la App. Validación automática de métricas para garantizar el crecimiento más real.
+                            </p>
+                            <div className="grid grid-cols-2 gap-6 text-left">
+                                <div className="space-y-2">
+                                    <div className="text-purple-400 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
+                                        <Activity size={12} /> Engagement Real
+                                    </div>
+                                    <p className="text-xs text-gray-500">El bot mide el ER de tus colaboradores para evitar fraudes con bots.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="text-purple-400 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
+                                        <TrendingUp size={12} /> Crecimiento P2P
+                                    </div>
+                                    <p className="text-xs text-gray-500">Cierra acuerdos automáticos por tiempo, vistas o nuevos seguidores.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="lg:w-1/2 w-full p-8 rounded-[3rem] bg-purple-600/5 border border-purple-500/20 backdrop-blur-xl relative">
+                            <div className="absolute top-4 right-8 px-4 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-[9px] font-black uppercase tracking-widest text-purple-400 animate-pulse">Monitor Activo</div>
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                                    <div className="h-2 w-3/4 bg-white/5 rounded-full"></div>
+                                </div>
+                                <div className="h-[200px] w-full bg-gradient-to-br from-white/5 to-transparent rounded-2xl flex items-center justify-center">
+                                    <div className="text-center group">
+                                        <Bot className="w-16 h-16 text-purple-500 mx-auto mb-4 group-hover:scale-110 transition-transform duration-500" />
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">@SFSnebula_bot</span>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-purple-400/50">
+                                    <span>Views: Meta Alcanzada</span>
+                                    <span>Time: 24h Publicado</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
             <section className="py-24 md:py-40 relative z-10 overflow-hidden" id="stats">
                 <div className="container mx-auto px-6 md:px-8">
-                    <div className="flex flex-col lg:flex-row items-center justify-between gap-12 md:gap-16 border border-white/5 bg-white/[0.02] backdrop-blur-2xl p-10 md:p-24 rounded-[2.5rem] md:rounded-[4rem]">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-12 md:gap-16 border border-white/5 bg-white/[0.02] backdrop-blur-2xl p-10 md:p-16 rounded-[2.5rem] md:rounded-[4rem]">
                         <div className="max-w-md space-y-4 md:space-y-6 text-center lg:text-left">
                             <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter">Resultados <span className="text-indigo-400">Sin Filtros</span></h3>
                             <p className="text-gray-500 leading-relaxed text-sm md:text-base">Nuestra red social interna maximiza tu alcance orgánico desde el primer día.</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-8 md:gap-24 w-full lg:w-auto">
+                        <div className="grid grid-cols-2 gap-8 md:gap-16 w-full lg:w-auto">
                             <StatItem number="100%" label="Libertad" />
                             <StatItem number="+$5k" label="Ganancia Media" />
                             <StatItem number="0%" label="Censura" />
@@ -303,13 +322,67 @@ const CreatorLanding = () => {
                 </div>
             </section>
 
+            {/* Anatomy Section (Moved down) */}
+            <section className="py-16 md:py-24 relative z-10 bg-[#060413]/50">
+                <div className="container mx-auto px-8">
+                    <div className="grid lg:grid-cols-2 gap-16 items-center">
+                        <div className="relative order-2 lg:order-1">
+                            <div className="absolute inset-0 bg-indigo-500/20 blur-[100px] rounded-full"></div>
+                            <div className="relative p-12 rounded-[3.5rem] bg-indigo-900/5 border border-indigo-500/20 backdrop-blur-xl group">
+                                <img src={profileAnatomy} alt="Nebula Profile" className="w-full rounded-2xl shadow-2xl group-hover:scale-105 transition-transform duration-700" />
+                            </div>
+                        </div>
+                        <div className="space-y-12 order-1 lg:order-2">
+                             <h3 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-indigo-400">Anatomía <br />del Perfil</h3>
+                             <div className="space-y-8">
+                                    <div className="flex gap-6">
+                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/30">
+                                            <Globe className="w-6 h-6 text-indigo-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-xs uppercase tracking-widest mb-2">Social Hub Integrado</h4>
+                                            <p className="text-gray-500 text-sm leading-relaxed">Única plataforma que te permite centralizar todos tus links sociales (IG, TW, FB) de forma elegante.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-6">
+                                        <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/30">
+                                            <Zap className="w-6 h-6 text-purple-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-xs uppercase tracking-widest mb-2">Etiquetas de Servicio</h4>
+                                            <p className="text-gray-500 text-sm leading-relaxed">Muestra tus servicios y tarifas en segundos con un diseño visual intuitivo que convierte fans.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-6">
+                                        <div className="w-12 h-12 rounded-2xl bg-pink-500/20 flex items-center justify-center shrink-0 border border-pink-500/30">
+                                            <Sparkles className="w-6 h-6 text-pink-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-xs uppercase tracking-widest mb-2">Botón de Casino VIP</h4>
+                                            <p className="text-gray-500 text-sm leading-relaxed">Monetiza el entretenimiento de tus fans con juegos directo en tu perfil sin salir de Telegram.</p>
+                                        </div>
+                                    </div>
+                                    {/* Protection Badge */}
+                                    <div className="p-6 rounded-3xl bg-indigo-600/10 border border-indigo-500/20 flex items-center gap-4 group mt-8">
+                                        <Shield className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
+                                        <div>
+                                            <span className="block font-black text-[10px] uppercase tracking-widest text-white">Protección Activa</span>
+                                            <span className="text-xs text-indigo-300">Estás protegida por nuestra Lista Negra Global.</span>
+                                        </div>
+                                    </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Final CTA High Impact */}
-            <section className="py-24 md:py-48 relative overflow-hidden z-10" id="creator-login-section">
+            <section className="py-16 md:py-24 relative overflow-hidden z-10" id="creator-login-section">
                 <div className="absolute inset-0 bg-gradient-to-t from-transparent via-indigo-500/5 to-transparent"></div>
                 
                 <div className="container mx-auto px-6 md:px-8 relative">
                     <div className="max-w-6xl mx-auto text-center space-y-12 md:space-y-20">
-                        <h2 className="text-5xl sm:text-7xl md:text-[12rem] font-black tracking-tighter uppercase leading-[0.9] md:leading-[0.7] mb-8 md:mb-12 px-2">
+                        <h2 className="text-4xl md:text-7xl lg:text-8xl font-black tracking-tighter uppercase leading-[0.9] md:leading-[0.7] mb-8 md:mb-12 px-2">
                             Tu Imperio, <br />
                             <span className="text-indigo-500">Nativo.</span>
                         </h2>

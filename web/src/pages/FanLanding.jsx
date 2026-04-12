@@ -159,14 +159,14 @@ const FanLanding = () => {
             </nav>
 
             {/* Hero Section */}
-            <section className="relative min-h-screen flex items-center justify-center pt-24 md:pt-32 px-4 z-10 overflow-hidden">
+            <section className="relative min-h-[85vh] flex items-center justify-center pt-20 md:pt-24 px-4 z-10 overflow-hidden">
                 <div className="container mx-auto text-center space-y-8 md:space-y-12">
                     <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-pink-500/30 bg-pink-500/5 text-pink-300 backdrop-blur-md animate-bounce-slow">
                         <Heart className="w-3.5 h-3.5 fill-pink-500 text-pink-500" />
                         <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em]">El Ecosistema más Exclusivo</span>
                     </div>
 
-                    <h1 className="text-[3.5rem] sm:text-7xl md:text-[10rem] font-black leading-[0.9] md:leading-[0.85] tracking-tighter max-w-6xl mx-auto uppercase">
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-black leading-[0.9] md:leading-[0.85] tracking-tighter max-w-6xl mx-auto uppercase">
                         El Ecosistema <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">
                             más Exclusivo
@@ -196,7 +196,7 @@ const FanLanding = () => {
             <DecorativeDivider />
 
             {/* Models Preview */}
-            <section className="py-24 relative z-10" id="models">
+            <section className="py-16 relative z-10" id="models">
                 <div className="container mx-auto px-6">
                     <div className="flex justify-between items-end mb-16 px-4">
                         <div>
@@ -230,7 +230,7 @@ const FanLanding = () => {
 
                                     <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform">
                                         <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2 max-w-full">
-                                            <h4 className="font-black text-sm md:text-2xl tracking-tighter uppercase truncate">{m.artistic_name || m.username}</h4>
+                                            <h4 className="font-black text-[12px] md:text-2xl tracking-tighter uppercase truncate">{m.artistic_name || m.username}</h4>
                                             {m.is_verified && <Check className="w-3.5 h-3.5 md:w-5 md:h-5 text-black bg-pink-500 rounded-full p-0.5 md:p-1 shrink-0" />}
                                         </div>
                                         <div className="flex gap-3 md:gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
@@ -253,7 +253,7 @@ const FanLanding = () => {
             </section>
 
             {/* Features Detail */}
-            <section className="py-32 relative z-10" id="seguridad">
+            <section className="py-20 relative z-10" id="seguridad">
                 <div className="container mx-auto px-6">
                     <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
                         <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase">La plataforma <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">que mereces</span></h2>
@@ -284,7 +284,7 @@ const FanLanding = () => {
             </section>
 
             {/* Experience / Stats */}
-            <section className="py-20 md:py-32 relative z-10 bg-white/5 backdrop-blur-sm border-y border-white/10" id="experiencia">
+            <section className="py-16 md:py-24 relative z-10 bg-white/5 backdrop-blur-sm border-y border-white/10" id="experiencia">
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 text-center md:text-left">
                         <StatItem number="+25k" label="Fans Activos" />
@@ -296,12 +296,12 @@ const FanLanding = () => {
             </section>
 
             {/* Final CTA High Impact */}
-            <section className="py-24 md:py-48 relative overflow-hidden z-10" id="login-section">
+            <section className="py-16 md:py-24 relative overflow-hidden z-10" id="login-section">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-pink-500/5 to-transparent"></div>
                 
                 <div className="container mx-auto px-6 relative">
                     <div className="max-w-5xl mx-auto text-center space-y-12 md:space-y-16">
-                        <h2 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter uppercase leading-[0.9] md:leading-[0.8] mb-8 px-2">
+                        <h2 className="text-4xl md:text-6xl lg:text-8xl font-black tracking-tighter uppercase leading-[0.9] md:leading-[0.8] mb-8 px-2">
                             Empieza el <br />
                             <span className="text-pink-500">Espectáculo.</span>
                         </h2>
