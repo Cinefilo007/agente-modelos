@@ -14,7 +14,12 @@ const Onboarding = () => {
     const navigate = useNavigate();
 
     // Estado inicial: intentamos pre-seleccionar basado en el login, pero permitimos elegir
-    const [step, setStep] = useState('select_role'); 
+    // Estado inicial: Autodetectar paso basado en el rol del usuario
+    const [step, setStep] = useState(() => {
+        if (user?.role === 'client') return 'fan_flow';
+        if (user?.role === 'model') return 'creator_flow';
+        return 'select_role'; 
+    });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -158,54 +163,12 @@ const Onboarding = () => {
         );
     }
 
+    // Si el usuario llega sin rol (poco común), lo enviamos al selector principal
     if (step === 'select_role') {
-        return (
-            <div className="min-h-screen bg-[#02010a] text-white flex items-center justify-center p-4 font-sans">
-                <div className="fixed inset-0 z-0 pointer-events-none">
-                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px]"></div>
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px]"></div>
-                </div>
-
-                <div className="relative z-10 max-w-xl w-full text-center">
-                    <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-2">Bienvenido a Nebula</h1>
-                    <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-xs mb-12">Selecciona tu propósito en la plataforma</p>
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                        {/* Option: Fan */}
-                        <button 
-                            onClick={() => navigate('/fans')}
-                            className="group relative bg-black/40 backdrop-blur-3xl border border-white/10 p-8 rounded-[3rem] text-left hover:border-pink-500/50 transition-all hover:scale-[1.02] active:scale-95 shadow-2xl"
-                        >
-                            <div className="w-16 h-16 bg-pink-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                <Heart className="w-8 h-8 text-pink-500" />
-                            </div>
-                            <h3 className="text-xl font-black uppercase mb-2">Soy un Fan</h3>
-                            <p className="text-xs text-gray-400 leading-relaxed font-medium">Quiero descubrir contenido exclusivo, interactuar con modelos y probar mi suerte en el casino.</p>
-                            <div className="mt-6 flex items-center gap-2 text-[10px] font-black text-pink-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                                Ir a la Landing de Fans <Activity size={12} />
-                            </div>
-                        </button>
-
-                        {/* Option: Creator */}
-                        <button 
-                            onClick={() => navigate('/creators')}
-                            className="group relative bg-black/40 backdrop-blur-3xl border border-white/10 p-8 rounded-[3rem] text-left hover:border-purple-500/50 transition-all hover:scale-[1.02] active:scale-95 shadow-2xl"
-                        >
-                            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                <Camera className="w-8 h-8 text-purple-500" />
-                            </div>
-                            <h3 className="text-xl font-black uppercase mb-2">Soy Creadora</h3>
-                            <p className="text-xs text-gray-400 leading-relaxed font-medium">Quiero monetizar mi contenido, usar herramientas de IA y gestionar mi propia comunidad exclusiva.</p>
-                            <div className="mt-6 flex items-center gap-2 text-[10px] font-black text-purple-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                                Ir a la Landing de Agencia <Shield size={12} />
-                            </div>
-                        </button>
-                    </div>
-
-                    <p className="mt-12 text-[10px] text-gray-600 font-black uppercase tracking-[0.2em]">Acceso Seguro vía Telegram Proxy</p>
-                </div>
-            </div>
-        );
+        useEffect(() => {
+            navigate('/landing');
+        }, [navigate]);
+        return null;
     }
 
     if (step === 'creator_flow') {
@@ -219,7 +182,6 @@ const Onboarding = () => {
 
                 <div className="relative z-10 max-w-xl w-full bg-black/40 backdrop-blur-3xl border border-white/10 p-10 rounded-[3rem] shadow-2xl">
                     <div className="flex items-center gap-4 mb-8">
-                        <button onClick={() => setStep('select_role')} className="p-2 hover:bg-white/5 rounded-full transition-colors"><Shield size={20} className="rotate-180" /></button>
                         <div>
                             <h2 className="text-2xl font-black tracking-tighter uppercase">Aplicación Creadora</h2>
                             <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Verificación de Identidad</p>
@@ -300,7 +262,6 @@ const Onboarding = () => {
 
             <div className="relative z-10 max-w-md w-full bg-black/40 backdrop-blur-3xl border border-white/10 p-10 rounded-[3rem] shadow-2xl">
                 <div className="flex flex-col items-center text-center mb-10">
-                    <button onClick={() => setStep('select_role')} className="self-start mb-4 p-2 hover:bg-white/5 rounded-full transition-colors"><Shield size={20} className="rotate-180" /></button>
                     <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center mb-6 shadow-2xl rotate-3">
                         <Heart className="w-10 h-10 text-white" />
                     </div>

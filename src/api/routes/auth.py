@@ -221,9 +221,36 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
 
     if not user_data:
         if user_role == "model":
-            # Si intentó entrar por el bot de Modelos y NO tiene registro
-            raise HTTPException(status_code=404, detail="Perfil no encontrado. Inicia tu proceso de registro.")
-        raise HTTPException(status_code=500, detail="No se pudo procesar la sesión del usuario.")
+            # Si intentó entrar por el bot de Modelos y NO tiene registro, CREAMOS uno como 'prospect'
+            try:
+                new_model = {
+                    "telegram_id": telegram_id,
+                    "username": username or f"user_{telegram_id}",
+                    "full_name": username or f"User {telegram_id}",
+                    "status": "prospect"
+                }
+                res = db.client.table("models").insert(new_model).execute()
+                if res is not None and hasattr(res, 'data') and res.data and len(res.data) > 0:
+                    user_data = res.data[0]
+                    # Notify Admin of NEW Prospect Model
+                    if BOT_TOKEN and ADMIN_TELEGRAM_ID:
+                        try:
+                            bot = Bot(token=BOT_TOKEN)
+                            msg = (
+                                f"🌟 <b>Nueva Aspirante a Creadora</b>\n"
+                                f"👤 <b>Usuario:</b> @{username or 'Sin username'}\n"
+                                f"🆔 <b>ID Telegram:</b> <code>{telegram_id}</code>\n"
+                                f"✨ <i>Entrando a completar su aplicación...</i>"
+                            )
+                            await bot.send_message(chat_id=ADMIN_TELEGRAM_ID, text=msg, parse_mode="HTML")
+                        except: pass
+                else:
+                    raise HTTPException(status_code=500, detail="Error al crear perfil de prospecto.")
+            except HTTPException: raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Fallo en el registro de modelo: {str(e)}")
+        else:
+            raise HTTPException(status_code=500, detail="No se pudo procesar la sesión del usuario.")
 
     # Age check (Only applies if user_data has birth_date)
     birth_date_str = user_data.get('birth_date')

@@ -85,8 +85,11 @@ const ProtectedRoute = ({ children }) => {
   const isModel = user.role === 'model';
   const isAdmin = user.role === 'admin';
 
-  // Onboarding check - Solo para Clientes (Fans) y solo si no están en una landing directa
-  const needsOnboarding = isClient && (!user.birth_date || !user.terms_accepted);
+  // Onboarding check:
+  // 1. Clientes (Fans) con perfil incompleto
+  // 2. Modelos en estado 'prospect' (recién registradas desde la landing)
+  const isProspectModel = isModel && user.status === 'prospect';
+  const needsOnboarding = (isClient && (!user.birth_date || !user.terms_accepted)) || isProspectModel;
   const isCurrentlyInOnboarding = location.pathname === '/onboarding';
 
   if (needsOnboarding && !isCurrentlyInOnboarding) {
