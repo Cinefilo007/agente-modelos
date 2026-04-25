@@ -30,8 +30,12 @@ export default function EscrowTour({ run, onFinish }) {
     ]);
 
     const handleJoyrideCallback = (data) => {
-        const { status } = data;
-        if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+        const { status, action } = data;
+        
+        // Si el tour se termina, se salta o se cierra manualmente
+        if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status) || action === 'close') {
+            document.body.style.overflow = 'auto';
+            document.documentElement.style.overflow = 'auto';
             if (onFinish) onFinish();
         }
     };
@@ -42,7 +46,9 @@ export default function EscrowTour({ run, onFinish }) {
             continuous
             hideBackButton
             run={run}
-            scrollToFirstStep
+            scrollToFirstStep={false}
+            disableScrolling={true}
+            disableScrollParentFix={true}
             showProgress
             showSkipButton
             steps={steps}

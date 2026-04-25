@@ -4,7 +4,7 @@ import { ModelGrid } from '../components/explore/ModelGrid';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import EscrowTour from '../components/escrow/EscrowTour';
+import api from '../api/axios';
 
 function Explore() {
     const { themeColor } = useTheme();
@@ -14,20 +14,6 @@ function Explore() {
     const [activeFilter, setActiveFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [runTour, setRunTour] = useState(false);
-
-    useEffect(() => {
-        // Run tour if client and hasn't seen it
-        if (user?.role === 'client' && !localStorage.getItem('escrow_tour_seen')) {
-            setRunTour(true);
-        }
-    }, [user]);
-
-    const handleTourFinish = () => {
-        setRunTour(false);
-        localStorage.setItem('escrow_tour_seen', 'true');
-    };
-
     const filters = [
         { id: 'all', label: 'Todas' },
         { id: 'online', label: 'Online' },
@@ -111,7 +97,6 @@ function Explore() {
                 </div>
             ) : (
                 <>
-                    <EscrowTour run={runTour} onFinish={handleTourFinish} />
                     <ModelGrid models={models} />
                 </>
             )}

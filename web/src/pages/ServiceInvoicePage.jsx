@@ -7,15 +7,31 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { Avatar } from '../components/ui/Avatar';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import EscrowTour from '../components/escrow/EscrowTour';
 
 export default function ServiceInvoicePage() {
     const { serviceId } = useParams();
     const navigate = useNavigate();
     const { themeColor } = useTheme();
-
+    const { user } = useAuth();
+ 
     const [service, setService] = useState(null);
     const [selectedOption, setSelectedOption] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [runTour, setRunTour] = useState(false);
+
+    useEffect(() => {
+        // Run tour if client and hasn't seen it
+        if (user?.role === 'client' && !localStorage.getItem('escrow_tour_seen')) {
+            setRunTour(true);
+        }
+    }, [user]);
+
+    const handleTourFinish = () => {
+        setRunTour(false);
+        localStorage.setItem('escrow_tour_seen', 'true');
+    };
 
     useEffect(() => {
         const fetchService = async () => {
@@ -79,7 +95,7 @@ export default function ServiceInvoicePage() {
                 <div className="flex items-center gap-4 py-4 border-b border-white/5">
                     <Avatar src={service.models?.avatar_url} size="lg" ringColor={themeColor} />
                     <div>
-                        <h2 className="text-xl font-black text-white">{service.title}</h2>
+                        <h2 className="text-xl font-black text-white service-card-tour">{service.title}</h2>
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                             {service.models?.artistic_name || service.models?.username} <CheckCircle2 size={12} className="text-blue-400" />
                         </span>
@@ -179,7 +195,7 @@ export default function ServiceInvoicePage() {
                 <button
                     onClick={handleProceed}
                     disabled={!selectedOption}
-                    className="w-full py-4 rounded-2xl font-black text-lg bg-primary text-primary-foreground shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all active:scale-[0.98] disabled:opacity-50"
+                    className="w-full py-4 rounded-2xl font-black text-lg bg-primary text-primary-foreground shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all active:scale-[0.98] disabled:opacity-50 checkout-options-tour"
                     style={{ backgroundColor: themeColor }}
                 >
                     Continuar al Pago • ${selectedOption?.price || '0.00'}
@@ -188,12 +204,13 @@ export default function ServiceInvoicePage() {
                 {service.models?.username && (
                     <button
                         onClick={() => window.open(`https://t.me/${service.models.username.replace('@', '')}`, '_blank')}
-                        className="w-full py-3 rounded-xl font-bold text-sm bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-xl font-bold text-sm bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 transition-all flex items-center justify-center gap-2 contact-model-tour"
                     >
                         <Send size={16} className="text-blue-400" /> Hablar con la modelo (Consultar disponibilidad)
                     </button>
                 )}
             </div>
+            <EscrowTour run={runTour} onFinish={handleTourFinish} />
         </div>
     );
 }
