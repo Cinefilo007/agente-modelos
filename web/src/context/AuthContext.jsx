@@ -21,12 +21,9 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const initAuth = async () => {
-            console.log("[Auth] Iniciando verificación de sesión...");
-
             // 1. Check if we are inside Telegram WebApp
             if (window.Telegram?.WebApp?.initData) {
                 try {
-                    console.log("[Auth] Telegram WebApp detectado, intentando auto-login...");
                     const response = await api.post('/auth/webapp', {
                         init_data: window.Telegram.WebApp.initData
                     });
@@ -41,7 +38,7 @@ export const AuthProvider = ({ children }) => {
                     setLoading(false);
                     return;
                 } catch (error) {
-                    console.error("[Auth] WebApp Auto-Login falló:", error.response?.data?.detail || error.message);
+                    // Fail silently
                 }
             }
 
@@ -51,35 +48,17 @@ export const AuthProvider = ({ children }) => {
 
             if (token && storedUserStr && storedUserStr !== "undefined" && storedUserStr !== "null") {
                 try {
-                    console.log("[Auth] Token detectado, validando con el servidor...");
-                    // No confiamos solo en localStorage, pedimos al servidor el perfil actual
-                    const res = await api.get('/profile/me');
-                    const updatedUser = res.data;
-
-                    // Critical validation: Check if backend confirms identity and basic status
                     if (!updatedUser || !updatedUser.id) {
-                        console.error("[Auth] El servidor devolvió datos inválidos.");
                         logout();
                     } else {
-                        console.log("[Auth] Sesión validada por servidor para:", updatedUser.username || updatedUser.id);
                         setUser(updatedUser);
                         localStorage.setItem('user', JSON.stringify(updatedUser));
                     }
                 } catch (err) {
-                    console.error("[Auth] Error validando sesión contra el servidor:", err.response?.status, err.response?.data?.detail);
-
-                    // Si el servidor dice explícitamente que el token no vale, limpiamos.
+                    // Fail silently and use local data if available
                     if (err.response?.status === 401) {
-                        console.warn("[Auth] Sesión no válida por el servidor, limpiando.");
                         logout();
-                    } else if (err.response?.status === 404) {
-                        // Perfil no encontrado (pudo ser borrado o error de sync temporal)
-                        console.warn("[Auth] Perfil no encontrado en el servidor.");
-                        // No cerramos sesión inmediatamente por un 404 de perfil, podríar ser una falla temporal del API
-                        // Pero notificamos que no tenemos usuario.
                     } else {
-                        // Errores de red o 500 - Mantenemos los datos locales por ahora por resiliencia
-                        console.error("[Auth] Error de comunicación, manteniendo sesión local si existe.");
                         if (storedUserStr) {
                             try {
                                 setUser(JSON.parse(storedUserStr));
@@ -87,8 +66,6 @@ export const AuthProvider = ({ children }) => {
                         }
                     }
                 }
-            } else {
-                console.log("[Auth] No hay sesión activa en localStorage.");
             }
             setLoading(false);
         };
@@ -117,7 +94,6 @@ export const AuthProvider = ({ children }) => {
             setUser(fullUser);
             return fullUser;
         } catch (error) {
-            console.error("Login failed:", error);
             throw error;
         }
     };

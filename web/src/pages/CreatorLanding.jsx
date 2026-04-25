@@ -6,7 +6,8 @@ import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import {
     Shield, Zap, Star, Activity, Cpu, 
-    CircleDollarSign, TrendingUp, Sparkles, BarChart3, Bot, Globe, Check, Lock, ArrowRight, Users, Eye, Image, Calendar, Wallet, Scale, Ghost, Search, Share2, HelpCircle
+    CircleDollarSign, TrendingUp, Sparkles, BarChart3, Bot, Globe, Check, Lock, ArrowRight, Users, Eye, Image, Calendar, Wallet, Scale, Ghost, Search, Share2, HelpCircle,
+    Sparkle
 } from 'lucide-react';
 import profileAnatomy from '../assets/landing/profile-anatomy.png';
 
@@ -41,7 +42,6 @@ const CreatorLanding = () => {
                 setBotId(idRes.data.bot_id || idRes.data.id);
             } catch (err) {
                 setBotUsername('AgenteNebulaIA_bot');
-                console.error('[Auth] Error cargando config del bot:', err);
             }
         };
         fetchConfig();
@@ -121,7 +121,6 @@ const CreatorLanding = () => {
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#010008]">
                 <div className="absolute top-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-indigo-600/10 rounded-full blur-[150px]"></div>
                 <div className="absolute bottom-[-10%] left-[-10%] w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[150px]"></div>
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
             </div>
 
             {/* Navbar */}
@@ -129,7 +128,7 @@ const CreatorLanding = () => {
                 <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
                     <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/')}>
                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(79,70,229,0.5)] transition-transform group-hover:rotate-12">
-                            <Activity className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                            <Sparkle className="w-5 h-5 md:w-6 md:h-6 text-white" />
                         </div>
                         <span className="font-black text-xl md:text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
                             NEBULA<span className="text-indigo-500">STAR</span>
@@ -187,7 +186,7 @@ const CreatorLanding = () => {
                                 <div className="space-y-6">
                                     <div className="flex items-center gap-4">
                                         <div className="w-16 h-16 rounded-full bg-indigo-600 flex items-center justify-center">
-                                            <Activity className="w-8 h-8" />
+                                            <Sparkle className="w-8 h-8 text-white animate-pulse" />
                                         </div>
                                         <div className="space-y-2">
                                             <div className="w-32 h-4 bg-white/20 rounded-full"></div>
@@ -268,21 +267,10 @@ const CreatorLanding = () => {
                         </div>
                         <div className="lg:w-1/2 relative">
                              <div className="absolute -inset-4 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 blur-3xl opacity-50"></div>
-                             <div className="relative p-1 rounded-[3rem] bg-gradient-to-tr from-white/10 to-white/5 border border-white/10 backdrop-blur-2xl">
-                                <div className="p-12 space-y-8">
-                                    <div className="flex gap-4">
-                                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div className="h-4 w-full bg-white/5 rounded-full"></div>
-                                        <div className="h-4 w-3/4 bg-white/5 rounded-full"></div>
-                                        <div className="h-4 w-5/6 bg-white/5 rounded-full"></div>
-                                        <div className="h-40 w-full bg-indigo-500/5 border border-indigo-500/10 rounded-2xl flex items-center justify-center">
-                                            <Search className="w-12 h-12 text-indigo-500/30" />
-                                        </div>
-                                    </div>
+                             <div className="relative p-12 rounded-[3.5rem] bg-indigo-900/10 border border-white/5 backdrop-blur-3xl flex flex-col items-center justify-center min-h-[400px]">
+                                <Sparkle className="w-32 h-32 text-indigo-500/20 mb-8" />
+                                <div className="text-center">
+                                    <h3 className="text-xl font-bold text-white/40 uppercase tracking-widest">Safe & Private</h3>
                                 </div>
                              </div>
                         </div>
@@ -416,7 +404,10 @@ const CreatorLanding = () => {
                 <div className="container mx-auto px-8">
                     <div className="flex flex-col md:flex-row justify-between items-start gap-16">
                         <div className="space-y-6">
-                            <div className="font-black tracking-tighter text-3xl">NEBULA<span className="text-indigo-500">STAR</span></div>
+                            <div className="flex items-center gap-2">
+                                <Sparkle className="w-6 h-6 text-indigo-500" />
+                                <div className="font-black tracking-tighter text-3xl">NEBULA<span className="text-indigo-500">STAR</span></div>
+                            </div>
                             <p className="text-gray-600 text-[10px] font-bold uppercase tracking-[0.5em] max-w-xs leading-loose">
                                 Potenciando la libertad creativa mediante tecnología nativa de Telegram.
                             </p>
