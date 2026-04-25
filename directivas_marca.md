@@ -25,16 +25,5 @@ El logo de NebulaStar consiste en:
 - Se prefiere el formato **PNG con transparencia** para evitar bordes blancos o fondos inconsistentes.
 - Para iconos pequeños (favicon), se debe asegurar que el brillo no afecte la legibilidad.
 
-## 5. Implementaciones Recientes (Abril 2026)
-- **Logotipos Integrados**:
-  - `LandingPage.jsx`: Logo oficial en la cabecera.
-  - `CreatorLanding.jsx`: Logo oficial en Header y Footer.
-  - `FanLanding.jsx`: Logo oficial en Header y Footer.
-  - `Onboarding.jsx`: Logo oficial en la pantalla de bienvenida y selector de roles.
-  - `AdminDashboard.jsx`: Logo integrado en el Panel de Administración.
-  - `FeedPostCard.jsx`: Logo insertado junto al nombre de usuario en cada publicación.
-  - `ProfileHeader.jsx`: Logo junto al nombre de la creadora para verificación visual de marca.
-- **Nomenclatura**: Se ha estandarizado el nombre de la marca a **NebulaStar** (reemplazando "Nebula Agency" y "Nebula.fans").
-
 ---
 *Cualquier cambio en la identidad visual debe ser reflejado primero en esta directiva.*

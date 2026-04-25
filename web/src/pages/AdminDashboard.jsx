@@ -68,10 +68,10 @@ const AdminDashboard = () => {
                 <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold flex items-center gap-3">
-                            <img src="/assets/brand/logo_transparent.png" alt="" className="w-8 h-8 object-contain" />
+                            <ShieldAlert className="text-purple-500" />
                             Panel de Administración
                         </h1>
-                        <p className="text-muted-foreground mt-2">Centro de Control de NebulaStar.</p>
+                        <p className="text-muted-foreground mt-2">Centro de Control de Nebula Agency.</p>
                     </div>
 
                     {/* Tabs */}

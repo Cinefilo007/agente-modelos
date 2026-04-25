@@ -129,7 +129,7 @@ const Onboarding = () => {
                 </div>
 
                 <div className="relative z-10 max-w-xl w-full text-center">
-                    <h2 className="text-4xl font-black tracking-tighter uppercase mb-2">Bienvenido a NebulaStar</h2>
+                    <h2 className="text-4xl font-black tracking-tighter uppercase mb-2">Bienvenido a Nebula</h2>
                     <p className="text-gray-500 font-bold uppercase tracking-widest mb-10 text-xs">Para continuar, confirma cómo quieres usar la plataforma</p>
                     
                     <div className="grid md:grid-cols-2 gap-6">
@@ -300,8 +300,8 @@ const Onboarding = () => {
 
             <div className="relative z-10 max-w-md w-full bg-black/40 backdrop-blur-3xl border border-white/10 p-10 rounded-[3rem] shadow-2xl">
                 <div className="flex flex-col items-center text-center mb-10">
-                    <div className="w-24 h-24 flex items-center justify-center mb-6 drop-shadow-[0_0_12px_rgba(143,179,255,0.4)]">
-                        <img src="/assets/brand/logo_transparent.png" alt="NebulaStar Logo" className="w-full h-full object-contain" />
+                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center mb-6 shadow-2xl rotate-3">
+                        <Heart className="w-10 h-10 text-white" />
                     </div>
                     <h1 className="text-3xl font-black tracking-tighter uppercase mb-2">Paso Final</h1>
                     <p className="text-sm text-gray-500 font-bold uppercase tracking-widest">Configura tu perfil de Fan</p>
