@@ -136,12 +136,15 @@ function Casino() {
                         >
                             <Sparkles size={14} /> <span>Ruleta</span>
                         </button>
+                        {/* Slots ocultos temporalmente */}
+                        {/* 
                         <button
                             onClick={() => { setActiveGame('slots'); setResult(null); }}
                             className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-[0.2em] ${activeGame === 'slots' ? 'bg-white/10 text-white shadow-inner' : 'text-white/30 hover:text-white/50'}`}
                         >
                             <Gamepad2 size={14} /> <span>Slots</span>
                         </button>
+                        */}
                     </div>
 
                     {activeGame === 'roulette' && (
