@@ -139,12 +139,16 @@ const CreatorLanding = () => {
             {/* Navbar */}
             <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/5 py-3 md:py-4' : 'bg-transparent py-4 md:py-6'}`}>
                 <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
-                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/')}>
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(79,70,229,0.5)] transition-transform group-hover:rotate-12">
-                            <Bot className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                    <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/')}>
+                        <div className="w-10 h-10 flex items-center justify-center transition-transform group-hover:rotate-12 duration-500">
+                            <img 
+                                src="/assets/brand/logo_transparent.png" 
+                                alt="NebulaStar Logo" 
+                                className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(143,179,255,0.3)]"
+                            />
                         </div>
                         <span className="font-black text-xl md:text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                            NEBULA<span className="text-indigo-500 lowercase">agency</span>
+                            NEBULA<span className="text-indigo-500">STAR</span>
                         </span>
                     </div>
                     <div className="hidden lg:flex gap-8 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
@@ -450,7 +454,10 @@ const CreatorLanding = () => {
                 <div className="container mx-auto px-8">
                     <div className="flex flex-col md:flex-row justify-between items-start gap-16">
                         <div className="space-y-6">
-                            <div className="font-black tracking-tighter text-3xl">NEBULA<span className="text-indigo-500">.AGENCY</span></div>
+                            <div className="font-black tracking-tighter text-3xl flex items-center gap-2">
+                                <img src="/assets/brand/logo_transparent.png" alt="" className="w-8 h-8 object-contain" />
+                                NEBULA<span className="text-indigo-500">STAR</span>
+                            </div>
                             <p className="text-gray-600 text-[10px] font-bold uppercase tracking-[0.5em] max-w-xs leading-loose">
                                 Transformando creadoras de contenido en marcas globales de alto impacto.
                             </p>

@@ -269,10 +269,11 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                             />
                         </Link>
                         <div>
-                            <div className="flex items-center gap-2">
+                             <div className="flex items-center gap-2">
                                 <h3 className="font-bold text-sm text-white leading-none shadow-black drop-shadow-md">
                                     {post.user.artistic_name || post.user.full_name || post.user.name}
                                 </h3>
+                                <img src="/assets/brand/logo_transparent.png" alt="" className="w-3.5 h-3.5 object-contain" />
                                 {post.user.is_verified === true && (
                                     <svg viewBox="0 0 24 24" className="w-[14px] h-[14px]" aria-label="Verificado">
                                         <path fill="#1D9BF0" d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.923-3.998-.356 0-.698.05-1.024.136C14.77 2.15 13.486 1.5 12 1.5s-2.77.65-3.643 2.138c-.326-.086-.668-.136-1.024-.136-2.213 0-3.923 1.788-3.923 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.923 3.998.356 0 .698-.05 1.024-.136C9.23 21.85 10.514 22.5 12 22.5s2.77-.65 3.643-2.138c.326.086.668.136 1.024.136 2.213 0 3.923-1.788 3.923-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6z"></path>

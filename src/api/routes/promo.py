@@ -441,7 +441,7 @@ async def propose_sfs(req: ProposeSFSReq, requester_id: str = Query(...)):
                 tg_target,
                 f"📨 <b>Nueva propuesta SFS</b> de @{req_name}\n"
                 f"📋 Tipo: <b>{label}</b>\n\n"
-                f"Entra al <a href='https://agente-modelos-production.up.railway.app/promotions'>Promo Center</a> para aceptar o rechazar."
+                f"Entra al <a href='{os.getenv('LANDING_URL', 'https://nebulastar.app/landing').replace('/landing', '/promotions')}'>Promo Center</a> para aceptar o rechazar."
             )
 
         return camp_data
@@ -544,7 +544,7 @@ async def respond_to_campaign(
         target_tg    = (camp_full.get("target") or {}).get("telegram_id")
         target_name  = (camp_full.get("target") or {}).get("username") or "?"
         label = _contract_label(camp_full)
-        promo_url = "https://agente-modelos-production.up.railway.app/promotions"
+        promo_url = os.getenv('LANDING_URL', 'https://nebulastar.app/landing').replace('/landing', '/promotions')
 
         if action == "accept":
             await notify_sfs_user(

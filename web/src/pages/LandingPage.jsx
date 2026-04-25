@@ -16,13 +16,17 @@ const LandingPage = () => {
 
             <div className="relative z-10 max-w-4xl w-full text-center space-y-12">
                 <div className="flex flex-col items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-[0_0_30px_rgba(124,58,237,0.4)] mb-2">
-                        <Activity className="w-8 h-8 text-white" />
+                    <div className="w-24 h-24 mb-2 flex items-center justify-center transition-transform hover:scale-110 duration-500">
+                        <img 
+                            src="/assets/brand/logo_transparent.png" 
+                            alt="NebulaStar Logo" 
+                            className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(143,179,255,0.4)]"
+                        />
                     </div>
                     <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-tight uppercase">
                         Bienvenido a <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-indigo-500 to-pink-500">
-                            Nebula Agency
+                            NebulaStar
                         </span>
                     </h1>
                     <p className="text-xl text-gray-400 font-medium">Selecciona tu experiencia para continuar</p>

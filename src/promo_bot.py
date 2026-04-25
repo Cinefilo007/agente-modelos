@@ -76,7 +76,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Hubo un error al crear tu perfil temporal.")
         return
 
-    LANDING_URL = os.getenv("LANDING_URL", "https://agente-modelos-production.up.railway.app/promotions")
+    LANDING_URL = os.getenv("LANDING_URL", "https://nebulastar.app/landing").replace("/landing", "/promotions")
 
     keyboard = [
         [InlineKeyboardButton("🚀 Abrir SFS MiniApp", web_app=WebAppInfo(url=LANDING_URL))]

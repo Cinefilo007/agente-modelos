@@ -1,4 +1,5 @@
 import logging
+import os
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
 import html as html_lib
@@ -299,7 +300,7 @@ async def publish_sfs_campaigns(bot):
                     'id, telegram_id'
                 ).in_('id', [camp['requester_id'], camp['target_id']]).execute()
                 users_map = {u['id']: u for u in (users_res.data or [])}
-                promo_url = "https://agente-modelos-production.up.railway.app/promotions"
+                promo_url = os.getenv('LANDING_URL', 'https://nebulastar.app/landing').replace('/landing', '/promotions')
                 t = camp.get("type", "")
                 if t == "SFS_VIEWS":
                     goal_txt = f"{camp.get('views_target', '?'):,} vistas"
@@ -356,7 +357,7 @@ async def monitor_sfs_views_and_fraud(bot):
        2c. SFS_FOLLOWERS: comparar followers actuales del canal con snapshot inicial.
     """
     logger.info("Executing Job: Monitor SFS Views & Fraud")
-    promo_url = "https://agente-modelos-production.up.railway.app/promotions"
+    promo_url = os.getenv('LANDING_URL', 'https://nebulastar.app/landing').replace('/landing', '/promotions')
 
     async def _complete_campaign(camp_id, requester_id, target_id, reason: str):
         """Marca pending_deletion, notifica y da +5 trust."""

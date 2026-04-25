@@ -140,12 +140,16 @@ const FanLanding = () => {
             {/* Navbar */}
             <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/5 py-3 md:py-4' : 'bg-transparent py-4 md:py-6'}`}>
                 <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
-                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/')}>
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)] transition-transform group-hover:rotate-12">
-                            <Activity className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                    <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/')}>
+                        <div className="w-10 h-10 flex items-center justify-center transition-transform group-hover:rotate-12 duration-500">
+                            <img 
+                                src="/assets/brand/logo_transparent.png" 
+                                alt="NebulaStar Logo" 
+                                className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(143,179,255,0.3)]"
+                            />
                         </div>
                         <span className="font-black text-xl md:text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                            NEBULA<span className="text-pink-500">.FANS</span>
+                            NEBULA<span className="text-pink-500">STAR</span>
                         </span>
                     </div>
                     <div className="hidden md:flex gap-8 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
@@ -201,7 +205,7 @@ const FanLanding = () => {
                 <div className="container mx-auto px-6">
                     <div className="flex justify-between items-end mb-16 px-4">
                         <div>
-                            <h2 className="text-3xl md:text-7xl font-black tracking-tighter uppercase mb-2">Estrellas <span className="text-pink-500">Nebula</span></h2>
+                            <h2 className="text-3xl md:text-7xl font-black tracking-tighter uppercase mb-2">Estrellas <span className="text-pink-500">NebulaStar</span></h2>
                             <p className="text-gray-500 text-xs md:text-base font-medium uppercase tracking-widest">Verificadas y listas para conectar</p>
                         </div>
                         <button onClick={scrollToLogin} className="text-[9px] md:text-xs font-black uppercase tracking-widest text-pink-500 hover:text-white transition-colors pb-2 border-b border-pink-500/20">Ver Todo</button>
@@ -360,7 +364,10 @@ const FanLanding = () => {
                 <div className="container mx-auto px-6">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="flex flex-col items-center md:items-start gap-4">
-                            <div className="font-black tracking-tighter text-2xl">NEBULA<span className="text-pink-500">.FANS</span></div>
+                            <div className="font-black tracking-tighter text-2xl flex items-center gap-2">
+                                <img src="/assets/brand/logo_transparent.png" alt="" className="w-7 h-7 object-contain" />
+                                NEBULA<span className="text-pink-500">STAR</span>
+                            </div>
                             <p className="text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em]">El estándar de oro para fans exigentes.</p>
                         </div>
                         <div className="flex gap-12 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
