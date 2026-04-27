@@ -4,7 +4,6 @@ import { ModelGrid } from '../components/explore/ModelGrid';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import api from '../api/axios';
 
 function Explore() {
     const { themeColor } = useTheme();
