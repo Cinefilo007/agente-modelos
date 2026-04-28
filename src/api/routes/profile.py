@@ -313,8 +313,11 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
         return {"message": "No changes detected"}
 
     try:
-        # Get old state to check if terms_accepted changed from false to true
-        old_profile = db.client.table(table).select("terms_accepted").eq("telegram_id", user.id).single().execute()
+        old_profile_data = None
+        if table == "clients" and updates.get("terms_accepted") is True:
+            old_profile_res = db.client.table(table).select("terms_accepted").eq("telegram_id", user.id).maybe_single().execute()
+            if old_profile_res and old_profile_res.data:
+                old_profile_data = old_profile_res.data
         
         response = db.client.table(table).update(updates).eq("telegram_id", user.id).execute()
         if not response or not response.data:
@@ -325,7 +328,7 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
         
         # NOTIFICACIÓN AL ADMIN: Solo si el cliente acaba de aceptar términos y antes no lo había hecho
         if table == "clients" and updates.get("terms_accepted") is True:
-            was_accepted = old_profile.data.get("terms_accepted") if old_profile.data else False
+            was_accepted = old_profile_data.get("terms_accepted") if old_profile_data else False
             if not was_accepted:
                 try:
                     bot = Bot(token=CREATOR_BOT_TOKEN)
