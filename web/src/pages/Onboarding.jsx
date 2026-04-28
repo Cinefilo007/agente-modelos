@@ -34,6 +34,7 @@ const Onboarding = () => {
     const [creatorBio, setCreatorBio] = useState('');
     const [creatorBirthDate, setCreatorBirthDate] = useState('');
     const [verificationPhoto, setVerificationPhoto] = useState(null);
+    const [creatorTermsAccepted, setCreatorTermsAccepted] = useState(false);
 
     const [isRestricted, setIsRestricted] = useState(false);
 
@@ -87,6 +88,11 @@ const Onboarding = () => {
 
         if (!verificationPhoto) {
             setError("Debes subir una foto de verificación.");
+            return;
+        }
+
+        if (!creatorTermsAccepted) {
+            setError("Debes certificar que eres mayor de edad para continuar.");
             return;
         }
 
@@ -201,6 +207,9 @@ const Onboarding = () => {
                     <p className="text-gray-400 mb-8 leading-relaxed">
                         Tu solicitud como creadora está en revisión. El equipo de Nebula verificará tus datos y recibirás una notificación en Telegram.
                     </p>
+                    <button onClick={() => navigate('/')} className="w-full py-4 bg-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-purple-500 transition-all shadow-lg shadow-purple-500/20 mb-3">
+                        Seguir Explorando
+                    </button>
                     <button onClick={logout} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
                         Cerrar Sesión
                     </button>
@@ -251,8 +260,13 @@ const Onboarding = () => {
                         </div>
 
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-purple-400">
-                                <Camera className="w-3 h-3" /> Foto de Verificación Obligatoria
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-purple-400">
+                                    <Camera className="w-3 h-3" /> Foto de Verificación Obligatoria
+                                </div>
+                                <p className="text-[10px] text-gray-400 leading-relaxed max-w-sm">
+                                    Sube una selfie sosteniendo tu documento de identidad civil. <b>Asegúrate de que tanto tu rostro como los datos del documento sean claramente legibles</b> para agilizar la aprobación y evitar inconvenientes.
+                                </p>
                             </div>
                             
                             <div className="border-2 border-dashed border-white/10 rounded-3xl relative h-48 flex flex-col items-center justify-center overflow-hidden hover:border-purple-500/50 transition-all group bg-white/[0.02]">
@@ -273,6 +287,15 @@ const Onboarding = () => {
                                         <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Toca para subir Selfie con ID</p>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-3xl cursor-pointer group transition-all hover:bg-white/[0.04]" onClick={() => setCreatorTermsAccepted(!creatorTermsAccepted)}>
+                            <div className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center border transition-all shrink-0 ${creatorTermsAccepted ? 'bg-purple-600 border-purple-600' : 'border-white/20 group-hover:border-purple-500/50'}`}>
+                                {creatorTermsAccepted && <CheckCircle className="w-4 h-4 text-white" />}
+                            </div>
+                            <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide leading-tight group-hover:text-white transition-colors">
+                                Certifico legalmente que soy mayor de 18 años y acepto los <span className="text-purple-500">Términos de Creadora</span>.
                             </div>
                         </div>
 

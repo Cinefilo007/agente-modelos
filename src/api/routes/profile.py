@@ -33,7 +33,7 @@ def generate_unique_username(base_name: str, supabase_client):
             attempts += 1
     return candidate
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CREATOR_BOT_TOKEN = os.getenv("TELEGRAM_CREATOR_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_TELEGRAM_ID") # Using environment variable instead of hardcoded ID
 
 @router.post("/heartbeat")
@@ -133,7 +133,7 @@ async def apply_as_model(
         # 3. Notify Admin
         print(f"[Apply Model] Notifying admin {ADMIN_ID}")
         try:
-            bot = Bot(token=TELEGRAM_TOKEN)
+            bot = Bot(token=CREATOR_BOT_TOKEN)
             
             caption = (
                 f"📝 <b>Nueva Solicitud de Creador</b>\n\n"
@@ -328,7 +328,7 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
             was_accepted = old_profile.data.get("terms_accepted") if old_profile.data else False
             if not was_accepted:
                 try:
-                    bot = Bot(token=TELEGRAM_TOKEN)
+                    bot = Bot(token=CREATOR_BOT_TOKEN)
                     msg = (
                         f"✅ <b>¡Nuevo Cliente Registrado!</b>\n\n"
                         f"👤 <b>Usuario:</b> @{user.username or 'Sin username'}\n"
