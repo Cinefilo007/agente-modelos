@@ -74,28 +74,83 @@ app.include_router(escrow_router, prefix="/api/escrow", tags=["Escrow"])
 async def health_check():
     return {"status": "ok", "service": "Agency Bot API"}
 
-# --- SERVICIO DE ARCHIVOS ESTÁTICOS ---
+# --- SERVICIO DE ARCHIVOS ESTÁTICOS Y SEO DINÁMICO ---
+from src.services.database import db
+
+BOT_USER_AGENTS = [
+    "telegrambot", "twitterbot", "facebookexternalhit", "whatsapp", "linkedinbot",
+    "googlebot", "bingbot", "slackbot"
+]
+
 if os.path.exists("web/dist"):
     app.mount("/assets", StaticFiles(directory="web/dist/assets"), name="assets")
     
     @app.get("/{full_path:path}")
-    async def serve_react_app(full_path: str):
+    async def serve_react_app(request: Request, full_path: str = ""):
+        # 1. Detección de Bots y Perfiles para SEO Enriquecido
+        user_agent = request.headers.get("user-agent", "").lower()
+        is_bot = any(bot in user_agent for bot in BOT_USER_AGENTS)
+        
+        # Ignorar archivos con extensión y rutas de sistema
+        is_potential_profile = (
+            full_path and 
+            "." not in full_path and 
+            not full_path.startswith("api/") and 
+            full_path not in ["login", "explore", "onboarding", "admin", "wallet", "shop", "settings", "casino", "pwa"]
+        )
+
+        index_path = "web/dist/index.html"
+
+        if is_bot and is_potential_profile:
+            try:
+                username = full_path.replace("/", "")
+                # Query directo a Supabase para obtener metadatos
+                model_res = db.client.table("models").select("artistic_name, full_name, bio_short, avatar_url").eq("username", username).maybe_single().execute()
+                
+                if model_res.data:
+                    m = model_res.data
+                    name = m.get('artistic_name') or m.get('full_name') or username
+                    bio = m.get('bio_short') or f"Mira el perfil de {name} en NebulaStar."
+                    # Asegurar URL absoluta para la imagen
+                    image = m.get('avatar_url') or "https://nebulaespace.site/pwa-512x512.png"
+                    
+                    if os.path.exists(index_path):
+                        with open(index_path, "r", encoding="utf-8") as f:
+                            html = f.read()
+                        
+                        meta_tags = f"""
+    <!-- SEO Dinámico para {username} -->
+    <title>NebulaStar | {name}</title>
+    <meta name="description" content="{bio}">
+    <meta property="og:title" content="NebulaStar | {name}">
+    <meta property="og:description" content="{bio}">
+    <meta property="og:image" content="{image}">
+    <meta property="og:url" content="https://nebulaespace.site/{username}">
+    <meta property="og:type" content="profile">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{image}">
+"""
+                        html = html.replace("</head>", f"{meta_tags}\n</head>")
+                        from fastapi.responses import HTMLResponse
+                        return HTMLResponse(content=html)
+            except Exception as e:
+                print(f"[SEO Bot] Error: {e}")
+
+        # 2. Servir archivos estáticos directos
         if full_path.startswith("api/"):
             return JSONResponse(status_code=404, content={"error": "Not Found"})
-        # Archivos directos en raíz (manifest, icons, etc)
+            
         file_path = f"web/dist/{full_path}"
         if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
-             # Aplicar caché agresiva a assets e imágenes
-             headers = {}
-             if any(full_path.endswith(ext) for ext in ['.js', '.css', '.png', '.jpg', '.jpeg', '.svg', '.woff2']):
-                 headers["Cache-Control"] = "public, max-age=31536000, immutable"
-             return FileResponse(file_path, headers=headers)
-             
-        # Catch-all para la SPA de React (Sin caché para que cargue siempre la última versión del index)
-        index_path = "web/dist/index.html"
+            headers = {}
+            if any(full_path.endswith(ext) for ext in ['.js', '.css', '.png', '.jpg', '.jpeg', '.svg', '.woff2', '.ico']):
+                headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            return FileResponse(file_path, headers=headers)
+
+        # 3. Catch-all React SPA
         if os.path.exists(index_path):
             return FileResponse(index_path, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
         
         return JSONResponse(status_code=404, content={"error": "Frontend build not found"})
 else:
-    print("Warning: web/dist directory not found. Frontend will not be served.")
+    print("Warning: web/dist directory not found. Static serving disabled.")

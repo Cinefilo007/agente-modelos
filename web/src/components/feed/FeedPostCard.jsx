@@ -14,8 +14,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../context/ToastContext';
 import { isOnline as checkOnline } from '../../utils/date';
 import { getOptimizedUrl, IMAGE_PRESETS } from '../../utils/image';
+import {
+    SiInstagram, SiX, SiFacebook, SiYoutube,
+    SiTiktok, SiTwitch, SiOnlyfans, SiPatreon, SiWhatsapp, SiTelegram
+} from '@icons-pack/react-simple-icons';
+import { Globe, Link as LinkIcon, Diamond } from 'lucide-react';
 
 export function FeedPostCard({ post, isAdmin, onDelete }) {
+    const getLinkIcon = (label, url) => {
+        const text = (label + url).toLowerCase();
+        const size = 12;
+        
+        if (text.includes('instagram')) return <SiInstagram size={size} color="#E1306C" />;
+        if (text.includes('twitter') || text.includes(' x ')) return <SiX size={size} className="text-white" />;
+        if (text.includes('facebook')) return <SiFacebook size={size} color="#1877F2" />;
+        if (text.includes('tiktok')) return <SiTiktok size={size} className="text-white" />;
+        if (text.includes('onlyfans')) return <SiOnlyfans size={size} color="#00AFF0" />;
+        if (text.includes('fansly')) return <Diamond size={size} color="#00AEF0" />;
+        if (text.includes('whatsapp') || text.includes('wa.me')) return <SiWhatsapp size={size} color="#25D366" />;
+        if (text.includes('telegram') || text.includes('t.me')) return <SiTelegram size={size} color="#26A5E4" />;
+        if (text.includes('patreon')) return <SiPatreon size={size} color="#FF424D" />;
+        if (text.includes('youtube')) return <SiYoutube size={size} color="#FF0000" />;
+        
+        return <ExternalLink size={size} className="text-blue-400 group-hover/link:text-blue-300" />;
+    };
+
     const { user, updateUser } = useAuth();
     const { showToast } = useToast();
     const { themeColor } = useTheme();
@@ -461,10 +484,10 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={(e) => e.stopPropagation()}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full text-[11px] font-bold text-white transition-all active:scale-95 group/link"
+                                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-bold text-white transition-all active:scale-95 group/link shadow-lg backdrop-blur-md"
                                     >
-                                        <ExternalLink size={12} className="text-blue-400 group-hover/link:text-blue-300" />
-                                        {lnk.label}
+                                        {getLinkIcon(lnk.label, lnk.url)}
+                                        <span className="truncate max-w-[120px]">{lnk.label}</span>
                                     </a>
                                 ))}
                             </div>

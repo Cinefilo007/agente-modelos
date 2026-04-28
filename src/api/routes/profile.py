@@ -33,6 +33,40 @@ def generate_unique_username(base_name: str, supabase_client):
             attempts += 1
     return candidate
 
+def hydrate_profile_data(user_data: dict):
+    """Auxiliar para mapear campos heredados (config_*) y asegurar formatos consistentes."""
+    if not user_data:
+        return user_data
+
+    # Map legacy config_ columns to flat fields for frontend
+    def extract_text(val):
+        if isinstance(val, dict): return val.get('text', '')
+        if isinstance(val, str):
+            val_str = val.strip()
+            if val_str.startswith('{"text":') and val_str.endswith('}'):
+                try:
+                    return json.loads(val_str).get('text', '')
+                except: pass
+            return val
+        if isinstance(val, list) and len(val) > 0: return str(val[0])
+        return str(val) if val is not None else ''
+
+    user_data['prices'] = extract_text(user_data.get('config_prices'))
+    user_data['personality'] = extract_text(user_data.get('config_persona'))
+    user_data['physical_aspects'] = extract_text(user_data.get('config_physique'))
+    user_data['payment_methods'] = extract_text(user_data.get('config_payments'))
+
+    # Asegurar que social_links sea al menos una lista/objeto manejable
+    if 'social_links' in user_data and user_data['social_links'] is None:
+        user_data['social_links'] = []
+    
+    # Asegurar que services sea una lista
+    if 'services' in user_data and user_data['services'] is None:
+        user_data['services'] = []
+
+    user_data['role'] = user_data.get('role', 'model')
+    return user_data
+
 CREATOR_BOT_TOKEN = os.getenv("TELEGRAM_CREATOR_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_TELEGRAM_ID") # Using environment variable instead of hardcoded ID
 
@@ -94,21 +128,21 @@ async def apply_as_model(
         verification_url = await upload_file(file, bucket_name="verifications", folder=f"{user.id}")
         print(f"[Apply Model] File uploaded. URL: {verification_url}")
         
-        # 2. Upsert Model Record
-        model_data = {
-            "telegram_id": user.id,
-            "username": user.username or f"user_{user.id}",
+        # Prep updates - Only update fields that are provided
+        model_updates = {
             "full_name": full_name,
             "artistic_name": artistic_name,
-            "bio_short": bio, # Using bio_short for initial bio
             "birth_date": birth_date,
             "status": "verifying",
             "verification_video_id": verification_url, 
             "country": country_code
         }
         
-        print(f"[Apply Model] Upserting DB record: {model_data}")
-        # Check if model exists
+        # Only overwrite bio if it's not empty, or if we don't have a previous bio
+        if bio:
+            model_updates["bio_short"] = bio
+        
+        print(f"[Apply Model] Checking existing record for user {user.id}")
         existing = db.client.table("models").select("*").eq("telegram_id", user.id).maybe_single().execute()
         
         if existing and existing.data:
@@ -118,12 +152,23 @@ async def apply_as_model(
                     status_code=403,
                     detail="Tu solicitud fue rechazada previamente. Contacta al administrador directamente para apelar."
                 )
+            
+            # Si ya tiene nombre de usuario, no lo forzamos a cambiar
+            if not existing.data.get("username"):
+                model_updates["username"] = user.username or f"user_{user.id}"
+                
             # Update existing
-            db.client.table("models").update(model_data).eq("telegram_id", user.id).execute()
+            db.client.table("models").update(model_updates).eq("telegram_id", user.id).execute()
             model_id = existing.data['id']
             print(f"[Apply Model] Updated existing model: {model_id}")
         else:
             # Insert new
+            model_data = {
+                **model_updates,
+                "telegram_id": user.id,
+                "username": user.username or f"user_{user.id}",
+                "bio_short": bio or ""
+            }
             res = db.client.table("models").insert(model_data).execute()
             if res.data:
                 model_id = res.data[0]['id']
@@ -247,28 +292,7 @@ async def get_my_profile(user: TelegramUser = Depends(get_current_user)):
     except:
         user_data['posts_count'] = 0
 
-    # Map legacy config_ columns to flat fields for frontend
-    def extract_text(val):
-        if isinstance(val, dict): return val.get('text', '')
-        # Handle stringified JSON for text columns if they were wrongly saved
-        if isinstance(val, str):
-            val_str = val.strip()
-            if val_str.startswith('{"text":') and val_str.endswith('}'):
-                try:
-                    return json.loads(val_str).get('text', '')
-                except:
-                    pass
-            return val
-        if isinstance(val, list) and len(val) > 0: return str(val[0]) # Fallback
-        return str(val) if val is not None else ''
-
-    user_data['prices'] = extract_text(user_data.get('config_prices'))
-    user_data['personality'] = extract_text(user_data.get('config_persona'))
-    user_data['physical_aspects'] = extract_text(user_data.get('config_physique'))
-    user_data['payment_methods'] = extract_text(user_data.get('config_payments'))
-
-    user_data['role'] = 'model'
-    return user_data
+    return hydrate_profile_data(user_data)
 
 @router.put("/me")
 async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser = Depends(get_current_user)):
@@ -403,7 +427,7 @@ async def get_public_profile(identifier: str):
     posts = db.client.table("posts").select("id, media_url, media_type, likes_count").eq("model_id", model_id).order("created_at", desc=True).limit(9).execute()
     user_data['posts'] = posts.data if posts.data else []
 
-    return user_data
+    return hydrate_profile_data(user_data)
 
 @router.get("/models/explore")
 async def get_models_for_explore(
