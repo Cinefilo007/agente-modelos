@@ -1,6 +1,6 @@
 import React from 'react';
 import Joyride, { STATUS } from 'react-joyride';
-import { useTheme } from '../../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export function CreatorTour({ run, onFinish }) {
     const { themeColor } = useTheme();
