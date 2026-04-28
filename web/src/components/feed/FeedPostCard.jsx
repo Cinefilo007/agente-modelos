@@ -266,6 +266,7 @@ export function FeedPostCard({ post, isAdmin, onDelete }) {
                                 name={post.user.artistic_name || post.user.full_name || post.user.username}
                                 size="md"
                                 isOnline={isOnline}
+                                isVerified={post.user.is_verified}
                             />
                         </Link>
                         <div>

@@ -274,7 +274,7 @@ const Onboarding = () => {
                                     <Camera className="w-3 h-3" /> Foto de Verificación Obligatoria
                                 </div>
                                 <p className="text-[10px] text-gray-400 leading-relaxed max-w-sm">
-                                    Sube una selfie sosteniendo tu documento de identidad civil. <b>Asegúrate de que tanto tu rostro como los datos del documento sean claramente legibles</b> para agilizar la aprobación y evitar inconvenientes.
+                                    Sube una selfie sosteniendo un papel escrito a mano con la palabra <b>"NEBULASTAR"</b> y la <b>fecha de hoy</b>. Asegúrate de que tanto tu rostro como el texto sean legibles.
                                 </p>
                             </div>
                             
@@ -317,7 +317,7 @@ const Onboarding = () => {
                                         <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
                                             <Star className="w-6 h-6 text-gray-500 group-hover:text-purple-400" />
                                         </div>
-                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Toca para subir Selfie con ID</p>
+                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Toca para subir Selfie con papel</p>
                                     </div>
                                 )}
                             </div>
