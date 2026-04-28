@@ -385,11 +385,13 @@ export function ProfileHeader({ user, isOwnProfile, customActions }) {
                                 <Edit3 size={16} /> Editar Perfil
                             </Button>
                         </Link>
-                        <Link to="/admin" className="flex-1">
-                            <Button className="w-full h-12 bg-white/5 border border-white/10 text-white gap-2 text-sm font-bold rounded-2xl transition-all hover:bg-white/10" variant="ghost">
-                                <LayoutDashboard size={16} className="text-[var(--theme-glow)]" /> Panel Admin
-                            </Button>
-                        </Link>
+                        {user.is_verified === true && (
+                            <Link to="/admin" className="flex-1">
+                                <Button className="w-full h-12 bg-white/5 border border-white/10 text-white gap-2 text-sm font-bold rounded-2xl transition-all hover:bg-white/10" variant="ghost">
+                                    <LayoutDashboard size={16} className="text-[var(--theme-glow)]" /> Panel Admin
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 )}
             </div>

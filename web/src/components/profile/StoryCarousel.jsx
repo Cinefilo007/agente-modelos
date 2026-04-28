@@ -8,9 +8,9 @@ import { useAuth } from '../../context/AuthContext';
 export function StoryCarousel({ stories, onOpenStory, title }) {
     const { themeColor } = useTheme();
     const { user } = useAuth();
-    const isModel = user?.role === 'model';
+    const isVerifiedModel = user?.role === 'model' && user?.is_verified === true;
     // Only show "Add" button if we are not rendering "Destacados"
-    const showAddButton = isModel && (!title || title === "Historias de hoy");
+    const showAddButton = isVerifiedModel && (!title || title === "Historias de hoy");
 
     return (
         <div className="w-full py-2">
