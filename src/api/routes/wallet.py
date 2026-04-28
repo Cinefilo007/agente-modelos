@@ -7,6 +7,8 @@ from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
 import os
 import requests
+import asyncio
+from src.services.notifications import notifications
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +268,6 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
                         .eq("id", notif['id']) \
                         .execute()
                 else:
-                    # New notification
                     db.service_client.table("notifications").insert({
                         "user_id": request.model_id,
                         "actor_id": user.user_id,
@@ -274,6 +275,13 @@ async def send_tip(request: TipRequest, user: TelegramUser = Depends(get_current
                         "target_id": request.post_id,
                         "content": "1"
                     }).execute()
+                    
+                # Notificar via Telegram bot
+                asyncio.create_task(notifications.notify_creator(
+                    user_id=request.model_id,
+                    notif_type='tip',
+                    actor_id=user.user_id
+                ))
         except Exception as notif_err:
             logger.error(f"[Notifications] Error in tip notif: {notif_err}")
 
@@ -374,6 +382,14 @@ async def purchase_gift(request: GiftPurchaseRequest, user: TelegramUser = Depen
                     "target_id": request.post_id,
                     "content": gift["name"]
                 }).execute()
+                
+                # Notificar via Telegram bot
+                asyncio.create_task(notifications.notify_creator(
+                    user_id=request.model_id,
+                    notif_type='gift',
+                    actor_id=user.user_id,
+                    content=gift["name"]
+                ))
         except Exception as notif_err:
             logger.error(f"[Notifications] Error in gift notif: {notif_err}")
 

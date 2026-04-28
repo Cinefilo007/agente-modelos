@@ -16,8 +16,8 @@ from telegram import Bot
 
 router = APIRouter()
 
-BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")  # Creator Bot
-CLIENT_BOT_TOKEN = os.getenv("CLIENT_BOT_TOKEN")  # Fan Bot
+CREATOR_BOT_TOKEN = os.getenv("TELEGRAM_CREATOR_TOKEN")  # Creator Bot
+CLIENT_BOT_TOKEN = os.getenv("TELEGRAM_CLIENT_TOKEN")  # Fan Bot
 JWT_SECRET = os.getenv("JWT_SECRET")
 
 if not JWT_SECRET:
@@ -25,7 +25,7 @@ if not JWT_SECRET:
 ALGORITHM = "HS256"
 
 # IDs numéricos de los bots
-BOT_ID = BOT_TOKEN.split(":")[0] if BOT_TOKEN and ":" in BOT_TOKEN else None
+CREATOR_BOT_ID = CREATOR_BOT_TOKEN.split(":")[0] if CREATOR_BOT_TOKEN and ":" in CREATOR_BOT_TOKEN else None
 CLIENT_BOT_ID = CLIENT_BOT_TOKEN.split(":")[0] if CLIENT_BOT_TOKEN and ":" in CLIENT_BOT_TOKEN else None
 
 ADMIN_TELEGRAM_ID = os.getenv("ADMIN_TELEGRAM_ID")
@@ -65,8 +65,8 @@ class WebAppAuthData(BaseModel):
 
 def verify_telegram_data(data: TelegramAuthData) -> str:
     """ Verifica el hash contra ambos bots. Retorna 'client' o 'model' """
-    if not BOT_TOKEN:
-        raise HTTPException(status_code=500, detail="Server configuration error: TELEGRAM_TOKEN not set")
+    if not CREATOR_BOT_TOKEN:
+        raise HTTPException(status_code=500, detail="Server configuration error: TELEGRAM_CREATOR_TOKEN not set")
     
     if time.time() - data.auth_date > 86400:
         raise HTTPException(status_code=400, detail="Auth data is outdated")
@@ -85,7 +85,7 @@ def verify_telegram_data(data: TelegramAuthData) -> str:
             return "client"
             
     # 2. Intentar validar como CREADORA (Creator Bot)
-    secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
+    secret_key = hashlib.sha256(CREATOR_BOT_TOKEN.encode()).digest()
     hash_check = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
     if hash_check == data.hash:
         return "model"
@@ -94,8 +94,8 @@ def verify_telegram_data(data: TelegramAuthData) -> str:
 
 def verify_webapp_data(init_data: str) -> tuple[dict, str]:
     """ Returns (user_info, role) """
-    if not BOT_TOKEN:
-         raise HTTPException(status_code=500, detail="Server configuration error: TELEGRAM_TOKEN not set")
+    if not CREATOR_BOT_TOKEN:
+         raise HTTPException(status_code=500, detail="Server configuration error: TELEGRAM_CREATOR_TOKEN not set")
 
     try:
         parsed_data = dict(parse_qsl(init_data))
@@ -121,7 +121,7 @@ def verify_webapp_data(init_data: str) -> tuple[dict, str]:
             
     # Try Creator Bot
     if not role:
-        secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
+        secret_key = hmac.new("WebAppData".encode(), CREATOR_BOT_TOKEN.encode(), hashlib.sha256).digest()
         if hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest() == hash_received:
             role = "model"
 
@@ -182,7 +182,7 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                     if res is not None and hasattr(res, 'data') and res.data and len(res.data) > 0:
                         user_data = res.data[0]
                         # Notify Admin of NEW Fan
-                        notify_token = CLIENT_BOT_TOKEN if CLIENT_BOT_TOKEN else BOT_TOKEN
+                        notify_token = CLIENT_BOT_TOKEN if CLIENT_BOT_TOKEN else CREATOR_BOT_TOKEN
                         if notify_token and ADMIN_TELEGRAM_ID:
                             try:
                                 bot = Bot(token=notify_token)
@@ -227,9 +227,9 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
                 if res is not None and hasattr(res, 'data') and res.data and len(res.data) > 0:
                     user_data = res.data[0]
                     # Notify Admin of NEW Prospect Model
-                    if BOT_TOKEN and ADMIN_TELEGRAM_ID:
+                    if CREATOR_BOT_TOKEN and ADMIN_TELEGRAM_ID:
                         try:
-                            bot = Bot(token=BOT_TOKEN)
+                            bot = Bot(token=CREATOR_BOT_TOKEN)
                             msg = (
                                 f"🌟 <b>Nueva Aspirante a Creadora</b>\n"
                                 f"👤 <b>Usuario:</b> @{username or 'Sin username'}\n"
@@ -316,8 +316,8 @@ async def telegram_oidc_login(data: TelegramOIDCData):
     """
     Login OIDC — Validación del id_token JWT firmado por Telegram.
     """
-    if not BOT_ID:
-        raise HTTPException(status_code=500, detail="BOT_ID no configurado en el servidor")
+    if not CREATOR_BOT_ID:
+        raise HTTPException(status_code=500, detail="CREATOR_BOT_ID no configurado en el servidor")
     
     try:
         # 1. Obtener claves públicas de Telegram
@@ -353,7 +353,7 @@ async def telegram_oidc_login(data: TelegramOIDCData):
         role = None
         if CLIENT_BOT_ID and str(aud) == str(CLIENT_BOT_ID):
             role = "client"
-        elif BOT_ID and str(aud) == str(BOT_ID):
+        elif CREATOR_BOT_ID and str(aud) == str(CREATOR_BOT_ID):
             role = "model"
             
         if not role:

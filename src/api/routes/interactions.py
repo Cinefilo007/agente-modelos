@@ -3,8 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Literal
 import logging
+import asyncio
 from src.api.dependencies import get_current_user, TelegramUser
 from src.services.database import db
+from src.services.notifications import notifications
 import re
 
 logger = logging.getLogger(__name__)
@@ -109,6 +111,15 @@ async def create_interaction(
                     # Use service_client to bypass RLS for notification creation
                     db.service_client.table("notifications").insert(notif_data).execute()
                     logger.info(f"[Notifications] Success: Created {interaction.action} notification")
+                    
+                    # Notify via Telegram bot using asyncio background task
+                    if interaction.action == 'comment':
+                        asyncio.create_task(notifications.notify_creator(
+                            user_id=target_user_id,
+                            notif_type='comment',
+                            actor_id=actor_id,
+                            content=interaction.content
+                        ))
                 else:
                      logger.info("[Notifications] Skipped: Self-interaction")
             else:
@@ -183,6 +194,14 @@ async def follow_model(
                 "actor_id": client_res.data['id'],
                 "type": "follow"
             }).execute()
+            
+            # Notificar via Telegram bot
+            asyncio.create_task(notifications.notify_creator(
+                user_id=follow.model_id,
+                notif_type='follow',
+                actor_id=client_res.data['id']
+            ))
+            
         except Exception as notif_err:
             print(f"Error creating follow notification: {notif_err}")
 
