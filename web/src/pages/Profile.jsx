@@ -12,6 +12,7 @@ import { Heart, X, ShieldCheck, Loader, Send, UserPlus, UserCheck, Gamepad2, Wan
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { ThemeCustomizer } from '../components/profile/ThemeCustomizer'; // Panel de personalización
+import { CreatorTour } from '../components/profile/CreatorTour';
 
 function Profile() {
     const { username } = useParams(); // username or ID if we change routing
@@ -26,6 +27,7 @@ function Profile() {
     const [loading, setLoading] = useState(true);
     const [selectedStory, setSelectedStory] = useState(null);
     const [error, setError] = useState(null);
+    const [runTour, setRunTour] = useState(false);
 
     // 1. Determine if we are viewing "me" or another user
     const isMe = !username ||
@@ -85,6 +87,17 @@ function Profile() {
             fetchProfileData();
         }
     }, [username, currentUser, isMe]);
+
+    useEffect(() => {
+        // Trigger tour if it's the model's own profile and hasn't seen it
+        if (!loading && profileUser && isMe && currentUser?.role === 'model') {
+            const hasSeenTour = localStorage.getItem('creator_profile_tour_seen');
+            if (!hasSeenTour) {
+                // Pequeño timeout para asegurar que el DOM ha cargado los IDs
+                setTimeout(() => setRunTour(true), 500); 
+            }
+        }
+    }, [loading, profileUser, isMe, currentUser]);
 
     // --- HOOKS MUST BE BEFORE ANY RETURNS ---
     const [isFollowing, setIsFollowing] = useState(false);
@@ -207,16 +220,29 @@ function Profile() {
 
     return (
         <div className={`pb-20 transition-opacity duration-700 ease-in-out ${loading ? 'opacity-0' : 'opacity-100'}`}>
+            {/* Tour Guiado */}
+            {isOwnProfile && currentUser?.role === 'model' && (
+                <CreatorTour 
+                    run={runTour} 
+                    onFinish={() => {
+                        setRunTour(false);
+                        localStorage.setItem('creator_profile_tour_seen', 'true');
+                    }}
+                />
+            )}
+
             {/* Profile Header */}
-            <ProfileHeader
-                user={profileUser}
-                isOwnProfile={isOwnProfile}
-                customActions={CustomActions}
-            />
+            <div id="tour-profile-header">
+                <ProfileHeader
+                    user={profileUser}
+                    isOwnProfile={isOwnProfile}
+                    customActions={CustomActions}
+                />
+            </div>
 
             {/* Stories Section */}
             {(stories.length > 0 || isOwnProfile) && (
-                <>
+                <div id="tour-stories-section">
                     <div className="mt-4 text-[var(--text-secondary)] text-xs px-4 uppercase tracking-wider font-semibold">
                         Historias {isOwnProfile && <span className="text-purple-400 text-[10px] ml-2">(+ Crear)</span>}
                     </div>
@@ -267,17 +293,19 @@ function Profile() {
                             </div>
                         );
                     })()}
-                </>
+                </div>
             )}
 
             {/* Content Tabs (Posts, Shop & Reviews) */}
-            <ProfileContent
-                posts={posts}
-                modelId={profileUser.id}
-                username={profileUser.username}
-                isOwnProfile={isOwnProfile}
-                onPostClick={(id) => requireAuth(() => navigate(`/post/${id}`))}
-            />
+            <div id="tour-profile-content">
+                <ProfileContent
+                    posts={posts}
+                    modelId={profileUser.id}
+                    username={profileUser.username}
+                    isOwnProfile={isOwnProfile}
+                    onPostClick={(id) => requireAuth(() => navigate(`/post/${id}`))}
+                />
+            </div>
 
             {/* Story Viewer Modal */}
             {selectedStory !== null && (
@@ -297,6 +325,7 @@ function Profile() {
             {isOwnProfile && (
                 <div className="fixed bottom-24 right-5 z-50">
                     <button
+                        id="tour-wand"
                         className="w-14 h-14 rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-2xl"
                         onClick={() => document.getElementById('theme-customizer-modal')?.showModal()}
                         style={{
