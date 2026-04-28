@@ -29,7 +29,8 @@ const Onboarding = () => {
     const [termsAccepted, setTermsAccepted] = useState(false);
 
     // Creator Data
-    const [creatorName, setCreatorName] = useState('');
+    const [creatorArtisticName, setCreatorArtisticName] = useState('');
+    const [creatorFullName, setCreatorFullName] = useState('');
     const [creatorCountry, setCreatorCountry] = useState('');
     const [creatorBio, setCreatorBio] = useState('');
     const [creatorBirthDate, setCreatorBirthDate] = useState('');
@@ -104,7 +105,8 @@ const Onboarding = () => {
 
         setLoading(true);
         const formData = new FormData();
-        formData.append('full_name', creatorName);
+        formData.append('full_name', creatorFullName);
+        formData.append('artistic_name', creatorArtisticName);
         formData.append('country_code', creatorCountry);
         formData.append('birth_date', creatorBirthDate);
         formData.append('bio', creatorBio);
@@ -240,18 +242,25 @@ const Onboarding = () => {
                     <form onSubmit={handleCreatorSubmit} className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Nombre Artístico</label>
-                                <input type="text" placeholder="Ej: Nebula Star" value={creatorName} onChange={e => setCreatorName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-purple-500/30 outline-none transition-all" required />
+                                <label className="text-[10px] font-black uppercase tracking-widest text-pink-500 px-1">Nombre Artístico</label>
+                                <input type="text" placeholder="Ej: Nebula Star" value={creatorArtisticName} onChange={e => setCreatorArtisticName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-pink-500/30 outline-none transition-all font-bold" required />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Nombre Real (Civil)</label>
+                                <input type="text" placeholder="Tu nombre oficial" value={creatorFullName} onChange={e => setCreatorFullName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-purple-500/30 outline-none transition-all" required />
+                                <p className="text-[8px] text-gray-600 px-2 italic uppercase font-bold">* Solo visible para administración</p>
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Fecha de Nacimiento</label>
+                                <input type="date" value={creatorBirthDate} onChange={e => setCreatorBirthDate(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-purple-500/30 outline-none transition-all" required />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">País</label>
                                 <input type="text" placeholder="Tu país actual" value={creatorCountry} onChange={e => setCreatorCountry(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-purple-500/30 outline-none transition-all" required />
                             </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Fecha de Nacimiento</label>
-                            <input type="date" value={creatorBirthDate} onChange={e => setCreatorBirthDate(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-purple-500/30 outline-none transition-all" required />
                         </div>
 
                         <div className="space-y-2">
@@ -269,14 +278,38 @@ const Onboarding = () => {
                                 </p>
                             </div>
                             
-                            <div className="border-2 border-dashed border-white/10 rounded-3xl relative h-48 flex flex-col items-center justify-center overflow-hidden hover:border-purple-500/50 transition-all group bg-white/[0.02]">
-                                <input type="file" onChange={(e) => { if (e.target.files[0]) setVerificationPhoto(e.target.files[0]); }} className="absolute inset-0 opacity-0 cursor-pointer z-20" accept="image/*" required />
+                            <div className="border-2 border-dashed border-white/10 rounded-3xl relative aspect-video w-full flex flex-col items-center justify-center overflow-hidden hover:border-purple-500/50 transition-all group bg-white/[0.02]">
+                                <input 
+                                    type="file" 
+                                    onChange={(e) => { 
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            if (file.size > 10 * 1024 * 1024) {
+                                                setError("La imagen es demasiado pesada (máximo 10MB)");
+                                                return;
+                                            }
+                                            setVerificationPhoto(file); 
+                                        }
+                                    }} 
+                                    className="absolute inset-0 opacity-0 cursor-pointer z-20" 
+                                    accept="image/*" 
+                                    required={!verificationPhoto} 
+                                />
                                 {verificationPhoto ? (
                                     <>
-                                        <img src={URL.createObjectURL(verificationPhoto)} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-60" />
-                                        <div className="relative z-10 bg-black/80 px-4 py-2 rounded-full border border-white/10 flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4 text-green-400" />
-                                            <span className="text-xs font-bold text-white uppercase">{verificationPhoto.name}</span>
+                                        <img src={URL.createObjectURL(verificationPhoto)} alt="Preview" className="absolute inset-0 w-full h-full object-contain bg-black/40" />
+                                        <div className="relative z-10 flex flex-col items-center gap-3">
+                                            <div className="bg-black/80 px-4 py-2 rounded-full border border-white/10 flex items-center gap-2">
+                                                <CheckCircle className="w-4 h-4 text-green-400" />
+                                                <span className="text-[10px] font-bold text-white uppercase truncate max-w-[150px]">{verificationPhoto.name}</span>
+                                            </div>
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); setVerificationPhoto(null); }}
+                                                className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20"
+                                            >
+                                                Cambiar Foto
+                                            </button>
                                         </div>
                                     </>
                                 ) : (

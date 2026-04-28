@@ -71,7 +71,8 @@ async def upload_profile_image(
 
 @router.post("/apply-model")
 async def apply_as_model(
-    full_name: str = Body(...),
+    full_name: str = Body(...), # Nombre Real (Administrativo)
+    artistic_name: str = Body(...), # Nombre Artístico (Público)
     country_code: str = Body(...),
     birth_date: str = Body(...),
     bio: str = Body("", embed=True),
@@ -98,10 +99,11 @@ async def apply_as_model(
             "telegram_id": user.id,
             "username": user.username or f"user_{user.id}",
             "full_name": full_name,
+            "artistic_name": artistic_name,
             "bio_short": bio, # Using bio_short for initial bio
             "birth_date": birth_date,
             "status": "verifying",
-            "verification_video_id": verification_url, # Storing photo URL in existing column for now
+            "verification_video_id": verification_url, 
             "country": country_code
         }
         
@@ -136,12 +138,12 @@ async def apply_as_model(
             bot = Bot(token=CREATOR_BOT_TOKEN)
             
             caption = (
-                f"📝 <b>Nueva Solicitud de Creador</b>\n\n"
+                f"✨ <b>Nueva solicitud de creadora</b>\n\n"
                 f"👤 <b>Usuario:</b> @{user.username} (ID: <code>{user.id}</code>)\n"
+                f"🎭 <b>Nombre Artístico:</b> {artistic_name}\n"
                 f"📛 <b>Nombre Real:</b> {full_name}\n"
                 f"🌍 <b>País:</b> {country_code}\n"
-                f"🎂 <b>Fecha Nac:</b> {birth_date}\n\n"
-                f"📸 <b>Evidencia:</b> <a href='{verification_url}'>Ver Foto</a>"
+                f"🎂 <b>Fecha Nac:</b> {birth_date}"
             )
             
             keyboard = [
