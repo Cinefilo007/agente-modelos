@@ -30,7 +30,8 @@ def build_app():
     app = bot_creadoras_app
 
     # Handlers para Creadoras y Configuración de Agencia
-    from src.handlers.onboarding import onboarding_handler
+    from src.handlers.creator_onboarding import creator_onboarding_handler
+    from src.handlers.creator_blacklist import creator_blacklist_handler
     from src.handlers.admin import admin_callback_handler, admin_list_pending_command, difusion_handler
     from src.handlers.profile import show_profile, profile_handler
     from src.handlers.credits import (
@@ -47,7 +48,8 @@ def build_app():
     app.add_handler(CallbackQueryHandler(admin_callback_handler, pattern="^(admin_approve|admin_reject|admin_repeat|payout_approve|payout_reject|peticion_view)"))
     
     # Conversaciones y Flujos de la Creadora
-    app.add_handler(onboarding_handler)
+    app.add_handler(creator_onboarding_handler)
+    app.add_handler(creator_blacklist_handler)
     app.add_handler(profile_handler)
     app.add_handler(create_pkg_handler)
     app.add_handler(edit_pkg_handler)
