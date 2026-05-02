@@ -65,24 +65,60 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
             logger.error(f"Error editing message: {e}")
 
     if action == ACTION_APPROVE:
-        # 1. Update DB
-        db.update_model(model_id, {"status": "active", "credits_balance": 100})
+        # 1. Update DB — INCLUIR is_verified para que sea visible en la plataforma
+        db.update_model(model_id, {"status": "active", "is_verified": True, "credits_balance": 100})
         
-        # 2. Notify Model (sin romper el handler si falla)
+        # 2. Construir el link del perfil usando el username real de Telegram
+        profile_url = None
+        if model and model.get("username"):
+            clean_username = model["username"].replace("@", "")
+            base_url = os.getenv("LANDING_URL", "https://nebulastar.app/landing").replace("/landing", "")
+            profile_url = f"{base_url}/{clean_username}"
+        
+        # 3. Notificar a la Modelo con mensaje completo
         notif_ok = True
         try:
+            approval_text = (
+                "🎉 <b>¡Felicidades! Tu cuenta ha sido VERIFICADA y ACTIVADA</b> ✅\n\n"
+                "Ya eres parte oficial de <b>NebulaStar</b>. Te hemos regalado <b>100 créditos</b> "
+                "para que pruebes nuestro asistente de ventas con IA.\n\n"
+                "━━━━━━━━━━━━━━━━\n"
+                "📋 <b>PASOS PARA EMPEZAR A RECIBIR CLIENTES:</b>\n\n"
+                "1️⃣ <b>Completa tu perfil:</b> Sube tu mejor foto, escribe tu bio y agrega tus servicios.\n"
+                "2️⃣ <b>Publica tu primer post:</b> Muestra tu contenido y atrae a tus primeros fans.\n"
+                "3️⃣ <b>Comparte tu link en TODAS tus redes:</b> Instagram, Twitter, TikTok, "
+                "OnlyFans, Fansly — cada red social es una fuente de clientes.\n"
+            )
+            
+            if profile_url:
+                approval_text += (
+                    f"\n🔗 <b>Tu link exclusivo:</b>\n"
+                    f"<code>{profile_url}</code>\n\n"
+                    "☝️ Copia y pega este link en tu bio de todas tus redes. "
+                    "Cada persona que entre será un cliente potencial.\n"
+                )
+            
+            approval_text += (
+                "\n━━━━━━━━━━━━━━━━\n"
+                "💡 <b>Tip Pro:</b> Las creadoras que completan su perfil al 100% y lo comparten "
+                "en sus redes reciben <b>5x más clientes</b> en su primera semana.\n\n"
+                "¡Tu imperio empieza ahora! 🚀"
+            )
+
             await context.bot.send_message(
                 chat_id=model_id,
-                text="✅ *¡Aprobada!*\n\nTu solicitud ha sido aprobada. 🎁 Te hemos otorgado **100 créditos** para probar el asistente.\n\nPara que la IA empiece a trabajar, sigue estos pasos:\n1️⃣ Configura tu perfil enviando el comando /setup\n2️⃣ Ve a los ajustes de tu cuenta de Telegram (Debes tener **Premium**).\n3️⃣ Entra en **Telegram Business** > **Chatbot**.\n4️⃣ Agrega este bot a tu cuenta.\n\nEscribe /setup para empezar.",
-                parse_mode="Markdown"
+                text=approval_text,
+                parse_mode="HTML"
             )
         except Exception as e:
             notif_ok = False
             logger.error(f"Error notifying model {model_id}: {e}")
 
-        # 3. Safe update for admin
+        # 4. Actualizar mensaje del admin
         safe_user = model.get('username', 'Unknown').replace("<", "&lt;")
-        status_text = f"✅ Aprobada: {safe_user} ({model_id})"
+        status_text = f"✅ Aprobada y Verificada: {safe_user} ({model_id})"
+        if profile_url:
+            status_text += f"\n🔗 {profile_url}"
         if not notif_ok:
             status_text += "\n⚠️ (No se pudo notificar a la modelo)"
         await update_message(status_text)
@@ -91,9 +127,18 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
         db.update_model(model_id, {"status": "rejected"})
         notif_ok = True
         try:
+            reject_text = (
+                "❌ <b>Tu solicitud de verificación ha sido rechazada.</b>\n\n"
+                "Posibles motivos:\n"
+                "• La foto de verificación no era legible o no cumplía los requisitos.\n"
+                "• Los datos proporcionados no pudieron ser validados.\n\n"
+                "Si crees que fue un error, puedes contactar directamente al soporte "
+                "para apelar la decisión."
+            )
             await context.bot.send_message(
                 chat_id=model_id,
-                text="❌ Tu solicitud de aprobación ha sido rechazada por el administrador."
+                text=reject_text,
+                parse_mode="HTML"
             )
         except Exception as e:
             notif_ok = False

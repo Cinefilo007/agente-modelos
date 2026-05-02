@@ -187,12 +187,46 @@ async def admin_verify_model_command(update: Update, context: ContextTypes.DEFAU
         # Notificar a la modelo
         try:
             telegram_id = model['telegram_id']
+            
+            # Construir link del perfil
+            profile_url = None
+            if model.get("username"):
+                import os
+                clean_username = model["username"].replace("@", "")
+                base_url = os.getenv("LANDING_URL", "https://nebulastar.app/landing").replace("/landing", "")
+                profile_url = f"{base_url}/{clean_username}"
+            
+            approval_text = (
+                "🎉 <b>¡Felicidades! Tu cuenta ha sido VERIFICADA y ACTIVADA</b> ✅\n\n"
+                "Ya eres parte oficial de <b>NebulaStar</b>. Te hemos regalado <b>100 créditos</b> "
+                "para que pruebes nuestro asistente de ventas con IA.\n\n"
+                "━━━━━━━━━━━━━━━━\n"
+                "📋 <b>PASOS PARA EMPEZAR A RECIBIR CLIENTES:</b>\n\n"
+                "1️⃣ <b>Completa tu perfil:</b> Sube tu mejor foto, escribe tu bio y agrega tus servicios.\n"
+                "2️⃣ <b>Publica tu primer post:</b> Muestra tu contenido y atrae a tus primeros fans.\n"
+                "3️⃣ <b>Comparte tu link en TODAS tus redes:</b> Instagram, Twitter, TikTok, "
+                "OnlyFans, Fansly — cada red social es una fuente de clientes.\n"
+            )
+            
+            if profile_url:
+                approval_text += (
+                    f"\n🔗 <b>Tu link exclusivo:</b>\n"
+                    f"<code>{profile_url}</code>\n\n"
+                    "☝️ Copia y pega este link en tu bio de todas tus redes. "
+                    "Cada persona que entre será un cliente potencial.\n"
+                )
+            
+            approval_text += (
+                "\n━━━━━━━━━━━━━━━━\n"
+                "💡 <b>Tip Pro:</b> Las creadoras que completan su perfil al 100% y lo comparten "
+                "en sus redes reciben <b>5x más clientes</b> en su primera semana.\n\n"
+                "¡Tu imperio empieza ahora! 🚀"
+            )
+
             await context.bot.send_message(
                 chat_id=telegram_id,
-                text="🎉 **¡Felicidades! Tu cuenta ha sido verificada y activada.**\n\n"
-                     "Te hemos regalado **100 créditos iniciales** para que pruebes nuestro sistema.\n"
-                     "Si aún no lo has hecho, usa el comando /setup para configurar tus preferencias y tarifas.",
-                parse_mode="Markdown"
+                text=approval_text,
+                parse_mode="HTML"
             )
         except Exception as e:
             logger.error(f"Error notificando a la modelo {identifier}: {e}")
