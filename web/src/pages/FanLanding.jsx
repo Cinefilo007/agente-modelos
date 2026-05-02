@@ -230,17 +230,17 @@ const FanLanding = () => {
                                         </div>
                                     </div>
 
-                                    <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                                        <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2 max-w-full">
-                                            <h4 className="font-black text-[12px] md:text-2xl tracking-tighter uppercase truncate">{m.artistic_name || m.username}</h4>
-                                            {m.is_verified && <Check className="w-3.5 h-3.5 md:w-5 md:h-5 text-black bg-pink-500 rounded-full p-0.5 md:p-1 shrink-0" />}
+                                    <div className="absolute bottom-0 left-0 right-0 p-3 md:p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                                        <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2 max-w-full overflow-hidden">
+                                            <h4 className="font-black text-[11px] md:text-lg tracking-tight uppercase truncate leading-tight">{m.artistic_name || m.username}</h4>
+                                            {m.is_verified && <Check className="w-3 h-3 md:w-4 md:h-4 text-black bg-pink-500 rounded-full p-0.5 shrink-0" />}
                                         </div>
-                                        <div className="flex gap-3 md:gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
-                                            <div className="text-[8px] md:text-[10px] font-bold text-gray-300 uppercase tracking-widest flex items-center gap-1">
-                                                <Heart className="w-2.5 h-2.5 md:w-3 md:h-3 fill-pink-500 text-pink-500" />
+                                        <div className="flex gap-2 md:gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
+                                            <div className="text-[7px] md:text-[10px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1">
+                                                <Heart className="w-2 h-2 md:w-3 md:h-3 fill-pink-500 text-pink-500" />
                                                 12.4k
                                             </div>
-                                            <div className="text-[8px] md:text-[10px] font-bold text-gray-300 uppercase tracking-widest">450 Posts</div>
+                                            <div className="text-[7px] md:text-[10px] font-bold text-gray-300 uppercase tracking-wider">450 Posts</div>
                                         </div>
                                     </div>
                                 </div>

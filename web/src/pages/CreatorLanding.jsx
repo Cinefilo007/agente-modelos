@@ -240,7 +240,7 @@ const CreatorLanding = () => {
                 </div>
             </section>
 
-            {/* Privacy Section */}
+            {/* Privacy + Feed Advantage Section */}
             <section className="py-24 md:py-32 relative z-10 pointer-events-none">
                 <div className="absolute inset-0 bg-indigo-600/[0.03] skew-y-3"></div>
                 <div className="container mx-auto px-6 relative pointer-events-auto">
@@ -267,10 +267,60 @@ const CreatorLanding = () => {
                         </div>
                         <div className="lg:w-1/2 relative">
                              <div className="absolute -inset-4 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 blur-3xl opacity-50"></div>
-                             <div className="relative p-12 rounded-[3.5rem] bg-indigo-900/10 border border-white/5 backdrop-blur-3xl flex flex-col items-center justify-center min-h-[400px]">
-                                <Sparkle className="w-32 h-32 text-indigo-500/20 mb-8" />
-                                <div className="text-center">
-                                    <h3 className="text-xl font-bold text-white/40 uppercase tracking-widest">Safe & Private</h3>
+                             <div className="relative p-8 md:p-10 rounded-[3.5rem] bg-gradient-to-b from-white/[0.04] to-indigo-900/10 border border-white/10 backdrop-blur-3xl space-y-8">
+                                {/* Header */}
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-red-500 flex items-center justify-center">
+                                        <TrendingUp className="w-5 h-5 text-white" />
+                                    </div>
+                                    <h3 className="text-lg md:text-xl font-black uppercase tracking-tight">¿Por qué NebulaStar?</h3>
+                                </div>
+
+                                {/* Comparison */}
+                                <div className="space-y-4">
+                                    {/* OF/Fansly Problem */}
+                                    <div className="p-5 rounded-2xl bg-red-500/[0.06] border border-red-500/15 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                            <span className="text-xs font-black uppercase tracking-widest text-red-400">OnlyFans / Fansly</span>
+                                        </div>
+                                        <p className="text-sm text-gray-400 leading-relaxed">
+                                            El feed solo muestra a las creadoras que <span className="text-red-400 font-bold">ya sigues</span>. Si eres nueva, nadie te ve. Crecer es casi imposible sin traer toda tu audiencia.
+                                        </p>
+                                    </div>
+
+                                    {/* NebulaStar Solution */}
+                                    <div className="p-5 rounded-2xl bg-indigo-500/[0.06] border border-indigo-500/20 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                                            <span className="text-xs font-black uppercase tracking-widest text-indigo-400">NebulaStar</span>
+                                        </div>
+                                        <p className="text-sm text-gray-300 leading-relaxed">
+                                            Nuestro feed muestra a <span className="text-white font-bold">TODAS las modelos</span>, sin importar si tienen 0 o 10.000 seguidores. Cada publicación llega a <span className="text-indigo-400 font-bold">todos los usuarios</span> desde el primer día. 🚀
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Feed Filters */}
+                                <div className="pt-2 space-y-4">
+                                    <p className="text-xs font-black uppercase tracking-widest text-gray-500">Los clientes filtran por:</p>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 text-center space-y-2 hover:border-indigo-500/30 transition-colors">
+                                            <span className="text-xl">📰</span>
+                                            <p className="text-xs font-black text-white uppercase tracking-wide">Reciente</p>
+                                            <p className="text-[10px] text-gray-500">Lo último</p>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 text-center space-y-2 hover:border-orange-500/30 transition-colors">
+                                            <span className="text-xl">🔥</span>
+                                            <p className="text-xs font-black text-white uppercase tracking-wide">Popular</p>
+                                            <p className="text-[10px] text-gray-500">Más likes</p>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 text-center space-y-2 hover:border-purple-500/30 transition-colors">
+                                            <span className="text-xl">💜</span>
+                                            <p className="text-xs font-black text-white uppercase tracking-wide">Seguido</p>
+                                            <p className="text-[10px] text-gray-500">Favoritas</p>
+                                        </div>
+                                    </div>
                                 </div>
                              </div>
                         </div>
