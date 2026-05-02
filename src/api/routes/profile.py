@@ -327,13 +327,9 @@ async def update_my_profile(update_data: StartProfileUpdate, user: TelegramUser 
     if "payout_address" in updates:
         updates["payout_address"] = updates["payout_address"]
     
-    # Check if a username needs to be auto-generated because it's missing but we have a name
-    current_username = profile.data.get("username")
-    
-    if not current_username and ("artistic_name" in updates or "full_name" in updates):
-        base_name = updates.get("artistic_name") or updates.get("full_name")
-        if base_name:
-            updates["username"] = generate_unique_username(base_name, db.client)
+    # NOTA: El campo 'username' NUNCA se auto-genera aquí.
+    # Siempre debe ser el username real de Telegram, asignado durante el onboarding (apply-model).
+    # Sobrescribirlo rompería los enlaces t.me/{username} para mensajes privados.
     
     if not updates:
         return {"message": "No changes detected"}

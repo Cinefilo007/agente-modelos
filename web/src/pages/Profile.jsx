@@ -5,6 +5,7 @@ import { StoryCarousel } from '../components/profile/StoryCarousel';
 import { ProfileContent } from '../components/profile/ProfileContent';
 import StoryViewer from '../components/profile/StoryViewer';
 import { AuthRequiredModal } from '../components/auth/AuthRequiredModal';
+import { VerificationRequiredModal } from '../components/auth/VerificationRequiredModal';
 import ClientProfile from './ClientProfile'; // Import Client View
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -27,6 +28,7 @@ function Profile() {
     const [loading, setLoading] = useState(true);
     const [selectedStory, setSelectedStory] = useState(null);
     const [error, setError] = useState(null);
+    const [showVerificationModal, setShowVerificationModal] = useState(false);
     const [runTour, setRunTour] = useState(false);
 
     // 1. Determine if we are viewing "me" or another user
@@ -256,7 +258,13 @@ function Profile() {
                             return (
                                 <div className="px-4 py-4">
                                     <button
-                                        onClick={() => navigate('/create-story')}
+                                        onClick={() => {
+                                            if (currentUser?.is_verified !== true) {
+                                                setShowVerificationModal(true);
+                                            } else {
+                                                navigate('/create-story');
+                                            }
+                                        }}
                                         className="flex flex-col items-center justify-center w-20 h-20 rounded-full border-2 border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors"
                                     >
                                         <span className="text-2xl text-white/50">+</span>
@@ -277,6 +285,7 @@ function Profile() {
                                         });
                                     }}
                                     title="Historias de hoy"
+                                    onVerificationRequired={() => setShowVerificationModal(true)}
                                 />
                                 {savedStories.length > 0 && (
                                     <StoryCarousel
@@ -303,7 +312,9 @@ function Profile() {
                     modelId={profileUser.id}
                     username={profileUser.username}
                     isOwnProfile={isOwnProfile}
+                    isVerified={profileUser.is_verified === true}
                     onPostClick={(id) => requireAuth(() => navigate(`/post/${id}`))}
+                    onVerificationRequired={() => setShowVerificationModal(true)}
                 />
             </div>
 
@@ -344,6 +355,12 @@ function Profile() {
             <AuthRequiredModal
                 isOpen={showAuthModal}
                 onClose={() => setShowAuthModal(false)}
+            />
+
+            {/* Verification Required Modal */}
+            <VerificationRequiredModal
+                isOpen={showVerificationModal}
+                onClose={() => setShowVerificationModal(false)}
             />
         </div>
     );

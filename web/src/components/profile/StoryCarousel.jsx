@@ -5,12 +5,21 @@ import { Link } from 'react-router-dom';
 import { timeAgo } from '../../utils/date';
 import { useAuth } from '../../context/AuthContext';
 
-export function StoryCarousel({ stories, onOpenStory, title }) {
+export function StoryCarousel({ stories, onOpenStory, title, onVerificationRequired }) {
     const { themeColor } = useTheme();
     const { user } = useAuth();
     const isVerifiedModel = user?.role === 'model' && user?.is_verified === true;
     // Only show "Add" button if we are not rendering "Destacados"
-    const showAddButton = isVerifiedModel && (!title || title === "Historias de hoy");
+    const showAddButton = user?.role === 'model' && (!title || title === "Historias de hoy");
+
+    const handleAddStory = () => {
+        if (!isVerifiedModel && onVerificationRequired) {
+            onVerificationRequired();
+        } else if (isVerifiedModel) {
+            // Navegar directamente — usamos window.location para evitar dependencia de useNavigate
+            window.location.href = '/create-story';
+        }
+    };
 
     return (
         <div className="w-full py-2">
@@ -23,12 +32,12 @@ export function StoryCarousel({ stories, onOpenStory, title }) {
                 <div className="flex gap-4">
                     {/* Add Story Button (Models only) */}
                     {showAddButton && (
-                        <Link to="/create-story" className="flex flex-col items-center gap-1 min-w-[72px]">
+                        <button onClick={handleAddStory} className="flex flex-col items-center gap-1 min-w-[72px]">
                             <div className="w-[72px] h-[72px] rounded-full border border-white/10 flex items-center justify-center bg-white/5 relative hover:bg-white/10 transition-colors">
                                 <span className="text-2xl text-white font-light">+</span>
                             </div>
                             <span className="text-xs text-gray-400 truncate w-full text-center">Añadir</span>
-                        </Link>
+                        </button>
                     )}
 
                     {stories.map((story) => (

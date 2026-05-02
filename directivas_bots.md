@@ -62,3 +62,23 @@ Este documento define la arquitectura, la separación de responsabilidades (SOPs
 ## Patrón de Orquestación
 
 El archivo [`src/main.py`](src/main.py) se encarga de importar la función constructora (`build_app()`) de cada uno de estos 4 bots de manera independiente y ejecutarlos todos dentro de un único Event Loop asíncrono. Ningún bot debe intentar borrar un webhook global o gestionar configuraciones que interfieran con la red de solicitudes de los demás.
+
+---
+
+## Reglas de Datos Críticas
+
+### Campo `username` (tabla `models`)
+- **INMUTABLE después del onboarding.** El `username` siempre debe ser el username real de Telegram del usuario, asignado en `/apply-model`.
+- **NUNCA** debe auto-generarse ni sobrescribirse desde campos como `artistic_name` o `full_name`.
+- Este campo se usa para construir enlaces `https://t.me/{username}` que permiten a los clientes enviar mensajes privados. Si se corrompe, el chat con la creadora queda roto.
+
+### Campo `artistic_name` vs `full_name`
+- `artistic_name`: Nombre público visible para clientes. Se muestra en el perfil, feed y catálogo.
+- `full_name`: Nombre real/civil. Solo visible para administración y en la notificación de verificación al admin.
+
+### Verificación de Creadoras
+- Una modelo con `is_verified = false` tiene su perfil en **Modo Curiosidad**: invisible para clientes, publicaciones y servicios bloqueados.
+- El `VerificationRequiredModal` debe mostrarse cuando una modelo no verificada intente:
+  - Crear un post (botón `+` en navbar, botón en perfil vacío)
+  - Crear una historia (botón "Añadir" en stories, botón "+" en perfil)
+  - Acceder al panel de admin

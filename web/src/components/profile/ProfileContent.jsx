@@ -6,9 +6,17 @@ import { ReviewList } from './ReviewList';
 import { Grid, Star, Loader, ShoppingBag } from 'lucide-react';
 import { ShopTabContent } from './ShopTabContent';
 
-export function ProfileContent({ posts, onPostClick, modelId, isOwnProfile, username }) {
+export function ProfileContent({ posts, onPostClick, modelId, isOwnProfile, username, isVerified, onVerificationRequired }) {
     const [activeTab, setActiveTab] = useState('posts');
     const navigate = useNavigate();
+
+    const handleCreatePost = () => {
+        if (!isVerified && onVerificationRequired) {
+            onVerificationRequired();
+        } else {
+            navigate('/create-post');
+        }
+    };
 
     const tabs = [
         { id: 'posts', label: 'Galería' },
@@ -37,7 +45,7 @@ export function ProfileContent({ posts, onPostClick, modelId, isOwnProfile, user
                             </p>
                             {isOwnProfile && (
                                 <button
-                                    onClick={() => navigate('/create-post')}
+                                    onClick={handleCreatePost}
                                     className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-sm font-semibold transition-colors"
                                 >
                                     Crear primera publicación
