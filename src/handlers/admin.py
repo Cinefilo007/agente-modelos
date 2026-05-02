@@ -185,7 +185,7 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
         logger.info(f"Manual payout approval triggered for TX {tx_id}")
         
         from src.services.payout_service import send_ton_payout
-        import os
+        
         
         # 1. Fetch TX
         tx_res = db.client.table("crypto_transactions").select("*").eq("id", tx_id).maybe_single().execute()
