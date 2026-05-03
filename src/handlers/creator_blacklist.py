@@ -130,56 +130,47 @@ creator_blacklist_handler = ConversationHandler(
 # sospechoso y el bot responde con su estado y reputación.
 # ============================================================
 
-async def blacklist_check_forward(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler que intercepta mensajes reenviados para consultar estado de lista negra."""
-    msg = update.message
-    
-    # Solo procesar si tiene forward_origin con un usuario real
-    if not msg or not msg.forward_origin:
-        return
-    
-    # Extraer datos del usuario reenviado
-    forward_type = getattr(msg.forward_origin, 'type', None)
-    
-    if forward_type == 'user':
-        target_user = msg.forward_origin.sender_user
-        target_id = target_user.id
-        target_username = target_user.username or ""
-        target_name = target_user.first_name or target_username or "Desconocido"
-    elif forward_type == 'hidden_user':
-        # El usuario tiene privacidad activada, no se puede identificar
-        await msg.reply_text(
-            "⚠️ <b>Privacidad Activada</b>\n\n"
-            "Este usuario tiene la privacidad de reenvío activada en Telegram y no se puede identificar.\n\n"
-            "Para consultar manualmente, usa:\n"
-            "<code>/consultarbl 123456789</code> (con el ID numérico del usuario)",
-            parse_mode="HTML"
-        )
-        return
-    else:
-        await msg.reply_text("❌ No se pudo identificar al usuario de ese mensaje reenviado.")
-        return
-    
-    # Consultar las 3 fuentes de datos
+def _resolve_added_by(added_by_uuid):
+    """Resuelve el UUID de added_by al nombre/username de la modelo que reportó."""
+    if not added_by_uuid:
+        return "Sistema / Admin"
+    try:
+        model = db.get_model_by_uuid(added_by_uuid)
+        if model:
+            name = model.get('artistic_name') or model.get('full_name') or model.get('username', 'Desconocido')
+            username = model.get('username', '')
+            return f"{name} (@{username})" if username else name
+        return "Modelo eliminada"
+    except Exception:
+        return "No disponible"
+
+def _severity_display(severity: str) -> str:
+    """Convierte el código de severidad a texto visual."""
+    mapping = {
+        "high": "🔴 ALTA — Peligro confirmado",
+        "medium": "🟡 MEDIA — Comportamiento sospechoso",
+    }
+    return mapping.get(severity, f"⚪ {severity.upper() if severity else 'N/A'}")
+
+def _build_reputation_card(target_id: int, display_name: str):
+    """Construye la tarjeta de consulta de reputación para un usuario dado."""
     blacklist_entry = db.check_blacklist(target_id)
     client_data = db.get_client_reputation(target_id)
     report_count = db.count_blacklist_reports(target_id)
     
-    # Construir tarjeta de respuesta
-    display_name = f"@{target_username}" if target_username else target_name
-    
     if blacklist_entry:
-        # 🚫 ESTÁ EN LA LISTA NEGRA
         motivo = blacklist_entry.get('reason', 'No especificado')
         severidad = blacklist_entry.get('severity', 'N/A')
-        fecha_bl = blacklist_entry.get('created_at', '')[:10]  # Solo fecha
+        fecha_bl = blacklist_entry.get('created_at', '')[:10]
+        added_by = _resolve_added_by(blacklist_entry.get('added_by'))
         
         status_icon = "🚫"
         status_text = "EN LISTA NEGRA"
         status_detail = (
             f"⚠️ <b>Motivo:</b> {motivo}\n"
-            f"🔴 <b>Severidad:</b> {severidad.upper()}\n"
-            f"📅 <b>Desde:</b> {fecha_bl}"
+            f"{_severity_display(severidad)}\n"
+            f"📅 <b>Desde:</b> {fecha_bl}\n"
+            f"👮 <b>Reportado por:</b> {added_by}"
         )
     else:
         status_icon = "✅"
@@ -191,7 +182,6 @@ async def blacklist_check_forward(update: Update, context: ContextTypes.DEFAULT_
         reputation = client_data.get('global_reputation', 100)
         is_bl_flag = client_data.get('is_blacklisted', False)
         
-        # Emoji según reputación
         if reputation >= 80:
             rep_emoji = "🟢"
         elif reputation >= 50:
@@ -214,7 +204,6 @@ async def blacklist_check_forward(update: Update, context: ContextTypes.DEFAULT_
         )
         system_status = "Sin perfil en el sistema"
     
-    # Armar mensaje final
     card = (
         f"{status_icon} <b>CONSULTA DE REPUTACIÓN</b>\n"
         f"{'━' * 28}\n\n"
@@ -226,7 +215,38 @@ async def blacklist_check_forward(update: Update, context: ContextTypes.DEFAULT_
         f"{rep_section}"
     )
     
-    # Botón para reportar si NO está en lista negra
+    return card, blacklist_entry
+
+async def blacklist_check_forward(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler que intercepta mensajes reenviados para consultar estado de lista negra."""
+    msg = update.message
+    
+    if not msg or not msg.forward_origin:
+        return
+    
+    forward_type = getattr(msg.forward_origin, 'type', None)
+    
+    if forward_type == 'user':
+        target_user = msg.forward_origin.sender_user
+        target_id = target_user.id
+        target_username = target_user.username or ""
+        target_name = target_user.first_name or target_username or "Desconocido"
+    elif forward_type == 'hidden_user':
+        await msg.reply_text(
+            "⚠️ <b>Privacidad Activada</b>\n\n"
+            "Este usuario tiene la privacidad de reenvío activada en Telegram y no se puede identificar.\n\n"
+            "Para consultar manualmente, usa:\n"
+            "<code>/consultarbl 123456789</code> (con el ID numérico del usuario)",
+            parse_mode="HTML"
+        )
+        return
+    else:
+        await msg.reply_text("❌ No se pudo identificar al usuario de ese mensaje reenviado.")
+        return
+    
+    display_name = f"@{target_username}" if target_username else target_name
+    card, blacklist_entry = _build_reputation_card(target_id, display_name)
+    
     if not blacklist_entry:
         keyboard = [[InlineKeyboardButton("🛡️ Reportar a Lista Negra", callback_data=f"bl_quick_{target_id}_{target_username}")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -239,7 +259,6 @@ async def blacklist_quick_report_callback(update: Update, context: ContextTypes.
     query = update.callback_query
     await query.answer()
     
-    # Extraer datos del callback_data: bl_quick_{telegram_id}_{username}
     parts = query.data.split("_", 3)
     if len(parts) < 3:
         await query.edit_message_text("❌ Error procesando la solicitud.")
@@ -270,55 +289,12 @@ async def blacklist_check_by_id(update: Update, context: ContextTypes.DEFAULT_TY
     
     target_id = int(context.args[0])
     
-    # Reutilizar la misma lógica de consulta
-    blacklist_entry = db.check_blacklist(target_id)
+    # Intentar obtener username del sistema si existe
     client_data = db.get_client_reputation(target_id)
-    report_count = db.count_blacklist_reports(target_id)
-    
-    if blacklist_entry:
-        motivo = blacklist_entry.get('reason', 'No especificado')
-        severidad = blacklist_entry.get('severity', 'N/A')
-        fecha_bl = blacklist_entry.get('created_at', '')[:10]
-        status_icon = "🚫"
-        status_text = "EN LISTA NEGRA"
-        status_detail = (
-            f"⚠️ <b>Motivo:</b> {motivo}\n"
-            f"🔴 <b>Severidad:</b> {severidad.upper()}\n"
-            f"📅 <b>Desde:</b> {fecha_bl}"
-        )
-    else:
-        status_icon = "✅"
-        status_text = "NO está en Lista Negra"
-        status_detail = ""
-    
-    if client_data:
-        reputation = client_data.get('global_reputation', 100)
-        rep_emoji = "🟢" if reputation >= 80 else ("🟡" if reputation >= 50 else "🔴")
-        rep_section = (
-            f"\n{rep_emoji} <b>Reputación:</b> {reputation}/100\n"
-            f"📊 <b>Reportes previos:</b> {report_count}"
-        )
-        system_status = "Cliente registrado"
-    else:
-        rep_section = (
-            f"\n📊 <b>Reportes previos:</b> {report_count}\n"
-            "🔍 <i>No registrado como cliente en NebulaStar.</i>"
-        )
-        system_status = "Sin perfil en el sistema"
-    
     username_display = client_data.get('username', '') if client_data else ''
     display_name = f"@{username_display}" if username_display else f"ID {target_id}"
     
-    card = (
-        f"{status_icon} <b>CONSULTA DE REPUTACIÓN</b>\n"
-        f"{'━' * 28}\n\n"
-        f"👤 <b>{display_name}</b>\n"
-        f"🆔 <code>{target_id}</code>\n"
-        f"📋 {system_status}\n\n"
-        f"<b>Lista Negra:</b> {status_text}\n"
-        f"{status_detail}"
-        f"{rep_section}"
-    )
+    card, blacklist_entry = _build_reputation_card(target_id, display_name)
     
     if not blacklist_entry:
         keyboard = [[InlineKeyboardButton("🛡️ Reportar a Lista Negra", callback_data=f"bl_quick_{target_id}_{username_display}")]]
@@ -330,3 +306,4 @@ async def blacklist_check_by_id(update: Update, context: ContextTypes.DEFAULT_TY
 # Handler de reenvío (se registra por separado en bot_creadoras.py)
 blacklist_forward_check_handler = MessageHandler(filters.FORWARDED & ~filters.COMMAND, blacklist_check_forward)
 blacklist_quick_report_handler = CallbackQueryHandler(blacklist_quick_report_callback, pattern="^bl_quick_")
+

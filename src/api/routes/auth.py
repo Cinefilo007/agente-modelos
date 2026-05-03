@@ -137,6 +137,22 @@ async def process_login(telegram_id: int, username: str = None, photo_url: str =
     """
     Shared logic for login processing. Explicit role strictly defines where to look/insert.
     """
+    # === VERIFICACIÓN DE LISTA NEGRA GLOBAL (ANTES DE TODO) ===
+    # Bloquea el acceso a cualquier usuario en global_blacklist, sin importar si es
+    # cliente registrado, modelo o usuario nuevo.
+    try:
+        bl_check = db.client.table("global_blacklist").select("reason, severity").eq("telegram_id", telegram_id).limit(1).execute()
+        if bl_check and bl_check.data:
+            bl_reason = bl_check.data[0].get('reason', 'Violación de políticas')
+            raise HTTPException(
+                status_code=403,
+                detail=f"🚫 Acceso denegado. Tu cuenta ha sido bloqueada de NebulaStar. Motivo: {bl_reason}"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Auth] Error checking global_blacklist for {telegram_id}: {e}")
+
     user_role = explicit_role or "unknown"
     user_data = None
     
