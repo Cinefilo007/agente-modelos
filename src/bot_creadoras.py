@@ -31,7 +31,7 @@ def build_app():
 
     # Handlers para Creadoras y Configuración de Agencia
     from src.handlers.creator_onboarding import creator_onboarding_handler
-    from src.handlers.creator_blacklist import creator_blacklist_handler
+    from src.handlers.creator_blacklist import creator_blacklist_handler, blacklist_forward_check_handler, blacklist_quick_report_handler, blacklist_check_by_id
     from src.handlers.admin import admin_callback_handler, admin_list_pending_command, difusion_handler
     from src.handlers.profile import show_profile, profile_handler
     from src.handlers.credits import (
@@ -64,6 +64,7 @@ def build_app():
     app.add_handler(CommandHandler("modelos", admin_list_models))
     app.add_handler(CommandHandler("verificar_modelo", admin_verify_model_command))
     app.add_handler(CommandHandler("solicitudes", admin_list_pending_command))
+    app.add_handler(CommandHandler("consultarbl", blacklist_check_by_id))
 
     # Callbacks especificos de creadoras
     app.add_handler(CallbackQueryHandler(credit_purchase_callback, pattern="^buy_credit"))
@@ -71,7 +72,11 @@ def build_app():
     app.add_handler(CallbackQueryHandler(admin_pkg_action_callback, pattern="^(adm_pkg_toggle|adm_pkg_list)"))
     app.add_handler(CallbackQueryHandler(admin_model_view_callback, pattern="^adm_mod_view"))
     app.add_handler(CallbackQueryHandler(admin_model_action_callback, pattern="^adm_mod_(delete|list)"))
+    app.add_handler(blacklist_quick_report_handler)
     
+    # Handler de reenvío para consulta de lista negra (antes del fallback genérico)
+    app.add_handler(blacklist_forward_check_handler)
+
     # Fallbacks y Mensajes no procesados
     async def _unhandled_callback(update, context):
         query = update.callback_query

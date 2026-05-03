@@ -31,6 +31,7 @@ Este documento define la arquitectura, la separación de responsabilidades (SOPs
 - Notificaciones de transacciones: Nuevos clientes que compren su contenido, desbloqueos, contribuciones o propinas (tips).
 - Notificaciones de solicitud/estado de Retiros de fondos (Withdrawals).
 - Panel o comandos para añadir usuarios problemáticos a la Lista Negra (Blacklist/Bloqueo).
+- **Consulta rápida de Lista Negra:** La modelo puede reenviar cualquier mensaje de un usuario al bot y este responderá automáticamente con el estado del usuario (lista negra, reputación, reportes previos). También disponible vía `/consultarbl <ID>` para usuarios con privacidad de reenvío activada.
 - Configuración y validaciones de accesos asociados a Telegram Stories o funciones exclusivas para creadoras.
 
 ---

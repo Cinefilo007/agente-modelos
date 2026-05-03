@@ -353,6 +353,49 @@ class Database:
             logger.error(f"Error removing from blacklist {record_id}: {e}")
             return False
 
+    def check_blacklist(self, telegram_id: int):
+        """Consulta si un telegram_id está en la lista negra global. No crea registros."""
+        try:
+            response = self.client.table("global_blacklist").select("*").eq("telegram_id", telegram_id).limit(1).execute()
+            if response.data:
+                return response.data[0]
+            return None
+        except Exception as e:
+            logger.error(f"Error checking blacklist for {telegram_id}: {e}")
+            return None
+
+    def get_client_reputation(self, telegram_id: int):
+        """Obtiene la reputación de un cliente por telegram_id. No crea registros."""
+        try:
+            response = self.client.table("clients").select("id, username, global_reputation, is_blacklisted").eq("telegram_id", telegram_id).limit(1).execute()
+            if response.data:
+                return response.data[0]
+            return None
+        except Exception as e:
+            logger.error(f"Error getting reputation for {telegram_id}: {e}")
+            return None
+
+    def count_blacklist_reports(self, telegram_id: int):
+        """Cuenta reportes en blacklist_reports. Busca por client_id o reported_telegram_id."""
+        try:
+            # Primero buscar si el usuario tiene un client_id
+            client = self.client.table("clients").select("id").eq("telegram_id", telegram_id).limit(1).execute()
+            count = 0
+            
+            if client.data:
+                # Buscar por reported_client_id (FK clásica)
+                res = self.client.table("blacklist_reports").select("id", count="exact").eq("reported_client_id", client.data[0]['id']).execute()
+                count += (res.count or 0) if hasattr(res, 'count') else 0
+            
+            # Buscar también por reported_telegram_id (campo nuevo sin FK)
+            res2 = self.client.table("blacklist_reports").select("id", count="exact").eq("reported_telegram_id", telegram_id).execute()
+            count += (res2.count or 0) if hasattr(res2, 'count') else 0
+            
+            return count
+        except Exception as e:
+            logger.error(f"Error counting blacklist reports for {telegram_id}: {e}")
+            return 0
+
     # --- REVIEWS ---
     def add_client_review(self, client_id: str, model_id: str, rating: int, comment: str, tags: str):
         """Agrega una review a un cliente."""
