@@ -6,17 +6,33 @@ Este documento define la arquitectura, la separación de responsabilidades (SOPs
 
 ---
 
-## 1. Bot de Clientes (Consumer Bot)
+## 1. Bot de Fans (Consumer Bot)
 **Variables de entorno asociadas:** `TELEGRAM_CLIENT_TOKEN`
 **Archivo de entrada:** `src/bot_clientes.py`
 
-**Propósito:** Es la **puerta de entrada** de los clientes/consumidores a la plataforma. Toda la experiencia de adquisición del usuario normal debe ocurrir aquí.
+**Propósito:** Es la **puerta de entrada** de los clientes/consumidores (fans) a la plataforma NebulaStar. Concentra toda la experiencia del fan: descubrimiento de creadoras, reviews, favoritas y notificaciones push.
+
+**Handlers:**
+- `src/handlers/fan_onboarding.py` — `/start`, verificación de blacklist, registro en `clients`, menú persistente `ReplyKeyboard`.
+- `src/handlers/fan_explore.py` — `/explorar`, `/buscar <nombre>`, catálogo paginado con tarjetas (foto de perfil + bio + rating), botón "Ver Perfil" (link plataforma, NUNCA username de Telegram).
+- `src/handlers/fan_reviews.py` — ConversationHandler para dejar reviews (⭐1-5 + comentario). Límite: 1 review por cliente por modelo. Recalcula `reputation_score` de la modelo automáticamente.
+- `src/handlers/fan_favorites.py` — `/favoritas`, callbacks `fav_add|{id}` y `fav_remove|{id}`.
+
+**Servicio asociado:**
+- `src/services/fan_notifications.py` — Envía notificaciones push masivas a fans. Hookeado en `admin.py` al aprobar modelos.
 
 **Responsabilidades:**
-- Onboarding, bienvenida y despliegue del menú interactivo (WebApp) para el perfil de "Cliente".
-- Flujo de compra, recarga de saldo o adquisición de "tickets"/"créditos" a través del proveedor de pagos correspondiente.
-- Exploración de Modelos (Catálogo, Sugerencias).
-- Alertas para el cliente relacionadas a compras exitosas, fallidas o notificaciones administrativas push genéricas.
+- Onboarding, bienvenida con verificación de `global_blacklist` y despliegue del menú interactivo (ReplyKeyboard persistente).
+- Exploración del catálogo de modelos verificadas con foto de perfil (`avatar_url`), bio, rating y paginación inline.
+- Sistema de Reviews: Flujo conversacional ⭐1-5 + comentario. Actualiza el KPI `reputation_score` de la modelo.
+- Gestión de Favoritas: Añadir/eliminar modelos favoritas desde cualquier tarjeta o búsqueda.
+- Notificaciones Push automáticas: "Nueva modelo en NebulaStar" con foto de perfil (solo si `avatar_url` está configurada).
+- Acceso directo a la WebApp NebulaStar.
+- Difusión masiva del admin a todos los fans registrados.
+
+**Reglas de Privacidad:**
+- **NUNCA** exponer el `username` de Telegram de las modelos a los fans. Solo mostrar el `artistic_name` y el link de la plataforma (`nebulastar.app/{username}` o `/profile/{id}`).
+- Las fotos enviadas en notificaciones deben ser la foto de perfil (`avatar_url`), **NUNCA** la foto de verificación.
 
 ---
 

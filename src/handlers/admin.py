@@ -123,6 +123,17 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
             status_text += "\n⚠️ (No se pudo notificar a la modelo)"
         await update_message(status_text)
 
+        # 5. Notificar a fans (Bot de Clientes) — Solo si tiene avatar_url
+        try:
+            import asyncio
+            from src.services.fan_notifications import fan_notifier
+            # Refrescar datos de la modelo para obtener avatar_url actualizado
+            fresh_model = db.get_model(model_id)
+            if fresh_model:
+                asyncio.create_task(fan_notifier.notify_new_model(fresh_model))
+        except Exception as fan_err:
+            logger.warning(f"Error enviando notificación de nueva modelo a fans: {fan_err}")
+
     elif action == ACTION_REJECT:
         db.update_model(model_id, {"status": "rejected"})
         notif_ok = True

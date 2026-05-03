@@ -422,6 +422,191 @@ class Database:
             logger.error(f"Error getting reviews for {client_id}: {e}")
             return []
 
+    # --- FAN BOT ---
+    def get_all_clients_for_broadcast(self):
+        """Obtiene todos los clientes con notificaciones habilitadas para difusión."""
+        try:
+            response = self.client.table("clients") \
+                .select("telegram_id, username") \
+                .eq("is_blacklisted", False) \
+                .execute()
+            return response.data if response.data else []
+        except Exception as e:
+            logger.error(f"Error getting clients for broadcast: {e}")
+            return []
+
+    def add_fan_favorite(self, client_id: str, model_id: str):
+        """Añade una modelo a favoritas de un cliente."""
+        try:
+            response = self.client.table("fan_favorites").insert({
+                "client_id": client_id,
+                "model_id": model_id
+            }).execute()
+            return response.data
+        except Exception as e:
+            logger.error(f"Error adding favorite: {e}")
+            return None
+
+    def remove_fan_favorite(self, client_id: str, model_id: str):
+        """Elimina una modelo de favoritas."""
+        try:
+            self.client.table("fan_favorites") \
+                .delete() \
+                .eq("client_id", client_id) \
+                .eq("model_id", model_id) \
+                .execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error removing favorite: {e}")
+            return False
+
+    def get_fan_favorites(self, client_id: str):
+        """Obtiene las modelos favoritas de un cliente con JOIN a models."""
+        try:
+            response = self.client.table("fan_favorites") \
+                .select("model_id, created_at, models(id, artistic_name, avatar_url, bio_short, reputation_score)") \
+                .eq("client_id", client_id) \
+                .order("created_at", desc=True) \
+                .execute()
+            return response.data if response.data else []
+        except Exception as e:
+            logger.error(f"Error getting favorites for client {client_id}: {e}")
+            return []
+
+    def is_fan_favorite(self, client_id: str, model_id: str):
+        """Verifica si una modelo es favorita de un cliente."""
+        try:
+            response = self.client.table("fan_favorites") \
+                .select("id") \
+                .eq("client_id", client_id) \
+                .eq("model_id", model_id) \
+                .limit(1) \
+                .execute()
+            return bool(response.data)
+        except Exception as e:
+            logger.error(f"Error checking favorite: {e}")
+            return False
+
+    def get_verified_models_paginated(self, page: int = 1, limit: int = 5):
+        """Obtiene modelos activas y verificadas con avatar, paginadas."""
+        try:
+            offset = (page - 1) * limit
+            response = self.client.table("models") \
+                .select("id, artistic_name, avatar_url, bio_short, reputation_score, followers_count") \
+                .eq("is_verified", True) \
+                .eq("status", "active") \
+                .not_.is_("avatar_url", "null") \
+                .order("created_at", desc=True) \
+                .range(offset, offset + limit - 1) \
+                .execute()
+            return response.data if response.data else []
+        except Exception as e:
+            logger.error(f"Error getting verified models page {page}: {e}")
+            return []
+
+    def count_verified_models(self):
+        """Cuenta el total de modelos verificadas con avatar."""
+        try:
+            response = self.client.table("models") \
+                .select("id", count="exact") \
+                .eq("is_verified", True) \
+                .eq("status", "active") \
+                .not_.is_("avatar_url", "null") \
+                .execute()
+            return response.count or 0
+        except Exception as e:
+            logger.error(f"Error counting verified models: {e}")
+            return 0
+
+    def search_models_by_name(self, query: str, limit: int = 10):
+        """Busca modelos por nombre artístico (ILIKE)."""
+        try:
+            response = self.client.table("models") \
+                .select("id, artistic_name, avatar_url, bio_short, reputation_score") \
+                .eq("is_verified", True) \
+                .eq("status", "active") \
+                .ilike("artistic_name", f"%{query}%") \
+                .limit(limit) \
+                .execute()
+            return response.data if response.data else []
+        except Exception as e:
+            logger.error(f"Error searching models by name '{query}': {e}")
+            return []
+
+    def add_fan_review(self, client_id: str, model_id: str, rating: int, comment: str):
+        """Añade una review de un fan a una modelo. Retorna None si ya existe."""
+        try:
+            # Verificar si ya existe
+            existing = self.client.table("reviews") \
+                .select("id") \
+                .eq("client_id", client_id) \
+                .eq("model_id", model_id) \
+                .limit(1) \
+                .execute()
+            if existing.data:
+                return None  # Ya existe
+
+            response = self.client.table("reviews").insert({
+                "client_id": client_id,
+                "model_id": model_id,
+                "rating": rating,
+                "comment": comment
+            }).execute()
+
+            # Recalcular reputation_score de la modelo
+            if response.data:
+                self._recalculate_model_rating(model_id)
+
+            return response.data
+        except Exception as e:
+            logger.error(f"Error adding fan review: {e}")
+            return None
+
+    def _recalculate_model_rating(self, model_id: str):
+        """Recalcula el reputation_score de una modelo basado en sus reviews."""
+        try:
+            reviews_res = self.service_client.table("reviews") \
+                .select("rating") \
+                .eq("model_id", model_id) \
+                .execute()
+            if reviews_res.data:
+                ratings = [r['rating'] for r in reviews_res.data]
+                avg_rating = round(sum(ratings) / len(ratings), 2)
+                self.service_client.table("models") \
+                    .update({"reputation_score": avg_rating}) \
+                    .eq("id", model_id) \
+                    .execute()
+                logger.info(f"[Rating Sync] Model {model_id} score updated to {avg_rating}")
+        except Exception as e:
+            logger.error(f"Error recalculating rating for model {model_id}: {e}")
+
+    def get_fan_reviews_by_client(self, client_id: str):
+        """Obtiene todas las reviews que ha dejado un cliente."""
+        try:
+            response = self.client.table("reviews") \
+                .select("*, models(artistic_name, avatar_url)") \
+                .eq("client_id", client_id) \
+                .order("created_at", desc=True) \
+                .execute()
+            return response.data if response.data else []
+        except Exception as e:
+            logger.error(f"Error getting reviews by client {client_id}: {e}")
+            return []
+
+    def check_existing_review(self, client_id: str, model_id: str):
+        """Verifica si ya existe una review para un par cliente-modelo."""
+        try:
+            response = self.client.table("reviews") \
+                .select("id") \
+                .eq("client_id", client_id) \
+                .eq("model_id", model_id) \
+                .limit(1) \
+                .execute()
+            return bool(response.data)
+        except Exception as e:
+            logger.error(f"Error checking existing review: {e}")
+            return False
+
 # Singleton instance for import
 db = Database()
 
