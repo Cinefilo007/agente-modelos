@@ -44,18 +44,20 @@ async def review_start_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def review_pick_model_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
     parts = query.data.split("|")
     model_id = parts[1]
     model_name = parts[2] if len(parts) > 2 else "Modelo"
     user = update.effective_user
     client = db.get_client(user.id)
     if not client:
+        await query.answer()
         await query.message.reply_text("⚠️ Usa /start primero.")
         return ConversationHandler.END
     if db.check_existing_review(client["id"], model_id):
+        await query.answer(f"⚠️ Ya dejaste una review para {model_name}.", show_alert=True)
         await query.message.reply_text(f"⚠️ Ya dejaste una review para <b>{e(model_name)}</b>.", parse_mode="HTML")
         return ConversationHandler.END
+    await query.answer()
     context.user_data.update({"review_client_id": client["id"], "review_model_id": model_id, "review_model_name": model_name})
     rating_buttons = [[
         InlineKeyboardButton(f"{'⭐'*i}", callback_data=f"review_rate|{i}") for i in range(1, 6)

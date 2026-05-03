@@ -1,10 +1,20 @@
 import logging
 import os
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from telegram.ext import ContextTypes, CommandHandler
 from src.services.database import db
 
 logger = logging.getLogger(__name__)
+
+# Menú persistente para el bot de creadoras
+CREATOR_MENU_KEYBOARD = ReplyKeyboardMarkup(
+    [
+        [KeyboardButton("👤 Mi Perfil"), KeyboardButton("🛡️ Lista Negra")],
+        [KeyboardButton("🔍 Consultar ID"), KeyboardButton("✨ Entrar a NebulaStar")]
+    ],
+    resize_keyboard=True,
+    is_persistent=True
+)
 
 async def start_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -46,5 +56,11 @@ async def start_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=reply_markup)
+
+    # Segundo mensaje con el menú inferior persistente para las creadoras
+    await update.message.reply_text(
+        "¡Usa el menú inferior para gestionar tu perfil y lista negra! 🚀",
+        reply_markup=CREATOR_MENU_KEYBOARD
+    )
 
 creator_onboarding_handler = CommandHandler("start", start_creator)

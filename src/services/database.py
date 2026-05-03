@@ -492,7 +492,7 @@ class Database:
         try:
             offset = (page - 1) * limit
             response = self.client.table("models") \
-                .select("id, artistic_name, avatar_url, bio_short, reputation_score, followers_count") \
+                .select("id, artistic_name, avatar_url, bio_short, reputation_score, followers_count, username, services") \
                 .eq("is_verified", True) \
                 .eq("status", "active") \
                 .not_.is_("avatar_url", "null") \
@@ -503,6 +503,7 @@ class Database:
         except Exception as e:
             logger.error(f"Error getting verified models page {page}: {e}")
             return []
+
 
     def count_verified_models(self):
         """Cuenta el total de modelos verificadas con avatar."""

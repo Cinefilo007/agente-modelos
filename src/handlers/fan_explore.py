@@ -12,7 +12,7 @@ from src.services.database import db
 logger = logging.getLogger(__name__)
 
 WEBAPP_URL = os.getenv("LANDING_URL", "https://nebulastar.app/landing").replace("/landing", "")
-MODELS_PER_PAGE = 5
+MODELS_PER_PAGE = 1
 
 
 def e(text):
@@ -21,13 +21,12 @@ def e(text):
 
 
 def rating_stars(score):
-    """Convierte score decimal a estrellas visuales."""
+    """Convierte score decimal a formato numérico base 5."""
     if not score or score == 0:
-        return "Sin calificación"
-    full = int(score)
-    half = 1 if (score - full) >= 0.5 else 0
-    empty = 5 - full - half
-    return "⭐" * full + ("✨" if half else "") + "☆" * empty + f" ({score:.1f})"
+        return "0/5"
+    if score == int(score):
+        return f"{int(score)}/5"
+    return f"{score:.1f}/5"
 
 
 async def explorar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -41,7 +40,7 @@ async def explorar_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def send_explore_page(message, context, page: int):
-    """Envía una página del catálogo de modelos."""
+    """Envía una página del catálogo de modelos (1 modelo por página)."""
     models = db.get_verified_models_paginated(page=page, limit=MODELS_PER_PAGE)
     total = db.count_verified_models()
     total_pages = max(1, (total + MODELS_PER_PAGE - 1) // MODELS_PER_PAGE)
@@ -62,11 +61,20 @@ async def send_explore_page(message, context, page: int):
         followers = model.get("followers_count", 0)
         model_id = model["id"]
         avatar_url = model.get("avatar_url")
+        username = model.get("username")
+
+        # Extraer servicios
+        services = model.get("services") or []
+        if isinstance(services, list):
+            services_text = ", ".join(services) if services else "Sin servicios especificados"
+        else:
+            services_text = str(services)
 
         caption = (
-            f"✨ <b>{name}</b>\n"
-            f"📝 {bio}\n"
-            f"⭐ {rating}\n"
+            f"✨ <b>{name}</b>\n\n"
+            f"📝 {bio}\n\n"
+            f"⭐ <b>Rating:</b> {rating}\n"
+            f"💼 <b>Servicios:</b> {services_text}\n"
             f"👥 {followers:,} seguidores"
         )
 
@@ -79,10 +87,22 @@ async def send_explore_page(message, context, page: int):
             [
                 InlineKeyboardButton(
                     "🌐 Ver Perfil",
-                    url=f"{WEBAPP_URL}/{model.get('username', model_id)}" if model.get('username') else f"{WEBAPP_URL}/profile/{model_id}"
+                    url=f"https://nebulastar.app/{username}" if username else f"https://nebulastar.app/profile/{model_id}"
                 )
             ]
         ]
+        
+        # Botones de paginación adjuntos a la tarjeta para que sea intuitivo
+        nav_buttons = []
+        if page > 1:
+            nav_buttons.append(InlineKeyboardButton("◀️ Anterior", callback_data=f"explore_page|{page - 1}"))
+        nav_buttons.append(InlineKeyboardButton(f"📄 {page}/{total_pages}", callback_data="noop"))
+        if page < total_pages:
+            nav_buttons.append(InlineKeyboardButton("▶️ Siguiente", callback_data=f"explore_page|{page + 1}"))
+
+        if nav_buttons:
+            buttons.append(nav_buttons)
+
         markup = InlineKeyboardMarkup(buttons)
 
         # Enviar con foto si tiene avatar
@@ -107,21 +127,6 @@ async def send_explore_page(message, context, page: int):
             reply_markup=markup
         )
 
-    # Botones de paginación
-    nav_buttons = []
-    if page > 1:
-        nav_buttons.append(InlineKeyboardButton("◀️ Anterior", callback_data=f"explore_page|{page - 1}"))
-    nav_buttons.append(InlineKeyboardButton(f"📄 {page}/{total_pages}", callback_data="noop"))
-    if page < total_pages:
-        nav_buttons.append(InlineKeyboardButton("▶️ Siguiente", callback_data=f"explore_page|{page + 1}"))
-
-    if nav_buttons:
-        await context.bot.send_message(
-            chat_id=message.chat_id,
-            text=f"📋 Página {page} de {total_pages} ({total} modelos)",
-            reply_markup=InlineKeyboardMarkup([nav_buttons])
-        )
-
 
 async def explore_page_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Callback para cambio de página en exploración."""
@@ -131,7 +136,6 @@ async def explore_page_callback(update: Update, context: ContextTypes.DEFAULT_TY
     _, page_str = query.data.split("|", 1)
     page = int(page_str)
 
-    # Eliminar los mensajes de la página anterior sería complejo.
     # Simplemente enviamos la nueva página.
     await send_explore_page(query.message, context, page=page)
 
@@ -165,7 +169,7 @@ async def buscar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for m in models:
         name = e(m.get("artistic_name") or "Modelo")
         rating = m.get("reputation_score", 0)
-        text += f"✨ <b>{name}</b> — ⭐ {rating:.1f}\n"
+        text += f"✨ <b>{name}</b> — ⭐ {rating:.1f}/5\n"
         buttons.append([
             InlineKeyboardButton(f"👀 {name}", callback_data=f"explore_detail|{m['id']}"),
             InlineKeyboardButton("❤️", callback_data=f"fav_add|{m['id']}")
@@ -195,11 +199,20 @@ async def explore_detail_callback(update: Update, context: ContextTypes.DEFAULT_
     rating = rating_stars(model.get("reputation_score"))
     followers = model.get("followers_count", 0)
     avatar_url = model.get("avatar_url")
+    username = model.get("username")
+
+    # Extraer servicios
+    services = model.get("services") or []
+    if isinstance(services, list):
+        services_text = ", ".join(services) if services else "Sin servicios especificados"
+    else:
+        services_text = str(services)
 
     caption = (
         f"✨ <b>{name}</b>\n\n"
         f"📝 {bio}\n\n"
-        f"⭐ {rating}\n"
+        f"⭐ <b>Rating:</b> {rating}\n"
+        f"💼 <b>Servicios:</b> {services_text}\n"
         f"👥 {followers:,} seguidores"
     )
 
@@ -209,7 +222,10 @@ async def explore_detail_callback(update: Update, context: ContextTypes.DEFAULT_
             InlineKeyboardButton("📝 Review", callback_data=f"review_start|{model_id}|{name[:20]}"),
         ],
         [
-            InlineKeyboardButton("🌐 Ver Perfil", url=f"{WEBAPP_URL}/{model.get('username', model_id)}")
+            InlineKeyboardButton(
+                "🌐 Ver Perfil",
+                url=f"https://nebulastar.app/{username}" if username else f"https://nebulastar.app/profile/{model_id}"
+            )
         ]
     ]
 

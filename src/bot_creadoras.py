@@ -84,9 +84,33 @@ def build_app():
         await query.answer()
     app.add_handler(CallbackQueryHandler(_unhandled_callback))
 
-    async def help_handler(update, context):
-        await update.message.reply_text("✨ Soy tu Asistente de Agencia. Escribe /start para comenzar el onboarding.")
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, help_handler))
+    from src.handlers.creator_onboarding import CREATOR_MENU_KEYBOARD, start_creator
+    from src.handlers.creator_blacklist import blacklist_start
+    from src.handlers.profile import show_profile
+
+    # === MENÚ DE TEXTO (ReplyKeyboard de Creadoras) ===
+    async def creator_menu_router(update, context):
+        text = update.message.text.strip()
+        if text == "👤 Mi Perfil":
+            await show_profile(update, context)
+        elif text == "🛡️ Lista Negra":
+            await blacklist_start(update, context)
+        elif text == "🔍 Consultar ID":
+            await update.message.reply_text(
+                "🛡️ <b>Consulta por ID</b>\n\n"
+                "Para consultar el estado de un usuario, envía:\n"
+                "<code>/consultarbl 123456789</code>",
+                parse_mode="HTML"
+            )
+        elif text == "✨ Entrar a NebulaStar":
+            await start_creator(update, context)
+        else:
+            await update.message.reply_text(
+                "✨ Usa el menú inferior o escribe /start para ver las opciones.",
+                reply_markup=CREATOR_MENU_KEYBOARD
+            )
+
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, creator_menu_router))
     
     return app
 
