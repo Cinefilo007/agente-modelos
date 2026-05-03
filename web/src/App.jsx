@@ -69,9 +69,8 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/landing" state={{ from: location }} replace />;
   }
 
-  // Si existe usuario y está en una landing pública, le dejamos estar ahí 
-  // (o podrías redirigirlo a /, pero dejarlo es más "suave")
-  if (user && isPublicPath && location.pathname === '/landing') {
+  // Si el usuario ya tiene sesión y está en una landing, redirigir al feed
+  if (user && isPublicPath) {
      return <Navigate to={user.role === 'admin' ? "/admin" : "/"} replace />;
   }
 
