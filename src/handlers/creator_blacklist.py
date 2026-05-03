@@ -85,7 +85,9 @@ async def blacklist_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target_id = context.user_data.get('bl_target_id')
     target_username = context.user_data.get('bl_target_username', '')
     reason = context.user_data.get('bl_reason', '')
-    added_by = str(update.effective_user.id)
+    # Obtener el UUID de la modelo (added_by es FK a models.id, no telegram_id)
+    reporter_model = db.get_model(update.effective_user.id)
+    added_by = reporter_model['id'] if reporter_model else None
 
     if target_id and reason:
         db.add_to_blacklist(
